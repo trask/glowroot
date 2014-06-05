@@ -35,6 +35,7 @@ import org.glowroot.config.InstrumentationConfig;
 import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.DataSource;
 import org.glowroot.local.store.GaugePointDao;
+import org.glowroot.local.store.GcEventDao;
 import org.glowroot.local.store.TraceDao;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.transaction.AdviceCache;
@@ -50,6 +51,7 @@ class AdminJsonService {
     private final AggregateDao aggregateDao;
     private final TraceDao traceDao;
     private final GaugePointDao gaugePointDao;
+    private final GcEventDao gcEventDao;
     private final @Nullable AggregateCollector aggregateCollector;
     private final ConfigService configService;
     private final AdviceCache adviceCache;
@@ -60,14 +62,15 @@ class AdminJsonService {
     private final TransactionRegistry transactionRegistry;
 
     AdminJsonService(AggregateDao aggregateDao, TraceDao traceDao, GaugePointDao gaugePointDao,
-            @Nullable AggregateCollector aggregateCollector, ConfigService configService,
-            AdviceCache adviceCache, AnalyzedWorld analyzedWorld,
+            GcEventDao gcEventDao, @Nullable AggregateCollector aggregateCollector,
+            ConfigService configService, AdviceCache adviceCache, AnalyzedWorld analyzedWorld,
             @Nullable Instrumentation instrumentation,
             TransactionCollectorImpl transactionCollector, DataSource dataSource,
             TransactionRegistry transactionRegistry) {
         this.aggregateDao = aggregateDao;
         this.traceDao = traceDao;
         this.gaugePointDao = gaugePointDao;
+        this.gcEventDao = gcEventDao;
         this.aggregateCollector = aggregateCollector;
         this.configService = configService;
         this.adviceCache = adviceCache;
@@ -88,6 +91,7 @@ class AdminJsonService {
         traceDao.deleteAll();
         gaugePointDao.deleteAll();
         aggregateDao.deleteAll();
+        gcEventDao.deleteAll();
         dataSource.defrag();
     }
 

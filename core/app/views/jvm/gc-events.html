@@ -1,0 +1,217 @@
+<!--
+  Copyright 2015 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h2>GC events</h2>
+  </div>
+  <div class="panel-body">
+    <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+    <div ng-form
+         gt-form-with-primary-button
+         class="col-xs-12 col-sm-8 form-horizontal"
+         style="margin: 20px auto 30px auto;">
+      <div class="form-group">
+        <label class="col-lg-4 control-label" for="filterDate">Date</label>
+        <div class="col-lg-8">
+          <div gt-datepicker
+               gt-model="filterDate"
+               gt-id="filterDate">
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="col-lg-4 control-label"
+               for="filterCollectorName">
+          Collector name
+        </label>
+        <div class="col-lg-8">
+          <div class="input-group"
+               style="width: 25em;">
+            <div gt-input-group-dropdown
+                 gt-model="filter.collectorNameComparator"
+                 gt-items="filterTextComparatorOptions">
+            </div>
+            <input type="text"
+                   ng-model="filter.collectorName"
+                   class="form-control"
+                   id="filterCollectorName">
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="col-lg-4 control-label"
+               for="filterAction">
+          Action
+        </label>
+        <div class="col-lg-8">
+          <div class="input-group"
+               style="width: 25em;">
+            <div gt-input-group-dropdown
+                 gt-model="filter.actionComparator"
+                 gt-items="filterTextComparatorOptions">
+            </div>
+            <input type="text"
+                   ng-model="filter.action"
+                   class="form-control"
+                   id="filterAction">
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="col-lg-4 control-label"
+               for="filterCause">
+          Cause
+        </label>
+        <div class="col-lg-8">
+          <div class="input-group"
+               style="width: 25em;">
+            <div gt-input-group-dropdown
+                 gt-model="filter.causeComparator"
+                 gt-items="filterTextComparatorOptions">
+            </div>
+            <input type="text"
+                   ng-model="filter.cause"
+                   class="form-control"
+                   id="filterCause">
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="col-lg-offset-4 col-lg-8">
+          <div gt-button
+               gt-label="Refresh"
+               gt-click="refreshButtonClick(deferred)">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="clear: both; position: relative;">
+      <div class="panel-overlay" ng-show="showTableOverlay">
+        <!-- this inner div is to position the spinner near top of panel since panel can be very tall pushing spinner
+             offscreen -->
+        <div style="position: absolute; width: 100%; margin-top: 50px;">
+          <!-- don't show spinner on refresh button since that has its own spinner -->
+          <div gt-spinner
+               gt-show="showTableSpinner"
+               class="spinner"
+               style="margin-top: 40px; width: 100%;">
+          </div>
+        </div>
+      </div>
+      <table class="table">
+        <thead>
+        <tr>
+          <th width="1%">
+            <a href="" ng-click="sort('startTime')" class="sortable-table-header">
+              Start time
+              <span ng-class="sortIconClass('startTime')"
+                    ng-show="sortAttribute === 'startTime'">
+              </span>
+            </a>
+          </th>
+          <th width="1%">
+            <a href="" ng-click="sort('collectorName')" class="sortable-table-header">
+              Collector name
+              <span ng-class="sortIconClass('collectorName')"
+                    ng-show="sortAttribute === 'collectorName'">
+              </span>
+            </a>
+          </th>
+          <th width="1%">
+            <a href="" ng-click="sort('action')" class="sortable-table-header">
+              Action
+              <span ng-class="sortIconClass('action')"
+                    ng-show="sortAttribute === 'action'">
+              </span>
+            </a>
+          </th>
+          <th width="1%">
+            <a href="" ng-click="sort('cause')" class="sortable-table-header">
+              Cause
+              <span ng-class="sortIconClass('cause')"
+                    ng-show="sortAttribute === 'cause'">
+              </span>
+            </a>
+          </th>
+          <th width="1%">
+            <a href="" ng-click="sort('duration')" class="sortable-table-header">
+              Duration
+              <span ng-class="sortIconClass('duration')"
+                    ng-show="sortAttribute === 'duration'">
+              </span>
+            </a>
+          </th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat-start="gcEvent in gcEvents">
+          <td style="white-space: nowrap;">
+            {{formatDate(gcEvent.startTime)}}
+          </td>
+          <td>
+            {{gcEvent.collectorName}}
+          </td>
+          <td>
+            {{gcEvent.action}}
+          </td>
+          <td>
+            {{gcEvent.cause}}
+          </td>
+          <td>
+            {{gcEvent.duration}}
+          </td>
+        </tr>
+        <tr ng-repeat-end>
+          <td colspan="5" style="border-top: 0; padding-bottom: 16px; padding-left: 50px;">
+            <table>
+              <thead>
+              <tr>
+                <th>Memory pool</th>
+                <th style="padding-left: 20px; text-align: right;">Before</th>
+                <th style="padding-left: 20px; text-align: right;">After</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr ng-repeat="gcEventMemoryPool in gcEvent.memoryPools">
+                <td>{{gcEventMemoryPool.memoryPoolName}}</td>
+                <td style="padding-left: 20px; text-align: right;">{{gcEventMemoryPool.usedBeforeGc | number}}</td>
+                <td style="padding-left: 20px; text-align: right;">
+                  <span ng-show="gcEventMemoryPool.usedAfterGc === gcEventMemoryPool.usedBeforeGc"
+                      style="font-style: italic;">
+                    same
+                  </span>
+                  <span ng-show="gcEventMemoryPool.usedAfterGc !== gcEventMemoryPool.usedBeforeGc">
+                    {{gcEventMemoryPool.usedAfterGc | number}}
+                  </span>
+                </td>
+              </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <div ng-show="moreAvailable"
+         style="vertical-align: middle; padding: 20px 0 0 30px;">
+      <div gt-button
+           gt-btn-class="btn-default"
+           gt-label="Show more"
+           gt-click="showMore(deferred)">
+      </div>
+    </div>
+  </div>
+</div>

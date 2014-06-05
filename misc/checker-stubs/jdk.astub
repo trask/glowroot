@@ -95,3 +95,8 @@ package javax.management.openmbean;
 public class CompositeType {
     public @Nullable OpenType<?> getType(String itemName);
 }
+
+public interface NotificationBroadcaster {
+    public void addNotificationListener(NotificationListener listener,
+            @Nullable NotificationFilter filter, @Nullable Object handback);
+}

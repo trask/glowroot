@@ -29,14 +29,16 @@ class ReaperRunnable extends ScheduledRunnable {
     private final AggregateDao aggregateDao;
     private final TraceDao traceDao;
     private final GaugePointDao gaugePointDao;
+    private final GcEventDao gcEventDao;
     private final Clock clock;
 
     ReaperRunnable(ConfigService configService, AggregateDao aggregateDao, TraceDao traceDao,
-            GaugePointDao gaugePointDao, Clock clock) {
+            GaugePointDao gaugePointDao, GcEventDao gcEventDao, Clock clock) {
         this.configService = configService;
         this.aggregateDao = aggregateDao;
         this.traceDao = traceDao;
         this.gaugePointDao = gaugePointDao;
+        this.gcEventDao = gcEventDao;
         this.clock = clock;
     }
 
@@ -51,5 +53,7 @@ class ReaperRunnable extends ScheduledRunnable {
         traceDao.deleteBefore(traceCaptureTime);
 
         gaugePointDao.deleteBefore(aggregateCaptureTime);
+        // TODO separate expiration for gc events?
+        gcEventDao.deleteBefore(traceCaptureTime);
     }
 }

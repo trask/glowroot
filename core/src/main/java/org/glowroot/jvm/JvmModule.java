@@ -23,12 +23,14 @@ public class JvmModule {
     private final OptionalService<ThreadAllocatedBytes> threadAllocatedBytes;
     private final OptionalService<HeapDumps> heapDumps;
     private final @Nullable String processId;
+    private final OptionalService<GcEvents> gcEvents;
 
     public JvmModule(boolean jbossModules) {
         lazyPlatformMBeanServer = new LazyPlatformMBeanServer(jbossModules);
         threadAllocatedBytes = ThreadAllocatedBytes.create();
         heapDumps = HeapDumps.create(lazyPlatformMBeanServer);
         processId = ProcessId.getProcessId();
+        gcEvents = GcEvents.create();
     }
 
     public LazyPlatformMBeanServer getLazyPlatformMBeanServer() {
@@ -45,5 +47,9 @@ public class JvmModule {
 
     public @Nullable String getProcessId() {
         return processId;
+    }
+
+    public OptionalService<GcEvents> getGcEvents() {
+        return gcEvents;
     }
 }

@@ -138,7 +138,8 @@ public class GlowrootModule {
         collectorModule = new CollectorModule(clock, ticker, jvmModule, configModule,
                 storageModule.getTraceRepository(), storageModule.getAggregateRepository(),
                 storageModule.getGaugePointDao(), transactionModule.getTransactionRegistry(),
-                scheduledExecutor, viewerModeEnabled);
+                storageModule.getGcEventDao(), jvmModule.getGcEvents(), scheduledExecutor,
+                viewerModeEnabled);
         // now inject the real TransactionCollector into the proxy
         transactionCollectorProxy.setInstance(collectorModule.getTransactionCollector());
         initPlugins(configModule.getPluginDescriptors());

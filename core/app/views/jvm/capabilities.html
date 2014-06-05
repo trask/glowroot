@@ -58,6 +58,18 @@
     </div>
     <div class="row gt-system-property">
       <div class="col-sm-4">
+        <label>GC Events</label>
+      </div>
+      <div class="col-sm-8">
+        {{capabilities.gcEvents.available | gtOnOff}}
+        <div class="secondary-text"
+             ng-show="!capabilities.gcEvents.available">
+          {{capabilities.gcEvents.reason}}
+        </div>
+      </div>
+    </div>
+    <div class="row system-property">
+      <div class="col-sm-4">
         <label>Heap dump</label>
       </div>
       <div class="col-sm-8">

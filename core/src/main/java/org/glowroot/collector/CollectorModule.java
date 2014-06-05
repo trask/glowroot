@@ -23,10 +23,13 @@ import org.glowroot.common.Clock;
 import org.glowroot.common.Ticker;
 import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
+import org.glowroot.jvm.GcEvents;
 import org.glowroot.jvm.JvmModule;
+import org.glowroot.jvm.OptionalService;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.transaction.TransactionRegistry;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class CollectorModule {
@@ -44,7 +47,8 @@ public class CollectorModule {
     public CollectorModule(Clock clock, Ticker ticker, JvmModule jvmModule,
             ConfigModule configModule, TraceRepository traceRepository,
             AggregateRepository aggregateRepository, GaugePointRepository gaugePointRepository,
-            TransactionRegistry transactionRegistry, ScheduledExecutorService scheduledExecutor,
+            TransactionRegistry transactionRegistry, GcEventRepository gcEventRepository,
+            OptionalService<GcEvents> gcEvents, ScheduledExecutorService scheduledExecutor,
             boolean viewerModeEnabled) {
         ConfigService configService = configModule.getConfigService();
         if (viewerModeEnabled) {
@@ -63,6 +67,14 @@ public class CollectorModule {
                     fixedGaugeIntervalSeconds, SECONDS);
             stackTraceCollector = StackTraceCollector.create(transactionRegistry, configService,
                     scheduledExecutor);
+            GcEvents gcEventService = gcEvents.getService();
+            if (gcEventService != null) {
+                GcEventCollector gcEventCollector =
+                        GcEventCollector.create(gcEventRepository, gcEventService);
+                // gc events are callback driven, but still need to check for new
+                // GarbageCollectorMXBeans from time to time
+                gcEventCollector.scheduleWithFixedDelay(scheduledExecutor, 1, 1, MINUTES);
+            }
         }
         // ideally there should be no need for CollectorModule or TransactionModule in viewer mode
         // but viewer mode doesn't seem important enough (at this point) at least to optimize the

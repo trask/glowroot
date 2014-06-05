@@ -36,6 +36,7 @@ import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.CappedDatabase;
 import org.glowroot.local.store.DataSource;
 import org.glowroot.local.store.GaugePointDao;
+import org.glowroot.local.store.GcEventDao;
 import org.glowroot.local.store.StorageModule;
 import org.glowroot.local.store.TraceDao;
 import org.glowroot.markers.OnlyUsedByTests;
@@ -60,6 +61,7 @@ public class LocalUiModule {
         AggregateDao aggregateDao = storageModule.getAggregateDao();
         TraceDao traceDao = storageModule.getTraceDao();
         GaugePointDao gaugePointDao = storageModule.getGaugePointDao();
+        GcEventDao gcEventDao = storageModule.getGcEventDao();
         DataSource dataSource = storageModule.getDataSource();
         CappedDatabase cappedDatabase = storageModule.getCappedDatabase();
         TransactionCollectorImpl transactionCollector = collectorModule.getTransactionCollector();
@@ -101,8 +103,8 @@ public class LocalUiModule {
                 collectorModule.getFixedAggregateIntervalSeconds(),
                 storageModule.getFixedAggregateRollupSeconds());
         JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getLazyPlatformMBeanServer(),
-                gaugePointDao, configService, jvmModule.getThreadAllocatedBytes(),
-                jvmModule.getHeapDumps(), jvmModule.getProcessId(),
+                gaugePointDao, gcEventDao, configService, jvmModule.getThreadAllocatedBytes(),
+                jvmModule.getHeapDumps(), jvmModule.getGcEvents(), jvmModule.getProcessId(),
                 collectorModule.getFixedGaugeIntervalSeconds(),
                 storageModule.getFixedGaugeRollupSeconds());
         ConfigJsonService configJsonService = new ConfigJsonService(configService,
@@ -116,7 +118,7 @@ public class LocalUiModule {
                 new GaugeJsonService(configService, jvmModule.getLazyPlatformMBeanServer());
         AlertJsonService alertJsonService = new AlertJsonService(configService);
         AdminJsonService adminJsonService = new AdminJsonService(aggregateDao, traceDao,
-                gaugePointDao, collectorModule.getAggregateCollector(), configService,
+                gaugePointDao, gcEventDao, collectorModule.getAggregateCollector(), configService,
                 transactionModule.getAdviceCache(), analyzedWorld, instrumentation,
                 transactionCollector, dataSource, transactionRegistry);
 

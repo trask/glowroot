@@ -264,10 +264,22 @@ glowroot.config([
         waitForLayout: waitForLayout
       }
     });
+<<<<<<< HEAD
     $stateProvider.state('jvm.mbeanTree', {
       url: '/mbean-tree',
       templateUrl: 'views/jvm/mbean-tree.html',
       controller: 'JvmMBeanTreeCtrl'
+=======
+    $stateProvider.state('jvm.gcEvents', {
+      url: '/gc-events',
+      templateUrl: 'views/jvm/gc-events.html',
+      controller: 'JvmGcEventsCtrl'
+    });
+    $stateProvider.state('jvm.mbeans', {
+      url: '/mbeans',
+      templateUrl: 'views/jvm/mbeans.html',
+      controller: 'JvmMBeansCtrl'
+>>>>>>> ca4860f... GC Events
     });
     $stateProvider.state('jvm.threadDump', {
       url: '/thread-dump',

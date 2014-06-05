@@ -62,6 +62,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.collector.GaugePoint;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.GaugeConfig;
+import org.glowroot.jvm.GcEvents;
 import org.glowroot.jvm.HeapDumps;
 import org.glowroot.jvm.ImmutableAvailability;
 import org.glowroot.jvm.LazyPlatformMBeanServer;
@@ -69,6 +70,7 @@ import org.glowroot.jvm.OptionalService;
 import org.glowroot.jvm.OptionalService.Availability;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.local.store.GaugePointDao;
+import org.glowroot.local.store.GcEventDao;
 import org.glowroot.markers.UsedByJsonBinding;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -101,25 +103,30 @@ class JvmJsonService {
 
     private final LazyPlatformMBeanServer lazyPlatformMBeanServer;
     private final GaugePointDao gaugePointDao;
+    private final GcEventDao gcEventDao;
     private final ConfigService configService;
 
     private final OptionalService<ThreadAllocatedBytes> threadAllocatedBytes;
     private final OptionalService<HeapDumps> heapDumps;
+    private final OptionalService<GcEvents> gcEvents;
     private final @Nullable String processId;
 
     private final long fixedGaugeIntervalMillis;
     private final long fixedGaugeRollupMillis;
 
     JvmJsonService(LazyPlatformMBeanServer lazyPlatformMBeanServer, GaugePointDao gaugePointDao,
-            ConfigService configService,
+            GcEventDao gcEventDao, ConfigService configService,
             OptionalService<ThreadAllocatedBytes> threadAllocatedBytes,
-            OptionalService<HeapDumps> heapDumps, @Nullable String processId,
-            long fixedGaugeIntervalSeconds, long fixedGaugeRollupSeconds) {
+            OptionalService<HeapDumps> heapDumps, OptionalService<GcEvents> gcEvents,
+            @Nullable String processId, long fixedGaugeIntervalSeconds,
+            long fixedGaugeRollupSeconds) {
         this.lazyPlatformMBeanServer = lazyPlatformMBeanServer;
         this.gaugePointDao = gaugePointDao;
+        this.gcEventDao = gcEventDao;
         this.configService = configService;
         this.threadAllocatedBytes = threadAllocatedBytes;
         this.heapDumps = heapDumps;
+        this.gcEvents = gcEvents;
         this.processId = processId;
         this.fixedGaugeIntervalMillis = fixedGaugeIntervalSeconds * 1000;
         this.fixedGaugeRollupMillis = fixedGaugeRollupSeconds * 1000;
@@ -389,6 +396,8 @@ class JvmJsonService {
         mapper.writeValue(jg, threadAllocatedBytes.getAvailability());
         jg.writeFieldName("heapDump");
         mapper.writeValue(jg, heapDumps.getAvailability());
+        jg.writeFieldName("gcEvents");
+        mapper.writeValue(jg, gcEvents.getAvailability());
         jg.writeEndObject();
         jg.close();
         return sb.toString();
