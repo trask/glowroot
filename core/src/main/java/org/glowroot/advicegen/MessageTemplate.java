@@ -114,19 +114,19 @@ public class MessageTemplate {
         this.returnPathParts = ImmutableList.copyOf(returnPathParts);
     }
 
-    ImmutableList<Part> getAllParts() {
+    public ImmutableList<Part> getAllParts() {
         return allParts;
     }
 
-    ImmutableList<ValuePathPart> getThisPathParts() {
+    public ImmutableList<ValuePathPart> getThisPathParts() {
         return thisPathParts;
     }
 
-    ImmutableList<ArgPathPart> getArgPathParts() {
+    public ImmutableList<ArgPathPart> getArgPathParts() {
         return argPathParts;
     }
 
-    ImmutableList<ValuePathPart> getReturnPathParts() {
+    public ImmutableList<ValuePathPart> getReturnPathParts() {
         return returnPathParts;
     }
 
@@ -161,13 +161,17 @@ public class MessageTemplate {
         }
     }
 
-    static class ValuePathPart extends Part {
+    public static class ValuePathPart extends Part {
 
         private final PathEvaluator pathEvaluator;
 
         private ValuePathPart(PartType partType, Class<?> valueClass, String propertyPath) {
             super(partType);
             this.pathEvaluator = new PathEvaluator(valueClass, propertyPath);
+        }
+
+        public PathEvaluator getPathEvaluator() {
+            return pathEvaluator;
         }
 
         String evaluatePart(@Nullable Object base) {

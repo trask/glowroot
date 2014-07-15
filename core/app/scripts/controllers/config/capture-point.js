@@ -216,6 +216,17 @@ glowroot.controller('ConfigCapturePointCtrl', [
       }
     };
 
+    $scope.generateJavaPointcut = function (deferred) {
+      var postData = angular.copy($scope.config);
+      delete postData.version;
+      $http.post('backend/admin/generate-java-pointcut', postData)
+          .success(function (data) {
+            console.log(data);
+            deferred.resolve('See Javascript console');
+          })
+          .error(httpErrors.handler($scope, deferred));
+    }
+
     function matchingMethods(methodName, keepSelectedMethodSignature) {
       var queryData = {
         className: $scope.config.className,

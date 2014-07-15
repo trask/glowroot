@@ -28,7 +28,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * @author Trask Stalnaker
  * @since 0.5
  */
-class Accessor {
+public class Accessor {
 
     private final AccessorType accessorType;
     @Nullable
@@ -64,6 +64,14 @@ class Accessor {
         accessorType = AccessorType.ARRAY_LENGTH;
         this.method = null;
         this.field = null;
+    }
+
+    public Method getMethod() {
+        return method;
+    }
+
+    public Field getField() {
+        return field;
     }
 
     Class<?> getValueType() {

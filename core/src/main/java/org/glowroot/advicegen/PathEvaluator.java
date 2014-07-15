@@ -75,4 +75,8 @@ public class PathEvaluator {
         }
         return curr;
     }
+
+    public Accessor[] getAccessors() {
+        return accessors;
+    }
 }
