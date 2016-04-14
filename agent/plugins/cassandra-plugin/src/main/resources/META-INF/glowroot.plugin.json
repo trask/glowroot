@@ -10,9 +10,61 @@
       "description": "Any query that exceeds this threshold will have a stack trace captured and attached to it. An empty value will not collect any stack traces, a zero value will collect a stack trace for every query."
     }
   ],
+  "instrumentation": [
+    {
+      "className": "org.apache.cassandra.transport.Message$Dispatcher",
+      "methodName": "channelRead0",
+      "methodParameterTypes": [
+        "io.netty.channel.ChannelHandlerContext",
+        "org.apache.cassandra.transport.Message$Request"
+      ],
+      "captureKind": "transaction",
+      "timerName": "cassandra",
+      "traceEntryMessageTemplate": "{{1.type}}",
+      "transactionType": "Cassandra",
+      "transactionNameTemplate": "{{1.type}}"
+    },
+    {
+      "className": "org.apache.cassandra.net.IncomingTcpConnection",
+      "methodName": "receiveMessage",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "captureKind": "transaction",
+      "timerName": "cassandra",
+      "traceEntryMessageTemplate": "Message",
+      "transactionType": "Cassandra",
+      "transactionNameTemplate": "Message"
+    },
+    {
+      "className": "org.apache.cassandra.net.MessagingService",
+      "methodName": "receive",
+      "methodParameterTypes": [
+        "org.apache.cassandra.net.MessageIn",
+        "int"
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "receive message",
+      "traceEntryMessageTemplate": "{{0.verb}} message received from {{0.from}}",
+      "transactionNameTemplate": "Message: {{0.verb}}"
+    },
+    {
+      "className": "org.apache.cassandra.db.compaction.CompactionTask",
+      "methodName": "executeInternal",
+      "methodParameterTypes": [
+        "org.apache.cassandra.db.compaction.CompactionManager$CompactionExecutorStatsCollector"
+      ],
+      "captureKind": "transaction",
+      "timerName": "compaction",
+      "traceEntryMessageTemplate": "compaction",
+      "transactionType": "Cassandra",
+      "transactionNameTemplate": "Compaction"
+    }
+  ],
   "aspects": [
     "org.glowroot.agent.plugin.cassandra.SessionAspect",
     "org.glowroot.agent.plugin.cassandra.ResultSetAspect",
-    "org.glowroot.agent.plugin.cassandra.ResultSetFutureAspect"
+    "org.glowroot.agent.plugin.cassandra.ResultSetFutureAspect",
+    "org.glowroot.agent.plugin.cassandra.ServerAspect"
   ]
 }

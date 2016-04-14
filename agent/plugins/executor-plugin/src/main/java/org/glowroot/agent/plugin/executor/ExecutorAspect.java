@@ -87,8 +87,9 @@ public class ExecutorAspect {
                     + "|org.springframework.core.task.AsyncTaskExecutor"
                     + "|org.springframework.core.task.AsyncListenableTaskExecutor"
                     + "|akka.jsr166y.ForkJoinPool"
-                    + "|scala.concurrent.forkjoin.ForkJoinPool",
-            methodName = "execute|submit|invoke|submitListenable",
+                    + "|scala.concurrent.forkjoin.ForkJoinPool"
+                    + "|org.apache.cassandra.concurrent.AbstractLocalAwareExecutorService",
+            methodName = "execute|submit|invoke|submitListenable|addTask",
             methodParameterTypes = {".."}, nestingGroup = "executor-execute")
     public static class ExecuteAdvice {
         @IsEnabled
