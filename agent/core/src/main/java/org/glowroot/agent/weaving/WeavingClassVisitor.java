@@ -67,6 +67,7 @@ import static org.objectweb.asm.Opcodes.ARETURN;
 import static org.objectweb.asm.Opcodes.ASM7;
 import static org.objectweb.asm.Opcodes.ASTORE;
 import static org.objectweb.asm.Opcodes.ATHROW;
+import static org.objectweb.asm.Opcodes.CHECKCAST;
 import static org.objectweb.asm.Opcodes.DUP;
 import static org.objectweb.asm.Opcodes.F_NEW;
 import static org.objectweb.asm.Opcodes.GETSTATIC;
@@ -584,8 +585,13 @@ class WeavingClassVisitor extends ClassVisitor {
             mv.visitCode();
             int i = 0;
             mv.visitVarInsn(ALOAD, i++);
-            for (Type argumentType : method.getArgumentTypes()) {
+            for (int j = 0; j < targetMethod.getArgumentTypes().length; j++) {
+                Type argumentType = method.getArgumentTypes()[j];
+                Type targetArgumentType = targetMethod.getArgumentTypes()[j];
                 mv.visitVarInsn(argumentType.getOpcode(ILOAD), i++);
+                if (!targetArgumentType.equals(argumentType)) {
+                    mv.visitTypeInsn(CHECKCAST, targetArgumentType.getInternalName());
+                }
             }
             mv.visitMethodInsn(INVOKEVIRTUAL, type.getInternalName(), targetMethod.getName(),
                     targetMethod.getDescriptor(), false);
