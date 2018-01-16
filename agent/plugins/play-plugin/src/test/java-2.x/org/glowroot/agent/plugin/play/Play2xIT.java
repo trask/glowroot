@@ -1,5 +1,9 @@
 /*
+<<<<<<< HEAD
  * Copyright 2016-2019 the original author or authors.
+=======
+ * Copyright 2016-2018 the original author or authors.
+>>>>>>> aaf05f926... Support Play 2.6
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteStreams;
@@ -46,16 +51,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class Play2xIT {
 
-    private static final boolean PLAY_2_0_X = Boolean.getBoolean("glowroot.test.play20x");
-
     private static Container container;
 
     @BeforeClass
     public static void setUp() throws Exception {
+        List<String> extraJvmArgs;
+        String playServerProvider = System.getProperty("play.server.provider");
+        if (Strings.isNullOrEmpty(playServerProvider)) {
+            extraJvmArgs = ImmutableList.of();
+        } else {
+            extraJvmArgs = ImmutableList.of("-Dplay.server.provider=" + playServerProvider);
+        }
         // javaagent is required for Executor.execute() weaving
-        // -Dlogger.resource is needed to configure play logging (at least on 2.0.8)
-        container = JavaagentContainer
-                .createWithExtraJvmArgs(ImmutableList.of("-Dlogger.resource=logback-test.xml"));
+        container = JavaagentContainer.createWithExtraJvmArgs(extraJvmArgs);
         // need warmup to avoid capturing rendering of views.html.defaultpages.todo during
         // play.mvc.Results static initializer (at least on play 2.3.10)
         container.execute(GetIndex.class);
@@ -77,11 +85,7 @@ public class Play2xIT {
         Trace trace = container.execute(GetIndex.class);
 
         // then
-        if (PLAY_2_0_X) {
-            assertThat(trace.getHeader().getTransactionName()).isEqualTo("HomeController#index");
-        } else {
-            assertThat(trace.getHeader().getTransactionName()).isEqualTo("/");
-        }
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo("/");
         assertThat(trace.getHeader().hasError()).isFalse();
 
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
@@ -145,11 +149,7 @@ public class Play2xIT {
         Trace trace = container.execute(GetAsync.class);
 
         // then
-        if (PLAY_2_0_X) {
-            assertThat(trace.getHeader().getTransactionName()).isEqualTo("AsyncController#message");
-        } else {
-            assertThat(trace.getHeader().getTransactionName()).isEqualTo("/message");
-        }
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo("/message");
         assertThat(trace.getHeader().hasError()).isFalse();
 
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
@@ -164,9 +164,14 @@ public class Play2xIT {
             // see similar issue in org.glowroot.agent.plugin.spring.AsyncControllerIT
 
             entry = i.next();
+<<<<<<< HEAD
             assertThat(entry.getDepth()).isEqualTo(0);
             assertThat(entry.getMessage()).isEqualTo(
                     "this auxiliary thread was still running when the transaction ended");
+=======
+            throw new AssertionError("Unexpected entry: depth=" + entry.getDepth() + ", message="
+                    + entry.getMessage() + ", location=" + entry.getLocationStackTraceElementList());
+>>>>>>> aaf05f926... Support Play 2.6
         }
 
         assertThat(i.hasNext()).isFalse();
@@ -178,11 +183,7 @@ public class Play2xIT {
         Trace trace = container.execute(GetStream.class);
 
         // then
-        if (PLAY_2_0_X) {
-            assertThat(trace.getHeader().getTransactionName()).isEqualTo("StreamController#stream");
-        } else {
-            assertThat(trace.getHeader().getTransactionName()).isEqualTo("/stream");
-        }
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo("/stream");
         assertThat(trace.getHeader().hasError()).isFalse();
 
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
@@ -206,11 +207,7 @@ public class Play2xIT {
         Trace trace = container.execute(GetAsset.class);
 
         // then
-        if (PLAY_2_0_X) {
-            assertThat(trace.getHeader().getTransactionName()).isEqualTo("Assets#at");
-        } else {
-            assertThat(trace.getHeader().getTransactionName()).isEqualTo("/assets/**");
-        }
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo("/assets/**");
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).isEmpty();
         assertThat(trace.getHeader().hasError()).isFalse();
@@ -222,13 +219,28 @@ public class Play2xIT {
         Trace trace = container.execute(GetBad.class);
 
         // then
-        if (PLAY_2_0_X) {
-            assertThat(trace.getHeader().getTransactionName()).isEqualTo("BadController#bad");
-        } else {
-            assertThat(trace.getHeader().getTransactionName()).isEqualTo("/bad");
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo("/bad");
+        String errorMessage = trace.getHeader().getError().getMessage();
+        if (!errorMessage.contains("Internal server error")) {
+            // play 2.6.x
+            if ("play.core.server.NettyServerProvider"
+                    .equals(System.getProperty("play.server.provider"))) {
+                assertThat(errorMessage).isEqualTo("Cannot invoke the action");
+            } else {
+                assertThat(errorMessage).isEqualTo("Bad");
+            }
         }
+<<<<<<< HEAD
         assertThat(trace.getHeader().getError().getMessage())
                 .isEqualTo("java.lang.RuntimeException: Bad");
+=======
+        Proto.Throwable throwable = trace.getHeader().getError().getException();
+        while (throwable.hasCause()) {
+            throwable = throwable.getCause();
+        }
+        assertThat(throwable.getClassName()).isEqualTo("java.lang.RuntimeException");
+        assertThat(throwable.getMessage()).isEqualTo("Bad");
+>>>>>>> aaf05f926... Support Play 2.6
     }
 
     public static class GetIndex implements AppUnderTest {

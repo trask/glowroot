@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ public class Play1xAspect {
 
         @OnReturn
         public static void onReturn(ThreadContext context, @BindTraveler TraceEntry traceEntry,
-                @BindParameter Object request, @BindClassMeta PlayInvoker invoker) {
+                @BindParameter Object request, @BindClassMeta Play1xInvoker invoker) {
             String action = invoker.getAction(request);
             if (action != null) {
                 int index = action.lastIndexOf('.');

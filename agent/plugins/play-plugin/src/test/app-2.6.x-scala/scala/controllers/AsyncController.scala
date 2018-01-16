@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,14 @@ package controllers
 
 import akka.actor._
 import javax.inject._
-
-import org.glowroot.agent.api.Glowroot
 import play.api._
 import play.api.mvc._
-
 import scala.concurrent._
 import scala.concurrent.duration._
 import org.glowroot.agent.it.harness._
 
 @Singleton
-class AsyncController @Inject() (actorSystem: ActorSystem)(implicit exec: ExecutionContext) extends Controller {
+class AsyncController @Inject()(cc: ControllerComponents, actorSystem: ActorSystem)(implicit exec: ExecutionContext) extends AbstractController(cc) {
 
   def message = Action.async {
     getFutureMessage(1.second).map { msg => Ok(msg) }

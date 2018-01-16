@@ -1,5 +1,9 @@
 /**
+<<<<<<< HEAD
  * Copyright 2016-2019 the original author or authors.
+=======
+ * Copyright 2016-2018 the original author or authors.
+>>>>>>> aaf05f926... Support Play 2.6
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,14 +64,6 @@ public class Play {
     }
 
     private static void play2x() throws Exception {
-        runPlay2x("2.0.2", "2.9.3", "2.2.2");
-        runPlay2x("2.0.3", "2.9.3", "2.2.2");
-        runPlay2x("2.0.4", "2.9.3", "2.2.2");
-        runPlay2x("2.0.5", "2.9.3", "2.2.2");
-        runPlay2x("2.0.6", "2.9.3", "2.2.2");
-        runPlay2x("2.0.7", "2.9.3", "2.2.2");
-        runPlay2x("2.0.8", "2.9.3", "2.2.2");
-
         runPlay2x("2.1.0", "2.10.3", "2.2.2");
         runPlay2x("2.1.1", "2.10.3", "2.2.2");
         runPlay2x("2.1.2", "2.10.3", "2.2.2");
@@ -116,14 +112,32 @@ public class Play {
         runPlay2x("2.5.8", "2.11.8", "2.7.6");
         runPlay2x("2.5.9", "2.11.8", "2.7.6");
         runPlay2x("2.5.10", "2.11.8", "2.7.8");
+        runPlay2x("2.5.11", "2.11.7", "2.7.8");
+        runPlay2x("2.5.12", "2.11.7", "2.7.8");
+        runPlay2x("2.5.13", "2.11.7", "2.7.8");
+        runPlay2x("2.5.14", "2.11.7", "2.7.8");
+        runPlay2x("2.5.15", "2.11.7", "2.7.8");
+        runPlay2x("2.5.16", "2.11.7", "2.7.8");
+        runPlay2x("2.5.17", "2.11.7", "2.7.8");
+        runPlay2x("2.5.18", "2.11.7", "2.7.8");
+
+        runPlay2x("2.6.0", "2.11.11", "2.8.8");
+        runPlay2x("2.6.1", "2.11.11", "2.8.9");
+        runPlay2x("2.6.2", "2.11.11", "2.8.9");
+        runPlay2x("2.6.3", "2.11.11", "2.8.9");
+        runPlay2x("2.6.4", "2.11.11", "2.8.9");
+        runPlay2x("2.6.5", "2.11.11", "2.8.9");
+        runPlay2x("2.6.6", "2.11.11", "2.8.9");
+        runPlay2x("2.6.7", "2.11.11", "2.8.9");
+        runPlay2x("2.6.9", "2.11.11", "2.8.9");
+        runPlay2x("2.6.10", "2.11.11", "2.8.9");
+        runPlay2x("2.6.11", "2.11.11", "2.8.9");
     }
 
     private static void runPlay2x(String playVersion, String scalaVersion, String jacksonVersion)
             throws Exception {
         String testAppVersion;
-        if (playVersion.equals("2.0")) {
-            testAppVersion = "2.0.x";
-        } else if (playVersion.equals("2.1.0")) {
+        if (playVersion.equals("2.1.0")) {
             // there are some incompatibilities between 2.1.0 and other 2.1.x
             testAppVersion = "2.1.0";
         } else {
@@ -132,19 +146,21 @@ public class Play {
         String scalaMajorVersion = scalaVersion.substring(0, scalaVersion.lastIndexOf('.'));
         String profile;
         JavaVersion[] javaVersions;
-        if (playVersion.startsWith("2.0")) {
-            profile = "play-2.0.x";
-            javaVersions = new JavaVersion[] {JAVA7, JAVA6}; // scala 2.9 doesn't support 1.8
-        } else if (playVersion.startsWith("2.1")) {
+        boolean alsoRunWithNetty = false;
+        if (playVersion.startsWith("2.1")) {
             profile = "play-2.1.x";
-            javaVersions = new JavaVersion[] {JAVA8, JAVA7, JAVA6};
-        } else if (playVersion.startsWith("2.2") || playVersion.startsWith("2.3")) {
+            javaVersions = new JavaVersion[] {JAVA6, JAVA7, JAVA8};
+        } else if (playVersion.startsWith("2.2.") || playVersion.startsWith("2.3.")) {
             profile = "play-2.2.x";
-            javaVersions = new JavaVersion[] {JAVA8, JAVA7, JAVA6};
-        } else {
-            // play version is 2.4+
+            javaVersions = new JavaVersion[] {JAVA6, JAVA7, JAVA8};
+        } else if (playVersion.startsWith("2.4.") || playVersion.startsWith("2.5.")) {
             profile = "play-2.4.x";
             javaVersions = new JavaVersion[] {JAVA8};
+        } else {
+            // play version is 2.6.0+
+            profile = "play-2.4.x";
+            javaVersions = new JavaVersion[] {JAVA8};
+            alsoRunWithNetty = true;
         }
         Util.updateLibVersion(MODULE_PATH, "play.version", playVersion);
         Util.updateLibVersion(MODULE_PATH, "scala.major.version", scalaMajorVersion);
@@ -155,6 +171,15 @@ public class Play {
         Util.runTests(MODULE_PATH, new String[] {"play-2.x", profile}, javaVersions);
         Util.updateLibVersion(MODULE_PATH, "test.app.language", "java");
         Util.runTests(MODULE_PATH, new String[] {"play-2.x", profile}, javaVersions);
+        if (alsoRunWithNetty) {
+            Util.log("now with netty instead of default akka http");
+            Util.updateLibVersion(MODULE_PATH, "test.app.language", "scala");
+            Util.runTests(MODULE_PATH, new String[] {"play-2.x", profile, "play-2.6.x-netty"},
+                    javaVersions);
+            Util.updateLibVersion(MODULE_PATH, "test.app.language", "java");
+            Util.runTests(MODULE_PATH, new String[] {"play-2.x", profile, "play-2.6.x-netty"},
+                    javaVersions);
+        }
     }
 
     private static void runPlay1x(String version, String profile) throws Exception {

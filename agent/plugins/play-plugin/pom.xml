@@ -62,6 +62,27 @@
         </executions>
       </plugin>
     </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <!-- play 2.4+ requires Java 8+, and tests for play 2.4 use lambdas so require
+            source/target 1.8 -->
+          <artifactId>maven-compiler-plugin</artifactId>
+          <configuration>
+            <source>1.8</source>
+            <target>1.8</target>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>animal-sniffer-maven-plugin</artifactId>
+          <configuration>
+            <!-- see org.glowroot.agent.plugin.play.interop.ScalaFunction1 -->
+            <ignores>scala.runtime.AbstractFunction1</ignores>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
 
   <profiles>
@@ -258,11 +279,11 @@
     <profile>
       <id>play-2.4.x</id>
       <properties>
-        <play.version>2.5.10</play.version>
+        <play.version>2.6.11</play.version>
         <scala.major.version>2.11</scala.major.version>
-        <scala.version>2.11.8</scala.version>
-        <jackson.version>2.7.8</jackson.version>
-        <test.app.version>2.5.x</test.app.version>
+        <scala.version>2.11.11</scala.version>
+        <jackson.version>2.8.9</jackson.version>
+        <test.app.version>2.6.x</test.app.version>
         <test.app.language>scala</test.app.language>
       </properties>
       <dependencies>
@@ -279,21 +300,24 @@
           <scope>test</scope>
         </dependency>
       </dependencies>
+    </profile>
+    <profile>
+      <id>play-2.6.x-netty</id>
+      <dependencies>
+        <dependency>
+          <groupId>com.typesafe.play</groupId>
+          <artifactId>play-netty-server_${scala.major.version}</artifactId>
+          <version>${play.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
       <build>
         <plugins>
           <plugin>
-            <!-- play 2.4+ requires Java 8+, and tests for play 2.4 use lambdas so require
-              source/target 1.8 -->
-            <artifactId>maven-compiler-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>default-testCompile</id>
-                <configuration>
-                  <source>1.8</source>
-                  <target>1.8</target>
-                </configuration>
-              </execution>
-            </executions>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <argLine>-Dplay.server.provider=play.core.server.NettyServerProvider</argLine>
+            </configuration>
           </plugin>
         </plugins>
       </build>
@@ -347,43 +371,6 @@
           <scope>test</scope>
         </dependency>
       </dependencies>
-    </profile>
-    <profile>
-      <id>play-2.0.x</id>
-      <properties>
-        <play.version>2.0.8</play.version>
-        <scala.major.version>2.9</scala.major.version>
-        <scala.version>2.9.3</scala.version>
-        <jackson.version>2.2.2</jackson.version>
-        <test.app.version>2.0.x</test.app.version>
-        <test.app.language>scala</test.app.language>
-      </properties>
-      <dependencies>
-        <dependency>
-          <groupId>play</groupId>
-          <artifactId>play_2.9.1</artifactId>
-          <version>${play.version}</version>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <groupId>play</groupId>
-          <artifactId>play-test_2.9.1</artifactId>
-          <version>${play.version}</version>
-          <scope>test</scope>
-        </dependency>
-      </dependencies>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <configuration>
-              <systemPropertyVariables>
-                <glowroot.test.play20x>true</glowroot.test.play20x>
-              </systemPropertyVariables>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
     </profile>
     <profile>
       <id>play-1.x</id>

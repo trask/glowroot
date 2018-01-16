@@ -189,7 +189,7 @@ public class ServletAspect {
             String transactionName;
             boolean setTransactionNameWithCoreMaxPriority = false;
             String transactionNameHeader = request.getHeader("Glowroot-Transaction-Name");
-            if (Strings.isNullOrEmpty(transactionNameHeader)) {
+            if (transactionNameHeader == null || transactionNameHeader.isEmpty()) {
                 transactionName = requestUri;
             } else {
                 // Glowroot-Transaction-Name header is useful for automated tests which want to send

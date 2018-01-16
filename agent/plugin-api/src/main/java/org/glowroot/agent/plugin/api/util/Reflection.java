@@ -103,7 +103,7 @@ public class Reflection {
         }
     }
 
-    public static @Nullable Object getFieldValue(@Nullable Field field, Object obj) {
+    public static @Nullable Object getFieldValue(@Nullable Field field, @Nullable Object obj) {
         if (field == null) {
             return null;
         }

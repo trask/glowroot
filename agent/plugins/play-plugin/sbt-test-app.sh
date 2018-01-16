@@ -28,7 +28,7 @@ cp $TEST_APP_DIR/project/Build.scala project
 
 sbt clean compile
 
-# play 2.4.x - 2.5.x
+# play 2.4.x - 2.6.x
 cp -r target/scala-2.11/routes/main/router $TEST_APP_DIR/scala
 cp target/scala-2.11/routes/main/controllers/routes.java $TEST_APP_DIR/java/controllers
 cp target/scala-2.11/routes/main/controllers/*.scala $TEST_APP_DIR/scala/controllers
@@ -38,7 +38,7 @@ cp -r target/scala-2.11/routes/main/controllers/javascript $TEST_APP_DIR/scala/c
 cp target/scala-2.11/src_managed/main/controllers/routes.java $TEST_APP_DIR/java/controllers
 cp target/scala-2.11/src_managed/main/*.scala $TEST_APP_DIR/scala
 
-# play 2.3.x - 2.5.x
+# play 2.3.x - 2.6.x
 cp -r target/scala-2.11/twirl/main/views $TEST_APP_DIR/scala
 
 # play 2.1.x - 2.2.x
