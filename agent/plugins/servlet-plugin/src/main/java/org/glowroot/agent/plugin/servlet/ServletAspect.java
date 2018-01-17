@@ -67,7 +67,7 @@ public class ServletAspect {
         public static @Nullable TraceEntry onBefore(OptionalThreadContext context,
                 @BindParameter @Nullable ServletRequest req,
                 @BindClassMeta RequestInvoker requestInvoker) {
-            return onBeforeCommon(context, req, null, requestInvoker);
+            return onBeforeCommon(context, req, "Web", requestInvoker);
         }
         @OnReturn
         public static void onReturn(OptionalThreadContext context,
@@ -122,7 +122,7 @@ public class ServletAspect {
             context.setServletRequestInfo(null);
         }
         private static @Nullable TraceEntry onBeforeCommon(OptionalThreadContext context,
-                @Nullable ServletRequest req, @Nullable String transactionTypeOverride,
+                @Nullable ServletRequest req, String defaultTransactionType,
                 RequestInvoker requestInvoker) {
             if (context.getServletRequestInfo() != null) {
                 return null;
@@ -176,30 +176,36 @@ public class ServletAspect {
                 }
             }
             String transactionType;
-            boolean setWithCoreMaxPriority = false;
+            boolean setTransactionTypeWithCoreMaxPriority = false;
             String transactionTypeHeader = request.getHeader("Glowroot-Transaction-Type");
             if ("Synthetic".equals(transactionTypeHeader)) {
                 // Glowroot-Transaction-Type header currently only accepts "Synthetic", in order to
                 // prevent spamming of transaction types, which could cause some issues
-                transactionType = transactionTypeHeader;
-                setWithCoreMaxPriority = true;
-            } else if (transactionTypeOverride != null) {
-                transactionType = transactionTypeOverride;
+                transactionType = "Synthetic";
+                setTransactionTypeWithCoreMaxPriority = true;
             } else {
-                transactionType = "Web";
+                transactionType = defaultTransactionType;
             }
-            TraceEntry traceEntry = context.startTransaction(transactionType, requestUri,
+            String transactionName;
+            boolean setTransactionNameWithCoreMaxPriority = false;
+            String transactionNameHeader = request.getHeader("Glowroot-Transaction-Name");
+            if (Strings.isNullOrEmpty(transactionNameHeader)) {
+                transactionName = requestUri;
+            } else {
+                // Glowroot-Transaction-Name header is useful for automated tests which want to send
+                // a more specific name for the transaction
+                transactionName = transactionNameHeader;
+                setTransactionNameWithCoreMaxPriority = true;
+            }
+            TraceEntry traceEntry = context.startTransaction(transactionType, transactionName,
                     messageSupplier, timerName);
-            if (setWithCoreMaxPriority) {
+            if (setTransactionTypeWithCoreMaxPriority) {
                 context.setTransactionType(transactionType, Priority.CORE_MAX);
             }
-            context.setServletRequestInfo(messageSupplier);
-            // Glowroot-Transaction-Name header is useful for automated tests which want to send a
-            // more specific name for the transaction
-            String transactionNameOverride = request.getHeader("Glowroot-Transaction-Name");
-            if (transactionNameOverride != null) {
-                context.setTransactionName(transactionNameOverride, Priority.CORE_MAX);
+            if (setTransactionNameWithCoreMaxPriority) {
+                context.setTransactionName(transactionName, Priority.CORE_MAX);
             }
+            context.setServletRequestInfo(messageSupplier);
             if (user != null) {
                 context.setTransactionUser(user, Priority.CORE_PLUGIN);
             }
@@ -216,7 +222,7 @@ public class ServletAspect {
         public static @Nullable TraceEntry onBefore(OptionalThreadContext context,
                 @BindParameter @Nullable ServletRequest req,
                 @BindClassMeta RequestInvoker requestInvoker) {
-            return ServiceAdvice.onBeforeCommon(context, req, null, requestInvoker);
+            return ServiceAdvice.onBefore(context, req, requestInvoker);
         }
         @OnReturn
         public static void onReturn(OptionalThreadContext context,
@@ -252,7 +258,7 @@ public class ServletAspect {
                 @SuppressWarnings("unused") @BindParameter @Nullable Object baseRequest,
                 @BindParameter @Nullable ServletRequest req,
                 @BindClassMeta RequestInvoker requestInvoker) {
-            return ServiceAdvice.onBeforeCommon(context, req, null, requestInvoker);
+            return ServiceAdvice.onBefore(context, req, requestInvoker);
         }
         @OnReturn
         public static void onReturn(OptionalThreadContext context,
