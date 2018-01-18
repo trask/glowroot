@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.impl;
 
+import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.util.HashMap;
 import java.util.Map;
@@ -73,8 +74,8 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     private static final String LIMIT_EXCEEDED_BUCKET = "LIMIT EXCEEDED BUCKET";
 
-    private static final MessageSupplier DETACHED_MESSAGE_SUPPLIER = MessageSupplier
-            .create("this auxiliary thread was still running when the transaction ended");
+    private static final String DETACHED_MESSAGE_TEMPLATE =
+            "this auxiliary thread was still running when the transaction ended: {}";
 
     private static final Logger logger = LoggerFactory.getLogger(ThreadContextImpl.class);
 
@@ -1042,11 +1043,18 @@ public class ThreadContextImpl implements ThreadContextPlus {
             entry = entry.getNextTraceEntry();
             entryIsRoot = false;
         }
-        if (detached && !traceEntryComponent.isEmpty()) {
-            TraceEntryImpl rootEntry = getRootEntry();
-            parentChildMap.put(rootEntry,
-                    new TraceEntryImpl(this, rootEntry, DETACHED_MESSAGE_SUPPLIER,
-                            null, 0, transaction.getEndTick(), null, null));
+        if (detachedTime != null && !traceEntryComponent.isEmpty()) {
+            ThreadInfo threadInfo =
+                    ManagementFactory.getThreadMXBean().getThreadInfo(threadId, Integer.MAX_VALUE);
+            if (threadInfo != null) {
+                TraceEntryImpl rootEntry = getRootEntry();
+                TraceEntryImpl traceEntry = new TraceEntryImpl(this, rootEntry,
+                        MessageSupplier.create(DETACHED_MESSAGE_TEMPLATE,
+                                threadInfo.getThreadName()),
+                        null, 0, transaction.getEndTick(), null, null);
+                traceEntry.setLocationStackTrace(ImmutableList.copyOf(threadInfo.getStackTrace()));
+                parentChildMap.put(rootEntry, traceEntry);
+            }
         }
     }
 
