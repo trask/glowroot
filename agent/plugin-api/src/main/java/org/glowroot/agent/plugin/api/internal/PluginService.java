@@ -42,4 +42,8 @@ public interface PluginService {
     Object getBeanValue(@Nullable Object obj, List<String> path) throws Exception;
 
     Map<String, String> getBeanPropertiesAsText(Object obj);
+
+    String encodeToBase64(byte[] bytes);
+
+    byte[] decodeFromBase64(String text);
 }

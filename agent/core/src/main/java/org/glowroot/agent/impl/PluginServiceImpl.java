@@ -31,6 +31,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import com.google.common.io.BaseEncoding;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,6 +102,16 @@ public class PluginServiceImpl implements PluginService {
     @Override
     public Map<String, String> getBeanPropertiesAsText(Object obj) {
         return Beans2.propertiesAsText(obj);
+    }
+
+    @Override
+    public String encodeToBase64(byte[] bytes) {
+        return BaseEncoding.base64().encode(bytes);
+    }
+
+    @Override
+    public byte[] decodeFromBase64(String text) {
+        return BaseEncoding.base64().decode(text);
     }
 
     @VisibleForTesting
