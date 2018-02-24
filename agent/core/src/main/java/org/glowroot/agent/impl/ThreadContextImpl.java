@@ -838,25 +838,31 @@ public class ThreadContextImpl implements ThreadContextPlus {
     @Override
     public void setTransactionAsyncComplete() {
         if (innerTransactionThreadContext == null) {
-            if (logger.isDebugEnabled() && AuxThreadContextImpl.inAuxDebugLogging.get() == null) {
-                AuxThreadContextImpl.inAuxDebugLogging.set(Boolean.TRUE);
-                try {
-                    logger.debug("set async transaction complete, thread context: {},"
-                            + " parent thread context: {}, thread name: {}", hashCode(),
-                            getParentThreadContextDisplay(), Thread.currentThread().getName(),
-                            new Exception());
-                } finally {
-                    AuxThreadContextImpl.inAuxDebugLogging.remove();
-                }
-            }
-            transactionAsyncComplete = true;
             if (isCompleted()) {
+                // end transaction immediately
+                debugSetTransactionAsyncComplete(true);
                 transaction.end(ticker.read(), true, true);
             } else {
+                debugSetTransactionAsyncComplete(false);
+                transactionAsyncComplete = true;
                 transaction.setWaitingToEndAsync();
             }
         } else {
             innerTransactionThreadContext.setTransactionAsyncComplete();
+        }
+    }
+
+    private void debugSetTransactionAsyncComplete(boolean immediate) {
+        if (logger.isDebugEnabled() && AuxThreadContextImpl.inAuxDebugLogging.get() == null) {
+            AuxThreadContextImpl.inAuxDebugLogging.set(Boolean.TRUE);
+            try {
+                logger.debug("set async transaction complete{}, thread context: {}, parent thread"
+                        + " context: {}, thread name: {}", immediate ? " (immediate)" : "",
+                        hashCode(), getParentThreadContextDisplay(),
+                        Thread.currentThread().getName(), new Exception());
+            } finally {
+                AuxThreadContextImpl.inAuxDebugLogging.remove();
+            }
         }
     }
 
