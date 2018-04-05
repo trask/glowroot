@@ -17,52 +17,31 @@ package org.glowroot.agent.bytecode.api;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-/**
- * Wrapper that implements optimized {@link ThreadLocal} access pattern ideal for heavily used
- * ThreadLocals.
- * 
- * It is faster to use a mutable holder object and always perform ThreadLocal.get() and never use
- * ThreadLocal.set(), because the value is more likely to be found in the ThreadLocalMap direct hash
- * slot and avoid the slow path ThreadLocalMap.getEntryAfterMiss().
- * 
- * Important: this thread local will live in ThreadLocalMap forever, so use with care.
- */
-// NOTE this is same as org.glowroot.agent.plugin.api.util.FastThreadLocal, but not genericized in
-// order to help with stack frame maps
 public class ThreadContextThreadLocal {
 
     @SuppressWarnings("nullness:type.argument.type.incompatible")
-    private final ThreadLocal<Holder> threadLocal = new ThreadLocal<Holder>() {
-        @Override
-        protected Holder initialValue() {
-            return new Holder();
-        }
-    };
+    private final ThreadLocal<ThreadContextHolder> threadLocal =
+            new ThreadLocal<ThreadContextHolder>() {
+                @Override
+                protected ThreadContextHolder initialValue() {
+                    return new ThreadContextHolder();
+                }
+            };
 
     public @Nullable ThreadContextPlus get() {
-        return threadLocal.get().value;
+        return threadLocal.get().get();
     }
 
     public void set(@Nullable ThreadContextPlus value) {
-        threadLocal.get().value = value;
+        threadLocal.get().set(value);
     }
 
-    public Holder getHolder() {
-        return threadLocal.get();
-    }
-
-    public static class Holder {
-
-        private @Nullable ThreadContextPlus value;
-
-        private Holder() {}
-
-        public @Nullable ThreadContextPlus get() {
-            return value;
-        }
-
-        public void set(@Nullable ThreadContextPlus value) {
-            this.value = value;
+    public ThreadContextHolder getHolder() {
+        Thread thread = Thread.currentThread();
+        if (thread instanceof FastGlowrootThread) {
+            return ((FastGlowrootThread) thread).getThreadContextHolder();
+        } else {
+            return threadLocal.get();
         }
     }
 }

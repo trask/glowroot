@@ -32,8 +32,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.bytecode.api.BytecodeServiceHolder;
+import org.glowroot.agent.bytecode.api.ThreadContextHolder;
 import org.glowroot.agent.bytecode.api.ThreadContextPlus;
-import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.impl.NopTransactionService.NopTimer;
 import org.glowroot.agent.model.AsyncQueryData;
@@ -117,7 +117,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     private final boolean limitExceededAuxThreadContext;
 
-    private final ThreadContextThreadLocal.Holder threadContextHolder;
+    private final ThreadContextHolder threadContextHolder;
 
     private @Nullable ServletRequestInfo servletRequestInfo;
 
@@ -137,8 +137,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
     ThreadContextImpl(Transaction transaction, @Nullable TraceEntryImpl parentTraceEntry,
             @Nullable TraceEntryImpl parentThreadContextPriorEntry, MessageSupplier messageSupplier,
             TimerName rootTimerName, long startTick, Glob glob,
-            boolean limitExceededAuxThreadContext,
-            ThreadContextThreadLocal.Holder threadContextHolder,
+            boolean limitExceededAuxThreadContext, ThreadContextHolder threadContextHolder,
             @Nullable ServletRequestInfo servletRequestInfo) {
         this.transaction = transaction;
         this.parentTraceEntry = parentTraceEntry;
@@ -1170,7 +1169,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
         @RequiresNonNull("asyncTimer")
         private void extendAsync() {
-            ThreadContextThreadLocal.Holder holder =
+            ThreadContextHolder holder =
                     BytecodeServiceHolder.get().getCurrentThreadContextHolder();
             ThreadContextPlus currThreadContext = holder.get();
             long currTick = glob.ticker().read();

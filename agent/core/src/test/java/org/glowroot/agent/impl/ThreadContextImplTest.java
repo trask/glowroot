@@ -19,7 +19,7 @@ import com.google.common.base.Ticker;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
+import org.glowroot.agent.bytecode.api.ThreadContextHolder;
 import org.glowroot.agent.impl.NopTransactionService.NopTimer;
 import org.glowroot.agent.model.TimerNameImpl;
 import org.glowroot.agent.plugin.api.MessageSupplier;
@@ -43,8 +43,7 @@ public class ThreadContextImplTest {
         Transaction transaction = mock(Transaction.class);
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
         TimerNameImpl rootTimerName = mock(TimerNameImpl.class);
-        ThreadContextThreadLocal.Holder threadContextHolder =
-                mock(ThreadContextThreadLocal.Holder.class);
+        ThreadContextHolder threadContextHolder = mock(ThreadContextHolder.class);
         Glob glob = mock(Glob.class);
         when(glob.ticker()).thenReturn(mock(Ticker.class));
         threadContext = new ThreadContextImpl(transaction, null, null, messageSupplier,

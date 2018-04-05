@@ -24,9 +24,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.bytecode.api.BytecodeService;
+import org.glowroot.agent.bytecode.api.ThreadContextHolder;
 import org.glowroot.agent.bytecode.api.MessageTemplate;
 import org.glowroot.agent.bytecode.api.ThreadContextPlus;
-import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.weaving.BootstrapMetaHolders;
@@ -91,13 +91,13 @@ public class BytecodeServiceImpl implements BytecodeService {
     }
 
     @Override
-    public ThreadContextThreadLocal.Holder getCurrentThreadContextHolder() {
+    public ThreadContextHolder getCurrentThreadContextHolder() {
         return transactionRegistry.getCurrentThreadContextHolder();
     }
 
     @Override
     public ThreadContextPlus createOptionalThreadContext(
-            ThreadContextThreadLocal.Holder threadContextHolder) {
+            ThreadContextHolder threadContextHolder) {
         return OptionalThreadContextImpl.create(transactionService, threadContextHolder);
     }
 

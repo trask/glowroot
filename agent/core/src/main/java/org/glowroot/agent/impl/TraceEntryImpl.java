@@ -27,8 +27,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.bytecode.api.BytecodeServiceHolder;
+import org.glowroot.agent.bytecode.api.ThreadContextHolder;
 import org.glowroot.agent.bytecode.api.ThreadContextPlus;
-import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.agent.collector.Collector.EntryVisitor;
 import org.glowroot.agent.impl.NopTransactionService.NopTimer;
 import org.glowroot.agent.model.AsyncTimerImpl;
@@ -275,15 +275,14 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
         // entries are not returned from plugin api so no way for extend() to be called when
         // syncTimer is null
         checkNotNull(syncTimer);
-        long priorDurationNanos = endTick - revisedStartTick;
-        revisedStartTick = currTick - priorDurationNanos;
+        revisedStartTick += currTick - endTick;
         extendedTimer = syncTimer.extend(currTick);
         extendQueryData(currTick);
     }
 
     @RequiresNonNull("asyncTimer")
     private void extendAsync() {
-        ThreadContextThreadLocal.Holder holder =
+        ThreadContextHolder holder =
                 BytecodeServiceHolder.get().getCurrentThreadContextHolder();
         ThreadContextPlus currThreadContext = holder.get();
         long currTick = ticker.read();
@@ -314,8 +313,6 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
         // the timer interface for this class is only expose through return value of extend()
         checkNotNull(extendedTimer).end(endTick);
         endQueryData(endTick);
-        // it is not helpful to capture stack trace at end of async trace entry since it is
-        // ended by a different thread (and by not capturing, it reduces thread safety needs)
         if (locationStackTrace == null && locationStackTraceThreshold != 0
                 && endTick - revisedStartTick >= locationStackTraceThreshold) {
             StackTraceElement[] locationStackTrace = Thread.currentThread().getStackTrace();
@@ -332,6 +329,8 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
         long endTick = ticker.read();
         if (extendedTimer == null) {
             endQueryData(endTick);
+            // it is not helpful to capture stack trace at end of async trace entry since it is
+            // ended by a different thread (and by not capturing, it reduces thread safety needs)
         } else {
             stopSync(endTick);
         }
@@ -396,8 +395,7 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
         if (endTick - startTick >= thresholdNanos) {
             StackTraceElement[] locationStackTrace = Thread.currentThread().getStackTrace();
             // strip up through this method, plus 2 additional methods:
-            // TraceEntryImpl.endWithLocationStackTrace/endWithStackTrace() and the plugin advice
-            // method
+            // TraceEntryImpl.endWithLocationStackTrace() and the plugin advice method
             int index = ThreadContextImpl.getNormalizedStartIndex(locationStackTrace,
                     "endWithLocationStackTraceInternal", 2);
             setLocationStackTrace(ImmutableList.copyOf(locationStackTrace).subList(index,

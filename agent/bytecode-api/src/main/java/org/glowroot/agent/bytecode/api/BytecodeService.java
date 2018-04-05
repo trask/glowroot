@@ -28,10 +28,10 @@ public interface BytecodeService {
 
     void exitingGetPlatformMBeanServer();
 
-    ThreadContextThreadLocal.Holder getCurrentThreadContextHolder();
+    ThreadContextHolder getCurrentThreadContextHolder();
 
     ThreadContextPlus createOptionalThreadContext(
-            ThreadContextThreadLocal.Holder threadContextHolder);
+            ThreadContextHolder threadContextHolder);
 
     Object getClassMeta(int index) throws Exception;
 

@@ -40,8 +40,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.bytecode.api.Bytecode;
+import org.glowroot.agent.bytecode.api.ThreadContextHolder;
 import org.glowroot.agent.bytecode.api.ThreadContextPlus;
-import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
 import org.glowroot.agent.plugin.api.weaving.IsEnabled;
@@ -63,7 +63,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private static final Type objectType = Type.getType(Object.class);
 
     private static final Type fastThreadContextThreadLocalHolderType =
-            Type.getType(ThreadContextThreadLocal.Holder.class);
+            Type.getType(ThreadContextHolder.class);
     private static final Type threadContextPlusType = Type.getType(ThreadContextPlus.class);
 
     private static final Type bytecodeType = Type.getType(Bytecode.class);

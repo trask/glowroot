@@ -22,8 +22,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.bytecode.api.ThreadContextHolder;
 import org.glowroot.agent.bytecode.api.ThreadContextPlus;
-import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.agent.impl.NopTransactionService.NopAuxThreadContext;
 import org.glowroot.agent.impl.NopTransactionService.NopTimer;
 import org.glowroot.agent.plugin.api.AsyncQueryEntry;
@@ -45,15 +45,15 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
     private @MonotonicNonNull ThreadContextPlus threadContext;
 
     private final TransactionService transactionService;
-    private final ThreadContextThreadLocal.Holder threadContextHolder;
+    private final ThreadContextHolder threadContextHolder;
 
     public static OptionalThreadContextImpl create(TransactionService transactionService,
-            ThreadContextThreadLocal.Holder threadContextHolder) {
+            ThreadContextHolder threadContextHolder) {
         return new OptionalThreadContextImpl(transactionService, threadContextHolder);
     }
 
     private OptionalThreadContextImpl(TransactionService transactionService,
-            ThreadContextThreadLocal.Holder threadContextHolder) {
+            ThreadContextHolder threadContextHolder) {
         this.transactionService = transactionService;
         this.threadContextHolder = threadContextHolder;
     }

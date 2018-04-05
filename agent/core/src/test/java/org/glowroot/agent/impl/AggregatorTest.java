@@ -21,7 +21,7 @@ import java.util.List;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.Test;
 
-import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
+import org.glowroot.agent.bytecode.api.ThreadContextHolder;
 import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.ImmutableAdvancedConfig;
@@ -84,8 +84,7 @@ public class AggregatorTest {
     private static Transaction buildTransaction() {
         Transaction transaction = new Transaction(Clock.systemClock().currentTimeMillis(),
                 0, "W", "A", MessageSupplier.create("M"), ImmutableTimerNameImpl.of("T", false),
-                mock(Glob.class), mock(CompletionCallback.class),
-                mock(ThreadContextThreadLocal.Holder.class));
+                mock(Glob.class), mock(CompletionCallback.class), mock(ThreadContextHolder.class));
         transaction.end(MILLISECONDS.toNanos(123), false);
         return transaction;
     }

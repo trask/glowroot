@@ -19,7 +19,7 @@ import com.google.common.base.Ticker;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
+import org.glowroot.agent.bytecode.api.ThreadContextHolder;
 import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.impl.Transaction.CompletionCallback;
@@ -83,7 +83,7 @@ public class TransactionService implements ConfigListener {
 
     TraceEntryImpl startTransaction(String transactionType, String transactionName,
             MessageSupplier messageSupplier, TimerName timerName,
-            ThreadContextThreadLocal.Holder threadContextHolder) {
+            ThreadContextHolder threadContextHolder) {
         // ensure visibility of recent configuration updates
         configService.readMemoryBarrier();
         long startTick = ticker.read();
@@ -100,7 +100,7 @@ public class TransactionService implements ConfigListener {
             @Nullable TraceEntryImpl parentTraceEntry,
             @Nullable TraceEntryImpl parentThreadContextPriorEntry,
             @Nullable ServletRequestInfo servletRequestInfo,
-            ThreadContextThreadLocal.Holder threadContextHolder) {
+            ThreadContextHolder threadContextHolder) {
         long startTick = ticker.read();
         TimerName auxThreadTimerName = timerNameCache.getAuxThreadTimerName();
         return transaction.startAuxThreadContext(parentTraceEntry, parentThreadContextPriorEntry,

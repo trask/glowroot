@@ -297,9 +297,10 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.bytecode.api.Bytecode");
         types.add("org.glowroot.agent.bytecode.api.BytecodeService");
         types.add("org.glowroot.agent.bytecode.api.BytecodeServiceHolder");
+        types.add("org.glowroot.agent.bytecode.api.FastGlowrootThread");
+        types.add("org.glowroot.agent.bytecode.api.ThreadContextHolder");
         types.add("org.glowroot.agent.bytecode.api.ThreadContextPlus");
         types.add("org.glowroot.agent.bytecode.api.ThreadContextThreadLocal");
-        types.add("org.glowroot.agent.bytecode.api.ThreadContextThreadLocal$Holder");
         types.add("org.glowroot.agent.bytecode.api.Util");
         types.add("org.glowroot.agent.weaving.Advice");
         types.add("org.glowroot.agent.weaving.AdviceGenerator");
@@ -338,6 +339,8 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.Weaver$JBossModulesHackMethodVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$JBossWeldHackClassVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$JBossWeldHackMethodVisitor");
+        types.add("org.glowroot.agent.weaving.Weaver$JettyThreadPoolHackClassVisitor");
+        types.add("org.glowroot.agent.weaving.Weaver$JettyThreadPoolHackMethodVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$ManagementFactoryHackClassVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$ManagementFactoryHackMethodVisitor");
         types.add("org.glowroot.agent.weaving.ImmutableAdvice");

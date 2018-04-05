@@ -20,7 +20,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
+import org.glowroot.agent.bytecode.api.ThreadContextHolder;
 import org.glowroot.agent.plugin.api.AuxThreadContext;
 import org.glowroot.agent.plugin.api.ThreadContext.ServletRequestInfo;
 import org.glowroot.agent.plugin.api.TraceEntry;
@@ -84,7 +84,7 @@ class AuxThreadContextImpl implements AuxThreadContext {
     }
 
     private TraceEntry start(boolean completeAsyncTransaction) {
-        ThreadContextThreadLocal.Holder threadContextHolder =
+        ThreadContextHolder threadContextHolder =
                 glob.transactionRegistry().getCurrentThreadContextHolder();
         ThreadContextImpl context = (ThreadContextImpl) threadContextHolder.get();
         if (context != null) {

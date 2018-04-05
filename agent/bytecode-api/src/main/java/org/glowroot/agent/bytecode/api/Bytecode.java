@@ -36,12 +36,12 @@ public class Bytecode {
         service.exitingGetPlatformMBeanServer();
     }
 
-    public static ThreadContextThreadLocal.Holder getCurrentThreadContextHolder() {
+    public static ThreadContextHolder getCurrentThreadContextHolder() {
         return service.getCurrentThreadContextHolder();
     }
 
     public static ThreadContextPlus createOptionalThreadContext(
-            ThreadContextThreadLocal.Holder threadContextHolder) {
+            ThreadContextHolder threadContextHolder) {
         return service.createOptionalThreadContext(threadContextHolder);
     }
 

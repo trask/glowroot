@@ -20,6 +20,7 @@ import java.util.NoSuchElementException;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import org.glowroot.agent.bytecode.api.ThreadContextHolder;
 import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.agent.util.IterableWithSelfRemovableEntries;
 
@@ -50,7 +51,7 @@ public class TransactionRegistry implements Iterable<Transaction> {
         return threadContext.getTransaction();
     }
 
-    public ThreadContextThreadLocal.Holder getCurrentThreadContextHolder() {
+    public ThreadContextHolder getCurrentThreadContextHolder() {
         return currentThreadContext.getHolder();
     }
 

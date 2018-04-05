@@ -49,7 +49,7 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
+import org.glowroot.agent.bytecode.api.ThreadContextHolder;
 import org.glowroot.agent.collector.Collector.EntryVisitor;
 import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.model.AsyncQueryData;
@@ -200,8 +200,7 @@ public class Transaction {
 
     Transaction(long startTime, long startTick, String transactionType, String transactionName,
             MessageSupplier messageSupplier, TimerName timerName, Glob glob,
-            CompletionCallback completionCallback,
-            ThreadContextThreadLocal.Holder threadContextHolder) {
+            CompletionCallback completionCallback, ThreadContextHolder threadContextHolder) {
         this.startTime = startTime;
         this.startTick = startTick;
         this.transactionType = transactionType;
@@ -699,7 +698,7 @@ public class Transaction {
     @Nullable
     ThreadContextImpl startAuxThreadContext(@Nullable TraceEntryImpl parentTraceEntry,
             @Nullable TraceEntryImpl parentThreadContextPriorEntry, TimerName auxTimerName,
-            long startTick, ThreadContextThreadLocal.Holder threadContextHolder,
+            long startTick, ThreadContextHolder threadContextHolder,
             @Nullable ServletRequestInfo servletRequestInfo) {
         ThreadContextImpl auxThreadContext;
         synchronized (mainThreadContext) {
@@ -770,7 +769,7 @@ public class Transaction {
 
     TraceEntryImpl startInnerTransaction(String transactionType, String transactionName,
             MessageSupplier messageSupplier, TimerName timerName,
-            ThreadContextThreadLocal.Holder threadContextHolder) {
+            ThreadContextHolder threadContextHolder) {
         return glob.transactionService().startTransaction(transactionType, transactionName,
                 messageSupplier, timerName, threadContextHolder);
     }

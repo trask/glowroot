@@ -52,6 +52,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.bytecode.api.Bytecode;
+import org.glowroot.agent.bytecode.api.FastGlowrootThread;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.impl.ThreadContextImpl;
 import org.glowroot.agent.impl.TimerImpl;
@@ -67,7 +68,9 @@ import org.glowroot.common.util.ScheduledRunnable.TerminateSubsequentExecutionsE
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.objectweb.asm.Opcodes.ASM6;
+import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
 import static org.objectweb.asm.Opcodes.INVOKESTATIC;
+import static org.objectweb.asm.Opcodes.NEW;
 
 public class Weaver {
 
@@ -216,6 +219,12 @@ public class Weaver {
         } else if (className.equals(ImportantClassNames.JBOSS4_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new JBoss4HackClassVisitor(cw);
+            ClassReader cr = new ClassReader(classBytes);
+            cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
+            maybeProcessedBytes = cw.toByteArray();
+        } else if (className.equals("org/eclipse/jetty/util/thread/QueuedThreadPool")) {
+            ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+            ClassVisitor cv = new JettyThreadPoolHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
             cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
             maybeProcessedBytes = cw.toByteArray();
@@ -703,6 +712,55 @@ public class Weaver {
             mv.visitMethodInsn(INVOKESTATIC, "java/lang/Class", "forName",
                     "(Ljava/lang/String;)Ljava/lang/Class;", false);
             mv.visitInsn(POP);
+        }
+    }
+
+    private static class JettyThreadPoolHackClassVisitor extends ClassVisitor {
+
+        private final ClassWriter cw;
+
+        JettyThreadPoolHackClassVisitor(ClassWriter cw) {
+            super(ASM6, cw);
+            this.cw = cw;
+        }
+
+        @Override
+        public MethodVisitor visitMethod(int access, String name, String desc,
+                @Nullable String signature, String /*@Nullable*/ [] exceptions) {
+            MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
+            if (name.equals("newThread")) {
+                return new JettyThreadPoolHackMethodVisitor(mv);
+            } else {
+                return mv;
+            }
+        }
+    }
+
+    private static class JettyThreadPoolHackMethodVisitor extends MethodVisitor {
+
+        private JettyThreadPoolHackMethodVisitor(MethodVisitor mv) {
+            super(ASM6, mv);
+        }
+
+        @Override
+        public void visitTypeInsn(int opcode, String type) {
+            if (opcode == NEW && type.equals("java/lang/Thread")) {
+                super.visitTypeInsn(opcode,
+                        ClassNames.toInternalName(FastGlowrootThread.class.getName()));
+            } else {
+                super.visitTypeInsn(opcode, type);
+            }
+        }
+
+        @Override
+        public void visitMethodInsn(int opcode, String owner, String name, String descriptor,
+                boolean isInterface) {
+            String newOwner = owner;
+            if (opcode == INVOKESPECIAL && owner.equals("java/lang/Thread")
+                    && name.equals("<init>")) {
+                newOwner = ClassNames.toInternalName(FastGlowrootThread.class.getName());
+            }
+            super.visitMethodInsn(opcode, newOwner, name, descriptor, isInterface);
         }
     }
 
