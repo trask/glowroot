@@ -127,7 +127,7 @@ public class TransactionCollector {
         // capture time is calculated by the aggregator because it depends on monotonically
         // increasing capture times so it can flush aggregates without concern for new data
         // arriving with a prior capture time
-        long captureTime = aggregator.add(transaction);
+        aggregator.add(transaction);
         final boolean slow = shouldStoreSlow(transaction);
         if (!slow && !shouldStoreError(transaction)) {
             return;
@@ -140,9 +140,6 @@ public class TransactionCollector {
             return;
         }
         pendingTransactions.add(transaction);
-
-        // this need to be called inside the transaction thread
-        transaction.onCompleteWillStoreTrace(captureTime);
 
         // transaction is ended, so Executor Plugin won't tie this async work to the transaction
         // (which is good)

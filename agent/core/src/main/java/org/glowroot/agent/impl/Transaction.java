@@ -206,6 +206,9 @@ public class Transaction {
     @GuardedBy("mainThreadContext")
     private boolean stopMergingAuxThreadContexts;
 
+    // this is for maintaining queue of completed transactions pending aggregation
+    private volatile @Nullable Transaction nextCompleted;
+
     Transaction(long startTime, long startTick, String transactionType, String transactionName,
             MessageSupplier messageSupplier, TimerName timerName, boolean captureThreadStats,
             int maxTraceEntries, int maxQueryAggregates, int maxServiceCallAggregates,
@@ -610,6 +613,15 @@ public class Transaction {
         }
     }
 
+    @Nullable
+    Transaction getNextCompleted() {
+        return nextCompleted;
+    }
+
+    void setNextCompleted(Transaction nextCompleted) {
+        this.nextCompleted = nextCompleted;
+    }
+
     void setAsync() {
         async = true;
     }
@@ -843,7 +855,7 @@ public class Transaction {
     }
 
     // called by the transaction thread
-    void onCompleteWillStoreTrace(long captureTime) {
+    void setCaptureTime(long captureTime) {
         this.captureTime = captureTime;
     }
 

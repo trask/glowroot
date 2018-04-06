@@ -34,12 +34,11 @@ import org.glowroot.agent.util.ThreadFactories;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class Aggregator {
 
-    private static final Logger logger = LoggerFactory.getLogger(TransactionProcessor.class);
+    private static final Logger logger = LoggerFactory.getLogger(Aggregator.class);
 
     // back pressure on transaction collection
     private static final int TRANSACTION_PENDING_LIMIT = 1000;
@@ -60,9 +59,9 @@ public class Aggregator {
 
     // all structural changes to the transaction queue are made under queueLock for simplicity
     // TODO implement lock free structure
-    private final PendingTransaction head = new PendingTransaction(null);
+    private volatile @Nullable Transaction head;
     // tail is non-volatile since only accessed under lock
-    private PendingTransaction tail = head;
+    private @Nullable Transaction tail;
     private final Object queueLock = new Object();
     @GuardedBy("queueLock")
     private int queueLength;
@@ -106,27 +105,29 @@ public class Aggregator {
         activeIntervalCollector.clear();
     }
 
-    long add(Transaction transaction) {
+    void add(Transaction transaction) {
         // this synchronized block is to ensure traces are placed into processing queue in the
         // order of captureTime (so that queue reader can assume if captureTime indicates time to
         // flush, then no new traces will come in with prior captureTime)
-        PendingTransaction newTail = new PendingTransaction(transaction);
-        long captureTime;
         synchronized (queueLock) {
-            captureTime = clock.currentTimeMillis();
+            long captureTime = clock.currentTimeMillis();
+            transaction.setCaptureTime(captureTime);
             if (queueLength >= TRANSACTION_PENDING_LIMIT) {
                 backPressureLogger.warn("not aggregating a transaction because of an excessive"
                         + " backlog of {} transactions already waiting to be aggregated",
                         TRANSACTION_PENDING_LIMIT);
                 transaction.removeFromActiveTransactions();
             } else {
-                newTail.captureTime = captureTime;
-                tail.next = newTail;
-                tail = newTail;
+                if (tail == null) {
+                    tail = transaction;
+                    head = transaction;
+                } else {
+                    tail.setNextCompleted(transaction);
+                    tail = transaction;
+                }
                 queueLength++;
             }
         }
-        return captureTime;
     }
 
     private List<AggregateIntervalCollector> getOrderedAllIntervalCollectors() {
@@ -173,8 +174,8 @@ public class Aggregator {
         }
 
         private void processOne() throws InterruptedException {
-            PendingTransaction pendingTransaction = head.next;
-            if (pendingTransaction == null) {
+            Transaction transaction = head;
+            if (transaction == null) {
                 if (clock.currentTimeMillis() > activeIntervalCollector.getCaptureTime()) {
                     maybeEndOfInterval();
                 } else {
@@ -186,22 +187,22 @@ public class Aggregator {
             // remove transaction from list of active transactions
             // used to do this at the very end of Transaction.end(), but moved to here to remove the
             // (minor) cost from the transaction main path
-            Transaction transaction = checkNotNull(pendingTransaction.transaction);
             transaction.removeFromActiveTransactions();
 
             // remove head
             synchronized (queueLock) {
-                PendingTransaction next = pendingTransaction.next;
-                head.next = next;
+                Transaction next = transaction.getNextCompleted();
+                head = next;
                 if (next == null) {
-                    tail = head;
+                    tail = null;
                 }
                 queueLength--;
             }
-            if (pendingTransaction.captureTime > activeIntervalCollector.getCaptureTime()) {
+            long captureTime = transaction.getCaptureTime();
+            if (captureTime > activeIntervalCollector.getCaptureTime()) {
                 flushActiveIntervalCollector();
-                activeIntervalCollector = new AggregateIntervalCollector(
-                        pendingTransaction.captureTime, aggregateIntervalMillis,
+                activeIntervalCollector = new AggregateIntervalCollector(captureTime,
+                        aggregateIntervalMillis,
                         configService.getAdvancedConfig().maxTransactionAggregates(),
                         configService.getAdvancedConfig().maxQueryAggregates(),
                         configService.getAdvancedConfig().maxServiceCallAggregates(), clock);
@@ -213,7 +214,7 @@ public class Aggregator {
             long currentTime;
             boolean safeToFlush;
             synchronized (queueLock) {
-                if (head.next != null) {
+                if (head != null) {
                     // something just crept into the queue, possibly still something from active
                     // interval, it will get picked up right away and if it is in next interval it
                     // will force active aggregate to be flushed anyways
@@ -255,17 +256,6 @@ public class Aggregator {
                     }
                 }
             });
-        }
-    }
-
-    private static class PendingTransaction {
-
-        private final @Nullable Transaction transaction; // only null for head
-        private volatile long captureTime;
-        private volatile @Nullable PendingTransaction next;
-
-        private PendingTransaction(@Nullable Transaction transaction) {
-            this.transaction = transaction;
         }
     }
 }

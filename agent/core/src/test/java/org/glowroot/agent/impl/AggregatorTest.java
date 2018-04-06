@@ -18,12 +18,18 @@ package org.glowroot.agent.impl;
 import java.io.File;
 import java.util.List;
 
+import com.google.common.base.Ticker;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.Test;
 
+import org.glowroot.agent.bytecode.api.ThreadContextHolder;
 import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.ImmutableAdvancedConfig;
+import org.glowroot.agent.impl.Transaction.CompletionCallback;
+import org.glowroot.agent.model.ImmutableTimerNameImpl;
+import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.util.IterableWithSelfRemovableEntries.SelfRemovableEntry;
 import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
@@ -39,7 +45,7 @@ import static org.mockito.Mockito.when;
 public class AggregatorTest {
 
     @Test
-    public void shouldFlushWithTrace() throws InterruptedException {
+    public void shouldFlush() throws InterruptedException {
         // given
         MockCollector aggregateCollector = new MockCollector();
         ConfigService configService = mock(ConfigService.class);
@@ -50,10 +56,14 @@ public class AggregatorTest {
 
         // when
         int count = 0;
-        long firstCaptureTime = aggregator.add(buildTransaction());
+        Transaction transaction = buildTransaction();
+        aggregator.add(transaction);
+        long firstCaptureTime = transaction.getCaptureTime();
         long aggregateCaptureTime = (long) Math.ceil(firstCaptureTime / 1000.0) * 1000;
         while (true) {
-            long captureTime = aggregator.add(buildTransaction());
+            transaction = buildTransaction();
+            aggregator.add(transaction);
+            long captureTime = transaction.getCaptureTime();
             count++;
             if (captureTime > aggregateCaptureTime) {
                 break;
@@ -74,13 +84,15 @@ public class AggregatorTest {
     }
 
     private static Transaction buildTransaction() {
-        Transaction transaction = mock(Transaction.class);
-        TimerImpl mainThreadRootTimer = mock(TimerImpl.class);
-        when(mainThreadRootTimer.getName()).thenReturn("mock timer");
-        when(transaction.getTransactionType()).thenReturn("a type");
-        when(transaction.getTransactionName()).thenReturn("a name");
-        when(transaction.getDurationNanos()).thenReturn(MILLISECONDS.toNanos(123));
-        when(transaction.getMainThreadRootTimer()).thenReturn(mainThreadRootTimer);
+        Transaction transaction = new Transaction(Clock.systemClock().currentTimeMillis(),
+                0, "W", "A", MessageSupplier.create("M"),
+                ImmutableTimerNameImpl.of("T", false), false, 100, 100, 100, 100, null,
+                mock(CompletionCallback.class), Ticker.systemTicker(),
+                mock(TransactionRegistry.class), mock(TransactionService.class),
+                mock(ConfigService.class), mock(UserProfileScheduler.class),
+                mock(ThreadContextHolder.class));
+        transaction.setTransactionEntry(mock(SelfRemovableEntry.class));
+        transaction.end(MILLISECONDS.toNanos(123), false);
         return transaction;
     }
 
