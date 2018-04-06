@@ -355,6 +355,7 @@ public class Transaction {
     }
 
     // can be called from a non-transaction thread
+    @Nullable
     ThreadStats getMainThreadStats() {
         return mainThreadContext.getThreadStats();
     }
@@ -1066,7 +1067,7 @@ public class Transaction {
     }
 
     interface ThreadStatsCollector {
-        void mergeThreadStats(ThreadStats threadStats);
+        void mergeThreadStats(@Nullable ThreadStats threadStats);
     }
 
     private static class AuxThreadRootMessageSupplier extends MessageSupplier {

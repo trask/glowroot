@@ -27,6 +27,7 @@ import org.glowroot.agent.collector.Collector.TraceReader;
 import org.glowroot.agent.collector.Collector.TraceVisitor;
 import org.glowroot.agent.model.DetailMapWriter;
 import org.glowroot.agent.model.ErrorMessage;
+import org.glowroot.agent.model.ThreadStats;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
@@ -171,15 +172,20 @@ public class TraceCreator {
         RootTimerCollectorImpl asyncTimers = new RootTimerCollectorImpl();
         transaction.mergeAsyncTimersInto(asyncTimers);
         builder.addAllAsyncTimer(asyncTimers.toProto());
-        ThreadStatsCollectorImpl mainThreadStats = new ThreadStatsCollectorImpl();
-        mainThreadStats.mergeThreadStats(transaction.getMainThreadStats());
-        if (!mainThreadStats.isNA()) {
-            builder.setMainThreadStats(mainThreadStats.toProto());
+        ThreadStats mainThreadStats = transaction.getMainThreadStats();
+        if (mainThreadStats != null) {
+            ThreadStatsCollectorImpl threadStatsCollector = new ThreadStatsCollectorImpl();
+            threadStatsCollector.mergeThreadStats(mainThreadStats);
+            Trace.ThreadStats mainThreadStatsProto = threadStatsCollector.toProto();
+            if (mainThreadStatsProto != null) {
+                builder.setMainThreadStats(mainThreadStatsProto);
+            }
         }
-        ThreadStatsCollectorImpl auxThreadStats = new ThreadStatsCollectorImpl();
-        transaction.mergeAuxThreadStatsInto(auxThreadStats);
-        if (!auxThreadStats.isNA()) {
-            builder.setAuxThreadStats(auxThreadStats.toProto());
+        ThreadStatsCollectorImpl threadStatsCollector = new ThreadStatsCollectorImpl();
+        transaction.mergeAuxThreadStatsInto(threadStatsCollector);
+        Trace.ThreadStats auxThreadStatsProto = threadStatsCollector.toProto();
+        if (auxThreadStatsProto != null) {
+            builder.setAuxThreadStats(auxThreadStatsProto);
         }
         builder.setEntryCount(entryCount);
         builder.setEntryLimitExceeded(transaction.isEntryLimitExceeded(entryCount));

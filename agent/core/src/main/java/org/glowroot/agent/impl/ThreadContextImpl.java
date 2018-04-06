@@ -186,9 +186,10 @@ public class ThreadContextImpl implements ThreadContextPlus {
         return rootTimer;
     }
 
+    @Nullable
     ThreadStats getThreadStats() {
         if (threadStatsComponent == null) {
-            return ThreadStats.NA;
+            return null;
         }
         return threadStatsComponent.getThreadStats();
     }

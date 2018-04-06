@@ -15,6 +15,8 @@
  */
 package org.glowroot.agent.impl;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import org.glowroot.agent.impl.Transaction.ThreadStatsCollector;
 import org.glowroot.agent.model.ThreadStats;
 import org.glowroot.common.util.NotAvailableAware;
@@ -25,62 +27,77 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 class ThreadStatsCollectorImpl implements ThreadStatsCollector {
 
+    private static final Trace.ThreadStats NA_THREAD_STATS = Trace.ThreadStats.newBuilder()
+            .setTotalCpuNanos(toProtoInt(NotAvailableAware.NA))
+            .setTotalBlockedNanos(toProtoInt(NotAvailableAware.NA))
+            .setTotalWaitedNanos(toProtoInt(NotAvailableAware.NA))
+            .setTotalAllocatedBytes(toProtoInt(NotAvailableAware.NA))
+            .build();
+
     private long totalCpuNanos;
     private long totalBlockedMillis;
     private long totalWaitedMillis;
     private long totalAllocatedBytes;
 
     private boolean empty = true;
+    private boolean na;
 
     @Override
-    public void mergeThreadStats(ThreadStats threadStats) {
-        totalCpuNanos = NotAvailableAware.add(totalCpuNanos, threadStats.getTotalCpuNanos());
-        totalBlockedMillis =
-                NotAvailableAware.add(totalBlockedMillis, threadStats.getTotalBlockedMillis());
-        totalWaitedMillis =
-                NotAvailableAware.add(totalWaitedMillis, threadStats.getTotalWaitedMillis());
-        totalAllocatedBytes = NotAvailableAware.add(totalAllocatedBytes,
-                threadStats.getTotalAllocatedBytes());
+    public void mergeThreadStats(@Nullable ThreadStats threadStats) {
+        if (threadStats == null) {
+            na = true;
+        } else if (!na) {
+            totalCpuNanos = NotAvailableAware.add(totalCpuNanos, threadStats.getTotalCpuNanos());
+            totalBlockedMillis =
+                    NotAvailableAware.add(totalBlockedMillis, threadStats.getTotalBlockedMillis());
+            totalWaitedMillis =
+                    NotAvailableAware.add(totalWaitedMillis, threadStats.getTotalWaitedMillis());
+            totalAllocatedBytes = NotAvailableAware.add(totalAllocatedBytes,
+                    threadStats.getTotalAllocatedBytes());
+        }
         empty = false;
     }
 
-    boolean isNA() {
-        if (empty) {
-            return true;
-        }
-        return NotAvailableAware.isNA(totalCpuNanos)
-                && NotAvailableAware.isNA(totalBlockedMillis)
-                && NotAvailableAware.isNA(totalWaitedMillis)
-                && NotAvailableAware.isNA(totalAllocatedBytes);
-    }
-
+    @Nullable
     ThreadStats getMergedThreadStats() {
-        return new ThreadStats(totalCpuNanos, totalBlockedMillis, totalWaitedMillis,
-                totalAllocatedBytes);
+        if (empty) {
+            return null;
+        } else if (na) {
+            return ThreadStats.NA;
+        } else {
+            return new ThreadStats(totalCpuNanos, totalBlockedMillis, totalWaitedMillis,
+                    totalAllocatedBytes);
+        }
     }
 
     long getTotalCpuNanos() {
         return totalCpuNanos;
     }
 
-    public Trace.ThreadStats toProto() {
-        Trace.ThreadStats.Builder builder = Trace.ThreadStats.newBuilder();
-        if (!NotAvailableAware.isNA(totalCpuNanos)) {
-            builder.setTotalCpuNanos(toProto(totalCpuNanos));
+    public Trace. /*@Nullable*/ ThreadStats toProto() {
+        if (empty) {
+            return null;
+        } else if (na) {
+            return NA_THREAD_STATS;
+        } else {
+            Trace.ThreadStats.Builder builder = Trace.ThreadStats.newBuilder();
+            if (!NotAvailableAware.isNA(totalCpuNanos)) {
+                builder.setTotalCpuNanos(toProtoInt(totalCpuNanos));
+            }
+            if (!NotAvailableAware.isNA(totalBlockedMillis)) {
+                builder.setTotalBlockedNanos(toProtoInt(MILLISECONDS.toNanos(totalBlockedMillis)));
+            }
+            if (!NotAvailableAware.isNA(totalWaitedMillis)) {
+                builder.setTotalWaitedNanos(toProtoInt(MILLISECONDS.toNanos(totalWaitedMillis)));
+            }
+            if (!NotAvailableAware.isNA(totalAllocatedBytes)) {
+                builder.setTotalAllocatedBytes(toProtoInt(totalAllocatedBytes));
+            }
+            return builder.build();
         }
-        if (!NotAvailableAware.isNA(totalBlockedMillis)) {
-            builder.setTotalBlockedNanos(toProto(MILLISECONDS.toNanos(totalBlockedMillis)));
-        }
-        if (!NotAvailableAware.isNA(totalWaitedMillis)) {
-            builder.setTotalWaitedNanos(toProto(MILLISECONDS.toNanos(totalWaitedMillis)));
-        }
-        if (!NotAvailableAware.isNA(totalAllocatedBytes)) {
-            builder.setTotalAllocatedBytes(toProto(totalAllocatedBytes));
-        }
-        return builder.build();
     }
 
-    private static OptionalInt64 toProto(long value) {
+    private static OptionalInt64 toProtoInt(long value) {
         return OptionalInt64.newBuilder().setValue(value).build();
     }
 }
