@@ -28,7 +28,6 @@ import org.glowroot.agent.plugin.api.Timer;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.checker.Nullable;
-import org.glowroot.agent.plugin.api.weaving.BindClassMeta;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
@@ -68,7 +67,10 @@ public class ExecutorAspect {
 
     @Mixin({"org.apache.tomcat.util.net.JIoEndpoint$SocketProcessor",
             "org.apache.http.impl.nio.client.CloseableHttpAsyncClientBase$1"})
-    public static class SuppressedRunnableImpl implements SuppressedRunnableEtcMixin {}
+    public static class SuppressedRunnableEtcImpl implements SuppressedRunnableEtcMixin {}
+
+    @Mixin("javax.ejb.AsyncResult")
+    public static class SuppressedFutureImpl implements SuppressedFutureMixin {}
 
     // the method names are verbose since they will be mixed in to existing classes
     public interface RunnableEtcMixin {
@@ -80,6 +82,8 @@ public class ExecutorAspect {
     }
 
     public interface SuppressedRunnableEtcMixin {}
+
+    public interface SuppressedFutureMixin {}
 
     @Pointcut(
             className = "java.util.concurrent.Executor|java.util.concurrent.ExecutorService"
@@ -306,10 +310,8 @@ public class ExecutorAspect {
     public static class FutureGetAdvice {
         private static final TimerName timerName = Agent.getTimerName(FutureGetAdvice.class);
         @IsEnabled
-        public static boolean isEnabled(@BindReceiver Future<?> future,
-                @BindClassMeta FutureClassMeta futureClassMeta) {
-            if (futureClassMeta.isNonStandardFuture()) {
-                // this is to handle known non-standard Future implementations
+        public static boolean isEnabled(@BindReceiver Future<?> future) {
+            if (future instanceof SuppressedFutureMixin) {
                 return false;
             }
             // don't capture if already done, primarily this is to avoid caching pattern where

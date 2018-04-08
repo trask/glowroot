@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 package org.glowroot.agent.plugin.executor;
+
+import java.lang.reflect.Field;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -48,7 +51,7 @@ public class EjbAsyncResultIT {
     public void shouldNotThrowExceptionOrLogError() throws Exception {
         container.execute(CallAsyncResultGet.class);
 
-        // @After's call to checkAndResult() ensures no error was logged
+        // should not throw exception
     }
 
     public static class CallAsyncResultGet implements AppUnderTest, TransactionMarker {
@@ -61,6 +64,13 @@ public class EjbAsyncResultIT {
         @Override
         public void transactionMarker() throws Exception {
             new javax.ejb.AsyncResult<Object>(null).get();
+
+            Field field = ExecutorAspect.class.getDeclaredField("isDoneExceptionLogged");
+            field.setAccessible(true);
+            AtomicBoolean isDoneExceptionLogged = (AtomicBoolean) field.get(null);
+            if (isDoneExceptionLogged.get()) {
+                throw new AssertionError();
+            }
         }
     }
 }
