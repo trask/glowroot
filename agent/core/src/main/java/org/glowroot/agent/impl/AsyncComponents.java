@@ -20,7 +20,6 @@ import java.util.Map;
 
 import javax.annotation.concurrent.GuardedBy;
 
-import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -50,10 +49,7 @@ class AsyncComponents {
     @GuardedBy("asyncTimerLock")
     private @MonotonicNonNull Map<String, AggregateAsyncTimer> alreadyMergedAsyncTimers;
 
-    private final int maxQueryAggregates;
-    private final int maxServiceCallAggregates;
-
-    private final Ticker ticker;
+    private final Glob glob;
 
     private final Map<String, Map<String, AsyncQueryData>> asyncQueries = Maps.newConcurrentMap();
     private final Map<String, Map<String, AsyncQueryData>> asyncServiceCalls =
@@ -63,10 +59,8 @@ class AsyncComponents {
     private volatile int queryAggregateCounter;
     private volatile int serviceCallAggregateCounter;
 
-    AsyncComponents(int maxQueryAggregates, int maxServiceCallAggregates, Ticker ticker) {
-        this.maxQueryAggregates = maxQueryAggregates;
-        this.maxServiceCallAggregates = maxServiceCallAggregates;
-        this.ticker = ticker;
+    AsyncComponents(Glob glob) {
+        this.glob = glob;
     }
 
     void mergeAsyncTimersInto(RootTimerCollector rootTimers) {
@@ -94,7 +88,8 @@ class AsyncComponents {
             for (Map.Entry<String, AsyncQueryData> innerEntry : outerEntry.getValue().entrySet()) {
                 AsyncQueryData queryData = innerEntry.getValue();
                 collector.mergeQuery(queryType, queryData.getQueryText(),
-                        queryData.getTotalDurationNanos(ticker), queryData.getExecutionCount(),
+                        queryData.getTotalDurationNanos(glob.ticker()),
+                        queryData.getExecutionCount(),
                         queryData.hasTotalRows(), queryData.getTotalRows(), queryData.isActive());
             }
         }
@@ -107,7 +102,8 @@ class AsyncComponents {
             for (Map.Entry<String, AsyncQueryData> innerEntry : outerEntry.getValue().entrySet()) {
                 AsyncQueryData queryData = innerEntry.getValue();
                 collector.mergeServiceCall(serviceCallType, queryData.getQueryText(),
-                        queryData.getTotalDurationNanos(ticker), queryData.getExecutionCount());
+                        queryData.getTotalDurationNanos(glob.ticker()),
+                        queryData.getExecutionCount());
             }
         }
     }
@@ -219,14 +215,14 @@ class AsyncComponents {
 
     // this method has side effect of incrementing counter
     private boolean allowAnotherQueryAggregate(boolean bypassLimit) {
-        return queryAggregateCounter++ < maxQueryAggregates
+        return queryAggregateCounter++ < glob.maxQueryAggregates()
                 * AdvancedConfig.OVERALL_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER
                 || bypassLimit;
     }
 
     // this method has side effect of incrementing counter
     private boolean allowAnotherServiceCallAggregate(boolean bypassLimit) {
-        return serviceCallAggregateCounter++ < maxServiceCallAggregates
+        return serviceCallAggregateCounter++ < glob.maxServiceCallAggregates()
                 * AdvancedConfig.OVERALL_AGGREGATE_SERVICE_CALLS_HARD_LIMIT_MULTIPLIER
                 || bypassLimit;
     }

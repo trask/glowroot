@@ -28,6 +28,7 @@ import org.glowroot.agent.plugin.api.QueryMessageSupplier;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class ThreadContextImplTest {
 
@@ -42,11 +43,12 @@ public class ThreadContextImplTest {
         Transaction transaction = mock(Transaction.class);
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
         TimerNameImpl rootTimerName = mock(TimerNameImpl.class);
-        Ticker ticker = mock(Ticker.class);
         ThreadContextThreadLocal.Holder threadContextHolder =
                 mock(ThreadContextThreadLocal.Holder.class);
+        Glob glob = mock(Glob.class);
+        when(glob.ticker()).thenReturn(mock(Ticker.class));
         threadContext = new ThreadContextImpl(transaction, null, null, messageSupplier,
-                rootTimerName, 0, false, 0, 0, null, false, ticker, threadContextHolder, null);
+                rootTimerName, 0, glob, false, threadContextHolder, null);
     }
 
     @Test

@@ -31,6 +31,8 @@ import org.glowroot.agent.util.IterableWithSelfRemovableEntries.SelfRemovableEnt
 import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.common.util.Clock;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 public class TransactionService implements ConfigListener {
 
     private final TransactionRegistry transactionRegistry;
@@ -45,11 +47,7 @@ public class TransactionService implements ConfigListener {
 
     // cache for fast read access
     // visibility is provided by memoryBarrier below
-    private boolean captureThreadStats;
-    private int maxTraceEntries;
-    private int maxQueryAggregates;
-    private int maxServiceCallAggregates;
-    private int maxProfileSamples;
+    private @Nullable Glob glob;
 
     // intentionally not volatile for small optimization
     private @MonotonicNonNull TransactionCollector transactionCollector;
@@ -91,10 +89,8 @@ public class TransactionService implements ConfigListener {
         configService.readMemoryBarrier();
         long startTick = ticker.read();
         Transaction transaction = new Transaction(clock.currentTimeMillis(), startTick,
-                transactionType, transactionName, messageSupplier, timerName, captureThreadStats,
-                maxTraceEntries, maxQueryAggregates, maxServiceCallAggregates, maxProfileSamples,
-                threadAllocatedBytes, transactionCompletionCallback, ticker, transactionRegistry,
-                this, configService, userProfileScheduler, threadContextHolder);
+                transactionType, transactionName, messageSupplier, timerName, checkNotNull(glob),
+                transactionCompletionCallback, threadContextHolder);
         SelfRemovableEntry transactionEntry = transactionRegistry.addTransaction(transaction);
         transaction.setTransactionEntry(transactionEntry);
         threadContextHolder.set(transaction.getMainThreadContext());
@@ -110,18 +106,29 @@ public class TransactionService implements ConfigListener {
         long startTick = ticker.read();
         TimerName auxThreadTimerName = timerNameCache.getAuxThreadTimerName();
         return transaction.startAuxThreadContext(parentTraceEntry, parentThreadContextPriorEntry,
-                auxThreadTimerName, startTick, threadContextHolder, servletRequestInfo,
-                threadAllocatedBytes);
+                auxThreadTimerName, startTick, threadContextHolder, servletRequestInfo);
     }
 
     @Override
     public void onChange() {
         AdvancedConfig advancedConfig = configService.getAdvancedConfig();
-        captureThreadStats = configService.getTransactionConfig().captureThreadStats();
-        maxQueryAggregates = advancedConfig.maxQueryAggregates();
-        maxServiceCallAggregates = advancedConfig.maxServiceCallAggregates();
-        maxTraceEntries = advancedConfig.maxTraceEntriesPerTransaction();
-        maxProfileSamples = advancedConfig.maxProfileSamplesPerTransaction();
+        boolean captureThreadStats = configService.getTransactionConfig().captureThreadStats();
+        int maxQueryAggregates = advancedConfig.maxQueryAggregates();
+        int maxServiceCallAggregates = advancedConfig.maxServiceCallAggregates();
+        int maxTraceEntries = advancedConfig.maxTraceEntriesPerTransaction();
+        int maxProfileSamples = advancedConfig.maxProfileSamplesPerTransaction();
+        glob = ImmutableGlob.builder()
+                .maxTraceEntries(maxTraceEntries)
+                .maxQueryAggregates(maxQueryAggregates)
+                .maxServiceCallAggregates(maxServiceCallAggregates)
+                .maxProfileSamples(maxProfileSamples)
+                .threadAllocatedBytes(captureThreadStats ? threadAllocatedBytes : null)
+                .transactionRegistry(transactionRegistry)
+                .transactionService(this)
+                .configService(configService)
+                .userProfileScheduler(userProfileScheduler)
+                .ticker(ticker)
+                .build();
     }
 
     private class TransactionCompletionCallback implements CompletionCallback {

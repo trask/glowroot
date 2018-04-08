@@ -18,11 +18,10 @@ package org.glowroot.agent.impl;
 import java.io.File;
 import java.util.List;
 
-import com.google.common.base.Ticker;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.Test;
 
-import org.glowroot.agent.bytecode.api.ThreadContextHolder;
+import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.ImmutableAdvancedConfig;
@@ -85,12 +84,9 @@ public class AggregatorTest {
 
     private static Transaction buildTransaction() {
         Transaction transaction = new Transaction(Clock.systemClock().currentTimeMillis(),
-                0, "W", "A", MessageSupplier.create("M"),
-                ImmutableTimerNameImpl.of("T", false), false, 100, 100, 100, 100, null,
-                mock(CompletionCallback.class), Ticker.systemTicker(),
-                mock(TransactionRegistry.class), mock(TransactionService.class),
-                mock(ConfigService.class), mock(UserProfileScheduler.class),
-                mock(ThreadContextHolder.class));
+                0, "W", "A", MessageSupplier.create("M"), ImmutableTimerNameImpl.of("T", false),
+                mock(Glob.class), mock(CompletionCallback.class),
+                mock(ThreadContextThreadLocal.Holder.class));
         transaction.setTransactionEntry(mock(SelfRemovableEntry.class));
         transaction.end(MILLISECONDS.toNanos(123), false);
         return transaction;

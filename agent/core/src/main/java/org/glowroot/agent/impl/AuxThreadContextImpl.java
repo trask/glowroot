@@ -45,21 +45,19 @@ class AuxThreadContextImpl implements AuxThreadContext {
     private final @Nullable TraceEntryImpl parentThreadContextPriorEntry;
     private final @Nullable ServletRequestInfo servletRequestInfo;
     private final @Nullable ImmutableList<StackTraceElement> locationStackTrace;
-    private final TransactionRegistry transactionRegistry;
-    private final TransactionService transactionService;
+
+    private final Glob glob;
 
     AuxThreadContextImpl(Transaction transaction, @Nullable TraceEntryImpl parentTraceEntry,
             @Nullable TraceEntryImpl parentThreadContextPriorEntry,
             @Nullable ServletRequestInfo servletRequestInfo,
-            @Nullable ImmutableList<StackTraceElement> locationStackTrace,
-            TransactionRegistry transactionRegistry, TransactionService transactionService) {
+            @Nullable ImmutableList<StackTraceElement> locationStackTrace, Glob glob) {
         this.transaction = transaction;
         this.parentTraceEntry = parentTraceEntry;
         this.parentThreadContextPriorEntry = parentThreadContextPriorEntry;
         this.servletRequestInfo = servletRequestInfo;
         this.locationStackTrace = locationStackTrace;
-        this.transactionRegistry = transactionRegistry;
-        this.transactionService = transactionService;
+        this.glob = glob;
         if (logger.isDebugEnabled()
                 && !Thread.currentThread().getName().startsWith("Glowroot-GRPC-")
                 && inAuxDebugLogging.get() == null) {
@@ -87,7 +85,7 @@ class AuxThreadContextImpl implements AuxThreadContext {
 
     private TraceEntry start(boolean completeAsyncTransaction) {
         ThreadContextThreadLocal.Holder threadContextHolder =
-                transactionRegistry.getCurrentThreadContextHolder();
+                glob.transactionRegistry().getCurrentThreadContextHolder();
         ThreadContextImpl context = (ThreadContextImpl) threadContextHolder.get();
         if (context != null) {
             if (completeAsyncTransaction) {
@@ -95,8 +93,9 @@ class AuxThreadContextImpl implements AuxThreadContext {
             }
             return NopTransactionService.TRACE_ENTRY;
         }
-        context = transactionService.startAuxThreadContextInternal(transaction, parentTraceEntry,
-                parentThreadContextPriorEntry, servletRequestInfo, threadContextHolder);
+        context = glob.transactionService().startAuxThreadContextInternal(transaction,
+                parentTraceEntry, parentThreadContextPriorEntry, servletRequestInfo,
+                threadContextHolder);
         if (context == null) {
             // transaction is already complete or auxiliary thread context limit exceeded
             return NopTransactionService.TRACE_ENTRY;

@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Strings;
-import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 import com.google.common.primitives.Ints;
@@ -112,14 +111,11 @@ public class ThreadContextImpl implements ThreadContextPlus {
     private int queryAggregateCounter;
     private int serviceCallAggregateCounter;
 
-    private final int maxQueryAggregates;
-    private final int maxServiceCallAggregates;
+    private final Glob glob;
 
     private final long threadId;
 
     private final boolean limitExceededAuxThreadContext;
-
-    private final Ticker ticker;
 
     private final ThreadContextThreadLocal.Holder threadContextHolder;
 
@@ -140,10 +136,8 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     ThreadContextImpl(Transaction transaction, @Nullable TraceEntryImpl parentTraceEntry,
             @Nullable TraceEntryImpl parentThreadContextPriorEntry, MessageSupplier messageSupplier,
-            TimerName rootTimerName, long startTick, boolean captureThreadStats,
-            int maxQueryAggregates, int maxServiceCallAggregates,
-            @Nullable ThreadAllocatedBytes threadAllocatedBytes,
-            boolean limitExceededAuxThreadContext, Ticker ticker,
+            TimerName rootTimerName, long startTick, Glob glob,
+            boolean limitExceededAuxThreadContext,
             ThreadContextThreadLocal.Holder threadContextHolder,
             @Nullable ServletRequestInfo servletRequestInfo) {
         this.transaction = transaction;
@@ -154,12 +148,11 @@ public class ThreadContextImpl implements ThreadContextPlus {
                 rootTimer, startTick);
         this.parentThreadContextPriorEntry = parentThreadContextPriorEntry;
         threadId = Thread.currentThread().getId();
-        threadStatsComponent =
-                captureThreadStats ? new ThreadStatsComponent(threadAllocatedBytes) : null;
-        this.maxQueryAggregates = maxQueryAggregates;
-        this.maxServiceCallAggregates = maxServiceCallAggregates;
+        ThreadAllocatedBytes threadAllocatedBytes = glob.threadAllocatedBytes();
+        threadStatsComponent = threadAllocatedBytes == null ? null
+                : new ThreadStatsComponent(threadAllocatedBytes);
+        this.glob = glob;
         this.limitExceededAuxThreadContext = limitExceededAuxThreadContext;
-        this.ticker = ticker;
         this.threadContextHolder = threadContextHolder;
         this.servletRequestInfo = servletRequestInfo;
         this.outerTransactionThreadContext = (ThreadContextImpl) threadContextHolder.get();
@@ -252,7 +245,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
         SyncQueryData curr = headQueryData;
         while (curr != null) {
             collector.mergeQuery(curr.getQueryType(), curr.getQueryText(),
-                    curr.getTotalDurationNanos(ticker), curr.getExecutionCount(),
+                    curr.getTotalDurationNanos(glob.ticker()), curr.getExecutionCount(),
                     curr.hasTotalRows(), curr.getTotalRows(), curr.isActive());
             curr = curr.getNextQueryData();
         }
@@ -262,7 +255,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
         SyncQueryData curr = headServiceCallData;
         while (curr != null) {
             collector.mergeServiceCall(curr.getQueryType(), curr.getQueryText(),
-                    curr.getTotalDurationNanos(ticker), curr.getExecutionCount());
+                    curr.getTotalDurationNanos(glob.ticker()), curr.getExecutionCount());
             curr = curr.getNextQueryData();
         }
     }
@@ -366,14 +359,14 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     // this method has side effect of incrementing counter
     private boolean allowAnotherQueryAggregate(boolean bypassLimit) {
-        return queryAggregateCounter++ < maxQueryAggregates
+        return queryAggregateCounter++ < glob.maxQueryAggregates()
                 * AdvancedConfig.OVERALL_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER
                 || bypassLimit;
     }
 
     // this method has side effect of incrementing counter
     private boolean allowAnotherServiceCallAggregate(boolean bypassLimit) {
-        return serviceCallAggregateCounter++ < maxServiceCallAggregates
+        return serviceCallAggregateCounter++ < glob.maxServiceCallAggregates()
                 * AdvancedConfig.OVERALL_AGGREGATE_SERVICE_CALLS_HARD_LIMIT_MULTIPLIER
                 || bypassLimit;
     }
@@ -441,13 +434,12 @@ public class ThreadContextImpl implements ThreadContextPlus {
             // no auxiliary thread context hierarchy after limit exceeded in order to limit the
             // retention of auxiliary thread contexts
             return new AuxThreadContextImpl(transaction, null, null, servletRequestInfo,
-                    locationStackTrace, transaction.getTransactionRegistry(),
-                    transaction.getTransactionService());
+                    locationStackTrace, glob);
         } else {
             mayHaveChildAuxThreadContext = true;
             return new AuxThreadContextImpl(transaction, traceEntryComponent.getActiveEntry(),
                     traceEntryComponent.getTailEntry(), servletRequestInfo, locationStackTrace,
-                    transaction.getTransactionRegistry(), transaction.getTransactionService());
+                    glob);
         }
     }
 
@@ -501,7 +493,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
         // context holder has been cleared (at least after the thread completes its next trace entry
         // or profile sample, which both perform memory barrier reads)
         transaction.memoryBarrierWrite();
-        detachedTime = ticker.read();
+        detachedTime = glob.ticker().read();
     }
 
     private QueryDataMap getOrCreateQueriesForType(String queryType) {
@@ -554,7 +546,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
             return NopTransactionService.TRACE_ENTRY;
         }
         // ensure visibility of recent configuration updates
-        transaction.getConfigService().readMemoryBarrier();
+        glob.configService().readMemoryBarrier();
         if (transaction.isOuter()) {
             TraceEntryImpl traceEntry = transaction.startInnerTransaction(transactionType,
                     transactionName, messageSupplier, timerName, threadContextHolder);
@@ -562,7 +554,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
                     (ThreadContextImpl) checkNotNull(threadContextHolder.get());
             return traceEntry;
         }
-        long startTick = ticker.read();
+        long startTick = glob.ticker().read();
         TimerImpl timer = startTimer(timerName, startTick);
         if (transaction.allowAnotherEntry()) {
             return traceEntryComponent.pushEntry(startTick, messageSupplier, timer, null, null, 0);
@@ -581,7 +573,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
             logger.error("startTraceEntry(): argument 'timerName' must be non-null");
             return NopTransactionService.TRACE_ENTRY;
         }
-        long startTick = ticker.read();
+        long startTick = glob.ticker().read();
         TimerImpl timer = startTimer(timerName, startTick);
         if (transaction.allowAnotherEntry()) {
             return traceEntryComponent.pushEntry(startTick, messageSupplier, timer, null, null, 0);
@@ -601,7 +593,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
             logger.error("startAsyncTraceEntry(): argument 'timerName' must be non-null");
             return NopTransactionService.ASYNC_TRACE_ENTRY;
         }
-        long startTick = ticker.read();
+        long startTick = glob.ticker().read();
         TimerImpl syncTimer = startTimer(timerName, startTick);
         AsyncTimerImpl asyncTimer = transaction.startAsyncTimer(timerName, startTick);
         if (transaction.allowAnotherEntry()) {
@@ -631,7 +623,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
             logger.error("startQueryEntry(): argument 'timerName' must be non-null");
             return NopTransactionService.QUERY_ENTRY;
         }
-        long startTick = ticker.read();
+        long startTick = glob.ticker().read();
         TimerImpl timer = startTimer(timerName, startTick);
         if (transaction.allowAnotherEntry()) {
             SyncQueryData queryData = getOrCreateQueryData(queryType, queryText, true);
@@ -667,7 +659,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
             logger.error("startQueryEntry(): argument 'timerName' must be non-null");
             return NopTransactionService.QUERY_ENTRY;
         }
-        long startTick = ticker.read();
+        long startTick = glob.ticker().read();
         TimerImpl timer = startTimer(timerName, startTick);
         if (transaction.allowAnotherEntry()) {
             SyncQueryData queryData = getOrCreateQueryData(queryType, queryText, true);
@@ -700,7 +692,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
             logger.error("startAsyncQueryEntry(): argument 'timerName' must be non-null");
             return NopTransactionService.ASYNC_QUERY_ENTRY;
         }
-        long startTick = ticker.read();
+        long startTick = glob.ticker().read();
         TimerImpl syncTimer = startTimer(timerName, startTick);
         AsyncTimerImpl asyncTimer = transaction.startAsyncTimer(timerName, startTick);
         if (transaction.allowAnotherEntry()) {
@@ -735,7 +727,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
             logger.error("startServiceCallEntry(): argument 'timerName' must be non-null");
             return NopTransactionService.TRACE_ENTRY;
         }
-        long startTick = ticker.read();
+        long startTick = glob.ticker().read();
         TimerImpl timer = startTimer(timerName, startTick);
         if (transaction.allowAnotherEntry()) {
             SyncQueryData queryData =
@@ -772,7 +764,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
             logger.error("startAsyncServiceCallEntry(): argument 'timerName' must be non-null");
             return NopTransactionService.ASYNC_TRACE_ENTRY;
         }
-        long startTick = ticker.read();
+        long startTick = glob.ticker().read();
         TimerImpl syncTimer = startTimer(timerName, startTick);
         AsyncTimerImpl asyncTimer = transaction.startAsyncTimer(timerName, startTick);
         if (transaction.allowAnotherEntry()) {
@@ -1037,7 +1029,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
     private void addErrorEntryInternal(@Nullable String message, @Nullable Throwable t) {
         // use higher entry limit when adding errors, but still need some kind of cap
         if (transaction.allowAnotherErrorEntry()) {
-            long currTick = ticker.read();
+            long currTick = glob.ticker().read();
             ErrorMessage errorMessage =
                     ErrorMessage.create(message, t, transaction.getThrowableFrameLimitCounter());
             addErrorEntry(currTick, currTick, null, null, errorMessage);
@@ -1098,7 +1090,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
         @Override
         public void end() {
-            endInternal(ticker.read());
+            endInternal(glob.ticker().read());
         }
 
         @Override
@@ -1107,7 +1099,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
                 logger.error(
                         "endWithLocationStackTrace(): argument 'threshold' must be non-negative");
             }
-            endInternal(ticker.read());
+            endInternal(glob.ticker().read());
         }
 
         @Override
@@ -1127,7 +1119,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
         @Override
         public void endWithInfo(Throwable t) {
-            endInternal(ticker.read());
+            endInternal(glob.ticker().read());
         }
 
         private void endWithErrorInternal(@Nullable String message, @Nullable Throwable t) {
@@ -1135,7 +1127,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
                 // this guards against end*() being called multiple times on async trace entries
                 return;
             }
-            long endTick = ticker.read();
+            long endTick = glob.ticker().read();
             endInternal(endTick);
             if (transaction.allowAnotherErrorEntry()) {
                 ErrorMessage errorMessage = ErrorMessage.create(message, t,
@@ -1165,7 +1157,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
                 if (isAsync()) {
                     extendAsync();
                 } else {
-                    extendSync(ticker.read());
+                    extendSync(glob.ticker().read());
                 }
             }
             return this;
@@ -1181,7 +1173,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
             ThreadContextThreadLocal.Holder holder =
                     BytecodeServiceHolder.get().getCurrentThreadContextHolder();
             ThreadContextPlus currThreadContext = holder.get();
-            long currTick = ticker.read();
+            long currTick = glob.ticker().read();
             if (currThreadContext == ThreadContextImpl.this) {
                 extendSync(currTick);
             } else {
@@ -1200,7 +1192,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
                 if (isAsync()) {
                     stopAsync();
                 } else {
-                    stopSync(ticker.read());
+                    stopSync(glob.ticker().read());
                 }
             }
         }
@@ -1213,7 +1205,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
         @RequiresNonNull("asyncTimer")
         private void stopAsync() {
-            long endTick = ticker.read();
+            long endTick = glob.ticker().read();
             if (extendedTimer == null) {
                 endQueryData(endTick);
                 // it is not helpful to capture stack trace at end of async trace entry since it is

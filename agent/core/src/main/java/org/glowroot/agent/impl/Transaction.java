@@ -29,7 +29,6 @@ import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
-import com.google.common.base.Ticker;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
@@ -53,7 +52,6 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.agent.collector.Collector.EntryVisitor;
 import org.glowroot.agent.config.AdvancedConfig;
-import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.model.AsyncQueryData;
 import org.glowroot.agent.model.AsyncTimerImpl;
 import org.glowroot.agent.model.CommonTimerImpl;
@@ -69,7 +67,6 @@ import org.glowroot.agent.plugin.api.ThreadContext.ServletRequestInfo;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.internal.ReadableMessage;
 import org.glowroot.agent.util.IterableWithSelfRemovableEntries.SelfRemovableEntry;
-import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.common.util.Cancellable;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Traverser;
@@ -128,14 +125,7 @@ public class Transaction {
     // trace-level error
     private volatile @Nullable ErrorMessage errorMessage;
 
-    private final int maxTraceEntries;
-    private final int maxQueryAggregates;
-    private final int maxServiceCallAggregates;
-    private final int maxProfileSamples;
-
-    private final TransactionRegistry transactionRegistry;
-    private final TransactionService transactionService;
-    private final ConfigService configService;
+    private final Glob glob;
 
     // stack trace data constructed from profiling
     private volatile @MonotonicNonNull ThreadProfile mainThreadProfile;
@@ -189,10 +179,6 @@ public class Transaction {
     private volatile boolean completed;
     private volatile long endTick;
 
-    private final Ticker ticker;
-
-    private final UserProfileScheduler userProfileScheduler;
-
     private @Nullable SelfRemovableEntry transactionEntry;
 
     @GuardedBy("mainThreadContext")
@@ -210,31 +196,17 @@ public class Transaction {
     private volatile @Nullable Transaction nextCompleted;
 
     Transaction(long startTime, long startTick, String transactionType, String transactionName,
-            MessageSupplier messageSupplier, TimerName timerName, boolean captureThreadStats,
-            int maxTraceEntries, int maxQueryAggregates, int maxServiceCallAggregates,
-            int maxProfileSamples, @Nullable ThreadAllocatedBytes threadAllocatedBytes,
-            CompletionCallback completionCallback, Ticker ticker,
-            TransactionRegistry transactionRegistry, TransactionService transactionService,
-            ConfigService configService, UserProfileScheduler userProfileScheduler,
+            MessageSupplier messageSupplier, TimerName timerName, Glob glob,
+            CompletionCallback completionCallback,
             ThreadContextThreadLocal.Holder threadContextHolder) {
         this.startTime = startTime;
         this.startTick = startTick;
         this.transactionType = transactionType;
         this.transactionName = transactionName;
-        this.maxTraceEntries = maxTraceEntries;
-        this.maxQueryAggregates = maxQueryAggregates;
-        this.maxServiceCallAggregates = maxServiceCallAggregates;
-        this.maxProfileSamples = maxProfileSamples;
         this.completionCallback = completionCallback;
-        this.ticker = ticker;
-        this.userProfileScheduler = userProfileScheduler;
-        this.transactionRegistry = transactionRegistry;
-        this.transactionService = transactionService;
-        this.configService = configService;
+        this.glob = glob;
         mainThreadContext = new ThreadContextImpl(castInitialized(this), null, null,
-                messageSupplier, timerName, startTick, captureThreadStats, maxQueryAggregates,
-                maxServiceCallAggregates, threadAllocatedBytes, false, ticker, threadContextHolder,
-                null);
+                messageSupplier, timerName, startTick, glob, false, threadContextHolder, null);
     }
 
     long getStartTime() {
@@ -269,7 +241,7 @@ public class Transaction {
     }
 
     public long getDurationNanos() {
-        return completed ? endTick - startTick : ticker.read() - startTick;
+        return completed ? endTick - startTick : glob.ticker().read() - startTick;
     }
 
     public String getTransactionType() {
@@ -434,7 +406,7 @@ public class Transaction {
 
     private List<Aggregate.Query> getQueriesInternal(
             SharedQueryTextCollection sharedQueryTextCollection) throws Exception {
-        QueryCollector collector = new QueryCollector(maxQueryAggregates,
+        QueryCollector collector = new QueryCollector(glob.maxQueryAggregates(),
                 AdvancedConfig.OVERALL_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER);
         mergeQueriesInto(collector);
         return collector.toAggregateProto(sharedQueryTextCollection, true);
@@ -477,14 +449,14 @@ public class Transaction {
 
     // this method has side effect of incrementing counter
     boolean allowAnotherEntry() {
-        return entryLimitCounter++ < maxTraceEntries;
+        return entryLimitCounter++ < glob.maxTraceEntries();
     }
 
     // this method has side effect of incrementing counter
     boolean allowAnotherErrorEntry() {
         // use higher entry limit when adding errors, but still need some kind of cap
-        return entryLimitCounter++ < maxTraceEntries
-                || extraErrorEntryLimitCounter++ < maxTraceEntries;
+        return entryLimitCounter++ < glob.maxTraceEntries()
+                || extraErrorEntryLimitCounter++ < glob.maxTraceEntries();
     }
 
     public void visitEntries(long captureTick, EntryVisitor entryVisitor) throws Exception {
@@ -553,7 +525,7 @@ public class Transaction {
     }
 
     boolean isMainThreadProfileSampleLimitExceeded(long profileSampleCount) {
-        return profileSampleCount >= maxProfileSamples && mainThreadProfile != null
+        return profileSampleCount >= glob.maxProfileSamples() && mainThreadProfile != null
                 && mainThreadProfile.isSampleLimitExceeded();
     }
 
@@ -578,7 +550,7 @@ public class Transaction {
     }
 
     boolean isAuxThreadProfileSampleLimitExceeded(long profileSampleCount) {
-        return profileSampleCount >= maxProfileSamples && auxThreadProfile != null
+        return profileSampleCount >= glob.maxProfileSamples() && auxThreadProfile != null
                 && auxThreadProfile.isSampleLimitExceeded();
     }
 
@@ -649,7 +621,7 @@ public class Transaction {
             this.user = user;
             userPriority = priority;
             if (userProfileRunnable == null) {
-                userProfileScheduler.maybeScheduleUserProfiling(this, user);
+                glob.userProfileScheduler().maybeScheduleUserProfiling(this, user);
             }
         }
     }
@@ -715,8 +687,7 @@ public class Transaction {
     ThreadContextImpl startAuxThreadContext(@Nullable TraceEntryImpl parentTraceEntry,
             @Nullable TraceEntryImpl parentThreadContextPriorEntry, TimerName auxTimerName,
             long startTick, ThreadContextThreadLocal.Holder threadContextHolder,
-            @Nullable ServletRequestInfo servletRequestInfo,
-            @Nullable ThreadAllocatedBytes threadAllocatedBytes) {
+            @Nullable ServletRequestInfo servletRequestInfo) {
         ThreadContextImpl auxThreadContext;
         synchronized (mainThreadContext) {
             // check completed and add aux thread context inside synchronized block to avoid race
@@ -735,16 +706,14 @@ public class Transaction {
                     && parentThreadContextPriorEntry != null) {
                 auxThreadContext = new ThreadContextImpl(this, parentTraceEntry,
                         parentThreadContextPriorEntry, AuxThreadRootMessageSupplier.INSTANCE,
-                        auxTimerName, startTick, mainThreadContext.getCaptureThreadStats(),
-                        maxQueryAggregates, maxServiceCallAggregates, threadAllocatedBytes, false,
-                        ticker, threadContextHolder, servletRequestInfo);
+                        auxTimerName, startTick, glob, false, threadContextHolder,
+                        servletRequestInfo);
                 auxThreadContexts.add(auxThreadContext);
             } else {
                 auxThreadContext = new ThreadContextImpl(this, mainThreadContext.getRootEntry(),
                         mainThreadContext.getTailEntry(), AuxThreadRootMessageSupplier.INSTANCE,
-                        auxTimerName, startTick, mainThreadContext.getCaptureThreadStats(),
-                        maxQueryAggregates, maxServiceCallAggregates, threadAllocatedBytes, true,
-                        ticker, threadContextHolder, servletRequestInfo);
+                        auxTimerName, startTick, glob, true, threadContextHolder,
+                        servletRequestInfo);
                 if (unmergedLimitExceededAuxThreadContexts == null) {
                     unmergedLimitExceededAuxThreadContexts = Sets.newHashSet();
                 }
@@ -789,17 +758,17 @@ public class Transaction {
     TraceEntryImpl startInnerTransaction(String transactionType, String transactionName,
             MessageSupplier messageSupplier, TimerName timerName,
             ThreadContextThreadLocal.Holder threadContextHolder) {
-        return transactionService.startTransaction(transactionType, transactionName,
+        return glob.transactionService().startTransaction(transactionType, transactionName,
                 messageSupplier, timerName, threadContextHolder);
     }
 
     boolean isEntryLimitExceeded(int entryCount) {
-        return entryCount >= maxTraceEntries && entryLimitCounter > maxTraceEntries;
+        return entryCount >= glob.maxTraceEntries() && entryLimitCounter > glob.maxTraceEntries();
     }
 
     boolean isQueryLimitExceeded(int queryCount) {
         // "LIMIT EXCEEDED BUCKET" will always push query count over the max
-        return queryCount > maxQueryAggregates;
+        return queryCount > glob.maxQueryAggregates();
     }
 
     void captureStackTrace(boolean auxiliary, ThreadInfo threadInfo) {
@@ -820,7 +789,7 @@ public class Transaction {
             // profile is constructed and first stack trace is added prior to setting the
             // transaction profile field, so that it is not possible to read a profile that doesn't
             // have at least one stack trace
-            profile = new ThreadProfile(maxProfileSamples);
+            profile = new ThreadProfile(glob.maxProfileSamples());
             profile.addStackTrace(threadInfo);
             if (auxiliary) {
                 auxThreadProfile = profile;
@@ -861,18 +830,6 @@ public class Transaction {
 
     long getCaptureTime() {
         return captureTime;
-    }
-
-    TransactionRegistry getTransactionRegistry() {
-        return transactionRegistry;
-    }
-
-    TransactionService getTransactionService() {
-        return transactionService;
-    }
-
-    ConfigService getConfigService() {
-        return configService;
     }
 
     AtomicInteger getThrowableFrameLimitCounter() {
@@ -957,11 +914,11 @@ public class Transaction {
             alreadyMergedAuxThreadStats = new ThreadStatsCollectorImpl();
         }
         if (alreadyMergedAuxQueries == null) {
-            alreadyMergedAuxQueries = new QueryCollector(maxQueryAggregates,
+            alreadyMergedAuxQueries = new QueryCollector(glob.maxQueryAggregates(),
                     AdvancedConfig.OVERALL_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER);
         }
         if (alreadyMergedAuxServiceCalls == null) {
-            alreadyMergedAuxServiceCalls = new ServiceCallCollector(maxServiceCallAggregates,
+            alreadyMergedAuxServiceCalls = new ServiceCallCollector(glob.maxServiceCallAggregates(),
                     AdvancedConfig.OVERALL_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER);
         }
     }
@@ -983,8 +940,7 @@ public class Transaction {
             // object to lock on
             synchronized (this) {
                 if (asyncComponents == null) {
-                    asyncComponents = new AsyncComponents(maxQueryAggregates,
-                            maxServiceCallAggregates, ticker);
+                    asyncComponents = new AsyncComponents(glob);
                 }
             }
         }
