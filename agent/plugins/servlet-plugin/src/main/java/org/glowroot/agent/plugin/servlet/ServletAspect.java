@@ -394,6 +394,12 @@ public class ServletAspect {
     @Pointcut(className = "javax.servlet.http.HttpServletRequest", methodName = "getSession",
             methodParameterTypes = {"boolean"}, nestingGroup = "servlet-inner-call")
     public static class GetSessionOneArgAdvice {
+        @IsEnabled
+        public static boolean isEnabled(@BindParameter boolean create) {
+            // no need to check return value if create is false, since already checked session at
+            // beginning of transaction
+            return create;
+        }
         @OnReturn
         public static void onReturn(@BindReturn @Nullable HttpSession session,
                 ThreadContext context) {
