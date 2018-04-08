@@ -248,7 +248,8 @@ public class AgentModule {
         userProfileScheduler.setBackgroundExecutor(backgroundExecutor);
         OptionalService<ThreadAllocatedBytes> threadAllocatedBytes = ThreadAllocatedBytes.create();
         transactionService.setThreadAllocatedBytes(threadAllocatedBytes.getService());
-        aggregator = new Aggregator(collector, configService, ROLLUP_0_INTERVAL_MILLIS, clock);
+        aggregator = new Aggregator(transactionRegistry, collector, configService,
+                ROLLUP_0_INTERVAL_MILLIS, clock);
         transactionCollector =
                 new TransactionCollector(configService, collector, aggregator, clock, ticker);
         transactionService.setTransactionCollector(transactionCollector);

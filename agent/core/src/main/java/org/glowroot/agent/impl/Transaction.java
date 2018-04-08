@@ -66,7 +66,6 @@ import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.ThreadContext.ServletRequestInfo;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.internal.ReadableMessage;
-import org.glowroot.agent.util.IterableWithSelfRemovableEntries.SelfRemovableEntry;
 import org.glowroot.common.util.Cancellable;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Traverser;
@@ -179,8 +178,6 @@ public class Transaction {
     private volatile boolean completed;
     private volatile long endTick;
 
-    private @Nullable SelfRemovableEntry transactionEntry;
-
     @GuardedBy("mainThreadContext")
     private @MonotonicNonNull RootTimerCollectorImpl alreadyMergedAuxThreadTimers;
     @GuardedBy("mainThreadContext")
@@ -191,6 +188,12 @@ public class Transaction {
     private @MonotonicNonNull ServiceCallCollector alreadyMergedAuxServiceCalls;
     @GuardedBy("mainThreadContext")
     private boolean stopMergingAuxThreadContexts;
+
+    // linkedPrevious/linkedNext are for maintaining linked list of active transactions
+    // linkedPrevious is non-volatile since only accessed under TransactionRegistry lock
+    private @Nullable Transaction linkedPrevious;
+    // linkedNext is volatile since accessed by iterator outside of TransactionRegistry lock
+    private volatile @Nullable Transaction linkedNext;
 
     // this is for maintaining queue of completed transactions pending aggregation
     private volatile @Nullable Transaction nextCompleted;
@@ -586,6 +589,24 @@ public class Transaction {
     }
 
     @Nullable
+    Transaction getLinkedPrevious() {
+        return linkedPrevious;
+    }
+
+    void setLinkedPrevious(@Nullable Transaction linkedPrevious) {
+        this.linkedPrevious = linkedPrevious;
+    }
+
+    @Nullable
+    Transaction getLinkedNext() {
+        return linkedNext;
+    }
+
+    void setLinkedNext(@Nullable Transaction linkedNext) {
+        this.linkedNext = linkedNext;
+    }
+
+    @Nullable
     Transaction getNextCompleted() {
         return nextCompleted;
     }
@@ -673,14 +694,6 @@ public class Transaction {
 
     void setPartiallyStored() {
         partiallyStored = true;
-    }
-
-    void setTransactionEntry(SelfRemovableEntry transactionEntry) {
-        this.transactionEntry = transactionEntry;
-    }
-
-    void removeFromActiveTransactions() {
-        checkNotNull(transactionEntry).remove();
     }
 
     @Nullable

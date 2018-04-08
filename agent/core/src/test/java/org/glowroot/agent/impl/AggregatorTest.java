@@ -28,7 +28,6 @@ import org.glowroot.agent.config.ImmutableAdvancedConfig;
 import org.glowroot.agent.impl.Transaction.CompletionCallback;
 import org.glowroot.agent.model.ImmutableTimerNameImpl;
 import org.glowroot.agent.plugin.api.MessageSupplier;
-import org.glowroot.agent.util.IterableWithSelfRemovableEntries.SelfRemovableEntry;
 import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
@@ -50,8 +49,8 @@ public class AggregatorTest {
         ConfigService configService = mock(ConfigService.class);
         when(configService.getAdvancedConfig())
                 .thenReturn(ImmutableAdvancedConfig.builder().build());
-        Aggregator aggregator =
-                new Aggregator(aggregateCollector, configService, 1000, Clock.systemClock());
+        Aggregator aggregator = new Aggregator(mock(TransactionRegistry.class), aggregateCollector,
+                configService, 1000, Clock.systemClock());
 
         // when
         int count = 0;
@@ -87,7 +86,6 @@ public class AggregatorTest {
                 0, "W", "A", MessageSupplier.create("M"), ImmutableTimerNameImpl.of("T", false),
                 mock(Glob.class), mock(CompletionCallback.class),
                 mock(ThreadContextThreadLocal.Holder.class));
-        transaction.setTransactionEntry(mock(SelfRemovableEntry.class));
         transaction.end(MILLISECONDS.toNanos(123), false);
         return transaction;
     }

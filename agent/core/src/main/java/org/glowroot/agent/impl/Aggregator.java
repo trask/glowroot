@@ -49,6 +49,7 @@ public class Aggregator {
     private final List<AggregateIntervalCollector> pendingIntervalCollectors =
             Lists.newCopyOnWriteArrayList();
 
+    private final TransactionRegistry transactionRegistry;
     private final ExecutorService processingExecutor;
     private final ExecutorService flushingExecutor;
     private final Collector collector;
@@ -70,8 +71,9 @@ public class Aggregator {
 
     private volatile boolean closed;
 
-    public Aggregator(Collector collector, ConfigService configService,
-            long aggregateIntervalMillis, Clock clock) {
+    public Aggregator(TransactionRegistry transactionRegistry, Collector collector,
+            ConfigService configService, long aggregateIntervalMillis, Clock clock) {
+        this.transactionRegistry = transactionRegistry;
         this.collector = collector;
         this.configService = configService;
         this.clock = clock;
@@ -116,7 +118,7 @@ public class Aggregator {
                 backPressureLogger.warn("not aggregating a transaction because of an excessive"
                         + " backlog of {} transactions already waiting to be aggregated",
                         TRANSACTION_PENDING_LIMIT);
-                transaction.removeFromActiveTransactions();
+                transactionRegistry.removeTransaction(transaction);
             } else {
                 if (tail == null) {
                     tail = transaction;
@@ -187,7 +189,7 @@ public class Aggregator {
             // remove transaction from list of active transactions
             // used to do this at the very end of Transaction.end(), but moved to here to remove the
             // (minor) cost from the transaction main path
-            transaction.removeFromActiveTransactions();
+            transactionRegistry.removeTransaction(transaction);
 
             // remove head
             synchronized (queueLock) {

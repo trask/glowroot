@@ -259,7 +259,9 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.impl.NestedTimerMap");
         types.add("org.glowroot.agent.impl.ThreadContextImpl");
         types.add("org.glowroot.agent.impl.TimerImpl");
+        types.add("org.glowroot.agent.impl.Transaction");
         types.add("org.glowroot.agent.impl.TransactionRegistry");
+        types.add("org.glowroot.agent.impl.TransactionRegistry$ElementIterator");
         types.add("org.glowroot.agent.model.CommonTimerImpl");
         types.add("org.glowroot.agent.model.TimerNameImpl");
         types.add("org.glowroot.agent.plugin.api.MessageSupplier");
@@ -491,6 +493,7 @@ public class PreInitializeWeavingClasses {
         // (see http://stackoverflow.com/questions/2883181)
         types.add("org.glowroot.agent.config.ImmutableInstrumentationConfig$1");
         types.add("org.glowroot.agent.model.NestedTimerMap$1");
+        types.add("org.glowroot.agent.impl.TransactionRegistry$1");
         types.add("org.glowroot.agent.util.IterableWithSelfRemovableEntries$1");
         types.add("org.glowroot.agent.util.Tickers$1");
         types.add("org.glowroot.agent.weaving.Advice$1");

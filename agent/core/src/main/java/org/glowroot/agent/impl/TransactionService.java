@@ -27,7 +27,6 @@ import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.ThreadContext.ServletRequestInfo;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
-import org.glowroot.agent.util.IterableWithSelfRemovableEntries.SelfRemovableEntry;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.common.util.Clock;
 
@@ -91,8 +90,7 @@ public class TransactionService implements ConfigListener {
         Transaction transaction = new Transaction(clock.currentTimeMillis(), startTick,
                 transactionType, transactionName, messageSupplier, timerName, checkNotNull(glob),
                 transactionCompletionCallback, threadContextHolder);
-        SelfRemovableEntry transactionEntry = transactionRegistry.addTransaction(transaction);
-        transaction.setTransactionEntry(transactionEntry);
+        transactionRegistry.addTransaction(transaction);
         threadContextHolder.set(transaction.getMainThreadContext());
         return transaction.getMainThreadContext().getRootEntry();
     }
