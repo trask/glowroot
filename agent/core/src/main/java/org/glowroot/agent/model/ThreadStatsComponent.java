@@ -48,8 +48,6 @@ public class ThreadStatsComponent {
     @GuardedBy("lock")
     private volatile @MonotonicNonNull ThreadStats completedThreadStats;
 
-    private final Object lock = new Object();
-
     public ThreadStatsComponent(@Nullable ThreadAllocatedBytes threadAllocatedBytes) {
         threadId = Thread.currentThread().getId();
         ThreadInfo threadInfo = threadMXBean.getThreadInfo(threadId, 0);
@@ -77,14 +75,18 @@ public class ThreadStatsComponent {
 
     // must be called from transaction thread
     public void onComplete() {
-        synchronized (lock) {
+        // synchronized on "this" as a micro-optimization just so don't need to create an empty
+        // object to lock on
+        synchronized (this) {
             completedThreadStats = getThreadStats();
         }
     }
 
     // safe to be called from another thread
     public ThreadStats getThreadStats() {
-        synchronized (lock) {
+        // synchronized on "this" as a micro-optimization just so don't need to create an empty
+        // object to lock on
+        synchronized (this) {
             if (completedThreadStats == null) {
                 // transaction thread is still alive (and cannot terminate in the middle of this
                 // method because of above lock), so safe to capture ThreadMXBean.getThreadInfo()
@@ -98,7 +100,9 @@ public class ThreadStatsComponent {
 
     // safe to be called from another thread
     public long getTotalCpuNanos() {
-        synchronized (lock) {
+        // synchronized on "this" as a micro-optimization just so don't need to create an empty
+        // object to lock on
+        synchronized (this) {
             if (completedThreadStats == null) {
                 // transaction thread is still alive (and cannot terminate in the middle of this
                 // method because of above lock), so safe to capture ThreadMXBean.getThreadCpuTime()
