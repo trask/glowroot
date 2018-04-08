@@ -182,10 +182,8 @@ public class Transaction {
     @GuardedBy("mainThreadContext")
     private @MonotonicNonNull Set<ThreadContextImpl> unmergedLimitExceededAuxThreadContexts;
 
-    private final Object asyncComponentsInitLock = new Object();
     private volatile @MonotonicNonNull AsyncComponents asyncComponents;
 
-    private final Object sharedQueryTextCollectionLock = new Object();
     private volatile @MonotonicNonNull SharedQueryTextCollectionImpl sharedQueryTextCollection;
 
     private volatile boolean completed;
@@ -411,10 +409,18 @@ public class Transaction {
     }
 
     public List<Aggregate.Query> getQueries() throws Exception {
-        synchronized (sharedQueryTextCollectionLock) {
-            if (sharedQueryTextCollection == null) {
-                sharedQueryTextCollection = new SharedQueryTextCollectionImpl();
+        if (sharedQueryTextCollection == null) {
+            // double-checked locking works here because sharedQueryTextCollection is volatile
+            //
+            // synchronized on "this" as a micro-optimization just so don't need to create an empty
+            // object to lock on
+            synchronized (this) {
+                if (sharedQueryTextCollection == null) {
+                    sharedQueryTextCollection = new SharedQueryTextCollectionImpl();
+                }
             }
+        }
+        synchronized (sharedQueryTextCollection) {
             return getQueriesInternal(sharedQueryTextCollection);
         }
     }
@@ -432,10 +438,18 @@ public class Transaction {
     }
 
     public List<String> getSharedQueryTexts() {
-        synchronized (sharedQueryTextCollectionLock) {
-            if (sharedQueryTextCollection == null) {
-                sharedQueryTextCollection = new SharedQueryTextCollectionImpl();
+        if (sharedQueryTextCollection == null) {
+            // double-checked locking works here because sharedQueryTextCollection is volatile
+            //
+            // synchronized on "this" as a micro-optimization just so don't need to create an empty
+            // object to lock on
+            synchronized (this) {
+                if (sharedQueryTextCollection == null) {
+                    sharedQueryTextCollection = new SharedQueryTextCollectionImpl();
+                }
             }
+        }
+        synchronized (sharedQueryTextCollection) {
             return ImmutableList.copyOf(sharedQueryTextCollection.sharedQueryTexts);
         }
     }
@@ -471,10 +485,18 @@ public class Transaction {
     }
 
     public void visitEntries(long captureTick, EntryVisitor entryVisitor) throws Exception {
-        synchronized (sharedQueryTextCollectionLock) {
-            if (sharedQueryTextCollection == null) {
-                sharedQueryTextCollection = new SharedQueryTextCollectionImpl();
+        if (sharedQueryTextCollection == null) {
+            // double-checked locking works here because sharedQueryTextCollection is volatile
+            //
+            // synchronized on "this" as a micro-optimization just so don't need to create an empty
+            // object to lock on
+            synchronized (this) {
+                if (sharedQueryTextCollection == null) {
+                    sharedQueryTextCollection = new SharedQueryTextCollectionImpl();
+                }
             }
+        }
+        synchronized (sharedQueryTextCollection) {
             visitEntriesInternal(captureTick, entryVisitor, sharedQueryTextCollection);
         }
     }
@@ -943,7 +965,11 @@ public class Transaction {
 
     private AsyncComponents getOrInitAsyncComponents() {
         if (asyncComponents == null) {
-            synchronized (asyncComponentsInitLock) {
+            // double-checked locking works here because asyncComponents is volatile
+            //
+            // synchronized on "this" as a micro-optimization just so don't need to create an empty
+            // object to lock on
+            synchronized (this) {
                 if (asyncComponents == null) {
                     asyncComponents = new AsyncComponents(maxQueryAggregates,
                             maxServiceCallAggregates, ticker);
