@@ -135,6 +135,7 @@ class AdviceBuilder {
         builder.pointcutClassNamePattern(buildPattern(pointcut.className()));
         builder.pointcutClassAnnotationPattern(buildPattern(pointcut.classAnnotation()));
         builder.pointcutSubTypeRestrictionPattern(buildPattern(pointcut.subTypeRestriction()));
+        builder.pointcutSubTypeExclusionPattern(buildPattern(pointcut.subTypeExclusion()));
         builder.pointcutSuperTypeRestrictionPattern(buildPattern(pointcut.superTypeRestriction()));
         builder.pointcutMethodNamePattern(buildPattern(pointcut.methodName()));
         builder.pointcutMethodAnnotationPattern(buildPattern(pointcut.methodAnnotation()));

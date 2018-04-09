@@ -238,6 +238,13 @@ class ClassAnalyzer {
                 i.remove();
             }
         }
+        Iterator<Advice> i = matchingAdvisors.iterator();
+        while (i.hasNext()) {
+            Advice advice = i.next();
+            if (isSubTypeExclusionMatch(advice, superClassNames)) {
+                i.remove();
+            }
+        }
         builder.addAllAdvisors(matchingAdvisors);
         builder.addAllSubTypeRestrictedAdvisors(subTypeRestrictedAdvisors);
         analyzedClassBuilder.addAnalyzedMethods(builder.build());
@@ -365,6 +372,13 @@ class ClassAnalyzer {
                 for (Advice advice : subTypeRestrictedAdvisors) {
                     if (isSubTypeRestrictionMatch(advice, superClassNames)) {
                         matchingAdvisorSet.add(advice);
+                    }
+                }
+                Iterator<Advice> i = matchingAdvisorSet.iterator();
+                while (i.hasNext()) {
+                    Advice advice = i.next();
+                    if (isSubTypeExclusionMatch(advice, superClassNames)) {
+                        i.remove();
                     }
                 }
             }
@@ -499,6 +513,20 @@ class ClassAnalyzer {
         }
         for (String superClassName : superClassNames) {
             if (pointcutSubTypeRestrictionPattern.matcher(superClassName).matches()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isSubTypeExclusionMatch(Advice advice, Set<String> superClassNames) {
+        Pattern pointcutSubTypeExclusionPattern = advice.pointcutSubTypeExclusionPattern();
+        if (pointcutSubTypeExclusionPattern == null) {
+            String subTypeExclusion = advice.pointcut().subTypeExclusion();
+            return superClassNames.contains(subTypeExclusion);
+        }
+        for (String superClassName : superClassNames) {
+            if (pointcutSubTypeExclusionPattern.matcher(superClassName).matches()) {
                 return true;
             }
         }

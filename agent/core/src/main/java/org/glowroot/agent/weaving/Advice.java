@@ -41,6 +41,7 @@ abstract class Advice {
     abstract @Nullable Pattern pointcutClassNamePattern();
     abstract @Nullable Pattern pointcutClassAnnotationPattern();
     abstract @Nullable Pattern pointcutSubTypeRestrictionPattern();
+    abstract @Nullable Pattern pointcutSubTypeExclusionPattern();
     abstract @Nullable Pattern pointcutSuperTypeRestrictionPattern();
     abstract @Nullable Pattern pointcutMethodNamePattern();
     abstract @Nullable Pattern pointcutMethodAnnotationPattern();

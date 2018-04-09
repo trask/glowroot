@@ -69,11 +69,6 @@ public class ExecutorAspect {
             "org.apache.http.impl.nio.client.CloseableHttpAsyncClientBase$1"})
     public static class SuppressedRunnableEtcImpl implements SuppressedRunnableEtcMixin {}
 
-    @Mixin({"javax.ejb.AsyncResult",
-            "org.glassfish.hk2.utilities.cache.Cache$OriginThreadAwareFuture",
-            "jersey.repackaged.com.google.common.util.concurrent.AbstractFuture"})
-    public static class SuppressedFutureImpl implements SuppressedFutureMixin {}
-
     // the method names are verbose since they will be mixed in to existing classes
     public interface RunnableEtcMixin {
 
@@ -84,8 +79,6 @@ public class ExecutorAspect {
     }
 
     public interface SuppressedRunnableEtcMixin {}
-
-    public interface SuppressedFutureMixin {}
 
     @Pointcut(
             className = "java.util.concurrent.Executor|java.util.concurrent.ExecutorService"
@@ -306,16 +299,16 @@ public class ExecutorAspect {
         }
     }
 
-    @Pointcut(className = "java.util.concurrent.Future", methodName = "get",
-            methodParameterTypes = {".."}, timerName = "wait on future",
+    @Pointcut(className = "java.util.concurrent.Future",
+            subTypeExclusion = "javax.ejb.AsyncResult"
+                    + "|org.glassfish.hk2.utilities.cache.Cache$OriginThreadAwareFuture"
+                    + "|jersey.repackaged.com.google.common.util.concurrent.AbstractFuture",
+            methodName = "get", methodParameterTypes = {".."}, timerName = "wait on future",
             suppressibleUsingKey = "wait-on-future")
     public static class FutureGetAdvice {
         private static final TimerName timerName = Agent.getTimerName(FutureGetAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindReceiver Future<?> future) {
-            if (future instanceof SuppressedFutureMixin) {
-                return false;
-            }
             // don't capture if already done, primarily this is to avoid caching pattern where
             // a future is used to store the value to ensure only-once initialization
             try {
