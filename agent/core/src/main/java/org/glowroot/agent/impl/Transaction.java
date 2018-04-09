@@ -618,22 +618,22 @@ public class Transaction {
         outer = true;
     }
 
-    void setTransactionType(String transactionType, int priority) {
-        if (priority > transactionTypePriority && !transactionType.isEmpty()) {
+    void setTransactionType(@Nullable String transactionType, int priority) {
+        if (priority > transactionTypePriority && !Strings.isNullOrEmpty(transactionType)) {
             this.transactionType = transactionType;
             transactionTypePriority = priority;
         }
     }
 
-    void setTransactionName(String transactionName, int priority) {
-        if (priority > transactionNamePriority && !transactionName.isEmpty()) {
+    void setTransactionName(@Nullable String transactionName, int priority) {
+        if (priority > transactionNamePriority && !Strings.isNullOrEmpty(transactionName)) {
             this.transactionName = transactionName;
             transactionNamePriority = priority;
         }
     }
 
-    void setUser(String user, int priority) {
-        if (priority > userPriority && !user.isEmpty()) {
+    void setUser(@Nullable String user, int priority) {
+        if (priority > userPriority && !Strings.isNullOrEmpty(user)) {
             this.user = user;
             userPriority = priority;
             if (userProfileRunnable == null) {

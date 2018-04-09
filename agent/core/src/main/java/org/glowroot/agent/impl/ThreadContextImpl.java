@@ -851,9 +851,6 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     @Override
     public void setTransactionType(@Nullable String transactionType, int priority) {
-        if (Strings.isNullOrEmpty(transactionType)) {
-            return;
-        }
         if (innerTransactionThreadContext == null) {
             transaction.setTransactionType(transactionType, priority);
         } else {
@@ -863,9 +860,6 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     @Override
     public void setTransactionName(@Nullable String transactionName, int priority) {
-        if (Strings.isNullOrEmpty(transactionName)) {
-            return;
-        }
         if (innerTransactionThreadContext == null) {
             transaction.setTransactionName(transactionName, priority);
         } else {
@@ -875,9 +869,6 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     @Override
     public void setTransactionUser(@Nullable String user, int priority) {
-        if (Strings.isNullOrEmpty(user)) {
-            return;
-        }
         if (innerTransactionThreadContext == null) {
             transaction.setUser(user, priority);
         } else {
