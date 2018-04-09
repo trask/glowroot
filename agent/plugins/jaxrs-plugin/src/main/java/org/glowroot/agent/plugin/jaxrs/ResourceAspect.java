@@ -16,20 +16,13 @@
 package org.glowroot.agent.plugin.jaxrs;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.ThreadContext.Priority;
 import org.glowroot.agent.plugin.api.ThreadContext.ServletRequestInfo;
-import org.glowroot.agent.plugin.api.TimerName;
-import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.config.BooleanProperty;
 import org.glowroot.agent.plugin.api.weaving.BindMethodMeta;
-import org.glowroot.agent.plugin.api.weaving.BindThrowable;
-import org.glowroot.agent.plugin.api.weaving.BindTraveler;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
-import org.glowroot.agent.plugin.api.weaving.OnReturn;
-import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
 public class ResourceAspect {
@@ -40,13 +33,11 @@ public class ResourceAspect {
     @Pointcut(classAnnotation = "javax.ws.rs.Path",
             methodAnnotation = "javax.ws.rs.Path|javax.ws.rs.DELETE|javax.ws.rs.GET"
                     + "|javax.ws.rs.HEAD|javax.ws.rs.OPTIONS|javax.ws.rs.POST|javax.ws.rs.PUT",
-            methodParameterTypes = {".."}, timerName = "jaxrs resource")
+            methodParameterTypes = {".."})
     public static class ResourceAdvice {
 
-        private static final TimerName timerName = Agent.getTimerName(ResourceAdvice.class);
-
         @OnBefore
-        public static TraceEntry onBefore(ThreadContext context,
+        public static void onBefore(ThreadContext context,
                 @BindMethodMeta ResourceMethodMeta resourceMethodMeta) {
 
             if (useAltTransactionNaming.value()) {
@@ -57,19 +48,6 @@ public class ResourceAspect {
                 String transactionName = getTransactionName(resourceMethodMeta, servletRequestInfo);
                 context.setTransactionName(transactionName, Priority.CORE_PLUGIN);
             }
-            return context.startTraceEntry(MessageSupplier.create("jaxrs resource: {}.{}()",
-                    resourceMethodMeta.getResourceClassName(), resourceMethodMeta.getMethodName()),
-                    timerName);
-        }
-        @OnReturn
-        public static void onReturn(@BindTraveler TraceEntry traceEntry) {
-            traceEntry.end();
-        }
-
-        @OnThrow
-        public static void onThrow(@BindThrowable Throwable t,
-                @BindTraveler TraceEntry traceEntry) {
-            traceEntry.endWithError(t);
         }
 
         private static String getTransactionName(ResourceMethodMeta resourceMethodMeta,
