@@ -69,7 +69,9 @@ public class ExecutorAspect {
             "org.apache.http.impl.nio.client.CloseableHttpAsyncClientBase$1"})
     public static class SuppressedRunnableEtcImpl implements SuppressedRunnableEtcMixin {}
 
-    @Mixin("javax.ejb.AsyncResult")
+    @Mixin({"javax.ejb.AsyncResult",
+            "org.glassfish.hk2.utilities.cache.Cache$OriginThreadAwareFuture",
+            "jersey.repackaged.com.google.common.util.concurrent.AbstractFuture"})
     public static class SuppressedFutureImpl implements SuppressedFutureMixin {}
 
     // the method names are verbose since they will be mixed in to existing classes
