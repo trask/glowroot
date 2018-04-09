@@ -321,8 +321,7 @@ class ClassAnalyzer {
         if (analyzedClass.isAbstract()) {
             return ImmutableList.of();
         }
-        Map<AnalyzedMethodKey, Set<Advice>> matchingAdvisorSets =
-                getInheritedInterfaceMethodsWithAdvice();
+        Map<AnalyzedMethodKey, Set<Advice>> matchingAdvisorSets = getInheritedMethodsWithAdvice();
         if (matchingAdvisorSets.isEmpty()) {
             return ImmutableList.of();
         }
@@ -345,18 +344,25 @@ class ClassAnalyzer {
         return methodsThatOnlyNowFulfillAdvice;
     }
 
-    private Map<AnalyzedMethodKey, Set<Advice>> getInheritedInterfaceMethodsWithAdvice() {
+    private Map<AnalyzedMethodKey, Set<Advice>> getInheritedMethodsWithAdvice() {
         Map<AnalyzedMethodKey, Set<Advice>> matchingAdvisorSets = Maps.newHashMap();
         for (AnalyzedClass superAnalyzedClass : superAnalyzedClasses) {
             for (AnalyzedMethod superAnalyzedMethod : superAnalyzedClass.analyzedMethods()) {
+                List<Advice> advisors = superAnalyzedMethod.advisors();
+                List<Advice> subTypeRestrictedAdvisors =
+                        superAnalyzedMethod.subTypeRestrictedAdvisors();
+                if (advisors.isEmpty() && subTypeRestrictedAdvisors.isEmpty()) {
+                    // optimization, most methods have no advisors
+                    continue;
+                }
                 AnalyzedMethodKey key = AnalyzedMethodKey.wrap(superAnalyzedMethod);
                 Set<Advice> matchingAdvisorSet = matchingAdvisorSets.get(key);
                 if (matchingAdvisorSet == null) {
                     matchingAdvisorSet = Sets.newHashSet();
                     matchingAdvisorSets.put(key, matchingAdvisorSet);
                 }
-                matchingAdvisorSet.addAll(superAnalyzedMethod.advisors());
-                for (Advice advice : superAnalyzedMethod.subTypeRestrictedAdvisors()) {
+                matchingAdvisorSet.addAll(advisors);
+                for (Advice advice : subTypeRestrictedAdvisors) {
                     if (isSubTypeRestrictionMatch(advice, superClassNames)) {
                         matchingAdvisorSet.add(advice);
                     }
