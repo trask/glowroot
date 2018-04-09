@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.glowroot.agent.model;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.collect.Lists;
@@ -32,17 +31,16 @@ public class MutableAggregateTimer {
     private final List<MutableAggregateTimer> childTimers;
 
     public static MutableAggregateTimer createRootTimer(String name, boolean extended) {
-        return new MutableAggregateTimer(name, extended, 0, 0,
-                new ArrayList<MutableAggregateTimer>());
+        return new MutableAggregateTimer(name, extended, 0, 0);
     }
 
     public MutableAggregateTimer(String name, boolean extended, double totalDurationNanos,
-            long count, List<MutableAggregateTimer> nestedTimers) {
+            long count) {
         this.name = name;
         this.extended = extended;
         this.totalDurationNanos = totalDurationNanos;
         this.count = count;
-        this.childTimers = Lists.newArrayList(nestedTimers);
+        this.childTimers = Lists.newArrayList();
     }
 
     public String getName() {

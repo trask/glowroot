@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.glowroot.agent.model;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.collect.Lists;
@@ -32,16 +31,15 @@ public class MutableTraceTimer implements CommonTimerImpl {
     private final List<MutableTraceTimer> childTimers;
 
     public static MutableTraceTimer createRootTimer(String name, boolean extended) {
-        return new MutableTraceTimer(name, extended, 0, 0, new ArrayList<MutableTraceTimer>());
+        return new MutableTraceTimer(name, extended, 0, 0);
     }
 
-    public MutableTraceTimer(String name, boolean extended, long totalNanos, long count,
-            List<MutableTraceTimer> nestedTimers) {
+    public MutableTraceTimer(String name, boolean extended, long totalNanos, long count) {
         this.name = name;
         this.extended = extended;
         this.totalNanos = totalNanos;
         this.count = count;
-        this.childTimers = Lists.newArrayList(nestedTimers);
+        this.childTimers = Lists.newArrayList();
     }
 
     @Override
@@ -77,8 +75,7 @@ public class MutableTraceTimer implements CommonTimerImpl {
                 }
             }
             if (matchingChildTimer == null) {
-                matchingChildTimer = new MutableTraceTimer(curr.getName(),
-                        curr.isExtended(), 0, 0, new ArrayList<MutableTraceTimer>());
+                matchingChildTimer = new MutableTraceTimer(curr.getName(), curr.isExtended(), 0, 0);
                 childTimers.add(matchingChildTimer);
             }
             matchingChildTimer.merge(curr);
@@ -98,8 +95,8 @@ public class MutableTraceTimer implements CommonTimerImpl {
                 }
             }
             if (matchingChildTimer == null) {
-                matchingChildTimer = new MutableAggregateTimer(curr.getName(), curr.isExtended(), 0,
-                        0, new ArrayList<MutableAggregateTimer>());
+                matchingChildTimer =
+                        new MutableAggregateTimer(curr.getName(), curr.isExtended(), 0, 0);
                 childTimers.add(matchingChildTimer);
             }
             matchingChildTimer.merge(curr);

@@ -15,7 +15,6 @@
  */
 package org.glowroot.agent.impl;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -198,8 +197,7 @@ public class TimerImpl implements Timer, CommonTimerImpl {
                 }
             }
             if (matchingChildTimer == null) {
-                matchingChildTimer = new MutableTraceTimer(curr.getName(),
-                        curr.isExtended(), 0, 0, new ArrayList<MutableTraceTimer>());
+                matchingChildTimer = new MutableTraceTimer(curr.getName(), curr.isExtended(), 0, 0);
                 childTimers.add(matchingChildTimer);
             }
             matchingChildTimer.merge(curr);
@@ -222,8 +220,8 @@ public class TimerImpl implements Timer, CommonTimerImpl {
                 }
             }
             if (matchingChildTimer == null) {
-                matchingChildTimer = new MutableAggregateTimer(curr.getName(), curr.isExtended(), 0,
-                        0, new ArrayList<MutableAggregateTimer>());
+                matchingChildTimer =
+                        new MutableAggregateTimer(curr.getName(), curr.isExtended(), 0, 0);
                 childTimers.add(matchingChildTimer);
             }
             matchingChildTimer.merge(curr);

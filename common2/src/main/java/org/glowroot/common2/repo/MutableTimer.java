@@ -15,7 +15,6 @@
  */
 package org.glowroot.common2.repo;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.collect.Lists;
@@ -33,16 +32,15 @@ public class MutableTimer {
     private final List<MutableTimer> childTimers;
 
     public static MutableTimer createRootTimer(String name, boolean extended) {
-        return new MutableTimer(name, extended, 0, 0, new ArrayList<MutableTimer>());
+        return new MutableTimer(name, extended, 0, 0);
     }
 
-    private MutableTimer(String name, boolean extended, double totalNanos, long count,
-            List<MutableTimer> nestedTimers) {
+    private MutableTimer(String name, boolean extended, double totalNanos, long count) {
         this.name = name;
         this.extended = extended;
         this.totalNanos = totalNanos;
         this.count = count;
-        this.childTimers = Lists.newArrayList(nestedTimers);
+        this.childTimers = Lists.newArrayList();
     }
 
     @UsedByJsonSerialization
@@ -86,7 +84,7 @@ public class MutableTimer {
             }
             if (matchingChildTimer == null) {
                 matchingChildTimer = new MutableTimer(toBeMergedChildTimer.getName(),
-                        toBeMergedChildTimer.getExtended(), 0, 0, new ArrayList<MutableTimer>());
+                        toBeMergedChildTimer.getExtended(), 0, 0);
                 childTimers.add(matchingChildTimer);
             }
             matchingChildTimer.merge(toBeMergedChildTimer);
