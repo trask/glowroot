@@ -15,10 +15,9 @@
  */
 package org.glowroot.agent.plugin.executor;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
-
 import org.glowroot.agent.bytecode.api.HasThreadContextHolder;
 import org.glowroot.agent.bytecode.api.ThreadContextHolder;
+import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.weaving.Mixin;
 import org.glowroot.agent.plugin.api.weaving.MixinInit;
 
