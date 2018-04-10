@@ -38,8 +38,8 @@ public class ThreadContextThreadLocal {
 
     public ThreadContextHolder getHolder() {
         Thread thread = Thread.currentThread();
-        if (thread instanceof FastGlowrootThread) {
-            return ((FastGlowrootThread) thread).getThreadContextHolder();
+        if (thread instanceof HasThreadContextHolder) {
+            return ((HasThreadContextHolder) thread).glowroot$getThreadContextHolder();
         } else {
             return threadLocal.get();
         }

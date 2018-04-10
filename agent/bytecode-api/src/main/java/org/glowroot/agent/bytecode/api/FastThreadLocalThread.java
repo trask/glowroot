@@ -15,43 +15,44 @@
  */
 package org.glowroot.agent.bytecode.api;
 
-public class FastGlowrootThread extends Thread {
+public class FastThreadLocalThread extends Thread implements HasThreadContextHolder {
 
     private final ThreadContextHolder threadContextHolder = new ThreadContextHolder();
 
-    public FastGlowrootThread() {
+    public FastThreadLocalThread() {
         super();
     }
 
-    public FastGlowrootThread(Runnable target) {
+    public FastThreadLocalThread(Runnable target) {
         super(target);
     }
 
-    public FastGlowrootThread(ThreadGroup group, Runnable target) {
+    public FastThreadLocalThread(ThreadGroup group, Runnable target) {
         super(group, target);
     }
 
-    public FastGlowrootThread(String name) {
+    public FastThreadLocalThread(String name) {
         super(name);
     }
 
-    public FastGlowrootThread(ThreadGroup group, String name) {
+    public FastThreadLocalThread(ThreadGroup group, String name) {
         super(group, name);
     }
 
-    public FastGlowrootThread(Runnable target, String name) {
+    public FastThreadLocalThread(Runnable target, String name) {
         super(target, name);
     }
 
-    public FastGlowrootThread(ThreadGroup group, Runnable target, String name) {
+    public FastThreadLocalThread(ThreadGroup group, Runnable target, String name) {
         super(group, target, name);
     }
 
-    public FastGlowrootThread(ThreadGroup group, Runnable target, String name, long stackSize) {
+    public FastThreadLocalThread(ThreadGroup group, Runnable target, String name, long stackSize) {
         super(group, target, name, stackSize);
     }
 
-    public ThreadContextHolder getThreadContextHolder() {
+    @Override
+    public ThreadContextHolder glowroot$getThreadContextHolder() {
         return threadContextHolder;
     }
 }

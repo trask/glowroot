@@ -52,7 +52,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.bytecode.api.Bytecode;
-import org.glowroot.agent.bytecode.api.FastGlowrootThread;
+import org.glowroot.agent.bytecode.api.FastThreadLocalThread;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.impl.ThreadContextImpl;
 import org.glowroot.agent.impl.TimerImpl;
@@ -746,7 +746,7 @@ public class Weaver {
         public void visitTypeInsn(int opcode, String type) {
             if (opcode == NEW && type.equals("java/lang/Thread")) {
                 super.visitTypeInsn(opcode,
-                        ClassNames.toInternalName(FastGlowrootThread.class.getName()));
+                        ClassNames.toInternalName(FastThreadLocalThread.class.getName()));
             } else {
                 super.visitTypeInsn(opcode, type);
             }
@@ -758,7 +758,7 @@ public class Weaver {
             String newOwner = owner;
             if (opcode == INVOKESPECIAL && owner.equals("java/lang/Thread")
                     && name.equals("<init>")) {
-                newOwner = ClassNames.toInternalName(FastGlowrootThread.class.getName());
+                newOwner = ClassNames.toInternalName(FastThreadLocalThread.class.getName());
             }
             super.visitMethodInsn(opcode, newOwner, name, descriptor, isInterface);
         }

@@ -15,19 +15,8 @@
  */
 package org.glowroot.agent.bytecode.api;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+public interface HasThreadContextHolder {
 
-public class ThreadContextHolder {
-
-    private @Nullable ThreadContextPlus value;
-
-    public ThreadContextHolder() {}
-
-    public @Nullable ThreadContextPlus get() {
-        return value;
-    }
-
-    public void set(@Nullable ThreadContextPlus value) {
-        this.value = value;
-    }
+    // the method name is verbose since it will be mixed in to existing classes
+    ThreadContextHolder glowroot$getThreadContextHolder();
 }
