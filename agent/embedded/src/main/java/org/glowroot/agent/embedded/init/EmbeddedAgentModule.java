@@ -38,6 +38,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.collector.Collector.AgentConfigUpdater;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.PluginCache;
@@ -140,7 +141,9 @@ class EmbeddedAgentModule {
 
     void onEnteringMain(final File confDir, final @Nullable File sharedConfDir, final File dataDir,
             @Nullable File glowrootJarFile, Map<String, String> properties,
-            @Nullable Instrumentation instrumentation, final String glowrootVersion)
+            @Nullable Instrumentation instrumentation,
+            final @Nullable Class<? extends Collector> delegatingCustomCollectorClass,
+            final String glowrootVersion)
             throws Exception {
 
         // mem db is only used for testing (by glowroot-agent-it-harness)
@@ -178,15 +181,21 @@ class EmbeddedAgentModule {
                         simpleRepoModule.registerMBeans(new PlatformMBeanServerLifecycleImpl(
                                 agentModule.getLazyPlatformMBeanServer()));
                         // now inject the real collector into the proxy
-                        CollectorImpl collectorImpl = new CollectorImpl(
+                        Collector collector = new EmbeddedCollector(
                                 simpleRepoModule.getEnvironmentDao(),
                                 simpleRepoModule.getAggregateDao(), simpleRepoModule.getTraceDao(),
                                 simpleRepoModule.getGaugeValueDao(), configRepository,
                                 simpleRepoModule.getAlertingService(),
                                 simpleRepoModule.getHttpClient());
-                        collectorProxy.setInstance(collectorImpl);
-                        // embedded CollectorImpl does nothing with agent config parameter
-                        collectorImpl.init(confDir, sharedConfDir,
+                        if (delegatingCustomCollectorClass != null) {
+                            startupLogger.info("using delegating collector: {}",
+                                    delegatingCustomCollectorClass.getName());
+                            collector = delegatingCustomCollectorClass
+                                    .getConstructor(Collector.class).newInstance(collector);
+                        }
+                        collectorProxy.setInstance(collector);
+                        // embedded collector does nothing with agent config parameter
+                        collector.init(confDir, sharedConfDir,
                                 EnvironmentCreator.create(glowrootVersion,
                                         agentModule.getConfigService().getJvmConfig()),
                                 AgentConfig.getDefaultInstance(), new AgentConfigUpdater() {
