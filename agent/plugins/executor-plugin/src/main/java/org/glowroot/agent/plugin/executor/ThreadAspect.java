@@ -21,8 +21,6 @@ import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.weaving.Mixin;
 import org.glowroot.agent.plugin.api.weaving.MixinInit;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 public class ThreadAspect {
 
     // the field and method names are verbose since they will be mixed in to existing classes
@@ -38,7 +36,7 @@ public class ThreadAspect {
 
         @Override
         public ThreadContextHolder glowroot$getThreadContextHolder() {
-            return checkNotNull(threadContextHolder);
+            return threadContextHolder;
         }
     }
 }

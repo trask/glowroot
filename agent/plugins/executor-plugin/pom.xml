@@ -24,6 +24,12 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent-bytecode-api</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
