@@ -611,6 +611,10 @@ public class TraceDaoImpl implements TraceDao {
 
         List<Future<?>> futures = new ArrayList<>();
 
+        // inserting in order of lowest level of drilldown (e.g. full query text sha1 records) to
+        // highest level overview (e.g. slow count) so that the lower level drilldown are guaranteed
+        // to be found if the higher level overview is found
+
         List<Trace.SharedQueryText> sharedQueryTexts = new ArrayList<>();
         for (Trace.SharedQueryText sharedQueryText : trace.getSharedQueryTextList()) {
             String fullTextSha1 = sharedQueryText.getFullTextSha1();
