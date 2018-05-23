@@ -125,6 +125,7 @@ class AsyncComponents {
                         activeAsyncTimers.add(loopAsyncTimer);
                         continue;
                     }
+                    // FIXME what if loopAsyncTimer is later extended() ????
                     MergedAsyncTimer aggregateAsyncTimer =
                             alreadyMergedAsyncTimers.get(loopAsyncTimer.getName());
                     if (aggregateAsyncTimer == null) {
