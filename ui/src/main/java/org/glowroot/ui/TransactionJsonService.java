@@ -105,6 +105,9 @@ class TransactionJsonService {
                 transactionCommonService.getOverviewAggregates(agentRollupId, query, autoRefresh);
         if (overviewAggregates.isEmpty() && fallBackToLargestAggregates(query)) {
             // fall back to largest aggregates in case expiration settings have recently changed
+            // FIXME this causes problems when agent hasn't reported in last 5 hours, but looking at
+            // last 4 hours, and so no 30-min aggregates in last 4 hours, but there may be 4-hour
+            // aggregate within that window
             query = withLargestRollupLevel(query);
             overviewAggregates = transactionCommonService.getOverviewAggregates(agentRollupId,
                     query, autoRefresh);
