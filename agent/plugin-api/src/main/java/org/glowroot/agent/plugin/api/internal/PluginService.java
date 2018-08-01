@@ -23,6 +23,7 @@ import java.util.Set;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.config.ConfigService;
+import org.glowroot.agent.plugin.api.util.BaseEncoding;
 
 public interface PluginService {
 
@@ -42,4 +43,6 @@ public interface PluginService {
     Object getBeanValue(@Nullable Object obj, List<String> path) throws Exception;
 
     Map<String, String> getBeanPropertiesAsText(Object obj);
+
+    BaseEncoding base64();
 }

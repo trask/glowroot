@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.internal.PluginService;
+import org.glowroot.agent.plugin.api.util.BaseEncoding;
 import org.glowroot.agent.weaving.Beans;
 
 public class PluginServiceImpl implements PluginService {
@@ -101,6 +102,11 @@ public class PluginServiceImpl implements PluginService {
     @Override
     public Map<String, String> getBeanPropertiesAsText(Object obj) {
         return Beans2.propertiesAsText(obj);
+    }
+
+    @Override
+    public BaseEncoding base64() {
+        return new BaseEncodingImpl(com.google.common.io.BaseEncoding.base64());
     }
 
     @VisibleForTesting
@@ -184,6 +190,25 @@ public class PluginServiceImpl implements PluginService {
                 return Character.toLowerCase(str.charAt(prefix.length()))
                         + str.substring(prefix.length() + 1);
             }
+        }
+    }
+
+    private static class BaseEncodingImpl extends BaseEncoding {
+
+        private final com.google.common.io.BaseEncoding delegate;
+
+        private BaseEncodingImpl(com.google.common.io.BaseEncoding delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public String encode(byte[] bytes) {
+            return delegate.encode(bytes);
+        }
+
+        @Override
+        public byte[] decode(String text) {
+            return delegate.decode(text);
         }
     }
 }

@@ -40,6 +40,7 @@ public class ServletPluginProperties {
     private static List<Pattern> captureRequestParameters = Collections.emptyList();
     private static List<Pattern> maskRequestParameters = Collections.emptyList();
     private static List<Pattern> captureRequestHeaders = Collections.emptyList();
+    private static int captureRequestBodyNumBytes;
 
     private static boolean someRequestHostAndPortDetail;
     private static boolean captureRequestRemoteAddress;
@@ -82,6 +83,10 @@ public class ServletPluginProperties {
 
     public static List<Pattern> captureRequestHeaders() {
         return captureRequestHeaders;
+    }
+
+    public static int captureRequestBodyNumBytes() {
+        return captureRequestBodyNumBytes;
     }
 
     public static boolean captureSomeRequestHostAndPortDetail() {
@@ -219,6 +224,10 @@ public class ServletPluginProperties {
             captureRequestParameters = buildPatternList("captureRequestParameters");
             maskRequestParameters = buildPatternList("maskRequestParameters");
             captureRequestHeaders = buildPatternList("captureRequestHeaders");
+            Double captureRequestBodyNumBytesNullable =
+                    configService.getDoubleProperty("captureRequestBodyNumBytes").value();
+            captureRequestBodyNumBytes = captureRequestBodyNumBytesNullable == null ? 0
+                    : captureRequestBodyNumBytesNullable.intValue();
             captureRequestRemoteAddress =
                     configService.getBooleanProperty("captureRequestRemoteAddr").value();
             captureRequestRemoteHostname =

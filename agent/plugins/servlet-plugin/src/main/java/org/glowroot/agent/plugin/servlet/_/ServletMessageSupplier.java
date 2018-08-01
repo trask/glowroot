@@ -17,6 +17,7 @@ package org.glowroot.agent.plugin.servlet._;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.io.ByteArrayOutputStream;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -32,6 +33,7 @@ import org.glowroot.agent.plugin.api.ThreadContext.ServletRequestInfo;
 import org.glowroot.agent.plugin.api.checker.MonotonicNonNull;
 import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.checker.RequiresNonNull;
+import org.glowroot.agent.plugin.api.util.BaseEncoding;
 import org.glowroot.agent.plugin.api.util.Optional;
 import org.glowroot.agent.plugin.servlet.DetailCapture;
 
@@ -53,6 +55,8 @@ public class ServletMessageSupplier extends MessageSupplier implements ServletRe
     private final Map<String, Object> requestHeaders;
 
     private final @Nullable RequestHostAndPortDetail requestHostAndPortDetail;
+
+    private volatile @MonotonicNonNull ByteArrayOutputStream requestBody;
 
     private volatile int responseCode;
 
@@ -130,6 +134,11 @@ public class ServletMessageSupplier extends MessageSupplier implements ServletRe
                 detail.put("Request server port", requestHostAndPortDetail.serverPort);
             }
         }
+        if (requestBody != null) {
+            // TODO content encoding?
+            // TODO content type (e.g. charset)?
+            detail.put("Request body", BaseEncoding.base64().encode(requestBody.toByteArray()));
+        }
         if (responseCode != 0) {
             detail.put("Response code", responseCode);
         }
@@ -185,6 +194,25 @@ public class ServletMessageSupplier extends MessageSupplier implements ServletRe
 
     public void setCaptureRequestParameters(Map<String, Object> requestParameters) {
         this.requestParameters = requestParameters;
+    }
+
+    public void appendRequestBody(byte[] bytes, int off, int len) {
+        if (requestBody == null) {
+            requestBody = new ByteArrayOutputStream(1024);
+        }
+        int remaining = ServletPluginProperties.captureRequestBodyNumBytes() - requestBody.size();
+        if (remaining > 0) {
+            requestBody.write(bytes, off, Math.min(len, remaining));
+        }
+    }
+
+    public void appendRequestBody(byte b) {
+        if (requestBody == null) {
+            requestBody = new ByteArrayOutputStream(1024);
+        }
+        if (requestBody.size() < ServletPluginProperties.captureRequestBodyNumBytes()) {
+            requestBody.write(b);
+        }
     }
 
     public void setResponseCode(int responseCode) {

@@ -245,7 +245,7 @@ public class ResponseHeaderIT {
         return getDetailMap(trace, "Response headers");
     }
 
-    private static Trace.DetailEntry getDetailEntry(Trace trace, String name) {
+    static Trace.DetailEntry getDetailEntry(Trace trace, String name) {
         List<Trace.DetailEntry> details = trace.getHeader().getDetailEntryList();
         Trace.DetailEntry found = null;
         for (Trace.DetailEntry detail : details) {

@@ -45,6 +45,12 @@
       "description": "List of response headers to capture in the root trace entry. The wildcard '*' is supported anywhere in the header name."
     },
     {
+      "name": "captureRequestBodyNumBytes",
+      "type": "double",
+      "label": "Capture request body (number of bytes)",
+      "description": "Number of bytes of the request body to capture when read directly via ServletInputStream."
+    },
+    {
       "name": "traceErrorOn4xxResponseCode",
       "type": "boolean",
       "label": "Error on 4xx",
@@ -175,6 +181,7 @@
     "org.glowroot.agent.plugin.servlet.ServletAspect",
     "org.glowroot.agent.plugin.servlet.AsyncServletAspect",
     "org.glowroot.agent.plugin.servlet.RequestParameterAspect",
+    "org.glowroot.agent.plugin.servlet.ServletInputStreamAspect",
     "org.glowroot.agent.plugin.servlet.ResponseHeaderAspect",
     "org.glowroot.agent.plugin.servlet.RequestDispatcherAspect",
     "org.glowroot.agent.plugin.servlet.SessionAspect",
