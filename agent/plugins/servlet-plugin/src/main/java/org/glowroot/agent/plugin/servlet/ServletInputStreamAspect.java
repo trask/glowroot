@@ -26,27 +26,27 @@ public class ServletInputStreamAspect {
 
     @Pointcut(className = "javax.servlet.ServletInputStream", methodName = "readLine",
             methodParameterTypes = {"byte[]", "int", "int"},
-            nestingGroup = "servlet-input-stream", timerName = "servlet read request")
+            nestingGroup = "servlet-read-request", timerName = "servlet read request")
     public static class ReadLineAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            return ServletPluginProperties.captureRequestBodyNumBytes() != 0;
+            return ReadByteAdvice.isEnabled();
         }
         @OnReturn
         public static void onReturn(@BindReturn int numRead, ThreadContext context,
                 @BindParameter byte /*@Nullable*/ [] bytes, @BindParameter int off) {
-            ReadBytesLenAdvice.onReturn(numRead, context, bytes, off);
+            ReadBytesOffAndLenAdvice.onReturn(numRead, context, bytes, off);
         }
     }
 
     @Pointcut(className = "java.io.InputStream",
             subTypeRestriction = "javax.servlet.ServletInputStream", methodName = "read",
             methodParameterTypes = {"byte[]", "int", "int"},
-            nestingGroup = "servlet-input-stream", timerName = "servlet read request")
-    public static class ReadBytesLenAdvice {
+            nestingGroup = "servlet-read-request", timerName = "servlet read request")
+    public static class ReadBytesOffAndLenAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            return ServletPluginProperties.captureRequestBodyNumBytes() != 0;
+            return ReadByteAdvice.isEnabled();
         }
         @OnReturn
         public static void onReturn(@BindReturn int numRead, ThreadContext context,
@@ -60,19 +60,19 @@ public class ServletInputStreamAspect {
             ServletMessageSupplier messageSupplier =
                     (ServletMessageSupplier) context.getServletRequestInfo();
             if (messageSupplier != null) {
-                messageSupplier.appendRequestBody(bytes, off, numRead);
+                messageSupplier.appendRequestBodyBytes(bytes, off, numRead);
             }
         }
     }
 
     @Pointcut(className = "java.io.InputStream",
             subTypeRestriction = "javax.servlet.ServletInputStream", methodName = "read",
-            methodParameterTypes = {"byte[]"}, nestingGroup = "servlet-input-stream",
+            methodParameterTypes = {"byte[]"}, nestingGroup = "servlet-read-request",
             timerName = "servlet read request")
     public static class ReadBytesAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            return ServletPluginProperties.captureRequestBodyNumBytes() != 0;
+            return ReadByteAdvice.isEnabled();
         }
         @OnReturn
         public static void onReturn(@BindReturn int numRead, ThreadContext context,
@@ -86,14 +86,14 @@ public class ServletInputStreamAspect {
             ServletMessageSupplier messageSupplier =
                     (ServletMessageSupplier) context.getServletRequestInfo();
             if (messageSupplier != null) {
-                messageSupplier.appendRequestBody(bytes, 0, numRead);
+                messageSupplier.appendRequestBodyBytes(bytes, 0, numRead);
             }
         }
     }
 
     @Pointcut(className = "java.io.InputStream",
             subTypeRestriction = "javax.servlet.ServletInputStream", methodName = "read",
-            methodParameterTypes = {}, nestingGroup = "servlet-input-stream",
+            methodParameterTypes = {}, nestingGroup = "servlet-read-request",
             timerName = "servlet read request")
     public static class ReadByteAdvice {
         @IsEnabled
@@ -108,7 +108,7 @@ public class ServletInputStreamAspect {
             ServletMessageSupplier messageSupplier =
                     (ServletMessageSupplier) context.getServletRequestInfo();
             if (messageSupplier != null) {
-                messageSupplier.appendRequestBody((byte) b);
+                messageSupplier.appendRequestBodyByte((byte) b);
             }
         }
     }

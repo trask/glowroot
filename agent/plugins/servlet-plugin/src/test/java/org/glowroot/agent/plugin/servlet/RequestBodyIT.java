@@ -16,12 +16,14 @@
 package org.glowroot.agent.plugin.servlet;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.ByteStreams;
+import com.google.common.io.CharStreams;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -57,16 +59,35 @@ public class RequestBodyIT {
     }
 
     @Test
-    public void testCaptureRequestBody() throws Exception {
+    public void testCaptureRequestBodyText() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureRequestBodyNumChars",
+                10.0);
+
+        // when
+        Trace trace = container.execute(ReadRequestBodyText.class, "Web");
+
+        // then
+        Trace.DetailEntry detailEntry =
+                ResponseHeaderIT.getDetailEntry(trace, "Request body (text)");
+        assertThat(detailEntry).isNotNull();
+        assertThat(detailEntry.getValueCount()).isEqualTo(1);
+        Trace.DetailValue detailValue = detailEntry.getValue(0);
+        assertThat(detailValue.getString()).isEqualTo("abcdefghij");
+    }
+
+    @Test
+    public void testCaptureRequestBodyBytes() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureRequestBodyNumBytes",
                 10.0);
 
         // when
-        Trace trace = container.execute(ReadRequestBody.class, "Web");
+        Trace trace = container.execute(ReadRequestBodyBytes.class, "Web");
 
         // then
-        Trace.DetailEntry detailEntry = ResponseHeaderIT.getDetailEntry(trace, "Request body");
+        Trace.DetailEntry detailEntry =
+                ResponseHeaderIT.getDetailEntry(trace, "Request body (bytes)");
         assertThat(detailEntry).isNotNull();
         assertThat(detailEntry.getValueCount()).isEqualTo(1);
         Trace.DetailValue detailValue = detailEntry.getValue(0);
@@ -75,7 +96,7 @@ public class RequestBodyIT {
     }
 
     @SuppressWarnings("serial")
-    public static class ReadRequestBody extends TestServlet {
+    public static class ReadRequestBodyText extends TestServlet {
         @Override
         protected void before(HttpServletRequest request, HttpServletResponse response) {
             ((MockHttpServletRequest) request)
@@ -85,7 +106,28 @@ public class RequestBodyIT {
         @Override
         protected void doPost(HttpServletRequest request, HttpServletResponse response)
                 throws IOException {
-            ByteStreams.exhaust(request.getInputStream());
+            String content = CharStreams.toString(request.getReader());
+            if (!content.equals("abcdefghijklmnopqrstuvwxyz")) {
+                throw new AssertionError();
+            }
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class ReadRequestBodyBytes extends TestServlet {
+        @Override
+        protected void before(HttpServletRequest request, HttpServletResponse response) {
+            ((MockHttpServletRequest) request)
+                    .setContent("abcdefghijklmnopqrstuvwxyz".getBytes(UTF_8));
+            ((MockHttpServletRequest) request).setMethod("POST");
+        }
+        @Override
+        protected void doPost(HttpServletRequest request, HttpServletResponse response)
+                throws IOException {
+            byte[] content = ByteStreams.toByteArray(request.getInputStream());
+            if (!Arrays.equals(content, "abcdefghijklmnopqrstuvwxyz".getBytes(UTF_8))) {
+                throw new AssertionError();
+            }
         }
     }
 }

@@ -18,6 +18,7 @@ package org.glowroot.agent.plugin.servlet._;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.io.ByteArrayOutputStream;
+import java.nio.CharBuffer;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -56,7 +57,8 @@ public class ServletMessageSupplier extends MessageSupplier implements ServletRe
 
     private final @Nullable RequestHostAndPortDetail requestHostAndPortDetail;
 
-    private volatile @MonotonicNonNull ByteArrayOutputStream requestBody;
+    private volatile @MonotonicNonNull StringBuilder requestBodyText;
+    private volatile @MonotonicNonNull ByteArrayOutputStream requestBodyBytes;
 
     private volatile int responseCode;
 
@@ -134,10 +136,11 @@ public class ServletMessageSupplier extends MessageSupplier implements ServletRe
                 detail.put("Request server port", requestHostAndPortDetail.serverPort);
             }
         }
-        if (requestBody != null) {
-            // TODO content encoding?
-            // TODO content type (e.g. charset)?
-            detail.put("Request body", BaseEncoding.base64().encode(requestBody.toByteArray()));
+        if (requestBodyText != null) {
+            detail.put("Request body (text)", requestBodyText.toString());
+        } else if (requestBodyBytes != null) {
+            detail.put("Request body (bytes)",
+                    BaseEncoding.base64().encode(requestBodyBytes.toByteArray()));
         }
         if (responseCode != 0) {
             detail.put("Response code", responseCode);
@@ -196,22 +199,78 @@ public class ServletMessageSupplier extends MessageSupplier implements ServletRe
         this.requestParameters = requestParameters;
     }
 
-    public void appendRequestBody(byte[] bytes, int off, int len) {
-        if (requestBody == null) {
-            requestBody = new ByteArrayOutputStream(1024);
+    public void appendRequestBodyText(CharBuffer cbuf, int startingPosition, int len) {
+        if (requestBodyText == null) {
+            requestBodyText = new StringBuilder(1024);
         }
-        int remaining = ServletPluginProperties.captureRequestBodyNumBytes() - requestBody.size();
+        int remaining =
+                ServletPluginProperties.captureRequestBodyNumChars() - requestBodyText.length();
+        if (remaining <= 0) {
+            return;
+        }
+        // rewind and re-read
+        cbuf.position(startingPosition);
+        if (len <= remaining) {
+            requestBodyText.append(cbuf, 0, len);
+        } else {
+            requestBodyText.append(cbuf, 0, Math.min(len, remaining));
+        }
+        cbuf.position(startingPosition + len);
+    }
+
+    void appendRequestBodyText(char[] cbuf, int off, int len) {
+        if (requestBodyText == null) {
+            requestBodyText = new StringBuilder(1024);
+        }
+        int remaining =
+                ServletPluginProperties.captureRequestBodyNumChars() - requestBodyText.length();
         if (remaining > 0) {
-            requestBody.write(bytes, off, Math.min(len, remaining));
+            requestBodyText.append(cbuf, off, Math.min(len, remaining));
         }
     }
 
-    public void appendRequestBody(byte b) {
-        if (requestBody == null) {
-            requestBody = new ByteArrayOutputStream(1024);
+    void appendRequestBodyText(String line) {
+        if (requestBodyText == null) {
+            requestBodyText = new StringBuilder(1024);
         }
-        if (requestBody.size() < ServletPluginProperties.captureRequestBodyNumBytes()) {
-            requestBody.write(b);
+        int remaining =
+                ServletPluginProperties.captureRequestBodyNumChars() - requestBodyText.length();
+        if (remaining <= 0) {
+            return;
+        }
+        if (line.length() <= remaining) {
+            requestBodyText.append(line);
+        } else {
+            requestBodyText.append(line.substring(0, remaining));
+        }
+    }
+
+    void appendRequestBodyText(char c) {
+        if (requestBodyText == null) {
+            requestBodyText = new StringBuilder(1024);
+        }
+        if (requestBodyText.length() < ServletPluginProperties.captureRequestBodyNumChars()) {
+            requestBodyText.append(c);
+        }
+    }
+
+    void appendRequestBodyBytes(byte[] bytes, int off, int len) {
+        if (requestBodyBytes == null) {
+            requestBodyBytes = new ByteArrayOutputStream(1024);
+        }
+        int remaining =
+                ServletPluginProperties.captureRequestBodyNumBytes() - requestBodyBytes.size();
+        if (remaining > 0) {
+            requestBodyBytes.write(bytes, off, Math.min(len, remaining));
+        }
+    }
+
+    public void appendRequestBodyByte(byte b) {
+        if (requestBodyBytes == null) {
+            requestBodyBytes = new ByteArrayOutputStream(1024);
+        }
+        if (requestBodyBytes.size() < ServletPluginProperties.captureRequestBodyNumBytes()) {
+            requestBodyBytes.write(b);
         }
     }
 
