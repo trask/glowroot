@@ -52,6 +52,7 @@ import org.glowroot.central.repo.V09AgentRollupDao;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.MoreExecutors2;
 import org.glowroot.common.util.Clock;
+import org.glowroot.wire.api.model.CollectorServiceGrpc.CollectorServiceImplBase;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
@@ -66,6 +67,10 @@ class GrpcServer {
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
     private static final Logger logger = LoggerFactory.getLogger(GrpcServer.class);
+
+    private static final String REPLAY_DIRECTORY =
+            System.getProperty("glowroot.replay.directory", "");
+    private static final String REPLAY_AGENT_ID = System.getProperty("glowroot.replay.agentId", "");
 
     private final DownstreamServiceImpl downstreamService;
 
@@ -84,11 +89,17 @@ class GrpcServer {
         GrpcCommon grpcCommon = new GrpcCommon(v09AgentRollupDao);
         downstreamService = new DownstreamServiceImpl(grpcCommon, clusterManager);
 
-        CollectorServiceImpl collectorService = new CollectorServiceImpl(agentDisplayDao,
+        CollectorServiceImplBase collectorService = new CollectorServiceImpl(agentDisplayDao,
                 agentConfigDao, activeAgentDao, environmentDao, heartbeatDao, aggregateDao,
                 gaugeValueDao, traceDao, v09AgentRollupDao, grpcCommon, centralAlertingService,
                 clock, version);
 
+        if (!REPLAY_DIRECTORY.isEmpty() && !REPLAY_AGENT_ID.isEmpty()) {
+            File replayDirectory = new File(REPLAY_DIRECTORY);
+            replayDirectory.mkdirs();
+            collectorService = new ReplayCollectorService(collectorService, REPLAY_AGENT_ID,
+                    replayDirectory, clock);
+        }
         if (httpPort == null) {
             httpServer = null;
         } else {
@@ -113,7 +124,7 @@ class GrpcServer {
 
     private static Server startServer(String bindAddress, int port, boolean https, File confDir,
             @Nullable ExecutorService confDirWatchExecutor, DownstreamServiceImpl downstreamService,
-            CollectorServiceImpl collectorService) throws IOException {
+            CollectorServiceImplBase collectorService) throws IOException {
         NettyServerBuilder builder =
                 NettyServerBuilder.forAddress(new InetSocketAddress(bindAddress, port));
         if (https) {
