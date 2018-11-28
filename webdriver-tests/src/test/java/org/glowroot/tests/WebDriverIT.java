@@ -189,6 +189,7 @@ public abstract class WebDriverIT {
                 + "\"maxServiceCallAggregates\":500,"
                 + "\"maxTraceEntriesPerTransaction\":2000,"
                 + "\"maxProfileSamplesPerTransaction\":50000,"
+                + "\"maxTracesStoredPerMinute\":50,"
                 + "\"mbeanGaugeNotFoundDelaySeconds\":60,"
                 + "\"weavingTimer\":false,"
                 + "\"version\":\"$version\"}");

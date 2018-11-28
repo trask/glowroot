@@ -113,6 +113,8 @@ class ConfigServiceImpl implements ConfigService {
         server.updateAgentConfig(agentConfig.toBuilder()
                 .setTransactionConfig(agentConfig.getTransactionConfig().toBuilder()
                         .setSlowThresholdMillis(of(0)))
+                .setAdvancedConfig(agentConfig.getAdvancedConfig().toBuilder()
+                        .setMaxTracesStoredPerMinute(of(Integer.MAX_VALUE)))
                 .build());
     }
 
@@ -208,6 +210,7 @@ class ConfigServiceImpl implements ConfigService {
                 .setMaxServiceCallAggregates(of(500))
                 .setMaxTraceEntriesPerTransaction(of(2000))
                 .setMaxProfileSamplesPerTransaction(of(50000))
+                .setMaxTracesStoredPerMinute(of(Integer.MAX_VALUE)) // default for tests
                 .setMbeanGaugeNotFoundDelaySeconds(of(60))
                 .build();
     }

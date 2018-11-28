@@ -39,6 +39,18 @@ glowroot.controller('ConfigAdvancedCtrl', [
       $scope.originalConfig = angular.copy($scope.config);
     }
 
+    $scope.supportsMaxTracesStoredPerMinute = function () {
+      // max traces stored per minute was introduced in agent version 0.13.4
+      return !$scope.layout.central || ($scope.agentRollup.glowrootVersion.lastIndexOf('0.9.', 0) === -1
+          && $scope.agentRollup.glowrootVersion.lastIndexOf('0.10.', 0) === -1
+          && $scope.agentRollup.glowrootVersion.lastIndexOf('0.11.', 0) === -1
+          && $scope.agentRollup.glowrootVersion.lastIndexOf('0.12.', 0) === -1
+          && $scope.agentRollup.glowrootVersion.lastIndexOf('0.13.0,', 0) === -1
+          && $scope.agentRollup.glowrootVersion.lastIndexOf('0.13.1,', 0) === -1
+          && $scope.agentRollup.glowrootVersion.lastIndexOf('0.13.2,', 0) === -1
+          && $scope.agentRollup.glowrootVersion.lastIndexOf('0.13.3,', 0) === -1);
+    };
+
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
       $http.post('backend/config/advanced?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId), postData)

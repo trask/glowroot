@@ -62,6 +62,7 @@ message AgentConfig {
     OptionalInt32 max_service_call_aggregates = 5;
     OptionalInt32 max_trace_entries_per_transaction = 6;
     OptionalInt32 max_profile_samples_per_transaction = 7;
+    OptionalInt32 max_traces_stored_per_minute = 9;
     OptionalInt32 mbean_gauge_not_found_delay_seconds = 8;
     bool weaving_timer = 1;
   }

@@ -160,7 +160,7 @@ public class UiModule {
                 gaugeValueRepository, liveAggregateRepository, rollupLevelService,
                 reportingExecutor));
         jsonServices.add(new ConfigJsonService(transactionTypeRepository, gaugeValueRepository,
-                liveAggregateRepository, configRepository));
+                liveAggregateRepository, environmentRepository, configRepository));
         jsonServices.add(new AlertConfigJsonService(configRepository, alertingDisabledRepository,
                 gaugeValueRepository, syntheticResultRepository, clock, central));
         jsonServices.add(new UserConfigJsonService(configRepository));

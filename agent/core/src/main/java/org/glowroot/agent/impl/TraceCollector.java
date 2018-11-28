@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -56,6 +57,7 @@ public class TraceCollector {
     private static final int PENDING_LIMIT = 50;
 
     private final ExecutorService dedicatedExecutor;
+    private final ConfigService configService;
     private final Collector collector;
     private final Clock clock;
     private final Ticker ticker;
@@ -73,11 +75,16 @@ public class TraceCollector {
     private Map<String, SlowThresholdOverridesForType> slowThresholdOverrides = ImmutableMap.of();
     // visibility is provided by memoryBarrier in org.glowroot.config.ConfigService
     private long defaultSlowThresholdNanos;
+    private final ConcurrentMap<String, PerMinuteRateLimiter> slowTraceRateLimiters =
+            Maps.newConcurrentMap();
+    private final ConcurrentMap<String, PerMinuteRateLimiter> errorTraceRateLimiters =
+            Maps.newConcurrentMap();
 
     private volatile boolean closed;
 
     public TraceCollector(final ConfigService configService, Collector collector, Clock clock,
             Ticker ticker) {
+        this.configService = configService;
         this.collector = collector;
         this.clock = clock;
         this.ticker = ticker;
@@ -160,8 +167,19 @@ public class TraceCollector {
 
     void collectTrace(Transaction transaction) {
         boolean slow = shouldStoreSlow(transaction);
-        if (!slow && !shouldStoreError(transaction)) {
+        boolean error = shouldStoreError(transaction);
+        if (!slow && !error) {
             return;
+        }
+        // rate limits don't apply to transactions that were already (partially) stored to make sure
+        // they don't get left out in case they cause an avalanche of slowness
+        if (!transaction.isPartiallyStored()) {
+            if (slow && !allowAnother(transaction, slowTraceRateLimiters)) {
+                return;
+            }
+            if (error && !allowAnother(transaction, errorTraceRateLimiters)) {
+                return;
+            }
         }
         // don't need to worry about race condition since only ever called from a single thread
         if (transaction.isPartiallyStored()
@@ -186,6 +204,18 @@ public class TraceCollector {
             backPressureLogger.warn("not storing a trace because of an excessive backlog of {}"
                     + " traces already waiting to be stored", PENDING_LIMIT * 3);
         }
+    }
+
+    private boolean allowAnother(Transaction transaction,
+            ConcurrentMap<String, PerMinuteRateLimiter> rateLimiters) {
+        String transactionType = transaction.getTransactionType();
+        PerMinuteRateLimiter rateLimiter = rateLimiters.get(transactionType);
+        if (rateLimiter == null) {
+            rateLimiter = new PerMinuteRateLimiter(configService);
+            // don't need to worry about race condition since this is single threaded
+            rateLimiters.putIfAbsent(transactionType, rateLimiter);
+        }
+        return rateLimiter.tryAcquire(transaction.getCaptureTime(), transaction.getStartTime());
     }
 
     public void storePartialTrace(Transaction transaction) {
@@ -280,6 +310,7 @@ public class TraceCollector {
             TraceCollector.this.slowThresholdOverrides = ImmutableMap.copyOf(builder);
             defaultSlowThresholdNanos =
                     MILLISECONDS.toNanos(transactionConfig.slowThresholdMillis());
+            slowTraceRateLimiters.clear();
         }
     }
 
@@ -374,6 +405,41 @@ public class TraceCollector {
                     .defaultThresholdNanos(defaultThresholdNanos)
                     .putAllThresholdNanos(thresholdNanos)
                     .build();
+        }
+    }
+
+    private static class PerMinuteRateLimiter {
+
+        private final ConfigService configService;
+
+        private final AtomicInteger available = new AtomicInteger();
+        private volatile long nextResetTime;
+        private volatile long oldestStartTime;
+
+        private PerMinuteRateLimiter(ConfigService configService) {
+            this.configService = configService;
+        }
+
+        private boolean tryAcquire(long captureTime, long startTime) {
+            if (captureTime > nextResetTime) {
+                // don't need to worry about race condition since this is single threaded
+                available.set(configService.getAdvancedConfig().maxTracesStoredPerMinute() - 1);
+                nextResetTime = (long) Math.ceil(captureTime / (double) 60000) * 60000;
+                oldestStartTime = captureTime;
+                return true;
+            }
+            if (available.getAndDecrement() > 0) {
+                if (startTime < oldestStartTime) {
+                    oldestStartTime = startTime;
+                }
+                return true;
+            }
+            if (startTime <= oldestStartTime) {
+                // special case to avoid missing long-running "root cause" traces
+                oldestStartTime = startTime;
+                return true;
+            }
+            return false;
         }
     }
 }

@@ -144,6 +144,8 @@ public class ConfigIT extends WebDriverIT {
         page.getMaxTraceEntriesPerTransactionTextField().sendKeys("2345");
         page.getMaxProfileSamplesPerTransactionTextField().clear();
         page.getMaxProfileSamplesPerTransactionTextField().sendKeys("3456");
+        page.getMaxTracesStoredPerMinuteTextField().clear();
+        page.getMaxTracesStoredPerMinuteTextField().sendKeys("5677");
         page.clickSaveButton();
         // wait for save to finish
         SECONDS.sleep(1);
@@ -163,6 +165,8 @@ public class ConfigIT extends WebDriverIT {
                 .isEqualTo("2345");
         assertThat(page.getMaxProfileSamplesPerTransactionTextField().getAttribute("value"))
                 .isEqualTo("3456");
+        assertThat(page.getMaxTracesStoredPerMinuteTextField().getAttribute("value"))
+                .isEqualTo("5677");
     }
 
     @Test

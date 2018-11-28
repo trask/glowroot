@@ -24,10 +24,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import org.immutables.value.Value;
 
-import org.glowroot.common.config.AdvancedConfig;
 import org.glowroot.common.config.AlertConfig;
 import org.glowroot.common.config.GaugeConfig;
-import org.glowroot.common.config.ImmutableAdvancedConfig;
 import org.glowroot.common.config.ImmutableAlertConfig;
 import org.glowroot.common.config.ImmutableGaugeConfig;
 import org.glowroot.common.config.ImmutableInstrumentationConfig;
@@ -44,6 +42,7 @@ import org.glowroot.common.config.UiDefaultsConfig;
 import org.glowroot.common.util.Versions;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
+import org.glowroot.wire.api.model.Proto.OptionalInt32;
 
 @Value.Immutable
 abstract class AllConfigDto {
@@ -85,12 +84,12 @@ abstract class AllConfigDto {
 
     abstract @Nullable String version();
 
-    AgentConfig toProto() {
+    AgentConfig toProto(String agentVersion) {
         AgentConfig.Builder builder = AgentConfig.newBuilder()
                 .setTransactionConfig(transactions().toProto())
                 .setJvmConfig(jvm().toProto())
                 .setUiDefaultsConfig(uiDefaults().toProto())
-                .setAdvancedConfig(advanced().toProto());
+                .setAdvancedConfig(advanced().toProto(agentVersion));
         for (GaugeConfig gaugeConfig : gauges()) {
             builder.addGaugeConfig(gaugeConfig.toProto());
         }
@@ -136,6 +135,125 @@ abstract class AllConfigDto {
         }
         return builder.version(Versions.getVersion(config))
                 .build();
+    }
+
+    @Value.Immutable
+    abstract static class AdvancedConfig {
+
+        private static final org.glowroot.common.config.ImmutableAdvancedConfig DEFAULTS =
+                org.glowroot.common.config.ImmutableAdvancedConfig.builder().build();
+
+        @Value.Default
+        public int immediatePartialStoreThresholdSeconds() {
+            return DEFAULTS.immediatePartialStoreThresholdSeconds();
+        }
+
+        @Value.Default
+        public int maxTransactionAggregates() {
+            return DEFAULTS.maxTransactionAggregates();
+        }
+
+        @Value.Default
+        public int maxQueryAggregates() {
+            return DEFAULTS.maxQueryAggregates();
+        }
+
+        @Value.Default
+        public int maxServiceCallAggregates() {
+            return DEFAULTS.maxServiceCallAggregates();
+        }
+
+        @Value.Default
+        public int maxTraceEntriesPerTransaction() {
+            return DEFAULTS.maxTraceEntriesPerTransaction();
+        }
+
+        @Value.Default
+        public int maxProfileSamplesPerTransaction() {
+            return DEFAULTS.maxProfileSamplesPerTransaction();
+        }
+
+        // introduced in 0.12.3
+        public abstract @Nullable Integer maxTracesStoredPerMinute();
+
+        @Value.Default
+        public int mbeanGaugeNotFoundDelaySeconds() {
+            return DEFAULTS.mbeanGaugeNotFoundDelaySeconds();
+        }
+
+        @Value.Default
+        @JsonInclude(Include.NON_EMPTY)
+        public boolean weavingTimer() {
+            return DEFAULTS.weavingTimer();
+        }
+
+        public AgentConfig.AdvancedConfig toProto(String agentVersion) {
+            AgentConfig.AdvancedConfig.Builder builder = AgentConfig.AdvancedConfig.newBuilder()
+                    .setImmediatePartialStoreThresholdSeconds(
+                            of(immediatePartialStoreThresholdSeconds()))
+                    .setMaxTransactionAggregates(of(maxTransactionAggregates()))
+                    .setMaxQueryAggregates(of(maxQueryAggregates()))
+                    .setMaxServiceCallAggregates(of(maxServiceCallAggregates()))
+                    .setMaxTraceEntriesPerTransaction(of(maxTraceEntriesPerTransaction()))
+                    .setMaxProfileSamplesPerTransaction(of(maxProfileSamplesPerTransaction()));
+            if (supportsMaxTracesStoredPerMinute(agentVersion)) {
+                Integer maxTracesStoredPerMinute = maxTracesStoredPerMinute();
+                if (maxTracesStoredPerMinute == null) {
+                    builder.setMaxTracesStoredPerMinute(of(DEFAULTS.maxTracesStoredPerMinute()));
+                } else {
+                    builder.setMaxTracesStoredPerMinute(of(maxTracesStoredPerMinute));
+                }
+            }
+            return builder.setMbeanGaugeNotFoundDelaySeconds(of(mbeanGaugeNotFoundDelaySeconds()))
+                    .setWeavingTimer(weavingTimer())
+                    .build();
+        }
+
+        public static ImmutableAdvancedConfig create(AgentConfig.AdvancedConfig config) {
+            ImmutableAdvancedConfig.Builder builder = ImmutableAdvancedConfig.builder();
+            if (config.hasImmediatePartialStoreThresholdSeconds()) {
+                builder.immediatePartialStoreThresholdSeconds(
+                        config.getImmediatePartialStoreThresholdSeconds().getValue());
+            }
+            if (config.hasMaxTransactionAggregates()) {
+                builder.maxTransactionAggregates(config.getMaxTransactionAggregates().getValue());
+            }
+            if (config.hasMaxQueryAggregates()) {
+                builder.maxQueryAggregates(config.getMaxQueryAggregates().getValue());
+            }
+            if (config.hasMaxServiceCallAggregates()) {
+                builder.maxServiceCallAggregates(config.getMaxServiceCallAggregates().getValue());
+            }
+            if (config.hasMaxTraceEntriesPerTransaction()) {
+                builder.maxTraceEntriesPerTransaction(
+                        config.getMaxTraceEntriesPerTransaction().getValue());
+            }
+            if (config.hasMaxProfileSamplesPerTransaction()) {
+                builder.maxProfileSamplesPerTransaction(
+                        config.getMaxProfileSamplesPerTransaction().getValue());
+            }
+            if (config.hasMaxTracesStoredPerMinute()) {
+                builder.maxTracesStoredPerMinute(config.getMaxTracesStoredPerMinute().getValue());
+            }
+            if (config.hasMbeanGaugeNotFoundDelaySeconds()) {
+                builder.mbeanGaugeNotFoundDelaySeconds(
+                        config.getMbeanGaugeNotFoundDelaySeconds().getValue());
+            }
+            return builder.weavingTimer(config.getWeavingTimer())
+                    .build();
+        }
+
+        // max traces stored per minute was introduced in agent version 0.13.4
+        private static boolean supportsMaxTracesStoredPerMinute(String agentVersion) {
+            return !agentVersion.startsWith("0.9.") && !agentVersion.startsWith("0.10.")
+                    && !agentVersion.startsWith("0.11.") && !agentVersion.startsWith("0.12.")
+                    && !agentVersion.startsWith("0.13.0,") && !agentVersion.startsWith("0.13.1,")
+                    && !agentVersion.startsWith("0.13.2,") && !agentVersion.startsWith("0.13.3,");
+        }
+
+        private static OptionalInt32 of(int value) {
+            return OptionalInt32.newBuilder().setValue(value).build();
+        }
     }
 
     @Value.Immutable

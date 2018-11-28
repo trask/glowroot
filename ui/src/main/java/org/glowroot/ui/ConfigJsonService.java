@@ -36,10 +36,12 @@ import org.glowroot.common.config.PluginNameComparison;
 import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Styles;
+import org.glowroot.common.util.Version;
 import org.glowroot.common.util.Versions;
 import org.glowroot.common2.config.MoreConfigDefaults;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.ConfigRepository.OptimisticLockException;
+import org.glowroot.common2.repo.EnvironmentRepository;
 import org.glowroot.common2.repo.GaugeValueRepository;
 import org.glowroot.common2.repo.GaugeValueRepository.Gauge;
 import org.glowroot.common2.repo.TransactionTypeRepository;
@@ -54,6 +56,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginPrope
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SlowThresholdOverride;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiDefaultsConfig;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -67,14 +70,17 @@ class ConfigJsonService {
     private final TransactionTypeRepository transactionTypeRepository;
     private final GaugeValueRepository gaugeValueRepository;
     private final LiveAggregateRepository liveAggregateRepository;
+    private final EnvironmentRepository environmentRepository;
     private final ConfigRepository configRepository;
 
     ConfigJsonService(TransactionTypeRepository transactionTypeRepository,
             GaugeValueRepository gaugeValueRepository,
-            LiveAggregateRepository liveAggregateRepository, ConfigRepository configRepository) {
+            LiveAggregateRepository liveAggregateRepository,
+            EnvironmentRepository environmentRepository, ConfigRepository configRepository) {
         this.transactionTypeRepository = transactionTypeRepository;
         this.gaugeValueRepository = gaugeValueRepository;
         this.liveAggregateRepository = liveAggregateRepository;
+        this.environmentRepository = environmentRepository;
         this.configRepository = configRepository;
     }
 
@@ -266,8 +272,12 @@ class ConfigJsonService {
     @POST(path = "/backend/config/json", permission = "agent:config:edit")
     String updateAllConfig(@BindAgentId String agentId, @BindRequest AllConfigDto config)
             throws Exception {
+        Environment environment = environmentRepository.read(agentId);
+        String agentVersion = environment == null ? Version.UNKNOWN_VERSION
+                : environment.getJavaInfo().getGlowrootAgentVersion();
         try {
-            configRepository.updateAllConfig(agentId, config.toProto(), config.version());
+            configRepository.updateAllConfig(agentId, config.toProto(agentVersion),
+                    config.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
@@ -587,6 +597,7 @@ class ConfigJsonService {
         abstract int maxServiceCallAggregates();
         abstract int maxTraceEntriesPerTransaction();
         abstract int maxProfileSamplesPerTransaction();
+        abstract int maxTracesStoredPerMinute();
         abstract int mbeanGaugeNotFoundDelaySeconds();
         abstract boolean weavingTimer();
         abstract String version();
@@ -600,6 +611,7 @@ class ConfigJsonService {
                     .setMaxServiceCallAggregates(of(maxServiceCallAggregates()))
                     .setMaxTraceEntriesPerTransaction(of(maxTraceEntriesPerTransaction()))
                     .setMaxProfileSamplesPerTransaction(of(maxProfileSamplesPerTransaction()))
+                    .setMaxTracesStoredPerMinute(of(maxTracesStoredPerMinute()))
                     .setMbeanGaugeNotFoundDelaySeconds(of(mbeanGaugeNotFoundDelaySeconds()))
                     .setWeavingTimer(weavingTimer())
                     .build();
@@ -616,6 +628,7 @@ class ConfigJsonService {
                             config.getMaxTraceEntriesPerTransaction().getValue())
                     .maxProfileSamplesPerTransaction(
                             config.getMaxProfileSamplesPerTransaction().getValue())
+                    .maxTracesStoredPerMinute(config.getMaxTracesStoredPerMinute().getValue())
                     .mbeanGaugeNotFoundDelaySeconds(
                             config.getMbeanGaugeNotFoundDelaySeconds().getValue())
                     .weavingTimer(config.getWeavingTimer())

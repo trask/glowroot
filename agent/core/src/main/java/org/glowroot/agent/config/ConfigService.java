@@ -357,6 +357,8 @@ public class ConfigService {
     public void initConfigForTests() throws IOException {
         transactionConfig = ImmutableTransactionConfig.copyOf(transactionConfig)
                 .withSlowThresholdMillis(0);
+        advancedConfig = ImmutableAdvancedConfig.copyOf(advancedConfig)
+                .withMaxTracesStoredPerMinute(Integer.MAX_VALUE);
         writeAll();
         notifyConfigListeners();
     }
@@ -368,7 +370,9 @@ public class ConfigService {
                 .build();
         jvmConfig = ImmutableJvmConfig.builder().build();
         uiDefaultsConfig = ImmutableUiDefaultsConfig.builder().build();
-        advancedConfig = ImmutableAdvancedConfig.builder().build();
+        advancedConfig = ImmutableAdvancedConfig.builder()
+                .maxTracesStoredPerMinute(Integer.MAX_VALUE) // default for tests
+                .build();
         gaugeConfigs = getDefaultGaugeConfigs();
         syntheticMonitorConfigs = ImmutableList.of();
         alertConfigs = ImmutableList.of();

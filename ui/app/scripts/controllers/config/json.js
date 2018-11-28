@@ -53,6 +53,18 @@ glowroot.controller('ConfigJsonCtrl', [
           && $scope.agentRollup.glowrootVersion.lastIndexOf('0.10.0,', 0) === -1);
     }
 
+    function supportsMaxTracesStoredPerMinute() {
+      // max traces stored per minute was introduced in agent version 0.13.4
+      return !$scope.layout.central || ($scope.agentRollup.glowrootVersion.lastIndexOf('0.9.', 0) === -1
+          && $scope.agentRollup.glowrootVersion.lastIndexOf('0.10.', 0) === -1
+          && $scope.agentRollup.glowrootVersion.lastIndexOf('0.11.', 0) === -1
+          && $scope.agentRollup.glowrootVersion.lastIndexOf('0.12.', 0) === -1
+          && $scope.agentRollup.glowrootVersion.lastIndexOf('0.13.0,', 0) === -1
+          && $scope.agentRollup.glowrootVersion.lastIndexOf('0.13.1,', 0) === -1
+          && $scope.agentRollup.glowrootVersion.lastIndexOf('0.13.2,', 0) === -1
+          && $scope.agentRollup.glowrootVersion.lastIndexOf('0.13.3,', 0) === -1);
+    }
+
     $scope.save = function (deferred) {
       var postData;
       try {
@@ -65,6 +77,11 @@ glowroot.controller('ConfigJsonCtrl', [
       if (!supportsSlowThresholdOverrides() && postData.transaction && postData.transaction.slowThresholds
           && postData.transaction.slowThresholds.length) {
         deferred.reject('Slow threshold overrides not supported in agent versions prior to 0.10.1');
+        return;
+      }
+      if (!supportsMaxTracesStoredPerMinute() && postData.advanced
+          && postData.advanced.maxTracesStoredPerMinute) {
+        deferred.reject('Max traces stored per minute is not supported in agent versions prior to 0.12.3');
         return;
       }
       // put back version
