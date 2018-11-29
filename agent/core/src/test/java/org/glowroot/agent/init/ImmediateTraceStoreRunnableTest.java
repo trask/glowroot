@@ -15,6 +15,8 @@
  */
 package org.glowroot.agent.init;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -22,7 +24,6 @@ import org.junit.rules.ExpectedException;
 import org.glowroot.agent.impl.TraceCollector;
 import org.glowroot.agent.impl.Transaction;
 import org.glowroot.agent.init.ImmediateTraceStoreWatcher.ImmediateTraceStoreRunnable;
-import org.glowroot.common.util.ScheduledRunnable.TerminateSubsequentExecutionsException;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
@@ -39,8 +40,8 @@ public class ImmediateTraceStoreRunnableTest {
         Transaction transaction = mock(Transaction.class);
         when(transaction.isCompleted()).thenReturn(true);
         TraceCollector traceCollector = mock(TraceCollector.class);
-        ImmediateTraceStoreRunnable immediateTraceStoreRunnable =
-                new ImmediateTraceStoreRunnable(transaction, traceCollector);
+        ImmediateTraceStoreRunnable immediateTraceStoreRunnable = new ImmediateTraceStoreRunnable(
+                transaction, traceCollector, mock(ScheduledExecutorService.class));
         // when
         immediateTraceStoreRunnable.run();
         // then
@@ -50,14 +51,15 @@ public class ImmediateTraceStoreRunnableTest {
     @Test
     public void testTwoCallsBeyondComplete() {
         // given
-        thrown.expect(TerminateSubsequentExecutionsException.class);
         Transaction transaction = mock(Transaction.class);
         when(transaction.isCompleted()).thenReturn(true);
         TraceCollector traceCollector = mock(TraceCollector.class);
-        ImmediateTraceStoreRunnable immediateTraceStoreRunnable =
-                new ImmediateTraceStoreRunnable(transaction, traceCollector);
+        ImmediateTraceStoreRunnable immediateTraceStoreRunnable = new ImmediateTraceStoreRunnable(
+                transaction, traceCollector, mock(ScheduledExecutorService.class));
         // when
         immediateTraceStoreRunnable.run();
         immediateTraceStoreRunnable.run();
+        // then
+        verifyZeroInteractions(traceCollector);
     }
 }
