@@ -57,6 +57,8 @@ import org.glowroot.common.model.TransactionNameSummaryCollector.TransactionName
 import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
+import org.glowroot.common2.model.MutableNetworkGraph;
+import org.glowroot.common2.model.NetworkGraphCollector;
 import org.glowroot.common2.repo.AggregateRepository;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
@@ -228,6 +230,34 @@ class TransactionJsonService {
             jg.writeNumberField("transactionsPerMin",
                     60000.0 * transactionCount / (request.to() - request.from()));
             jg.writeEndObject();
+        } finally {
+            jg.close();
+        }
+        return sb.toString();
+    }
+
+    @GET(path = "/backend/transaction/network-graph", permission = "agent:transaction:networkGraph")
+    String getNetworkGraph(@BindAgentRollupId String agentRollupId,
+            @BindRequest TransactionDataRequest request) throws Exception {
+        AggregateQuery query = toQuery(request, DataKind.NETWORK_GRAPH);
+        NetworkGraphCollector networkGraphCollector =
+                transactionCommonService.getMergedNetworkGraph(agentRollupId, query);
+        MutableNetworkGraph networkGraph = networkGraphCollector.getNetworkGraph();
+        if (networkGraph.isEmpty() && fallBackToLargestAggregates(query)) {
+            // fall back to largest aggregates in case expiration settings have recently changed
+            query = withLargestRollupLevel(query);
+            networkGraphCollector =
+                    transactionCommonService.getMergedNetworkGraph(agentRollupId, query);
+            networkGraph = networkGraphCollector.getNetworkGraph();
+            if (ignoreFallBackData(query, networkGraphCollector.getLastCaptureTime())) {
+                // this is probably data from before the requested time period
+                networkGraph = new MutableNetworkGraph();
+            }
+        }
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        try {
+            networkGraph.writeJson(jg);
         } finally {
             jg.close();
         }

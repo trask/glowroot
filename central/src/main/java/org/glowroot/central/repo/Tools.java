@@ -98,7 +98,10 @@ public class Tools {
         String partialTableName = args.get(0);
         int rollupLevel = Integer.parseInt(args.get(1));
         List<Integer> expirationHours;
-        if (partialTableName.equals("query") || partialTableName.equals("service_call")) {
+        if (partialTableName.equals("network_graph")) {
+            expirationHours = repos.getConfigRepository().getCentralStorageConfig()
+                    .networkGraphRollupExpirationHours();
+        } else if (partialTableName.equals("query") || partialTableName.equals("service_call")) {
             expirationHours = repos.getConfigRepository().getCentralStorageConfig()
                     .queryAndServiceCallRollupExpirationHours();
         } else if (partialTableName.equals("profile")) {

@@ -66,6 +66,7 @@ import org.glowroot.common.model.TransactionNameSummaryCollector;
 import org.glowroot.common.model.TransactionNameSummaryCollector.SummarySortOrder;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Styles;
+import org.glowroot.common2.model.NetworkGraphCollector;
 import org.glowroot.common2.repo.AggregateRepository;
 import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
 import org.glowroot.common2.repo.MutableAggregate;
@@ -298,6 +299,12 @@ public class AggregateDao implements AggregateRepository {
     public List<ThroughputAggregate> readThroughputAggregates(String agentRollupId,
             AggregateQuery query) throws Exception {
         return dataSource.query(new ThroughputAggregateQuery(query));
+    }
+
+    @Override
+    public void mergeNetworkGraphInto(String agentRollupId, AggregateQuery query,
+            NetworkGraphCollector collector) throws Exception {
+        // FIXME
     }
 
     // query.from() is non-inclusive

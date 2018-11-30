@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.primitives.Ints;
@@ -80,11 +81,17 @@ class Common {
     static Collection<NeedsRollup> getNeedsRollupList(String agentRollupId, int rollupLevel,
             long rollupIntervalMillis, List<PreparedStatement> readNeedsRollup, Session session,
             Clock clock) throws Exception {
+        BoundStatement boundStatement = readNeedsRollup.get(rollupLevel - 1).bind();
+        boundStatement.setString(0, agentRollupId);
+        return getNeedsRollupList(boundStatement, rollupIntervalMillis, session, clock, true);
+    }
+
+    static Collection<NeedsRollup> getNeedsRollupList(BoundStatement boundStatement,
+            long rollupIntervalMillis, Session session, Clock clock, boolean hasKeys)
+            throws Exception {
         // capture current time before reading data to prevent race condition with optimization
         // that prevents duplicate needs rollup data which is also based on current time
         long currentTimeMillis = clock.currentTimeMillis();
-        BoundStatement boundStatement = readNeedsRollup.get(rollupLevel - 1).bind();
-        boundStatement.setString(0, agentRollupId);
         ResultSet results = session.read(boundStatement);
         Map<Long, NeedsRollup> needsRollupMap = new LinkedHashMap<>();
         for (Row row : results) {
@@ -98,22 +105,24 @@ class Common {
                 // assumes when it finds rolled up data, it doesn't check for non-rolled up data for
                 // same interval
                 //
-                // and now another reason: optimization for gauge_needs_rollup_1 relies on it being
-                // safe to not re-insert the same data up until rollupIntervalMillis after the
-                // rollup capture time
+                // and now another reason: optimization for gauge_needs_rollup_1 and
+                // distributed_trace_needs_rollup rely on it being safe to not re-insert the same
+                // data up until rollupIntervalMillis after the rollup capture time
                 //
                 // safe to "break" instead of just "continue" since results are ordered by
                 // capture_time
                 break;
             }
-            UUID uniqueness = row.getUUID(i++);
-            Set<String> keys = checkNotNull(row.getSet(i++, String.class));
             NeedsRollup needsRollup = needsRollupMap.get(captureTime);
             if (needsRollup == null) {
-                needsRollup = new NeedsRollup(captureTime);
+                needsRollup = new NeedsRollup(captureTime, hasKeys);
                 needsRollupMap.put(captureTime, needsRollup);
             }
-            needsRollup.keys.addAll(keys);
+            UUID uniqueness = row.getUUID(i++);
+            if (hasKeys) {
+                Set<String> keys = checkNotNull(row.getSet(i++, String.class));
+                needsRollup.keys.addAll(keys);
+            }
             needsRollup.uniquenessKeysForDeletion.add(uniqueness);
         }
         return needsRollupMap.values();
@@ -203,11 +212,12 @@ class Common {
     static class NeedsRollup {
 
         private final long captureTime;
-        private final Set<String> keys = new HashSet<>(); // transaction types or gauge names
+        private final Set<String> keys; // transaction types or gauge names (or nothing)
         private final Set<UUID> uniquenessKeysForDeletion = new HashSet<>();
 
-        private NeedsRollup(long captureTime) {
+        private NeedsRollup(long captureTime, boolean hasKeys) {
             this.captureTime = captureTime;
+            keys = hasKeys ? new HashSet<>() : ImmutableSet.of();
         }
 
         long getCaptureTime() {

@@ -278,6 +278,10 @@ class LayoutService {
         for (long hours : configRepository.getStorageConfig().rollupExpirationHours()) {
             rollupExpirationMillis.add(HOURS.toMillis(hours));
         }
+        List<Long> networkGraphRollupExpirationMillis = Lists.newArrayList();
+        for (long hours : configRepository.getStorageConfig().networkGraphRollupExpirationHours()) {
+            networkGraphRollupExpirationMillis.add(HOURS.toMillis(hours));
+        }
         List<Long> queryAndServiceCallRollupExpirationMillis = Lists.newArrayList();
         for (long hours : configRepository.getStorageConfig()
                 .queryAndServiceCallRollupExpirationHours()) {
@@ -295,6 +299,7 @@ class LayoutService {
                         || !configRepository.getLdapConfig().host().isEmpty()))
                 .addAllRollupConfigs(configRepository.getRollupConfigs())
                 .addAllRollupExpirationMillis(rollupExpirationMillis)
+                .addAllNetworkGraphRollupExpirationMillis(networkGraphRollupExpirationMillis)
                 .addAllQueryAndServiceCallRollupExpirationMillis(
                         queryAndServiceCallRollupExpirationMillis)
                 .addAllProfileRollupExpirationMillis(profileRollupExpirationHours)
@@ -327,6 +332,8 @@ class LayoutService {
                 .transaction(ImmutableTransactionPermissions.builder()
                         .overview(authentication.isPermittedForAgentRollup(agentRollupId,
                                 "agent:transaction:overview"))
+                        .networkGraph(authentication.isPermittedForAgentRollup(agentRollupId,
+                                "agent:transaction:networkGraph"))
                         .traces(authentication.isPermittedForAgentRollup(agentRollupId,
                                 "agent:transaction:traces"))
                         .queries(authentication.isPermittedForAgentRollup(agentRollupId,
@@ -450,6 +457,7 @@ class LayoutService {
         abstract boolean loginEnabled();
         abstract ImmutableList<RollupConfig> rollupConfigs();
         abstract ImmutableList<Long> rollupExpirationMillis();
+        abstract ImmutableList<Long> networkGraphRollupExpirationMillis();
         abstract ImmutableList<Long> queryAndServiceCallRollupExpirationMillis();
         abstract ImmutableList<Long> profileRollupExpirationMillis();
         abstract long gaugeCollectionIntervalMillis();
@@ -516,13 +524,15 @@ class LayoutService {
     abstract static class TransactionPermissions {
 
         abstract boolean overview();
+        abstract boolean networkGraph();
         abstract boolean traces();
         abstract boolean queries();
         abstract boolean serviceCalls();
         abstract boolean threadProfile();
 
         private boolean hasSomeAccess() {
-            return overview() || traces() || queries() || serviceCalls() || threadProfile();
+            return overview() || networkGraph() || traces() || queries() || serviceCalls()
+                    || threadProfile();
         }
     }
 

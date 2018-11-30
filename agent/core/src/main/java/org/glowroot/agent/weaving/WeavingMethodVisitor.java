@@ -102,6 +102,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private final boolean needsOnReturn;
     private final boolean needsOnThrow;
     private final Object[] implicitFrameLocals;
+    private final boolean maybeHandleEumPingBack;
 
     private final Map<Advice, Integer> enabledLocals = Maps.newHashMap();
     private final Map<Advice, Integer> travelerLocals = Maps.newHashMap();
@@ -180,6 +181,17 @@ class WeavingMethodVisitor extends AdviceAdapter {
             implicitFrameLocals[i++] = convert(argumentType);
         }
         this.implicitFrameLocals = implicitFrameLocals;
+
+        boolean maybeHandleEumPingBack = false;
+        for (Advice advice : advisors) {
+            String internalName = advice.adviceType().getInternalName();
+            if (internalName.equals("org/glowroot/agent/plugin/servlet/ServletAspect$ServiceAdvice")
+                    || internalName.equals(
+                            "org/glowroot/agent/plugin/servlet/ServletAspect$DoFilterAdvice")) {
+                maybeHandleEumPingBack = true;
+            }
+        }
+        this.maybeHandleEumPingBack = maybeHandleEumPingBack;
     }
 
     @Override
@@ -329,6 +341,16 @@ class WeavingMethodVisitor extends AdviceAdapter {
     }
 
     private void onMethodEnterInternal() {
+        if (maybeHandleEumPingBack) {
+            loadArg(0);
+            visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/plugin/servlet/ServletAspect",
+                    "maybeHandleEumPingBack", "(Ljava/lang/Object;)Z", false);
+            Label label = new Label();
+            visitJumpInsn(IFEQ, label);
+            super.visitInsn(RETURN);
+            visitLabel(label);
+            visitImplicitFrame();
+        }
         for (int i = 0; i < advisors.size(); i++) {
             Advice advice = advisors.get(i);
             if (!name.equals("<init>")) {

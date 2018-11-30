@@ -228,6 +228,15 @@ glowroot.config([
         }
       }
     });
+    $stateProvider.state('transaction.detail.networkGraph', {
+      url: '/network-graph?transaction-type&transaction-name',
+      views: {
+        'main@transaction': {
+          templateUrl: 'views/transaction/network-graph.html',
+          controller: 'TransactionNetworkGraphCtrl'
+        }
+      }
+    });
     $stateProvider.state('transaction.detail.traces', {
       url: '/traces?transaction-type&transaction-name',
       views: {

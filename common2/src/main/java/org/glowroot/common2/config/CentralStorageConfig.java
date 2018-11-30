@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2018 the original author or authors.
+ * Copyright 2013-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,12 @@ public abstract class CentralStorageConfig implements StorageConfig {
 
     @Override
     @Value.Default
+    public ImmutableList<Integer> networkGraphRollupExpirationHours() {
+        return DEFAULT_DETAIL_ROLLUP_EXPIRATION_HOURS;
+    }
+
+    @Override
+    @Value.Default
     public ImmutableList<Integer> queryAndServiceCallRollupExpirationHours() {
         return DEFAULT_DETAIL_ROLLUP_EXPIRATION_HOURS;
     }
@@ -74,6 +80,8 @@ public abstract class CentralStorageConfig implements StorageConfig {
 
     public boolean hasListIssues() {
         return rollupExpirationHours().size() != DEFAULT_ROLLUP_EXPIRATION_HOURS.size()
+                || networkGraphRollupExpirationHours()
+                        .size() != DEFAULT_DETAIL_ROLLUP_EXPIRATION_HOURS.size()
                 || queryAndServiceCallRollupExpirationHours()
                         .size() != DEFAULT_DETAIL_ROLLUP_EXPIRATION_HOURS.size()
                 || profileRollupExpirationHours().size() != DEFAULT_DETAIL_ROLLUP_EXPIRATION_HOURS

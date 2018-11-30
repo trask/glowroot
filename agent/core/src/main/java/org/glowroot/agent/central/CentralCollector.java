@@ -63,6 +63,8 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitResponse;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage.LogEvent;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage.LogEvent.Level;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.SpanMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.SpanMessage.Span;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceStreamMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceStreamMessage.Queries;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceStreamMessage.TraceStreamCounts;
@@ -247,6 +249,21 @@ public class CentralCollector implements Collector {
         } else {
             centralConnection.blockingCallWithAFewRetries(new CollectTraceGrpcCall(traceReader));
         }
+    }
+
+    @Override
+    public void collectSpans(List<Span> spans) throws InterruptedException {
+        final SpanMessage spanMessage = SpanMessage.newBuilder()
+                .addAllSpan(spans)
+                .build();
+        centralConnection.blockingCallWithAFewRetries(new GrpcCall<EmptyMessage>() {
+            @Override
+            public void call(StreamObserver<EmptyMessage> responseObserver) {
+                collectorServiceStub.collectSpans(spanMessage, responseObserver);
+            }
+            @Override
+            public void doWithResponse(EmptyMessage response) {}
+        });
     }
 
     @Override

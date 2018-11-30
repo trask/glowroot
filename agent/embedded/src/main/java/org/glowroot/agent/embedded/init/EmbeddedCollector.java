@@ -28,6 +28,7 @@ import org.glowroot.agent.embedded.repo.AlertingDisabledDao;
 import org.glowroot.agent.embedded.repo.ConfigRepositoryImpl;
 import org.glowroot.agent.embedded.repo.EnvironmentDao;
 import org.glowroot.agent.embedded.repo.GaugeValueDao;
+import org.glowroot.agent.embedded.repo.SpanDao;
 import org.glowroot.agent.embedded.repo.TraceDao;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.config.HealthchecksIoConfig;
@@ -39,6 +40,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage.LogEvent;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.SpanMessage.Span;
 
 class EmbeddedCollector implements Collector {
 
@@ -49,6 +51,7 @@ class EmbeddedCollector implements Collector {
     private final EnvironmentDao environmentDao;
     private final AggregateDao aggregateDao;
     private final TraceDao traceDao;
+    private final SpanDao spanDao;
     private final GaugeValueDao gaugeValueDao;
     private final ConfigRepositoryImpl configRepository;
     private final AlertingService alertingService;
@@ -57,12 +60,13 @@ class EmbeddedCollector implements Collector {
     private final Clock clock;
 
     EmbeddedCollector(EnvironmentDao environmentDao, AggregateDao aggregateDao, TraceDao traceDao,
-            GaugeValueDao gaugeValueDao, ConfigRepositoryImpl configRepository,
+            SpanDao spanDao, GaugeValueDao gaugeValueDao, ConfigRepositoryImpl configRepository,
             AlertingService alertingService, AlertingDisabledDao alertingDisabledDao,
             HttpClient httpClient, Clock clock) {
         this.environmentDao = environmentDao;
         this.aggregateDao = aggregateDao;
         this.traceDao = traceDao;
+        this.spanDao = spanDao;
         this.gaugeValueDao = gaugeValueDao;
         this.configRepository = configRepository;
         this.alertingService = alertingService;
@@ -142,6 +146,11 @@ class EmbeddedCollector implements Collector {
     @Override
     public void collectTrace(TraceReader traceReader) throws Exception {
         traceDao.store(traceReader);
+    }
+
+    @Override
+    public void collectSpans(List<Span> spans) throws SQLException {
+        spanDao.store(spans);
     }
 
     @Override

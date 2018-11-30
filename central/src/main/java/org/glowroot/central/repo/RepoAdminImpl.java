@@ -167,6 +167,10 @@ public class RepoAdminImpl implements RepoAdmin {
             } else {
                 return storageConfig.rollupExpirationHours().get(rollupLevel - 1);
             }
+        } else if (tableName.startsWith("aggregate_tt_network_graph_")
+                || tableName.startsWith("aggregate_tn_network_graph_")) {
+            int rollupLevel = Integer.parseInt(tableName.substring(tableName.lastIndexOf('_') + 1));
+            return storageConfig.networkGraphRollupExpirationHours().get(rollupLevel);
         } else if (tableName.startsWith("aggregate_tt_query_")
                 || tableName.startsWith("aggregate_tn_query_")
                 || tableName.startsWith("aggregate_tt_service_call_")

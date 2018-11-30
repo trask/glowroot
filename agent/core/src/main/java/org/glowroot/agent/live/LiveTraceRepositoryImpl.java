@@ -71,7 +71,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     public Trace. /*@Nullable*/ Header getHeader(String agentId, String traceId) {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 traceCollector.getPendingTransactions())) {
-            if (transaction.getTraceId().equals(traceId)) {
+            if (transaction.getOrCreateTraceId().equals(traceId)) {
                 return createTraceHeader(transaction);
             }
         }
@@ -82,7 +82,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     public @Nullable Entries getEntries(String agentId, String traceId) {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 traceCollector.getPendingTransactions())) {
-            if (transaction.getTraceId().equals(traceId)) {
+            if (transaction.getOrCreateTraceId().equals(traceId)) {
                 CollectingEntryVisitor visitor = new CollectingEntryVisitor();
                 transaction.visitEntries(ticker.read(), visitor);
                 return ImmutableEntries.builder()
@@ -99,7 +99,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     public @Nullable Queries getQueries(String agentId, String traceId) {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 traceCollector.getPendingTransactions())) {
-            if (transaction.getTraceId().equals(traceId)) {
+            if (transaction.getOrCreateTraceId().equals(traceId)) {
                 return ImmutableQueries.builder()
                         .addAllQueries(transaction.getQueries())
                         .addAllSharedQueryTexts(
@@ -114,7 +114,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     public @Nullable Profile getMainThreadProfile(String agentId, String traceId) {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 traceCollector.getPendingTransactions())) {
-            if (transaction.getTraceId().equals(traceId)) {
+            if (transaction.getOrCreateTraceId().equals(traceId)) {
                 return transaction.getMainThreadProfileProtobuf();
             }
         }
@@ -125,7 +125,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     public @Nullable Profile getAuxThreadProfile(String agentId, String traceId) {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 traceCollector.getPendingTransactions())) {
-            if (transaction.getTraceId().equals(traceId)) {
+            if (transaction.getOrCreateTraceId().equals(traceId)) {
                 return transaction.getAuxThreadProfileProtobuf();
             }
         }
@@ -136,7 +136,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     public @Nullable Trace getFullTrace(String agentId, String traceId) throws Exception {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 traceCollector.getPendingTransactions())) {
-            if (transaction.getTraceId().equals(traceId)) {
+            if (transaction.getOrCreateTraceId().equals(traceId)) {
                 CollectingTraceVisitor traceVisitor = new CollectingTraceVisitor();
                 TraceReader traceReader = createTraceReader(transaction);
                 traceReader.accept(traceVisitor);
@@ -188,7 +188,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
                     && startTick < captureTick) {
                 activeTracePoints.add(ImmutableTracePoint.builder()
                         .agentId(AGENT_ID)
-                        .traceId(transaction.getTraceId())
+                        .traceId(transaction.getOrCreateTraceId())
                         .captureTime(captureTime)
                         .durationNanos(captureTick - startTick)
                         .partial(true)
@@ -219,7 +219,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
             if (matches(transaction, traceKind, transactionType, transactionName, filter)) {
                 points.add(ImmutableTracePoint.builder()
                         .agentId(AGENT_ID)
-                        .traceId(transaction.getTraceId())
+                        .traceId(transaction.getOrCreateTraceId())
                         // by the time transaction is in pending list, the capture time is set
                         .captureTime(transaction.getCaptureTime())
                         .durationNanos(transaction.getDurationNanos())

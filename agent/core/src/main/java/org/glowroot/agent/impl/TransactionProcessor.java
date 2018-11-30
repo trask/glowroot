@@ -62,6 +62,7 @@ public class TransactionProcessor {
     private final ExecutorService flushingExecutor;
     private final Collector collector;
     private final TraceCollector traceCollector;
+    private final SpanCollector spanCollector;
     private final ConfigService configService;
     private final Clock clock;
 
@@ -82,9 +83,11 @@ public class TransactionProcessor {
     private volatile boolean closed;
 
     public TransactionProcessor(Collector collector, TraceCollector traceCollector,
-            ConfigService configService, long aggregateIntervalMillis, Clock clock) {
+            SpanCollector spanCollector, ConfigService configService, long aggregateIntervalMillis,
+            Clock clock) {
         this.collector = collector;
         this.traceCollector = traceCollector;
+        this.spanCollector = spanCollector;
         this.configService = configService;
         this.clock = clock;
         this.aggregateIntervalMillis = aggregateIntervalMillis;

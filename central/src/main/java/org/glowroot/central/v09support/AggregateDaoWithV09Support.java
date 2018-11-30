@@ -43,6 +43,7 @@ import org.glowroot.common.model.TransactionNameSummaryCollector;
 import org.glowroot.common.model.TransactionNameSummaryCollector.SummarySortOrder;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
+import org.glowroot.common2.model.NetworkGraphCollector;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.OldAggregatesByType;
 
@@ -138,6 +139,14 @@ public class AggregateDaoWithV09Support implements AggregateDao {
             AggregateQuery query) throws Exception {
         return splitListIfNeeded(agentRollupId, query,
                 (id, q) -> delegate.readThroughputAggregates(id, q));
+    }
+
+    // query.from() is non-inclusive
+    @Override
+    public void mergeNetworkGraphInto(String agentRollupId, AggregateQuery query,
+            NetworkGraphCollector collector) throws Exception {
+        splitMergeIfNeeded(agentRollupId, query,
+                (id, q) -> delegate.mergeNetworkGraphInto(id, q, collector));
     }
 
     // query.from() is non-inclusive

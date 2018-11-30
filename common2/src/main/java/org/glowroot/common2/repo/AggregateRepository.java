@@ -33,6 +33,7 @@ import org.glowroot.common.model.TransactionNameErrorSummaryCollector;
 import org.glowroot.common.model.TransactionNameErrorSummaryCollector.ErrorSummarySortOrder;
 import org.glowroot.common.model.TransactionNameSummaryCollector;
 import org.glowroot.common.model.TransactionNameSummaryCollector.SummarySortOrder;
+import org.glowroot.common2.model.NetworkGraphCollector;
 
 public interface AggregateRepository {
 
@@ -71,6 +72,9 @@ public interface AggregateRepository {
     // query.from() is INCLUSIVE
     List<ThroughputAggregate> readThroughputAggregates(String agentRollupId, AggregateQuery query)
             throws Exception;
+
+    void mergeNetworkGraphInto(String agentRollupId, AggregateQuery query,
+            NetworkGraphCollector collector) throws Exception;
 
     // query.from() is non-inclusive
     void mergeQueriesInto(String agentRollupId, AggregateQuery query, QueryCollector collector)

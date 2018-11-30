@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 the original author or authors.
+ * Copyright 2014-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +48,8 @@ public class PluginServiceImpl implements PluginService {
 
     private final LoadingCache<String, ConfigService> configServices;
 
+    private volatile @MonotonicNonNull SpanCollector spanCollector;
+
     public PluginServiceImpl(TimerNameCache timerNameCache,
             final ConfigServiceFactory configServiceFactory) {
         this.timerNameCache = timerNameCache;
@@ -57,6 +60,10 @@ public class PluginServiceImpl implements PluginService {
                         return configServiceFactory.create(pluginId);
                     }
                 });
+    }
+
+    public void setCollector(SpanCollector spanCollector) {
+        this.spanCollector = spanCollector;
     }
 
     @Override
@@ -101,6 +108,13 @@ public class PluginServiceImpl implements PluginService {
     @Override
     public Map<String, String> getBeanPropertiesAsText(Object obj) {
         return Beans2.propertiesAsText(obj);
+    }
+
+    @Override
+    public void captureEumSpanFromQueryString(String queryString) {
+        if (spanCollector != null) {
+            spanCollector.collectEumSpanFromQueryString(queryString);
+        }
     }
 
     @VisibleForTesting

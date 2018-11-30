@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -99,6 +99,36 @@ public class ServletPluginIT {
         Trace.Header header = trace.getHeader();
         assertThat(header.getHeadline()).isEqualTo("/testfilter");
         assertThat(header.getTransactionName()).isEqualTo("/testfilter");
+        assertThat(getDetailValue(header, "Request http method")).isEqualTo("GET");
+        assertThat(getDetailValueLong(header, "Response code")).isEqualTo(200);
+        assertThat(header.getEntryCount()).isZero();
+    }
+
+    @Test
+    public void testServletEUM() throws Exception {
+        container.executeNoExpectedTrace(ExecuteServletEUM.class);
+    }
+
+    @Test
+    public void testFilterEUM() throws Exception {
+        container.executeNoExpectedTrace(ExecuteFilterEUM.class);
+    }
+
+    @Test
+    public void testCombinationEUM() throws Exception {
+        container.executeNoExpectedTrace(ExecuteFilterWithNestedServletEUM.class);
+    }
+
+    @Test
+    public void testServletWithExplicitTraceId() throws Exception {
+        // when
+        Trace trace = container.execute(ExecuteServletWithExplicitTraceId.class, "Web");
+
+        // then
+        Trace.Header header = trace.getHeader();
+        assertThat(trace.getId()).isEqualTo("aaaabbbbccccdddd0000111122223333");
+        assertThat(header.getHeadline()).isEqualTo("/testservlet");
+        assertThat(header.getTransactionName()).isEqualTo("/testservlet");
         assertThat(getDetailValue(header, "Request http method")).isEqualTo("GET");
         assertThat(getDetailValueLong(header, "Response code")).isEqualTo(200);
         assertThat(header.getEntryCount()).isZero();
@@ -331,6 +361,28 @@ public class ServletPluginIT {
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
                 throws IOException, ServletException {
             new TestServlet().service(request, response);
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class ExecuteServletEUM extends TestServlet {}
+
+    public static class ExecuteFilterEUM extends TestFilter {}
+
+    public static class ExecuteFilterWithNestedServletEUM extends TestFilter {
+        @Override
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+                throws IOException, ServletException {
+            new TestServlet().service(request, response);
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class ExecuteServletWithExplicitTraceId extends TestServlet {
+        @Override
+        protected void before(HttpServletRequest request, HttpServletResponse response) {
+            ((MockHttpServletRequest) request).addHeader("Glowroot-Trace-Id",
+                    "aaaabbbbccccdddd0000111122223333");
         }
     }
 

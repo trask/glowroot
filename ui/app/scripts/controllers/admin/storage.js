@@ -46,6 +46,15 @@ glowroot.controller('AdminStorageCtrl', [
     });
 
     if ($scope.layout.central) {
+      $scope.$watchCollection('page.networkGraphRollupExpirationDays', function (newValue) {
+        if ($scope.config) {
+          $scope.config.networkGraphRollupExpirationHours = [];
+          angular.forEach(newValue, function (days) {
+            $scope.config.networkGraphRollupExpirationHours.push(days * 24);
+          });
+        }
+      });
+
       $scope.$watchCollection('page.queryAndServiceCallRollupExpirationDays', function (newValue) {
         if ($scope.config) {
           $scope.config.queryAndServiceCallRollupExpirationHours = [];
@@ -89,6 +98,10 @@ glowroot.controller('AdminStorageCtrl', [
         $scope.page.rollupExpirationDays.push(hours / 24);
       });
       if ($scope.layout.central) {
+        $scope.page.networkGraphRollupExpirationDays = [];
+        angular.forEach(data.networkGraphRollupExpirationHours, function (hours) {
+          $scope.page.networkGraphRollupExpirationDays.push(hours / 24);
+        });
         $scope.page.queryAndServiceCallRollupExpirationDays = [];
         angular.forEach(data.queryAndServiceCallRollupExpirationHours, function (hours) {
           $scope.page.queryAndServiceCallRollupExpirationDays.push(hours / 24);

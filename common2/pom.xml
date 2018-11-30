@@ -147,6 +147,37 @@
     </dependency>
   </dependencies>
 
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>com.github.os72</groupId>
+        <artifactId>protoc-jar-maven-plugin</artifactId>
+        <configuration>
+          <protocVersion>${protoc.version}</protocVersion>
+          <outputTargets>
+            <outputTarget>
+              <type>java</type>
+              <outputDirectory>target/generated-sources/protobuf-java</outputDirectory>
+            </outputTarget>
+            <outputTarget>
+              <type>grpc-java</type>
+              <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}</pluginArtifact>
+              <outputDirectory>target/generated-sources/grpc-java</outputDirectory>
+            </outputTarget>
+          </outputTargets>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
   <profiles>
     <profile>
       <!-- use custom-built jdk6 compatible checker framework annotations by default except when

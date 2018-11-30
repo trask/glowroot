@@ -230,8 +230,8 @@ public class CentralModule {
                     directories.getConfDir(), repos.getAgentDisplayDao(), repos.getAgentConfigDao(),
                     repos.getActiveAgentDao(), repos.getEnvironmentDao(), repos.getHeartbeatDao(),
                     repos.getAggregateDao(), repos.getGaugeValueDao(), repos.getTraceDao(),
-                    repos.getV09AgentRollupDao(), centralAlertingService, clusterManager, clock,
-                    version);
+                    repos.getSpanDao(), repos.getV09AgentRollupDao(), centralAlertingService,
+                    clusterManager, clock, version);
             DownstreamServiceImpl downstreamService = grpcServer.getDownstreamService();
             updateAgentConfigIfNeededService = new UpdateAgentConfigIfNeededService(
                     repos.getAgentConfigDao(), repos.getActiveAgentDao(), downstreamService, clock);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -226,9 +226,9 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
         Map<NeedsRollupKey, ImmutableSet<String>> updatesForNeedsRollupCache1 = new HashMap<>();
         SetMultimap<Long, String> rollupCaptureTimes = getRollupCaptureTimes(gaugeValues);
         for (Map.Entry<Long, Set<String>> entry : Multimaps.asMap(rollupCaptureTimes).entrySet()) {
-            Long captureTime = entry.getKey();
+            Long rollupCaptureTime = entry.getKey();
             Set<String> gaugeNames = entry.getValue();
-            NeedsRollupKey needsRollupKey = ImmutableNeedsRollupKey.of(agentId, captureTime);
+            NeedsRollupKey needsRollupKey = ImmutableNeedsRollupKey.of(agentId, rollupCaptureTime);
             ImmutableSet<String> needsRollupGaugeNames = needsRollupCache1.get(needsRollupKey);
             if (needsRollupGaugeNames == null) {
                 // first insert for this key
@@ -237,7 +237,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
             } else if (needsRollupGaugeNames.containsAll(gaugeNames)) {
                 // capture current time after getting data from cache to prevent race condition with
                 // reading the data in Common.getNeedsRollupList()
-                if (!Common.isOldEnoughToRollup(captureTime, clock.currentTimeMillis(),
+                if (!Common.isOldEnoughToRollup(rollupCaptureTime, clock.currentTimeMillis(),
                         configRepository.getRollupConfigs().get(0).intervalMillis())) {
                     // completely covered by prior inserts that haven't been rolled up yet so no
                     // need to re-insert same data
@@ -251,12 +251,12 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                         ImmutableSet.copyOf(gaugeNames));
             }
             BoundStatement boundStatement = insertNeedsRollup.get(0).bind();
-            int adjustedTTL = Common.getAdjustedTTL(ttl, captureTime, clock);
+            int adjustedTTL = Common.getAdjustedTTL(ttl, rollupCaptureTime, clock);
             int needsRollupAdjustedTTL = Common.getNeedsRollupAdjustedTTL(adjustedTTL,
                     configRepository.getRollupConfigs());
             int i = 0;
             boundStatement.setString(i++, agentId);
-            boundStatement.setTimestamp(i++, new Date(captureTime));
+            boundStatement.setTimestamp(i++, new Date(rollupCaptureTime));
             boundStatement.setUUID(i++, UUIDs.timeBased());
             boundStatement.setSet(i++, gaugeNames);
             boundStatement.setInt(i++, needsRollupAdjustedTTL);

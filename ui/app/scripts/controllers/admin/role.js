@@ -114,6 +114,8 @@ glowroot.controller('AdminRoleCtrl', [
         permissionBlock.transaction._ = true;
       } else if (permission === 'agent:transaction:overview') {
         permissionBlock.transaction.overview = true;
+      } else if (permission === 'agent:transaction:networkGraph') {
+        permissionBlock.transaction.networkGraph = true;
       } else if (permission === 'agent:transaction:traces') {
         permissionBlock.transaction.traces = true;
       } else if (permission === 'agent:transaction:queries') {
@@ -182,6 +184,7 @@ glowroot.controller('AdminRoleCtrl', [
     function cascadeInsidePermissionsObj(permissionsObj) {
       if (permissionsObj.transaction._) {
         permissionsObj.transaction.overview = false;
+        permissionsObj.transaction.networkGraph = false;
         permissionsObj.transaction.traces = false;
         permissionsObj.transaction.queries = false;
         permissionsObj.transaction.serviceCalls = false;
@@ -231,8 +234,9 @@ glowroot.controller('AdminRoleCtrl', [
       if (!permissionsObj) {
         return false;
       }
-      return permissionsObj.transaction.traces || permissionsObj.transaction.queries
-          || permissionsObj.transaction.serviceCalls || permissionsObj.transaction.threadProfile;
+      return permissionsObj.transaction.networkGraph || permissionsObj.transaction.traces
+          || permissionsObj.transaction.queries || permissionsObj.transaction.serviceCalls
+          || permissionsObj.transaction.threadProfile;
     };
 
     $scope.viewConfigRequired = function (permissionsObj) {
@@ -254,6 +258,9 @@ glowroot.controller('AdminRoleCtrl', [
       }
       if (permissionsObj.transaction.overview) {
         permissions.push('agent:transaction:overview');
+      }
+      if (permissionsObj.transaction.networkGraph) {
+        permissions.push('agent:transaction:networkGraph');
       }
       if (permissionsObj.transaction.traces) {
         permissions.push('agent:transaction:traces');
@@ -416,6 +423,7 @@ glowroot.controller('AdminRoleCtrl', [
         transaction: {
           _: false,
           overview: false,
+          networkGraph: false,
           traces: false,
           queries: false,
           serviceCalls: false,

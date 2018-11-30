@@ -983,6 +983,7 @@ class AdminJsonService {
     abstract static class CentralStorageConfigDto {
 
         abstract ImmutableList<Integer> rollupExpirationHours();
+        abstract ImmutableList<Integer> networkGraphRollupExpirationHours();
         abstract ImmutableList<Integer> queryAndServiceCallRollupExpirationHours();
         abstract ImmutableList<Integer> profileRollupExpirationHours();
         abstract int traceExpirationHours();
@@ -991,6 +992,7 @@ class AdminJsonService {
         private CentralStorageConfig convert() {
             return ImmutableCentralStorageConfig.builder()
                     .rollupExpirationHours(rollupExpirationHours())
+                    .networkGraphRollupExpirationHours(networkGraphRollupExpirationHours())
                     .queryAndServiceCallRollupExpirationHours(
                             queryAndServiceCallRollupExpirationHours())
                     .profileRollupExpirationHours(profileRollupExpirationHours())
@@ -1001,6 +1003,8 @@ class AdminJsonService {
         private static CentralStorageConfigDto create(CentralStorageConfig config) {
             return ImmutableCentralStorageConfigDto.builder()
                     .addAllRollupExpirationHours(config.rollupExpirationHours())
+                    .addAllNetworkGraphRollupExpirationHours(
+                            config.networkGraphRollupExpirationHours())
                     .addAllQueryAndServiceCallRollupExpirationHours(
                             config.queryAndServiceCallRollupExpirationHours())
                     .addAllProfileRollupExpirationHours(config.profileRollupExpirationHours())

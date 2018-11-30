@@ -101,7 +101,7 @@ class ImmediateTraceStoreWatcher extends ScheduledRunnable {
 
         @Override
         public void runInternal() {
-            logger.debug("run(): trace.id={}", transaction.getTraceId());
+            logger.debug("run(): trace.id={}", transaction.getOrCreateTraceId());
             if (transaction.isCompleted()) {
                 if (transactionPreviouslyCompleted) {
                     // throw marker exception to terminate subsequent scheduled executions

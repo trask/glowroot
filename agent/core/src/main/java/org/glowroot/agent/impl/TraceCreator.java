@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,12 +44,12 @@ public class TraceCreator {
     public static TraceReader createTraceReaderForPartial(Transaction transaction, long captureTime,
             long captureTick) {
         return new TraceReaderImpl(transaction, true, captureTime, captureTick,
-                transaction.getTraceId(), true, transaction.isPartiallyStored());
+                transaction.getOrCreateTraceId(), true, transaction.isPartiallyStored());
     }
 
     public static TraceReader createTraceReaderForCompleted(Transaction transaction, boolean slow) {
         return new TraceReaderImpl(transaction, slow, transaction.getCaptureTime(),
-                transaction.getEndTick(), transaction.getTraceId(), false,
+                transaction.getEndTick(), transaction.getOrCreateTraceId(), false,
                 transaction.isPartiallyStored());
     }
 

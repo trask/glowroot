@@ -1341,6 +1341,8 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                 .copyFrom(config)
                 .rollupExpirationHours(
                         fix(config.rollupExpirationHours(), defaultConfig.rollupExpirationHours()))
+                .networkGraphRollupExpirationHours(fix(config.networkGraphRollupExpirationHours(),
+                        defaultConfig.networkGraphRollupExpirationHours()))
                 .queryAndServiceCallRollupExpirationHours(
                         fix(config.queryAndServiceCallRollupExpirationHours(),
                                 defaultConfig.queryAndServiceCallRollupExpirationHours()))

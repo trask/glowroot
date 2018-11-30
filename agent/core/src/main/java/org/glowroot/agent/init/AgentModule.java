@@ -47,6 +47,7 @@ import org.glowroot.agent.impl.GlowrootServiceImpl;
 import org.glowroot.agent.impl.PluginServiceImpl;
 import org.glowroot.agent.impl.PluginServiceImpl.ConfigServiceFactory;
 import org.glowroot.agent.impl.PreloadSomeSuperTypesCache;
+import org.glowroot.agent.impl.SpanCollector;
 import org.glowroot.agent.impl.StackTraceCollector;
 import org.glowroot.agent.impl.TimerNameCache;
 import org.glowroot.agent.impl.TraceCollector;
@@ -108,6 +109,7 @@ public class AgentModule {
 
     private volatile @MonotonicNonNull DeadlockedActiveWeavingRunnable deadlockedActiveWeavingRunnable;
     private volatile @MonotonicNonNull TraceCollector traceCollector;
+    private volatile @MonotonicNonNull SpanCollector spanCollector;
     private volatile @MonotonicNonNull TransactionProcessor transactionProcessor;
 
     private volatile @MonotonicNonNull LazyPlatformMBeanServer lazyPlatformMBeanServer;
@@ -252,8 +254,9 @@ public class AgentModule {
         OptionalService<ThreadAllocatedBytes> threadAllocatedBytes = ThreadAllocatedBytes.create();
         transactionService.setThreadAllocatedBytes(threadAllocatedBytes.getService());
         traceCollector = new TraceCollector(configService, collector, clock, ticker);
-        transactionProcessor = new TransactionProcessor(collector, traceCollector, configService,
-                ROLLUP_0_INTERVAL_MILLIS, clock);
+        spanCollector = new SpanCollector(collector);
+        transactionProcessor = new TransactionProcessor(collector, traceCollector, spanCollector,
+                configService, ROLLUP_0_INTERVAL_MILLIS, clock);
         transactionService.setTransactionProcessor(transactionProcessor);
 
         lazyPlatformMBeanServer = LazyPlatformMBeanServer.create(mainClass);
@@ -451,11 +454,14 @@ public class AgentModule {
         if (lazyPlatformMBeanServer != null) {
             lazyPlatformMBeanServer.close();
         }
-        if (traceCollector != null) {
-            traceCollector.close();
-        }
         if (transactionProcessor != null) {
             transactionProcessor.close();
+        }
+        if (spanCollector != null) {
+            spanCollector.close();
+        }
+        if (traceCollector != null) {
+            traceCollector.close();
         }
         if (deadlockedActiveWeavingRunnable != null) {
             deadlockedActiveWeavingRunnable.cancel();

@@ -134,7 +134,7 @@
           *.capped.db
         </legend>
         <div gt-form-group
-             gt-label="Query, service call and profile data (1&nbsp;minute&nbsp;aggregates)"
+             gt-label="Aggregate detail data (1&nbsp;minute&nbsp;aggregates)"
              gt-model="config.rollupCappedDatabaseSizesMb[0]"
              gt-number="true"
              gt-pattern="pattern.integer"
@@ -146,13 +146,13 @@
              gt-col-class2="col-xl-8"
              class="gt-rollup-capped-database-size">
           <div class="help-block">
-            The data that is displayed under the transaction queries, service calls and continuous profiling tabs is
-            collected continuously and stored at 1 minute intervals. This setting defines how long to retain these 1
-            minute aggregates.
+            The data that is displayed under the transaction network graph, queries, service calls and thread profile
+            tabs is collected continuously and stored at 1 minute intervals.
+            This setting defines how long to retain these 1 minute aggregates.
           </div>
         </div>
         <div gt-form-group
-             gt-label="Query, service call and profile data (5&nbsp;minute&nbsp;aggregates)"
+             gt-label="Aggregate detail data (5&nbsp;minute&nbsp;aggregates)"
              gt-model="config.rollupCappedDatabaseSizesMb[1]"
              gt-number="true"
              gt-pattern="pattern.integer"
@@ -163,12 +163,12 @@
              gt-col-class1="col-xl-4"
              gt-col-class2="col-xl-8">
           <div class="help-block">
-            Query, service call and continuous profiling data is rolled up at 5 minute intervals.
+            Network graph, query, service call and profile thread data is rolled up at 5 minute intervals.
             This setting defines the size of the capped data file used to store these 5 minute aggregates.
           </div>
         </div>
         <div gt-form-group
-             gt-label="Query, service call and profile data (30&nbsp;minute&nbsp;aggregates)"
+             gt-label="Aggregate detail data (30&nbsp;minute&nbsp;aggregates)"
              gt-model="config.rollupCappedDatabaseSizesMb[2]"
              gt-number="true"
              gt-pattern="pattern.integer"
@@ -179,12 +179,12 @@
              gt-col-class1="col-xl-4"
              gt-col-class2="col-xl-8">
           <div class="help-block">
-            Query, service call and continuous profiling data is rolled up again at 30 minute intervals.
+            Network graph, query, service call and profile thread data is rolled up again at 30 minute intervals.
             This setting defines the size of the capped data file used to store these 30 minute aggregates.
           </div>
         </div>
         <div gt-form-group
-             gt-label="Query, service call and profile data (4&nbsp;hour&nbsp;aggregates)"
+             gt-label="Aggregate detail data (4&nbsp;hour&nbsp;aggregates)"
              gt-model="config.rollupCappedDatabaseSizesMb[3]"
              gt-number="true"
              gt-pattern="pattern.integer"
@@ -195,7 +195,7 @@
              gt-col-class1="col-xl-4"
              gt-col-class2="col-xl-8">
           <div class="help-block">
-            Query, service call and continuous profiling data is rolled up again at 4 hour intervals.
+            Network graph, query, service call and profile thread data is rolled up again at 4 hour intervals.
             This setting defines the size of the capped data file used to store these 4 hour aggregates.
           </div>
         </div>
@@ -292,6 +292,77 @@
       <fieldset class="gt-fieldset"
                 ng-if="layout.central">
         <legend class="gt-legend">
+          Network graph data
+        </legend>
+        <div gt-form-group
+             gt-label="1&nbsp;minute&nbsp;aggregates"
+             gt-model="page.networkGraphRollupExpirationDays[0]"
+             gt-number="true"
+             gt-pattern="pattern.integer"
+             gt-required="loaded"
+             gt-disabled="!layout.adminEdit"
+             gt-width="7em"
+             gt-addon="days"
+             gt-col-class1="col-xl-4"
+             gt-col-class2="col-xl-8">
+          <div class="help-block">
+            The data that is displayed under the transaction network graph tab is collected continuously by the agents
+            and sent to the central collector (and stored) at 1 minute intervals.
+            This setting defines how long to retain these 1 minute aggregates.
+          </div>
+        </div>
+        <div gt-form-group
+             gt-label="5&nbsp;minute&nbsp;aggregates"
+             gt-model="page.networkGraphRollupExpirationDays[1]"
+             gt-number="true"
+             gt-pattern="pattern.integer"
+             gt-required="loaded"
+             gt-disabled="!layout.adminEdit"
+             gt-width="7em"
+             gt-addon="days"
+             gt-col-class1="col-xl-4"
+             gt-col-class2="col-xl-8">
+          <div class="help-block">
+            Network graph data is rolled up at 5 minute intervals.
+            This setting defines how long to retain these 5 minute aggregates.
+          </div>
+        </div>
+        <div gt-form-group
+             gt-label="30&nbsp;minute&nbsp;aggregates"
+             gt-model="page.networkGraphRollupExpirationDays[2]"
+             gt-number="true"
+             gt-pattern="pattern.integer"
+             gt-required="loaded"
+             gt-disabled="!layout.adminEdit"
+             gt-width="7em"
+             gt-addon="days"
+             gt-col-class1="col-xl-4"
+             gt-col-class2="col-xl-8">
+          <div class="help-block">
+            Network graph data is rolled up again at 30 minute intervals.
+            This setting defines how long to retain these 30 minute aggregates.
+          </div>
+        </div>
+        <div gt-form-group
+             gt-label="4&nbsp;hour&nbsp;aggregates"
+             gt-model="page.networkGraphRollupExpirationDays[3]"
+             gt-number="true"
+             gt-pattern="pattern.integer"
+             gt-required="loaded"
+             gt-disabled="!layout.adminEdit"
+             gt-width="7em"
+             gt-addon="days"
+             gt-col-class1="col-xl-4"
+             gt-col-class2="col-xl-8">
+          <div class="help-block">
+            Network graph data is rolled up again at 4 hour intervals.
+            This setting defines how long to retain these 4 hour aggregates.
+          </div>
+        </div>
+      </fieldset>
+      <fieldset class="gt-fieldset"
+                ng-if="layout.central">
+        <legend class="gt-legend">
           Query and service call data
         </legend>
         <div gt-form-group
@@ -377,8 +448,8 @@
              gt-col-class1="col-xl-4"
              gt-col-class2="col-xl-8">
           <div class="help-block">
-            The data that is displayed under the transaction continuous profiling tab is collected continuously by the
-            agents and sent to the central collector (and stored) at 1 minute intervals.
+            The data that is displayed under the transaction thread profile tab is collected continuously by the agents
+            and sent to the central collector (and stored) at 1 minute intervals.
             This setting defines how long to retain these 1 minute aggregates.
           </div>
         </div>

@@ -84,11 +84,14 @@ import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.Styles;
+import org.glowroot.common2.model.MutableNetworkGraph;
+import org.glowroot.common2.model.NetworkGraphCollector;
 import org.glowroot.common2.repo.ConfigRepository.AgentConfigNotFoundException;
 import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
 import org.glowroot.common2.repo.MutableAggregate;
 import org.glowroot.common2.repo.MutableThreadStats;
 import org.glowroot.common2.repo.MutableTimer;
+import org.glowroot.common2.repo.proto.NetworkGraphOuterClass.NetworkGraph;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.OldAggregatesByType;
@@ -157,6 +160,15 @@ public class AggregateDaoImpl implements AggregateDao {
             .addColumns(ImmutableColumn.of("error_count", "bigint"))
             .summary(false)
             .fromInclusive(true)
+            .build();
+
+    private static final Table networkGraphTable = ImmutableTable.builder()
+            .partialName("network_graph")
+            .addColumns(ImmutableColumn.of("total_duration_nanos", "double"))
+            .addColumns(ImmutableColumn.of("execution_count", "bigint"))
+            .addColumns(ImmutableColumn.of("network_graph", "blob"))
+            .summary(false)
+            .fromInclusive(false)
             .build();
 
     private static final Table queryTable = ImmutableTable.builder()
@@ -250,6 +262,8 @@ public class AggregateDaoImpl implements AggregateDao {
         int count = configRepository.getRollupConfigs().size();
         List<Integer> rollupExpirationHours =
                 configRepository.getCentralStorageConfig().rollupExpirationHours();
+        List<Integer> networkGraphRollupExpirationHours =
+                configRepository.getCentralStorageConfig().networkGraphRollupExpirationHours();
         List<Integer> queryAndServiceCallRollupExpirationHours =
                 configRepository.getCentralStorageConfig()
                         .queryAndServiceCallRollupExpirationHours();
@@ -257,7 +271,7 @@ public class AggregateDaoImpl implements AggregateDao {
                 configRepository.getCentralStorageConfig().profileRollupExpirationHours();
 
         allTables = ImmutableList.of(summaryTable, errorSummaryTable, overviewTable,
-                histogramTable, throughputTable, queryTable, serviceCallTable,
+                histogramTable, throughputTable, networkGraphTable, queryTable, serviceCallTable,
                 mainThreadProfileTable, auxThreadProfileTable);
         Map<Table, List<PreparedStatement>> insertOverallMap = new HashMap<>();
         Map<Table, List<PreparedStatement>> insertTransactionMap = new HashMap<>();
@@ -276,7 +290,9 @@ public class AggregateDaoImpl implements AggregateDao {
             List<PreparedStatement> readTransactionForRollupList = new ArrayList<>();
             for (int i = 0; i < count; i++) {
                 int expirationHours;
-                if (table.partialName().equals("query")
+                if (table.partialName().equals("network_graph")) {
+                    expirationHours = networkGraphRollupExpirationHours.get(i);
+                } else if (table.partialName().equals("query")
                         || table.partialName().equals("service_call")) {
                     expirationHours = queryAndServiceCallRollupExpirationHours.get(i);
                 } else if (table.partialName().equals("main_thread_profile")
@@ -419,8 +435,8 @@ public class AggregateDaoImpl implements AggregateDao {
                 initialSharedQueryTexts);
     }
 
-    public void store(String agentId, List<String> agentRollupIds,
-            String agentIdForMeta, List<String> agentRollupIdsForMeta, long captureTime,
+    public void store(String agentId, List<String> agentRollupIds, String agentIdForMeta,
+            List<String> agentRollupIdsForMeta, long captureTime,
             List<OldAggregatesByType> aggregatesByTypeList,
             List<Aggregate.SharedQueryText> initialSharedQueryTexts) throws Exception {
         if (aggregatesByTypeList.isEmpty()) {
@@ -513,6 +529,13 @@ public class AggregateDaoImpl implements AggregateDao {
         boundStatement.setInt(i++, needsRollupAdjustedTTL);
         futures.add(session.writeAsync(boundStatement));
         MoreFutures.waitForAll(futures);
+    }
+
+    public List<Future<?>> storeNetworkGraph(String agentId, long captureTime,
+            NetworkGraph networkGraph) throws Exception {
+        List<Future<?>> futures = new ArrayList<>();
+        // FIXME
+        return futures;
     }
 
     // query.from() is non-inclusive
@@ -691,6 +714,21 @@ public class AggregateDaoImpl implements AggregateDao {
                     .build());
         }
         return throughputAggregates;
+    }
+
+    // query.from() is non-inclusive
+    @Override
+    public void mergeNetworkGraphInto(String agentRollupId, AggregateQuery query,
+            NetworkGraphCollector collector) throws Exception {
+        ResultSet results = executeQuery(agentRollupId, query, networkGraphTable);
+        long captureTime = Long.MIN_VALUE;
+        for (Row row : results) {
+            captureTime = Math.max(captureTime, checkNotNull(row.getTimestamp(0)).getTime());
+            ByteBuffer bytes = checkNotNull(row.getBytes(1));
+            NetworkGraph networkGraph = NetworkGraph.parseFrom(bytes);
+            collector.mergeNetworkGraph(networkGraph);
+            collector.updateLastCaptureTime(captureTime);
+        }
     }
 
     // query.from() is non-inclusive
@@ -996,6 +1034,7 @@ public class AggregateDaoImpl implements AggregateDao {
         futures.add(rollupOverview(rollup, query));
         futures.add(rollupHistogram(rollup, query, scratchBuffer));
         futures.add(rollupThroughput(rollup, query));
+        futures.add(rollupNetworkGraph(rollup, query));
         futures.add(rollupQueries(rollup, query));
         futures.add(rollupServiceCalls(rollup, query));
         futures.add(rollupThreadProfile(rollup, query, mainThreadProfileTable));
@@ -1010,6 +1049,7 @@ public class AggregateDaoImpl implements AggregateDao {
         futures.add(rollupOverviewFromChildren(rollup, query, childAgentRollupIds));
         futures.add(rollupHistogramFromChildren(rollup, query, childAgentRollupIds, scratchBuffer));
         futures.add(rollupThroughputFromChildren(rollup, query, childAgentRollupIds));
+        futures.add(rollupNetworkGraphFromChildren(rollup, query, childAgentRollupIds));
         futures.add(rollupQueriesFromChildren(rollup, query, childAgentRollupIds));
         futures.add(rollupServiceCallsFromChildren(rollup, query, childAgentRollupIds));
         futures.add(rollupThreadProfileFromChildren(rollup, query, childAgentRollupIds,
@@ -1454,6 +1494,56 @@ public class AggregateDaoImpl implements AggregateDao {
             boundStatement.setLong(i++, errorCount);
         }
         boundStatement.setInt(i++, rollup.adjustedTTL().generalTTL());
+        return session.writeAsync(boundStatement);
+    }
+
+    private ListenableFuture<?> rollupNetworkGraph(RollupParams rollup, AggregateQuery query)
+            throws Exception {
+        ListenableFuture<ResultSet> future =
+                executeQueryForRollup(rollup.agentRollupId(), query, networkGraphTable, false);
+        return MoreFutures.rollupAsync(future, asyncExecutor, new DoRollup() {
+            @Override
+            public ListenableFuture<?> execute(Iterable<Row> rows) throws Exception {
+                return rollupNetworkGraphFromRows(rollup, query, rows);
+            }
+        });
+    }
+
+    private ListenableFuture<?> rollupNetworkGraphFromChildren(RollupParams rollup,
+            AggregateQuery query, Collection<String> childAgentRollupIds)
+            throws Exception {
+        List<ListenableFuture<ResultSet>> futures =
+                getRowsForRollupFromChildren(query, childAgentRollupIds, networkGraphTable, false);
+        return MoreFutures.rollupAsync(futures, asyncExecutor, new DoRollup() {
+            @Override
+            public ListenableFuture<?> execute(Iterable<Row> rows) throws Exception {
+                return rollupNetworkGraphFromRows(rollup, query, rows);
+            }
+        });
+    }
+
+    private ListenableFuture<?> rollupNetworkGraphFromRows(RollupParams rollup,
+            AggregateQuery query, Iterable<Row> rows) throws Exception {
+        MutableNetworkGraph networkGraph = new MutableNetworkGraph();
+        for (Row row : rows) {
+            ByteBuffer bytes = checkNotNull(row.getBytes(0));
+            networkGraph.merge(NetworkGraph.parseFrom(bytes));
+        }
+        BoundStatement boundStatement;
+        if (query.transactionName() == null) {
+            boundStatement = getInsertOverallPS(networkGraphTable, rollup.rollupLevel()).bind();
+        } else {
+            boundStatement = getInsertTransactionPS(networkGraphTable, rollup.rollupLevel()).bind();
+        }
+        int i = 0;
+        boundStatement.setString(i++, rollup.agentRollupId());
+        boundStatement.setString(i++, query.transactionType());
+        if (query.transactionName() != null) {
+            boundStatement.setString(i++, query.transactionName());
+        }
+        boundStatement.setTimestamp(i++, new Date(query.to()));
+        boundStatement.setBytes(i++, toByteBuffer(networkGraph.toProto()));
+        boundStatement.setInt(i++, rollup.adjustedTTL().networkGraphTTL());
         return session.writeAsync(boundStatement);
     }
 
@@ -2026,7 +2116,6 @@ public class AggregateDaoImpl implements AggregateDao {
         for (Row row : results) {
             captureTime = Math.max(captureTime, checkNotNull(row.getTimestamp(0)).getTime());
             ByteBuffer bytes = checkNotNull(row.getBytes(1));
-            // TODO optimize this byte copying
             Profile profile = Profile.parseFrom(bytes);
             collector.mergeProfile(profile);
             collector.updateLastCaptureTime(captureTime);
@@ -2036,6 +2125,8 @@ public class AggregateDaoImpl implements AggregateDao {
     private List<TTL> getTTLs() throws Exception {
         List<Integer> rollupExpirationHours =
                 configRepository.getCentralStorageConfig().rollupExpirationHours();
+        List<Integer> networkGraphRollupExpirationHours =
+                configRepository.getCentralStorageConfig().networkGraphRollupExpirationHours();
         List<Integer> queryAndServiceCallRollupExpirationHours =
                 configRepository.getCentralStorageConfig()
                         .queryAndServiceCallRollupExpirationHours();
@@ -2045,6 +2136,8 @@ public class AggregateDaoImpl implements AggregateDao {
         for (int i = 0; i < rollupExpirationHours.size(); i++) {
             ttls.add(ImmutableTTL.builder()
                     .generalTTL(Ints.saturatedCast(HOURS.toSeconds(rollupExpirationHours.get(i))))
+                    .networkGraphTTL(Ints.saturatedCast(
+                            HOURS.toSeconds(networkGraphRollupExpirationHours.get(i))))
                     .queryTTL(Ints.saturatedCast(
                             HOURS.toSeconds(queryAndServiceCallRollupExpirationHours.get(i))))
                     .serviceCallTTL(Ints.saturatedCast(
@@ -2494,6 +2587,7 @@ public class AggregateDaoImpl implements AggregateDao {
     static TTL getAdjustedTTL(TTL ttl, long captureTime, Clock clock) {
         return ImmutableTTL.builder()
                 .generalTTL(Common.getAdjustedTTL(ttl.generalTTL(), captureTime, clock))
+                .networkGraphTTL(Common.getAdjustedTTL(ttl.networkGraphTTL(), captureTime, clock))
                 .queryTTL(Common.getAdjustedTTL(ttl.queryTTL(), captureTime, clock))
                 .serviceCallTTL(Common.getAdjustedTTL(ttl.serviceCallTTL(), captureTime, clock))
                 .profileTTL(Common.getAdjustedTTL(ttl.profileTTL(), captureTime, clock))
@@ -2528,6 +2622,7 @@ public class AggregateDaoImpl implements AggregateDao {
     @Value.Immutable
     interface TTL {
         int generalTTL();
+        int networkGraphTTL();
         int queryTTL();
         int serviceCallTTL();
         int profileTTL();

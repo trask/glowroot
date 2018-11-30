@@ -201,6 +201,7 @@ public abstract class WebDriverIT {
                 + "\"sessionCookieName\":\"GLOWROOT_SESSION_ID\","
                 + "\"version\":\"$version\"}");
         resetCentralConfigAdmin("storage", "{\"rollupExpirationHours\":[48,336,2160,17520],"
+                + "\"networkGraphRollupExpirationHours\":[48,168,720,720],"
                 + "\"queryAndServiceCallRollupExpirationHours\":[48,168,720,720],"
                 + "\"profileRollupExpirationHours\":[48,168,720,720],"
                 + "\"traceExpirationHours\":336,"

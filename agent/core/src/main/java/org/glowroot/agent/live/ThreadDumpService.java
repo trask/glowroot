@@ -86,7 +86,7 @@ class ThreadDumpService {
                 continue;
             }
             Transaction transaction = threadContext.getTransaction();
-            String traceId = transaction.getTraceId();
+            String traceId = transaction.getOrCreateTraceId();
             TransactionThreadInfo transactionThreadInfo = transactionThreadInfos.get(traceId);
             if (transactionThreadInfo == null) {
                 transactionThreadInfo = new TransactionThreadInfo(transaction.getHeadline(),

@@ -1,0 +1,46 @@
+<!--
+  Copyright 2018-2019 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<div style="position: relative; min-height: 100px;">
+  <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+  <div gt-spinner
+       gt-show="showSpinner && !showNetworkGraph"
+       class="gt-left-aligned-spinner">
+  </div>
+  <div style="position: absolute; width: 100%; margin-top: 50px;">
+    <div gt-spinner
+         gt-show="showSpinner && showNetworkGraph">
+    </div>
+  </div>
+  <div class="gt-panel-overlay"
+       ng-if="showSpinner">
+  </div>
+  <div ng-if="!showSpinner && !showNetworkGraph && !httpError"
+       style="display: table; width: 100%; height: 100%; margin-top: 50px;">
+    <div style="display: table-cell; text-align: center; vertical-align: middle;">
+      <div class="gt-chart-no-data"
+           ng-hide="showOverwrittenMessage">
+        No data for this time period
+      </div>
+      <div class="gt-chart-no-data"
+           ng-if="showOverwrittenMessage">
+        There was network graph data but it has expired
+      </div>
+    </div>
+  </div>
+  <div ng-if="showNetworkGraph">
+    NETWORK GRAPH HERE
+  </div>
+</div>

@@ -44,6 +44,7 @@ import org.glowroot.central.repo.EnvironmentDao;
 import org.glowroot.central.repo.GaugeValueDao;
 import org.glowroot.central.repo.HeartbeatDao;
 import org.glowroot.central.repo.SchemaUpgrade;
+import org.glowroot.central.repo.SpanDao;
 import org.glowroot.central.repo.TraceDao;
 import org.glowroot.central.repo.V09AgentRollupDao;
 import org.glowroot.central.util.MoreFutures;
@@ -69,6 +70,8 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage.LogEven
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage.LogEvent.Level;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.OldAggregateMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.OldTraceMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.SpanMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.SpanMessage.Span;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceStreamMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceStreamMessage.TraceStreamCounts;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceStreamMessage.TraceStreamHeader;
@@ -93,6 +96,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
     private final AggregateDao aggregateDao;
     private final GaugeValueDao gaugeValueDao;
     private final TraceDao traceDao;
+    private final SpanDao spanDao;
     private final V09AgentRollupDao v09AgentRollupDao;
     private final GrpcCommon grpcCommon;
     private final CentralAlertingService centralAlertingService;
@@ -114,7 +118,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
     CollectorServiceImpl(AgentDisplayDao agentDisplayDao, AgentConfigDao agentConfigDao,
             ActiveAgentDao activeAgentDao, EnvironmentDao environmentDao, HeartbeatDao heartbeatDao,
             AggregateDao aggregateDao, GaugeValueDao gaugeValueDao, TraceDao traceDao,
-            V09AgentRollupDao v09AgentRollupDao, GrpcCommon grpcCommon,
+            SpanDao spanDao, V09AgentRollupDao v09AgentRollupDao, GrpcCommon grpcCommon,
             CentralAlertingService centralAlertingService, Clock clock, String version) {
         this.agentDisplayDao = agentDisplayDao;
         this.agentConfigDao = agentConfigDao;
@@ -124,6 +128,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         this.aggregateDao = aggregateDao;
         this.gaugeValueDao = gaugeValueDao;
         this.traceDao = traceDao;
+        this.spanDao = spanDao;
         this.v09AgentRollupDao = v09AgentRollupDao;
         this.grpcCommon = grpcCommon;
         this.centralAlertingService = centralAlertingService;
@@ -223,6 +228,13 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         throttledCollectTrace(request.getAgentId(), false, request.getTrace(), responseObserver);
     }
 
+    @Instrumentation.Transaction(transactionType = "gRPC", transactionName = "Spans",
+            traceHeadline = "Collect spans: {{0.agentId}}", timer = "spans")
+    @Override
+    public void collectSpans(SpanMessage request, StreamObserver<EmptyMessage> responseObserver) {
+        throttledCollectSpans(request.getAgentId(), request.getSpanList(), responseObserver);
+    }
+
     @Instrumentation.Transaction(transactionType = "gRPC", transactionName = "Log",
             traceHeadline = "Log: {{0.agentId}}", timer = "log")
     @Override
@@ -289,6 +301,16 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             @Override
             public void run() {
                 collectTraceUnderThrottle(agentId, postV09, trace, responseObserver);
+            }
+        });
+    }
+
+    private void throttledCollectSpans(String agentId, List<Span> spans,
+            StreamObserver<EmptyMessage> responseObserver) {
+        throttle(agentId, true, "trace", responseObserver, new Runnable() {
+            @Override
+            public void run() {
+                collectSpansUnderThrottle(agentId, spans, responseObserver);
             }
         });
     }
@@ -436,6 +458,19 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             traceDao.store(postV09AgentId, getFutureProofTrace(trace));
         } catch (Throwable t) {
             logger.error("{} - {}", postV09AgentId, t.getMessage(), t);
+            responseObserver.onError(t);
+            return;
+        }
+        responseObserver.onNext(EmptyMessage.getDefaultInstance());
+        responseObserver.onCompleted();
+    }
+
+    private void collectSpansUnderThrottle(String agentId, List<Span> spans,
+            StreamObserver<EmptyMessage> responseObserver) {
+        try {
+            spanDao.insertSpans(spans);
+        } catch (Throwable t) {
+            logger.error("{} - {}", agentId, t.getMessage(), t);
             responseObserver.onError(t);
             return;
         }

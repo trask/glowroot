@@ -44,6 +44,7 @@ import org.glowroot.common.model.TransactionNameSummaryCollector.SummarySortOrde
 import org.glowroot.common.model.TransactionNameSummaryCollector.TransactionNameSummary;
 import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common2.model.NetworkGraphCollector;
 import org.glowroot.common2.repo.AggregateRepository;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.ConfigRepository.AgentConfigNotFoundException;
@@ -299,6 +300,30 @@ class TransactionCommonService {
             }
         }
         return aggregates;
+    }
+
+    // query.from() is non-inclusive
+    NetworkGraphCollector getMergedNetworkGraph(String agentRollupId, AggregateQuery query)
+            throws Exception {
+        NetworkGraphCollector networkGraphCollector = new NetworkGraphCollector();
+        long revisedFrom = query.from();
+        for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
+            AggregateQuery revisedQuery = ImmutableAggregateQuery.builder()
+                    .copyFrom(query)
+                    .from(revisedFrom)
+                    .to(query.to())
+                    .rollupLevel(rollupLevel)
+                    .build();
+            aggregateRepository.mergeNetworkGraphInto(agentRollupId, revisedQuery,
+                    networkGraphCollector);
+            long lastRolledUpTime = networkGraphCollector.getLastCaptureTime();
+            revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
+            if (revisedFrom > query.to()) {
+                break;
+            }
+        }
+        return networkGraphCollector;
+
     }
 
     // query.from() is non-inclusive
