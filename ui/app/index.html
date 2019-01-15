@@ -172,6 +172,13 @@
                 Configuration
               </a>
               <a class="dropdown-item"
+                 ng-href="config-tools"
+                 ng-click="collapseIfNeeded()"
+                 ng-if="central && layout.showNavbarConfig"
+                 style="padding-top: 5px; padding-bottom: 5px;">
+                Configuration Tools
+              </a>
+              <a class="dropdown-item"
                  href="admin/general"
                  ng-click="collapseIfNeeded()"
                  ng-if="layout.adminView"
