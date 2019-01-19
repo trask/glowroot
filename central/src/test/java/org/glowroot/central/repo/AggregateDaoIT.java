@@ -219,7 +219,7 @@ public class AggregateDaoIT {
         List<MutableQuery> queries = queryCollector.getSortedAndTruncatedQueries();
         assertThat(queries).hasSize(1);
         MutableQuery query = queries.get(0);
-        assertThat(query.getType()).isEqualTo("sqlo");
+        assertThat(query.getDest()).isEqualTo("SQLO [localhost]");
         assertThat(query.getTruncatedText()).isEqualTo("select 1");
         assertThat(query.getFullTextSha1()).isNull();
         assertThat(query.getTotalDurationNanos()).isEqualTo(14);
@@ -291,7 +291,7 @@ public class AggregateDaoIT {
         queries = queryCollector.getSortedAndTruncatedQueries();
         assertThat(queries).hasSize(1);
         query = queries.get(0);
-        assertThat(query.getType()).isEqualTo("sqlo");
+        assertThat(query.getDest()).isEqualTo("SQLO [localhost]");
         assertThat(query.getTruncatedText()).isEqualTo("select 1");
         assertThat(query.getFullTextSha1()).isNull();
         assertThat(query.getTotalDurationNanos()).isEqualTo(14);
@@ -397,7 +397,7 @@ public class AggregateDaoIT {
         List<MutableQuery> queries = queryCollector.getSortedAndTruncatedQueries();
         assertThat(queries).hasSize(1);
         MutableQuery query = queries.get(0);
-        assertThat(query.getType()).isEqualTo("sqlo");
+        assertThat(query.getDest()).isEqualTo("SQLO [localhost]");
         assertThat(query.getTruncatedText()).isEqualTo("select 1");
         assertThat(query.getFullTextSha1()).isNull();
         assertThat(query.getTotalDurationNanos()).isEqualTo(14);
@@ -469,7 +469,7 @@ public class AggregateDaoIT {
         queries = queryCollector.getSortedAndTruncatedQueries();
         assertThat(queries).hasSize(1);
         query = queries.get(0);
-        assertThat(query.getType()).isEqualTo("sqlo");
+        assertThat(query.getDest()).isEqualTo("SQLO [localhost]");
         assertThat(query.getTruncatedText()).isEqualTo("select 1");
         assertThat(query.getFullTextSha1()).isNull();
         assertThat(query.getTotalDurationNanos()).isEqualTo(14);
@@ -576,7 +576,7 @@ public class AggregateDaoIT {
         List<MutableQuery> queries = queryCollector.getSortedAndTruncatedQueries();
         assertThat(queries).hasSize(1);
         MutableQuery query = queries.get(0);
-        assertThat(query.getType()).isEqualTo("sqlo");
+        assertThat(query.getDest()).isEqualTo("SQLO [localhost]");
         assertThat(query.getTruncatedText()).isEqualTo("select 1");
         assertThat(query.getFullTextSha1()).isNull();
         assertThat(query.getTotalDurationNanos()).isEqualTo(14);
@@ -648,7 +648,7 @@ public class AggregateDaoIT {
         queries = queryCollector.getSortedAndTruncatedQueries();
         assertThat(queries).hasSize(1);
         query = queries.get(0);
-        assertThat(query.getType()).isEqualTo("sqlo");
+        assertThat(query.getDest()).isEqualTo("SQLO [localhost]");
         assertThat(query.getTruncatedText()).isEqualTo("select 1");
         assertThat(query.getFullTextSha1()).isNull();
         assertThat(query.getTotalDurationNanos()).isEqualTo(14);
@@ -692,7 +692,7 @@ public class AggregateDaoIT {
                         .setTotalNanos(999)
                         .setCount(3))
                 .addQuery(Aggregate.Query.newBuilder()
-                        .setType("sqlo")
+                        .setDest("SQLO [localhost]")
                         .setSharedQueryTextIndex(0)
                         .setTotalDurationNanos(7)
                         .setTotalRows(OptionalInt64.newBuilder().setValue(5))
@@ -719,7 +719,7 @@ public class AggregateDaoIT {
                                 .setTotalNanos(333)
                                 .setCount(1))
                         .addQuery(Aggregate.Query.newBuilder()
-                                .setType("sqlo")
+                                .setDest("SQLO [localhost]")
                                 .setSharedQueryTextIndex(0)
                                 .setTotalDurationNanos(7)
                                 .setTotalRows(OptionalInt64.newBuilder().setValue(5))

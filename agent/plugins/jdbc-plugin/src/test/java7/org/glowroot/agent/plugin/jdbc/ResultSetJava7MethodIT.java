@@ -79,7 +79,7 @@ public class ResultSetJava7MethodIT {
         Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
 
         Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("SQL");
+        assertThat(query.getDest()).isEqualTo(Connections.getDest());
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
                 .isEqualTo("select * from employee");
         assertThat(query.getExecutionCount()).isEqualTo(1);

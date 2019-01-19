@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ public class ServiceCallCollector {
 
     private static final String LIMIT_EXCEEDED_BUCKET = "LIMIT EXCEEDED BUCKET";
 
-    // first key is the service call type, second key is the service call text
+    // first key is the network node id, second key is the service call text
     private final Map<String, Map<String, MutableServiceCall>> serviceCalls = Maps.newHashMap();
     private final Map<String, MutableServiceCall> limitExceededBuckets = Maps.newHashMap();
     private final int limit;
@@ -63,12 +63,11 @@ public class ServiceCallCollector {
         // do not modify original limit exceeded buckets since adding exceeded service calls below
         Map<String, MutableServiceCall> limitExceededBuckets = copyLimitExceededBuckets();
         for (MutableServiceCall exceededServiceCall : exceededServiceCalls) {
-            String serviceCallType = exceededServiceCall.getType();
-            MutableServiceCall limitExceededBucket = limitExceededBuckets.get(serviceCallType);
+            String dest = exceededServiceCall.getDest();
+            MutableServiceCall limitExceededBucket = limitExceededBuckets.get(dest);
             if (limitExceededBucket == null) {
-                limitExceededBucket =
-                        new MutableServiceCall(serviceCallType, LIMIT_EXCEEDED_BUCKET);
-                limitExceededBuckets.put(serviceCallType, limitExceededBucket);
+                limitExceededBucket = new MutableServiceCall(dest, LIMIT_EXCEEDED_BUCKET);
+                limitExceededBuckets.put(dest, limitExceededBucket);
             }
             limitExceededBucket.add(exceededServiceCall);
         }
@@ -78,41 +77,39 @@ public class ServiceCallCollector {
         return allServiceCalls;
     }
 
-    public void mergeServiceCall(String serviceCallType, String serviceCallText,
+    public void mergeServiceCall(String dest, String serviceCallText,
             double totalDurationNanos, long executionCount) {
-        MutableServiceCall aggregateServiceCall;
+        MutableServiceCall serviceCall;
         if (serviceCallText.equals(LIMIT_EXCEEDED_BUCKET)) {
-            aggregateServiceCall = limitExceededBuckets.get(serviceCallType);
-            if (aggregateServiceCall == null) {
-                aggregateServiceCall =
-                        new MutableServiceCall(serviceCallType, LIMIT_EXCEEDED_BUCKET);
-                limitExceededBuckets.put(serviceCallType, aggregateServiceCall);
+            serviceCall = limitExceededBuckets.get(dest);
+            if (serviceCall == null) {
+                serviceCall = new MutableServiceCall(dest, LIMIT_EXCEEDED_BUCKET);
+                limitExceededBuckets.put(dest, serviceCall);
             }
         } else {
-            Map<String, MutableServiceCall> serviceCallsForType = serviceCalls.get(serviceCallType);
-            if (serviceCallsForType == null) {
-                serviceCallsForType = Maps.newHashMap();
-                serviceCalls.put(serviceCallType, serviceCallsForType);
+            Map<String, MutableServiceCall> serviceCallsForDest = serviceCalls.get(dest);
+            if (serviceCallsForDest == null) {
+                serviceCallsForDest = Maps.newHashMap();
+                serviceCalls.put(dest, serviceCallsForDest);
             }
-            aggregateServiceCall = serviceCallsForType.get(serviceCallText);
-            if (aggregateServiceCall == null) {
-                aggregateServiceCall = new MutableServiceCall(serviceCallType, serviceCallText);
-                serviceCallsForType.put(serviceCallText, aggregateServiceCall);
+            serviceCall = serviceCallsForDest.get(serviceCallText);
+            if (serviceCall == null) {
+                serviceCall = new MutableServiceCall(dest, serviceCallText);
+                serviceCallsForDest.put(serviceCallText, serviceCall);
             }
         }
-        aggregateServiceCall.addToTotalDurationNanos(totalDurationNanos);
-        aggregateServiceCall.addToExecutionCount(executionCount);
+        serviceCall.addToTotalDurationNanos(totalDurationNanos);
+        serviceCall.addToExecutionCount(executionCount);
     }
 
     private Map<String, MutableServiceCall> copyLimitExceededBuckets() {
         Map<String, MutableServiceCall> copies = Maps.newHashMap();
         for (Map.Entry<String, MutableServiceCall> entry : limitExceededBuckets.entrySet()) {
-            String serviceCallType = entry.getKey();
+            String dest = entry.getKey();
             MutableServiceCall limitExceededBucket = entry.getValue();
-            MutableServiceCall copy =
-                    new MutableServiceCall(serviceCallType, LIMIT_EXCEEDED_BUCKET);
+            MutableServiceCall copy = new MutableServiceCall(dest, LIMIT_EXCEEDED_BUCKET);
             copy.add(limitExceededBucket);
-            copies.put(serviceCallType, copy);
+            copies.put(dest, copy);
         }
         return copies;
     }

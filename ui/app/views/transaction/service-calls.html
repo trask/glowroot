@@ -41,17 +41,16 @@
     </div>
   </div>
   <div ng-if="showServiceCalls">
-    <table class="table gt-query-table"
-           style="table-layout: fixed;">
+    <table class="table gt-query-table">
       <thead>
       <tr>
         <th style="vertical-align: middle;">
           <select class="custom-select"
-                  ng-model="type"
+                  ng-model="page.serviceCallDest"
                   style="width: inherit;"
-                  ng-if="types.length > 1">
-            <option selected value="">(All)</option>
-            <option ng-repeat="type in types" ng-value="type">{{type}}</option>
+                  ng-if="serviceCallDest.length > 1">
+            <option selected value="___all___">(All)</option>
+            <option ng-repeat="serviceCallDest in serviceCallDests" ng-value="serviceCallDest">{{serviceCallDest}}</option>
           </select>
         </th>
         <th scope="col"
@@ -92,9 +91,9 @@
       </tr>
       </thead>
       <tbody>
-      <tr ng-repeat="serviceCall in serviceCalls | filter:{type: type} | orderBy:sortAttr:sortAsc">
+      <tr ng-repeat="serviceCall in serviceCallsMap[page.serviceCallDest] | orderBy:sortAttr:sortAsc">
         <th scope="row"
-            class="gt-monospace gt-break-word"
+            class="gt-query-text-column"
             style="font-weight: normal;">
           {{serviceCall.text}}
         </th>
@@ -106,6 +105,21 @@
         </td>
         <td class="gt-query-other-column">
           {{serviceCall.timePerExecution | gtMillis}}
+        </td>
+      </tr>
+      <tr ng-if="limitExceededBucketMap[page.serviceCallDest]">
+        <th scope="row" class="gt-query-text-column"
+            style="font-weight: normal;">
+          {{limitExceededBucketMap[page.serviceCallDest].text}}
+        </th>
+        <td class="gt-query-total-column">
+          {{limitExceededBucketMap.totalDurationNanos / 1000000 | gtMillis}}
+        </td>
+        <td class="gt-query-count-column">
+          {{limitExceededBucketMap.executionCount | number}}
+        </td>
+        <td class="gt-query-other-column">
+          {{limitExceededBucketMap.timePerExecution | gtMillis}}
         </td>
       </tr>
       </tbody>

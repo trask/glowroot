@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 // all timing data is in nanoseconds
 public class SyncQueryData implements QueryData {
 
-    private final String queryType;
+    private final String dest;
     private final String queryText;
     private final @Nullable SyncQueryData nextQueryData;
     private final @Nullable SyncQueryData limitExceededBucket;
@@ -54,16 +54,16 @@ public class SyncQueryData implements QueryData {
     // also tracked as queries)
     private long totalRows = -1;
 
-    public SyncQueryData(String queryType, String queryText, @Nullable SyncQueryData nextQueryData,
+    public SyncQueryData(String dest, String queryText, @Nullable SyncQueryData nextQueryData,
             @Nullable SyncQueryData limitExceededBucket) {
-        this.queryType = queryType;
+        this.dest = dest;
         this.queryText = queryText;
         this.nextQueryData = nextQueryData;
         this.limitExceededBucket = limitExceededBucket;
     }
 
-    public String getQueryType() {
-        return queryType;
+    public String getDest() {
+        return dest;
     }
 
     @Override

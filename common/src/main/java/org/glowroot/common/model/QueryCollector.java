@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,8 +28,8 @@ public class QueryCollector {
 
     private static final String LIMIT_EXCEEDED_BUCKET = "LIMIT EXCEEDED BUCKET";
 
-    // first key is the query type, second key is either the full query text (if the query text is
-    // relatively short) or the sha1 of the full query text (if the query text is long)
+    // first key is the network node id, second key is either the full query text (if the query text
+    // is relatively short) or the sha1 of the full query text (if the query text is long)
     private final Map<String, Map<String, MutableQuery>> queries = Maps.newHashMap();
     private final Map<String, MutableQuery> limitExceededBuckets = Maps.newHashMap();
     private final int limit;
@@ -64,11 +64,11 @@ public class QueryCollector {
         // do not modify original limit exceeded buckets since adding exceeded queries below
         Map<String, MutableQuery> limitExceededBuckets = copyLimitExceededBuckets();
         for (MutableQuery exceededQuery : exceededQueries) {
-            String queryType = exceededQuery.getType();
-            MutableQuery limitExceededBucket = limitExceededBuckets.get(queryType);
+            String dest = exceededQuery.getDest();
+            MutableQuery limitExceededBucket = limitExceededBuckets.get(dest);
             if (limitExceededBucket == null) {
-                limitExceededBucket = new MutableQuery(queryType, LIMIT_EXCEEDED_BUCKET, null);
-                limitExceededBuckets.put(queryType, limitExceededBucket);
+                limitExceededBucket = new MutableQuery(dest, LIMIT_EXCEEDED_BUCKET, null);
+                limitExceededBuckets.put(dest, limitExceededBucket);
             }
             limitExceededBucket.add(exceededQuery);
         }
@@ -78,26 +78,26 @@ public class QueryCollector {
         return allQueries;
     }
 
-    public void mergeQuery(String queryType, String truncatedText, @Nullable String fullTextSha1,
+    public void mergeQuery(String dest, String truncatedText, @Nullable String fullTextSha1,
             double totalDurationNanos, long executionCount, boolean hasRows, long totalRows) {
         MutableQuery aggregateQuery;
         if (truncatedText.equals(LIMIT_EXCEEDED_BUCKET)) {
-            aggregateQuery = limitExceededBuckets.get(queryType);
+            aggregateQuery = limitExceededBuckets.get(dest);
             if (aggregateQuery == null) {
-                aggregateQuery = new MutableQuery(queryType, LIMIT_EXCEEDED_BUCKET, null);
-                limitExceededBuckets.put(queryType, aggregateQuery);
+                aggregateQuery = new MutableQuery(dest, LIMIT_EXCEEDED_BUCKET, null);
+                limitExceededBuckets.put(dest, aggregateQuery);
             }
         } else {
-            Map<String, MutableQuery> queriesForType = queries.get(queryType);
-            if (queriesForType == null) {
-                queriesForType = Maps.newHashMap();
-                queries.put(queryType, queriesForType);
+            Map<String, MutableQuery> queriesForDest = queries.get(dest);
+            if (queriesForDest == null) {
+                queriesForDest = Maps.newHashMap();
+                queries.put(dest, queriesForDest);
             }
             String queryKey = MoreObjects.firstNonNull(fullTextSha1, truncatedText);
-            aggregateQuery = queriesForType.get(queryKey);
+            aggregateQuery = queriesForDest.get(queryKey);
             if (aggregateQuery == null) {
-                aggregateQuery = new MutableQuery(queryType, truncatedText, fullTextSha1);
-                queriesForType.put(queryKey, aggregateQuery);
+                aggregateQuery = new MutableQuery(dest, truncatedText, fullTextSha1);
+                queriesForDest.put(queryKey, aggregateQuery);
             }
         }
         aggregateQuery.addToTotalDurationNanos(totalDurationNanos);
@@ -108,11 +108,11 @@ public class QueryCollector {
     private Map<String, MutableQuery> copyLimitExceededBuckets() {
         Map<String, MutableQuery> copies = Maps.newHashMap();
         for (Map.Entry<String, MutableQuery> entry : limitExceededBuckets.entrySet()) {
-            String queryType = entry.getKey();
+            String dest = entry.getKey();
             MutableQuery limitExceededBucket = entry.getValue();
-            MutableQuery copy = new MutableQuery(queryType, LIMIT_EXCEEDED_BUCKET, null);
+            MutableQuery copy = new MutableQuery(dest, LIMIT_EXCEEDED_BUCKET, null);
             copy.add(limitExceededBucket);
-            copies.put(queryType, copy);
+            copies.put(dest, copy);
         }
         return copies;
     }

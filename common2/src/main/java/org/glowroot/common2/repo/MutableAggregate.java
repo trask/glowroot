@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -247,23 +247,22 @@ public class MutableAggregate {
                 .build();
     }
 
-    public void mergeQuery(String queryType, String truncatedQueryText,
+    public void mergeQuery(String dest, String truncatedQueryText,
             @Nullable String fullQueryTextSha1, double totalDurationNanos, long executionCount,
             boolean hasTotalRows, long totalRows) {
         if (queries == null) {
             queries = new QueryCollector(maxQueryAggregates);
         }
-        queries.mergeQuery(queryType, truncatedQueryText, fullQueryTextSha1, totalDurationNanos,
+        queries.mergeQuery(dest, truncatedQueryText, fullQueryTextSha1, totalDurationNanos,
                 executionCount, hasTotalRows, totalRows);
     }
 
-    public void mergeServiceCall(String serviceCallType, String serviceCallText,
+    public void mergeServiceCall(String dest, String serviceCallText,
             double totalDurationNanos, long executionCount) {
         if (serviceCalls == null) {
             serviceCalls = new ServiceCallCollector(maxServiceCallAggregates);
         }
-        serviceCalls.mergeServiceCall(serviceCallType, serviceCallText, totalDurationNanos,
-                executionCount);
+        serviceCalls.mergeServiceCall(dest, serviceCallText, totalDurationNanos, executionCount);
     }
 
     public void mergeMainThreadProfile(Profile toBeMergedProfile) {

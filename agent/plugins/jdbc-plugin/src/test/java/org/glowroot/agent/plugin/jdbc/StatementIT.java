@@ -79,7 +79,7 @@ public class StatementIT {
         Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
 
         Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("SQL");
+        assertThat(query.getDest()).isEqualTo(Connections.getDest());
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
                 .isEqualTo("select * from employee");
         assertThat(query.getExecutionCount()).isEqualTo(1);
@@ -110,7 +110,7 @@ public class StatementIT {
         Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
 
         Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("SQL");
+        assertThat(query.getDest()).isEqualTo(Connections.getDest());
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
                 .isEqualTo("select * from employee");
         assertThat(query.getExecutionCount()).isEqualTo(1);
@@ -141,7 +141,7 @@ public class StatementIT {
         Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
 
         Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("SQL");
+        assertThat(query.getDest()).isEqualTo(Connections.getDest());
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
                 .isEqualTo("update employee set name = 'nobody'");
         assertThat(query.getExecutionCount()).isEqualTo(1);
@@ -190,7 +190,7 @@ public class StatementIT {
         Iterator<Aggregate.Query> j = PreparedStatementIT.sortedQueries(trace);
 
         Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("SQL");
+        assertThat(query.getDest()).isEqualTo(Connections.getDest());
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
                 .isEqualTo("LIMIT EXCEEDED BUCKET");
         assertThat(query.getExecutionCount()).isEqualTo(4501);
@@ -224,7 +224,7 @@ public class StatementIT {
         Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
 
         Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("SQL");
+        assertThat(query.getDest()).isEqualTo(Connections.getDest());
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
                 .isEqualTo("select * from employee");
         assertThat(query.getExecutionCount()).isEqualTo(1);
@@ -255,7 +255,7 @@ public class StatementIT {
         Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
 
         Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("SQL");
+        assertThat(query.getDest()).isEqualTo(Connections.getDest());
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
                 .isEqualTo("select * from employee");
         assertThat(query.getExecutionCount()).isEqualTo(1);
@@ -286,7 +286,7 @@ public class StatementIT {
         Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
 
         Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("SQL");
+        assertThat(query.getDest()).isEqualTo(Connections.getDest());
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
                 .isEqualTo("select * from employee");
         assertThat(query.getExecutionCount()).isEqualTo(1);
@@ -317,7 +317,7 @@ public class StatementIT {
         Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
 
         Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("SQL");
+        assertThat(query.getDest()).isEqualTo(Connections.getDest());
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
                 .isEqualTo("select * from employee");
         assertThat(query.getExecutionCount()).isEqualTo(1);
@@ -348,7 +348,7 @@ public class StatementIT {
         Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
 
         Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("SQL");
+        assertThat(query.getDest()).isEqualTo(Connections.getDest());
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
                 .isEqualTo("select * from employee");
         assertThat(query.getExecutionCount()).isEqualTo(1);
@@ -379,7 +379,7 @@ public class StatementIT {
         Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
 
         Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("SQL");
+        assertThat(query.getDest()).isEqualTo(Connections.getDest());
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
                 .isEqualTo("select * from employee");
         assertThat(query.getExecutionCount()).isEqualTo(1);
@@ -411,7 +411,7 @@ public class StatementIT {
         Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
 
         Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("SQL");
+        assertThat(query.getDest()).isEqualTo(Connections.getDest());
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
                 .isEqualTo("select * from employee");
         assertThat(query.getExecutionCount()).isEqualTo(1);

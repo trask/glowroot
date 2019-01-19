@@ -46,11 +46,11 @@
       <tr>
         <th style="vertical-align: middle;">
           <select class="custom-select"
-                  ng-model="page.queryType"
+                  ng-model="page.queryDest"
                   style="width: inherit;"
-                  ng-if="queryTypes.length > 1">
-            <option selected value="">(All)</option>
-            <option ng-repeat="queryType in queryTypes" ng-value="queryType">{{queryType}}</option>
+                  ng-if="queryDests.length > 1">
+            <option selected value="___all___">(All)</option>
+            <option ng-repeat="queryDest in queryDests" ng-value="queryDest">{{queryDest}}</option>
           </select>
         </th>
         <th scope="col"
@@ -104,7 +104,7 @@
       </tr>
       </thead>
       <tbody ng-if="!smallScreen()">
-      <tr ng-repeat="query in queries | filter:{queryType: page.queryType} | orderBy:sortAttr:sortAsc">
+      <tr ng-repeat="query in queriesMap[page.queryDest] | orderBy:sortAttr:sortAsc">
         <th scope="row" class="gt-query-text-column"
             ng-click="showQueryModal(query)"
             style="font-weight: normal;">
@@ -123,28 +123,28 @@
           {{query.rowsPerExecution | gtCount}}
         </td>
       </tr>
-      <tr ng-if="limitExceededBucket">
+      <tr ng-if="limitExceededBucketMap[page.queryDest]">
         <th scope="row" class="gt-query-text-column"
             style="font-weight: normal;">
-          {{limitExceededBucket.truncatedQueryText}}
+          {{limitExceededBucketMap[page.queryDest].text}}
         </th>
         <td class="gt-query-total-column">
-          {{limitExceededBucket.totalDurationNanos / 1000000 | gtMillis}}
+          {{limitExceededBucketMap[page.queryDest].totalDurationNanos / 1000000 | gtMillis}}
         </td>
         <td class="gt-query-count-column">
-          {{limitExceededBucket.executionCount | number}}
+          {{limitExceededBucketMap[page.queryDest].executionCount | number}}
         </td>
         <td class="gt-query-other-column">
-          {{limitExceededBucket.timePerExecution | gtMillis}}
+          {{limitExceededBucketMap[page.queryDest].timePerExecution | gtMillis}}
         </td>
         <td class="gt-query-other-column">
-          {{limitExceededBucket.rowsPerExecution | gtCount}}
+          {{limitExceededBucketMap[page.queryDest].rowsPerExecution | gtCount}}
         </td>
       </tr>
       </tbody>
       <!-- TODO apply scope="row" appropriately for small screens -->
       <tbody ng-if="smallScreen()">
-      <tr ng-repeat-start="query in queries | filter:{queryType: page.queryType} | orderBy:sortAttr:sortAsc">
+      <tr ng-repeat-start="query in queriesMap[page.queryDest] | orderBy:sortAttr:sortAsc">
         <td class="gt-query-text-column"
             ng-click="showQueryModal(query)"
             colspan="5"
@@ -167,26 +167,26 @@
           {{query.rowsPerExecution | gtCount}}
         </td>
       </tr>
-      <tr ng-if="limitExceededBucket">
+      <tr ng-if="limitExceededBucketMap[page.queryDest]">
         <td class="gt-query-text-column"
             colspan="5"
             style="padding-bottom: 4px;">
-          {{limitExceededBucket.text}}
+          {{limitExceededBucketMap[page.queryDest].text}}
         </td>
       </tr>
-      <tr ng-if="limitExceededBucket">
+      <tr ng-if="limitExceededBucketMap[page.queryDest]">
         <td class="border-top-0 pt-0"></td>
         <td class="gt-query-total-column border-top-0 pt-0">
-          {{limitExceededBucket.totalDurationNanos / 1000000 | gtMillis}}
+          {{limitExceededBucketMap[page.queryDest].totalDurationNanos / 1000000 | gtMillis}}
         </td>
         <td class="gt-query-count-column border-top-0 pt-0">
-          {{limitExceededBucket.executionCount}}
+          {{limitExceededBucketMap[page.queryDest].executionCount}}
         </td>
         <td class="gt-query-other-column border-top-0 pt-0">
-          {{limitExceededBucket.timePerExecution | gtMillis}}
+          {{limitExceededBucketMap[page.queryDest].timePerExecution | gtMillis}}
         </td>
         <td class="gt-query-other-column border-top-0 pt-0">
-          {{limitExceededBucket.rowsPerExecution | gtCount}}
+          {{limitExceededBucketMap[page.queryDest].rowsPerExecution | gtCount}}
         </td>
       </tr>
       </tbody>

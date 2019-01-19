@@ -315,6 +315,7 @@ public class TraceDaoImpl implements TraceDao {
                 + " location_stack_trace blob, error blob, primary key ((agent_id, trace_id),"
                 + " index_))", expirationHours);
 
+        // "type" column now should be "dest" (since 0.13.1)
         session.createTableWithTWCS("create table if not exists trace_query_v2 (agent_id varchar,"
                 + " trace_id varchar, type varchar, shared_query_text_index int,"
                 + " total_duration_nanos double, execution_count bigint, total_rows bigint,"
@@ -407,6 +408,7 @@ public class TraceDaoImpl implements TraceDao {
                 + " location_stack_trace, error) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
                 + " using ttl ?");
 
+        // "type" column now should be "dest" (since 0.13.1)
         insertQueryV2 = session.prepare("insert into trace_query_v2 (agent_id, trace_id, type,"
                 + " shared_query_text_index, total_duration_nanos, execution_count, total_rows,"
                 + " active) values (?, ?, ?, ?, ?, ?, ?, ?) using ttl ?");
@@ -545,6 +547,7 @@ public class TraceDaoImpl implements TraceDao {
                 + " detail, location_stack_trace, error from trace_entry_v2 where agent_id = ? and"
                 + " trace_id = ?");
 
+        // "type" column now should be "dest" (since 0.13.1)
         readQueriesV2 = session.prepare("select type, shared_query_text_index,"
                 + " total_duration_nanos, execution_count, total_rows, active from trace_query_v2"
                 + " where agent_id = ? and trace_id = ?");
@@ -807,7 +810,7 @@ public class TraceDaoImpl implements TraceDao {
             i = 0;
             boundStatement.setString(i++, agentId);
             boundStatement.setString(i++, traceId);
-            boundStatement.setString(i++, query.getType());
+            boundStatement.setString(i++, query.getDest());
             boundStatement.setInt(i++, query.getSharedQueryTextIndex());
             boundStatement.setDouble(i++, query.getTotalDurationNanos());
             boundStatement.setLong(i++, query.getExecutionCount());
@@ -1224,7 +1227,7 @@ public class TraceDaoImpl implements TraceDao {
             Row row = results.one();
             int i = 0;
             Aggregate.Query.Builder query = Aggregate.Query.newBuilder()
-                    .setType(checkNotNull(row.getString(i++)))
+                    .setDest(checkNotNull(row.getString(i++)))
                     .setSharedQueryTextIndex(row.getInt(i++))
                     .setTotalDurationNanos(row.getDouble(i++))
                     .setExecutionCount(row.getLong(i++));

@@ -311,11 +311,12 @@ public class AggregateDao implements AggregateRepository {
         long captureTime = Long.MIN_VALUE;
         for (CappedId cappedId : cappedIds) {
             captureTime = Math.max(captureTime, cappedId.captureTime());
-            List<Stored.QueriesByType> queries = rollupCappedDatabases.get(query.rollupLevel())
-                    .readMessages(cappedId.cappedId(), Stored.QueriesByType.parser());
-            for (Stored.QueriesByType toBeMergedQueries : queries) {
+            List<Stored.QueriesByDest> queries =
+                    rollupCappedDatabases.get(query.rollupLevel()).readMessages(cappedId.cappedId(),
+                            Stored.QueriesByDest.parser());
+            for (Stored.QueriesByDest toBeMergedQueries : queries) {
                 for (Stored.Query toBeMergedQuery : toBeMergedQueries.getQueryList()) {
-                    collector.mergeQuery(toBeMergedQueries.getType(),
+                    collector.mergeQuery(toBeMergedQueries.getDest(),
                             toBeMergedQuery.getTruncatedText(),
                             Strings.emptyToNull(toBeMergedQuery.getFullTextSha1()),
                             toBeMergedQuery.getTotalDurationNanos(),
@@ -339,13 +340,13 @@ public class AggregateDao implements AggregateRepository {
         long captureTime = Long.MIN_VALUE;
         for (CappedId cappedId : cappedIds) {
             captureTime = Math.max(captureTime, cappedId.captureTime());
-            List<Stored.ServiceCallsByType> serviceCalls =
+            List<Stored.ServiceCallsByDest> serviceCalls =
                     rollupCappedDatabases.get(query.rollupLevel()).readMessages(cappedId.cappedId(),
-                            Stored.ServiceCallsByType.parser());
-            for (Stored.ServiceCallsByType toBeMergedServiceCalls : serviceCalls) {
+                            Stored.ServiceCallsByDest.parser());
+            for (Stored.ServiceCallsByDest toBeMergedServiceCalls : serviceCalls) {
                 for (Stored.ServiceCall toBeMergedQuery : toBeMergedServiceCalls
                         .getServiceCallList()) {
-                    collector.mergeServiceCall(toBeMergedServiceCalls.getType(),
+                    collector.mergeServiceCall(toBeMergedServiceCalls.getDest(),
                             toBeMergedQuery.getText(), toBeMergedQuery.getTotalDurationNanos(),
                             toBeMergedQuery.getExecutionCount());
                 }
@@ -518,12 +519,12 @@ public class AggregateDao implements AggregateRepository {
         mergedAggregate
                 .mergeDurationNanosHistogram(Aggregate.Histogram.parseFrom(durationNanosHistogram));
         if (queriesCappedId != null) {
-            List<Stored.QueriesByType> queries = rollupCappedDatabases.get(fromRollupLevel)
-                    .readMessages(queriesCappedId, Stored.QueriesByType.parser());
+            List<Stored.QueriesByDest> queries = rollupCappedDatabases.get(fromRollupLevel)
+                    .readMessages(queriesCappedId, Stored.QueriesByDest.parser());
             if (queries != null) {
-                for (Stored.QueriesByType queriesByType : queries) {
-                    for (Stored.Query query : queriesByType.getQueryList()) {
-                        mergedAggregate.mergeQuery(queriesByType.getType(),
+                for (Stored.QueriesByDest queriesByDest : queries) {
+                    for (Stored.Query query : queriesByDest.getQueryList()) {
+                        mergedAggregate.mergeQuery(queriesByDest.getDest(),
                                 query.getTruncatedText(),
                                 Strings.emptyToNull(query.getFullTextSha1()),
                                 query.getTotalDurationNanos(), query.getExecutionCount(),
@@ -533,13 +534,14 @@ public class AggregateDao implements AggregateRepository {
             }
         }
         if (serviceCallsCappedId != null) {
-            List<Stored.ServiceCallsByType> serviceCalls =
+            List<Stored.ServiceCallsByDest> serviceCalls =
                     rollupCappedDatabases.get(fromRollupLevel).readMessages(serviceCallsCappedId,
-                            Stored.ServiceCallsByType.parser());
+                            Stored.ServiceCallsByDest.parser());
             if (serviceCalls != null) {
-                for (Stored.ServiceCallsByType serviceCallsByType : serviceCalls) {
-                    for (Stored.ServiceCall serviceCall : serviceCallsByType.getServiceCallList()) {
-                        mergedAggregate.mergeServiceCall(serviceCallsByType.getType(),
+                for (Stored.ServiceCallsByDest serviceCallsByDest : serviceCalls) {
+                    for (Stored.ServiceCall serviceCall : serviceCallsByDest
+                            .getServiceCallList()) {
+                        mergedAggregate.mergeServiceCall(serviceCallsByDest.getDest(),
                                 serviceCall.getText(), serviceCall.getTotalDurationNanos(),
                                 serviceCall.getExecutionCount());
                     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,10 @@
  */
 package org.glowroot.agent.plugin.cassandra;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Set;
 
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.AsyncQueryEntry;
@@ -29,6 +31,7 @@ import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
+import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindReturn;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
@@ -45,8 +48,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class SessionAspect {
 
-    private static final String QUERY_TYPE = "CQL";
-
     private static final ConfigService configService = Agent.getConfigService("cassandra");
 
     // visibility is provided by memoryBarrier in org.glowroot.config.ConfigService
@@ -60,6 +61,36 @@ public class SessionAspect {
                 stackTraceThresholdMillis = value == null ? Integer.MAX_VALUE : value.intValue();
             }
         });
+    }
+
+    @Shim("com.datastax.driver.core.Session")
+    public interface Session {
+
+        @Shim("com.datastax.driver.core.Cluster getCluster()")
+        @Nullable
+        Cluster glowroot$getCluster();
+    }
+
+    @Shim("com.datastax.driver.core.Cluster")
+    public interface Cluster {
+
+        @Shim("com.datastax.driver.core.Metadata getMetadata()")
+        @Nullable
+        Metadata glowroot$getMetadata();
+    }
+
+    @Shim("com.datastax.driver.core.Metadata")
+    public interface Metadata {
+
+        @Nullable
+        Set<? extends Host> getAllHosts();
+    }
+
+    @Shim("com.datastax.driver.core.Host")
+    public interface Host {
+
+        @Nullable
+        InetSocketAddress getSocketAddress();
     }
 
     @Shim("com.datastax.driver.core.Statement")
@@ -102,12 +133,12 @@ public class SessionAspect {
         private static final TimerName timerName = Agent.getTimerName(ExecuteAdvice.class);
         @OnBefore
         public static @Nullable QueryEntry onBefore(ThreadContext context,
-                @BindParameter @Nullable Object arg) {
+                @BindReceiver Session session, @BindParameter @Nullable Object arg) {
             QueryEntryInfo queryEntryInfo = getQueryEntryInfo(arg);
             if (queryEntryInfo == null) {
                 return null;
             }
-            return context.startQueryEntry(QUERY_TYPE, queryEntryInfo.queryText,
+            return context.startQueryEntry(getDest(session), queryEntryInfo.queryText,
                     queryEntryInfo.queryMessageSupplier, timerName);
         }
         @OnReturn
@@ -151,12 +182,12 @@ public class SessionAspect {
         private static final TimerName timerName = Agent.getTimerName(ExecuteAsyncAdvice.class);
         @OnBefore
         public static @Nullable AsyncQueryEntry onBefore(ThreadContext context,
-                @BindParameter @Nullable Object arg) {
+                @BindReceiver Session session, @BindParameter @Nullable Object arg) {
             QueryEntryInfo queryEntryInfo = getQueryEntryInfo(arg);
             if (queryEntryInfo == null) {
                 return null;
             }
-            return context.startAsyncQueryEntry(QUERY_TYPE, queryEntryInfo.queryText,
+            return context.startAsyncQueryEntry(getDest(session), queryEntryInfo.queryText,
                     queryEntryInfo.queryMessageSupplier, timerName);
         }
         @OnReturn
@@ -293,5 +324,46 @@ public class SessionAspect {
             this.queryText = queryText;
             this.queryMessageSupplier = messageSupplier;
         }
+    }
+
+    private static String getDest(Session session) {
+        Cluster cluster = session.glowroot$getCluster();
+        if (cluster == null) {
+            return "Cassandra";
+        }
+        Metadata metadata = cluster.glowroot$getMetadata();
+        if (metadata == null) {
+            return "Cassandra";
+        }
+        Set<? extends Host> hosts = metadata.getAllHosts();
+        if (hosts == null) {
+            return "Cassandra";
+        }
+        StringBuilder sb = new StringBuilder("Cassandra");
+        boolean first = true;
+        for (Host host : hosts) {
+            InetSocketAddress socketAddress = host.getSocketAddress();
+            if (socketAddress == null) {
+                continue;
+            }
+            if (first) {
+                sb.append(" [");
+            } else {
+                sb.append(',');
+            }
+            String hostName = socketAddress.getHostName();
+            if (hostName != null) {
+                sb.append(hostName);
+            } else {
+                sb.append(socketAddress.getAddress().getHostAddress());
+            }
+            sb.append(':');
+            sb.append(socketAddress.getPort());
+            first = false;
+        }
+        if (!first) {
+            sb.append(']');
+        }
+        return sb.toString();
     }
 }

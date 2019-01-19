@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class ActionRequestBuilderAspect {
 
-    private static final String QUERY_TYPE = "Elasticsearch";
+    // TODO support dest node capture
+    private static final String BASE_DEST = "Elasticsearch";
 
     private static final ConfigService configService = Agent.getConfigService("elasticsearch");
 
@@ -135,7 +136,7 @@ public class ActionRequestBuilderAspect {
         @OnBefore
         public static @Nullable QueryEntry onBefore(ThreadContext context,
                 @BindReceiver ActionRequestBuilder actionRequestBuilder) {
-            return context.startQueryEntry(QUERY_TYPE, getQueryText(actionRequestBuilder),
+            return context.startQueryEntry(BASE_DEST, getQueryText(actionRequestBuilder),
                     getQueryMessageSupplier(actionRequestBuilder), timerName);
         }
         @OnReturn
@@ -161,7 +162,7 @@ public class ActionRequestBuilderAspect {
         @OnBefore
         public static @Nullable AsyncQueryEntry onBefore(ThreadContext context,
                 @BindReceiver ActionRequestBuilder actionRequestBuilder) {
-            return context.startAsyncQueryEntry(QUERY_TYPE, getQueryText(actionRequestBuilder),
+            return context.startAsyncQueryEntry(BASE_DEST, getQueryText(actionRequestBuilder),
                     getQueryMessageSupplier(actionRequestBuilder), timerName);
         }
         @OnReturn

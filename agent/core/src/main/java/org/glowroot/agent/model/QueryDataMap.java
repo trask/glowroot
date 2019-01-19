@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ public class QueryDataMap {
 
     private static final Object CHAINED_KEY = new Object();
 
-    private final String type;
+    private final String dest;
 
     // capacity must always be a power of 2, see comments in get() and put()
     private int capacity = 4;
@@ -33,12 +33,12 @@ public class QueryDataMap {
     private int size = 0;
     private int threshold = 3; // 0.75 * capacity
 
-    public QueryDataMap(String type) {
-        this.type = type;
+    public QueryDataMap(String dest) {
+        this.dest = dest;
     }
 
-    public String getType() {
-        return type;
+    public String getDest() {
+        return dest;
     }
 
     public @Nullable SyncQueryData get(String key) {

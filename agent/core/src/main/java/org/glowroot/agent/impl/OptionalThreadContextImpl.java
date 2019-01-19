@@ -128,53 +128,51 @@ class OptionalThreadContextImpl implements ThreadContextPlus {
     }
 
     @Override
-    public QueryEntry startQueryEntry(String queryType, String queryText,
+    public QueryEntry startQueryEntry(String dest, String queryText,
             QueryMessageSupplier queryMessageSupplier, TimerName timerName) {
         if (threadContext == null) {
             return NopTransactionService.QUERY_ENTRY;
         }
-        return threadContext.startQueryEntry(queryType, queryText, queryMessageSupplier, timerName);
+        return threadContext.startQueryEntry(dest, queryText, queryMessageSupplier, timerName);
     }
 
     @Override
-    public QueryEntry startQueryEntry(String queryType, String queryText, long queryExecutionCount,
+    public QueryEntry startQueryEntry(String dest, String queryText, long queryExecutionCount,
             QueryMessageSupplier queryMessageSupplier, TimerName timerName) {
         if (threadContext == null) {
             return NopTransactionService.QUERY_ENTRY;
         }
-        return threadContext.startQueryEntry(queryType, queryText, queryExecutionCount,
+        return threadContext.startQueryEntry(dest, queryText, queryExecutionCount,
                 queryMessageSupplier, timerName);
     }
 
     @Override
-    public AsyncQueryEntry startAsyncQueryEntry(String queryType, String queryText,
+    public AsyncQueryEntry startAsyncQueryEntry(String dest, String queryText,
             QueryMessageSupplier queryMessageSupplier, TimerName timerName) {
         if (threadContext == null) {
             return NopTransactionService.ASYNC_QUERY_ENTRY;
         }
-        return threadContext.startAsyncQueryEntry(queryType, queryText, queryMessageSupplier,
-                timerName);
+        return threadContext.startAsyncQueryEntry(dest, queryText, queryMessageSupplier, timerName);
     }
 
     @Override
-    public TraceEntry startServiceCallEntry(String serviceCallType, String serviceCallText,
+    public TraceEntry startServiceCallEntry(String dest, String serviceCallText,
             MessageSupplier messageSupplier, TimerName timerName) {
         if (threadContext == null) {
             return NopTransactionService.TRACE_ENTRY;
         }
-        return threadContext.startServiceCallEntry(serviceCallType, serviceCallText,
-                messageSupplier, timerName);
+        return threadContext.startServiceCallEntry(dest, serviceCallText, messageSupplier,
+                timerName);
     }
 
     @Override
-    public AsyncTraceEntry startAsyncServiceCallEntry(String serviceCallType,
-            String serviceCallText,
+    public AsyncTraceEntry startAsyncServiceCallEntry(String dest, String serviceCallText,
             MessageSupplier messageSupplier, TimerName timerName) {
         if (threadContext == null) {
             return NopTransactionService.ASYNC_TRACE_ENTRY;
         }
-        return threadContext.startAsyncServiceCallEntry(serviceCallType, serviceCallText,
-                messageSupplier, timerName);
+        return threadContext.startAsyncServiceCallEntry(dest, serviceCallText, messageSupplier,
+                timerName);
     }
 
     @Override

@@ -752,16 +752,14 @@ public class Transaction {
         return getOrInitAsyncComponents().startAsyncTimer(asyncTimerName, startTick);
     }
 
-    AsyncQueryData getOrCreateAsyncQueryData(String queryType, String queryText,
-            boolean bypassLimit) {
-        return getOrInitAsyncComponents().getOrCreateAsyncQueryData(queryType, queryText,
-                bypassLimit);
+    AsyncQueryData getOrCreateAsyncQueryData(String dest, String queryText, boolean bypassLimit) {
+        return getOrInitAsyncComponents().getOrCreateAsyncQueryData(dest, queryText, bypassLimit);
     }
 
-    AsyncQueryData getOrCreateAsyncServiceCallData(String serviceCallType, String serviceCallText,
+    AsyncQueryData getOrCreateAsyncServiceCallData(String dest, String serviceCallText,
             boolean bypassLimit) {
-        return getOrInitAsyncComponents().getOrCreateAsyncServiceCallData(serviceCallType,
-                serviceCallText, bypassLimit);
+        return getOrInitAsyncComponents().getOrCreateAsyncServiceCallData(dest, serviceCallText,
+                bypassLimit);
     }
 
     TraceEntryImpl startInnerTransaction(String transactionType, String transactionName,

@@ -1,5 +1,5 @@
 /**
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import com.datastax.driver.core.exceptions.NoHostAvailableException;
 class Sessions {
 
     static Session createSession() throws Exception {
-        Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1")
+        Cluster cluster = Cluster.builder().addContactPoint("localhost")
                 // long read timeout is sometimes needed on slow travis ci machines
                 .withSocketOptions(new SocketOptions().setReadTimeoutMillis(30000))
                 .withQueryOptions(getQueryOptions())

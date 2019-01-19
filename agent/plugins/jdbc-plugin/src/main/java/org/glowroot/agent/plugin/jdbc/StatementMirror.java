@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,8 @@ import org.glowroot.agent.plugin.api.checker.Nullable;
 // this class must be public since it is referenced from bytecode inside other packages via @Mixin
 public class StatementMirror {
 
+    private final String url;
+
     // this field is not used by PreparedStatementMirror subclass
     //
     // ok for this field to be non-volatile since it is only temporary storage for a single thread
@@ -37,6 +39,10 @@ public class StatementMirror {
     // ok for this field to be non-volatile since it is only temporary storage for a single thread
     // while that thread is adding batches into the statement and executing it
     private @Nullable QueryEntry lastQueryEntry;
+
+    public StatementMirror(String url) {
+        this.url = url;
+    }
 
     void addBatch(String sql) {
         // synchronization isn't an issue here as this method is called only by
@@ -57,6 +63,10 @@ public class StatementMirror {
 
     void clearBatch() {
         batchedSql = null;
+    }
+
+    String getUrl() {
+        return url;
     }
 
     @Nullable

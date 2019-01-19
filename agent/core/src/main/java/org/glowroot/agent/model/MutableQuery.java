@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,11 +85,11 @@ class MutableQuery {
         }
     }
 
-    Aggregate.Query toAggregateProto(String queryType, String queryText,
+    Aggregate.Query toAggregateProto(String dest, String queryText,
             SharedQueryTextCollection sharedQueryTextCollection, boolean includeActive) {
         int sharedQueryTextIndex = sharedQueryTextCollection.getSharedQueryTextIndex(queryText);
         Aggregate.Query.Builder builder = Aggregate.Query.newBuilder()
-                .setType(queryType)
+                .setDest(dest)
                 .setSharedQueryTextIndex(sharedQueryTextIndex)
                 .setTotalDurationNanos(totalDurationNanos)
                 .setExecutionCount(executionCount);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,9 +48,9 @@ class MutableServiceCall {
         addToExecutionCount(serviceCall.getExecutionCount());
     }
 
-    Aggregate.ServiceCall toAggregateProto(String serviceCallType, String serviceCallText) {
+    Aggregate.ServiceCall toAggregateProto(String dest, String serviceCallText) {
         Aggregate.ServiceCall.Builder builder = Aggregate.ServiceCall.newBuilder()
-                .setType(serviceCallType)
+                .setDest(dest)
                 .setText(serviceCallText)
                 .setTotalDurationNanos(totalDurationNanos)
                 .setExecutionCount(executionCount);

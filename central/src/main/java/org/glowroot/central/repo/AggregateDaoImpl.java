@@ -161,6 +161,7 @@ public class AggregateDaoImpl implements AggregateDao {
 
     private static final Table queryTable = ImmutableTable.builder()
             .partialName("query")
+            // "query_type" column now should be "dest" (since 0.13.1)
             .addColumns(ImmutableColumn.of("query_type", "varchar"))
             .addColumns(ImmutableColumn.of("truncated_query_text", "varchar"))
             // empty when truncated_query_text is really full query text
@@ -169,6 +170,7 @@ public class AggregateDaoImpl implements AggregateDao {
             .addColumns(ImmutableColumn.of("total_duration_nanos", "double"))
             .addColumns(ImmutableColumn.of("execution_count", "bigint"))
             .addColumns(ImmutableColumn.of("total_rows", "bigint"))
+            // "query_type" column now should be "dest" (since 0.13.1)
             .addClusterKey("query_type")
             .addClusterKey("truncated_query_text")
             .addClusterKey("full_query_text_sha1") // need this for uniqueness
@@ -178,10 +180,12 @@ public class AggregateDaoImpl implements AggregateDao {
 
     private static final Table serviceCallTable = ImmutableTable.builder()
             .partialName("service_call")
+            // "service_call_type" column now should be "dest" (since 0.13.1)
             .addColumns(ImmutableColumn.of("service_call_type", "varchar"))
             .addColumns(ImmutableColumn.of("service_call_text", "varchar"))
             .addColumns(ImmutableColumn.of("total_duration_nanos", "double"))
             .addColumns(ImmutableColumn.of("execution_count", "bigint"))
+            // "service_call_type" column now should be "dest" (since 0.13.1)
             .addClusterKey("service_call_type")
             .addClusterKey("service_call_text")
             .summary(false)
@@ -702,7 +706,7 @@ public class AggregateDaoImpl implements AggregateDao {
         for (Row row : results) {
             int i = 0;
             captureTime = Math.max(captureTime, checkNotNull(row.getTimestamp(i++)).getTime());
-            String queryType = checkNotNull(row.getString(i++));
+            String dest = checkNotNull(row.getString(i++));
             String truncatedText = checkNotNull(row.getString(i++));
             // full_query_text_sha1 cannot be null since it is used in clustering key
             String fullTextSha1 = Strings.emptyToNull(row.getString(i++));
@@ -710,7 +714,7 @@ public class AggregateDaoImpl implements AggregateDao {
             long executionCount = row.getLong(i++);
             boolean hasTotalRows = !row.isNull(i);
             long totalRows = row.getLong(i++);
-            collector.mergeQuery(queryType, truncatedText, fullTextSha1, totalDurationNanos,
+            collector.mergeQuery(dest, truncatedText, fullTextSha1, totalDurationNanos,
                     executionCount, hasTotalRows, totalRows);
             collector.updateLastCaptureTime(captureTime);
         }
@@ -725,12 +729,11 @@ public class AggregateDaoImpl implements AggregateDao {
         for (Row row : results) {
             int i = 0;
             captureTime = Math.max(captureTime, checkNotNull(row.getTimestamp(i++)).getTime());
-            String serviceCallType = checkNotNull(row.getString(i++));
+            String dest = checkNotNull(row.getString(i++));
             String serviceCallText = checkNotNull(row.getString(i++));
             double totalDurationNanos = row.getDouble(i++);
             long executionCount = row.getLong(i++);
-            collector.mergeServiceCall(serviceCallType, serviceCallText, totalDurationNanos,
-                    executionCount);
+            collector.mergeServiceCall(dest, serviceCallText, totalDurationNanos, executionCount);
             collector.updateLastCaptureTime(captureTime);
         }
     }
@@ -1487,7 +1490,7 @@ public class AggregateDaoImpl implements AggregateDao {
                 new QueryCollector(rollup.maxQueryAggregatesPerTransactionAggregate());
         for (Row row : rows) {
             int i = 0;
-            String queryType = checkNotNull(row.getString(i++));
+            String dest = checkNotNull(row.getString(i++));
             String truncatedText = checkNotNull(row.getString(i++));
             // full_query_text_sha1 cannot be null since it is used in clustering key
             String fullTextSha1 = Strings.emptyToNull(row.getString(i++));
@@ -1495,7 +1498,7 @@ public class AggregateDaoImpl implements AggregateDao {
             long executionCount = row.getLong(i++);
             boolean hasTotalRows = !row.isNull(i);
             long totalRows = row.getLong(i++);
-            collector.mergeQuery(queryType, truncatedText, fullTextSha1, totalDurationNanos,
+            collector.mergeQuery(dest, truncatedText, fullTextSha1, totalDurationNanos,
                     executionCount, hasTotalRows, totalRows);
         }
         return insertQueries(collector.getSortedAndTruncatedQueries(), rollup.rollupLevel(),
@@ -1533,12 +1536,11 @@ public class AggregateDaoImpl implements AggregateDao {
                 new ServiceCallCollector(rollup.maxServiceCallAggregatesPerTransactionAggregate());
         for (Row row : rows) {
             int i = 0;
-            String serviceCallType = checkNotNull(row.getString(i++));
+            String dest = checkNotNull(row.getString(i++));
             String serviceCallText = checkNotNull(row.getString(i++));
             double totalDurationNanos = row.getDouble(i++);
             long executionCount = row.getLong(i++);
-            collector.mergeServiceCall(serviceCallType, serviceCallText, totalDurationNanos,
-                    executionCount);
+            collector.mergeServiceCall(dest, serviceCallText, totalDurationNanos, executionCount);
         }
         return insertServiceCalls(collector.getSortedAndTruncatedServiceCalls(),
                 rollup.rollupLevel(), rollup.agentRollupId(), query.transactionType(),
@@ -1836,7 +1838,7 @@ public class AggregateDaoImpl implements AggregateDao {
                 boundStatement.setString(i++, transactionName);
             }
             boundStatement.setTimestamp(i++, new Date(captureTime));
-            boundStatement.setString(i++, query.getType());
+            boundStatement.setString(i++, query.getDest());
             String fullTextSha1 = sharedQueryText.getFullTextSha1();
             if (fullTextSha1.isEmpty()) {
                 boundStatement.setString(i++, sharedQueryText.getFullText());
@@ -1878,7 +1880,7 @@ public class AggregateDaoImpl implements AggregateDao {
                 boundStatement.setString(i++, transactionName);
             }
             boundStatement.setTimestamp(i++, new Date(captureTime));
-            boundStatement.setString(i++, query.getType());
+            boundStatement.setString(i++, query.getDest());
             boundStatement.setString(i++, query.getTruncatedText());
             // full_query_text_sha1 cannot be null since it is used in clustering key
             boundStatement.setString(i++, Strings.nullToEmpty(fullTextSha1));
@@ -1914,7 +1916,7 @@ public class AggregateDaoImpl implements AggregateDao {
                 boundStatement.setString(i++, transactionName);
             }
             boundStatement.setTimestamp(i++, new Date(captureTime));
-            boundStatement.setString(i++, serviceCall.getType());
+            boundStatement.setString(i++, serviceCall.getDest());
             boundStatement.setString(i++, serviceCall.getText());
             boundStatement.setDouble(i++, serviceCall.getTotalDurationNanos());
             boundStatement.setLong(i++, serviceCall.getExecutionCount());
@@ -1942,7 +1944,7 @@ public class AggregateDaoImpl implements AggregateDao {
                 boundStatement.setString(i++, transactionName);
             }
             boundStatement.setTimestamp(i++, new Date(captureTime));
-            boundStatement.setString(i++, serviceCall.getType());
+            boundStatement.setString(i++, serviceCall.getDest());
             boundStatement.setString(i++, serviceCall.getText());
             boundStatement.setDouble(i++, serviceCall.getTotalDurationNanos());
             boundStatement.setLong(i++, serviceCall.getExecutionCount());
@@ -2172,19 +2174,19 @@ public class AggregateDaoImpl implements AggregateDao {
     }
 
     private static List<Aggregate.Query> getQueries(Aggregate aggregate) {
-        List<Aggregate.OldQueriesByType> queriesByTypeList = aggregate.getOldQueriesByTypeList();
-        if (queriesByTypeList.isEmpty()) {
+        List<Aggregate.OldQueriesByType> oldQueriesByTypeList = aggregate.getOldQueriesByTypeList();
+        if (oldQueriesByTypeList.isEmpty()) {
             return aggregate.getQueryList();
         }
         List<Aggregate.Query> queries = new ArrayList<>();
-        for (Aggregate.OldQueriesByType queriesByType : queriesByTypeList) {
-            for (Aggregate.OldQuery query : queriesByType.getQueryList()) {
+        for (Aggregate.OldQueriesByType oldQueriesByType : oldQueriesByTypeList) {
+            for (Aggregate.OldQuery oldQuery : oldQueriesByType.getQueryList()) {
                 queries.add(Aggregate.Query.newBuilder()
-                        .setType(queriesByType.getType())
-                        .setSharedQueryTextIndex(query.getSharedQueryTextIndex())
-                        .setTotalDurationNanos(query.getTotalDurationNanos())
-                        .setExecutionCount(query.getExecutionCount())
-                        .setTotalRows(query.getTotalRows())
+                        .setDest(oldQueriesByType.getType())
+                        .setSharedQueryTextIndex(oldQuery.getSharedQueryTextIndex())
+                        .setTotalDurationNanos(oldQuery.getTotalDurationNanos())
+                        .setExecutionCount(oldQuery.getExecutionCount())
+                        .setTotalRows(oldQuery.getTotalRows())
                         .build());
             }
         }
@@ -2192,19 +2194,20 @@ public class AggregateDaoImpl implements AggregateDao {
     }
 
     private static List<Aggregate.ServiceCall> getServiceCalls(Aggregate aggregate) {
-        List<Aggregate.OldServiceCallsByType> serviceCallsByTypeList =
+        List<Aggregate.OldServiceCallsByType> oldServiceCallsByTypeList =
                 aggregate.getOldServiceCallsByTypeList();
-        if (serviceCallsByTypeList.isEmpty()) {
+        if (oldServiceCallsByTypeList.isEmpty()) {
             return aggregate.getServiceCallList();
         }
         List<Aggregate.ServiceCall> serviceCalls = new ArrayList<>();
-        for (Aggregate.OldServiceCallsByType serviceCallsByType : serviceCallsByTypeList) {
-            for (Aggregate.OldServiceCall serviceCall : serviceCallsByType.getServiceCallList()) {
+        for (Aggregate.OldServiceCallsByType oldServiceCallsByType : oldServiceCallsByTypeList) {
+            for (Aggregate.OldServiceCall oldServiceCall : oldServiceCallsByType
+                    .getServiceCallList()) {
                 serviceCalls.add(Aggregate.ServiceCall.newBuilder()
-                        .setType(serviceCallsByType.getType())
-                        .setText(serviceCall.getText())
-                        .setTotalDurationNanos(serviceCall.getTotalDurationNanos())
-                        .setExecutionCount(serviceCall.getExecutionCount())
+                        .setDest(oldServiceCallsByType.getType())
+                        .setText(oldServiceCall.getText())
+                        .setTotalDurationNanos(oldServiceCall.getTotalDurationNanos())
+                        .setExecutionCount(oldServiceCall.getExecutionCount())
                         .build());
             }
         }

@@ -20,7 +20,7 @@
 
 // Glowroot dependency is used for spinner, but is not used in export file
 // angular dependency is used to call login.goToLogin() on 401 responses, but is not used in export file
-/* global $, Handlebars, JST, moment, Glowroot, angular, SqlPrettyPrinter, gtClipboard, gtParseIncludesExcludes, console */
+/* global $, Handlebars, JST, moment, Glowroot, angular, SqlPrettyPrinter, gtClipboard, gtParseIncludesExcludes */
 
 // IMPORTANT: DO NOT USE ANGULAR IN THIS FILE
 // that would require adding angular to trace-export.js
@@ -988,9 +988,6 @@ HandlebarsRendering = (function () {
   function formatSql(unexpanded, expanded, queryText, prefix, suffix) {
     var formatted = sqlPrettyPrint(queryText);
     if (typeof formatted === 'object') {
-      // intentional console logging
-      console.log(formatted.message);
-      console.log(queryText);
       return;
     }
     var html;

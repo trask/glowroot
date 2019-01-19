@@ -33,13 +33,12 @@ import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.plugin.api.weaving.Shim;
+import org.glowroot.agent.plugin.mongodb.ConnectionStringAspect.HasConnectionStringMixin;
 import org.glowroot.agent.plugin.mongodb.MongoIterableAspect.MongoIterableMixin;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class CollectionAspect {
-
-    private static final String QUERY_TYPE = "MongoDB";
 
     private static final ConfigService configService = Agent.getConfigService("mongodb");
 
@@ -81,14 +80,15 @@ public class CollectionAspect {
         private static final TimerName timerName = Agent.getTimerName(MongoCollectionAdvice.class);
 
         @OnBefore
-        public static @Nullable QueryEntry onBefore(ThreadContext context,
-                @BindReceiver MongoCollection collection, @BindMethodName String methodName) {
+        public static @Nullable <T extends MongoCollection & HasConnectionStringMixin> QueryEntry onBefore(
+                ThreadContext context, @BindReceiver T collection,
+                @BindMethodName String methodName) {
             Object namespace = collection.getNamespace();
             if (namespace == null) {
                 return null;
             }
             String queryText = methodName + " " + namespace.toString();
-            return context.startQueryEntry(QUERY_TYPE, queryText,
+            return context.startQueryEntry(getDest(collection), queryText,
                     QueryMessageSupplier.create("mongodb query: "), timerName);
         }
 
@@ -114,15 +114,15 @@ public class CollectionAspect {
 
         private static final TimerName timerName = Agent.getTimerName(MongoCollectionAdvice.class);
 
-        @OnBefore
-        public static @Nullable QueryEntry onBefore(ThreadContext context,
-                @BindReceiver MongoCollection collection, @BindMethodName String methodName) {
+        public static @Nullable <T extends MongoCollection & HasConnectionStringMixin> QueryEntry onBefore(
+                ThreadContext context, @BindReceiver T collection,
+                @BindMethodName String methodName) {
             Object namespace = collection.getNamespace();
             if (namespace == null) {
                 return null;
             }
             String queryText = methodName + " " + namespace.toString();
-            return context.startQueryEntry(QUERY_TYPE, queryText,
+            return context.startQueryEntry(getDest(collection), queryText,
                     QueryMessageSupplier.create("mongodb query: "), timerName);
         }
 
@@ -156,13 +156,14 @@ public class CollectionAspect {
         private static final TimerName timerName = Agent.getTimerName(DBCollectionAdvice.class);
 
         @OnBefore
-        public static @Nullable QueryEntry onBefore(ThreadContext context,
-                @BindReceiver DBCollection collection, @BindMethodName String methodName) {
+        public static @Nullable <T extends DBCollection & HasConnectionStringMixin> QueryEntry onBefore(
+                ThreadContext context, @BindReceiver T collection,
+                @BindMethodName String methodName) {
             if (methodName.equals("getCount")) {
                 methodName = "count";
             }
             String queryText = methodName + " " + collection.getFullName();
-            return context.startQueryEntry(QUERY_TYPE, queryText,
+            return context.startQueryEntry(getDest(collection), queryText,
                     QueryMessageSupplier.create("mongodb query: "), timerName);
         }
 
@@ -180,5 +181,13 @@ public class CollectionAspect {
                 queryEntry.endWithError(t);
             }
         }
+    }
+
+    private static String getDest(HasConnectionStringMixin collection) {
+        String connectionString = collection.glowroot$getConnectionString();
+        if (connectionString == null) {
+            return ConnectionStringAspect.DEST_BASE;
+        }
+        return connectionString;
     }
 }

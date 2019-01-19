@@ -429,10 +429,11 @@ public class ConnectionAndTxLifecycleIT {
     }
 
     public static class ExecuteSetAutoCommitThrowing implements AppUnderTest, TransactionMarker {
-        private Connection connection;
+        private Connection delegatingConnection;
         @Override
         public void executeApp() throws Exception {
-            connection = new DelegatingConnection(Connections.createConnection()) {
+            Connection connection = Connections.createConnection();
+            delegatingConnection = new DelegatingConnection(connection) {
                 @Override
                 public void setAutoCommit(boolean autoCommit) throws SQLException {
                     throw new SQLException("A setautocommit failure");
@@ -447,11 +448,11 @@ public class ConnectionAndTxLifecycleIT {
         @Override
         public void transactionMarker() {
             try {
-                connection.setAutoCommit(false);
+                delegatingConnection.setAutoCommit(false);
             } catch (SQLException e) {
             }
             try {
-                connection.setAutoCommit(true);
+                delegatingConnection.setAutoCommit(true);
             } catch (SQLException e) {
             }
         }

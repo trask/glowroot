@@ -53,8 +53,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 // must be tracked for their entire life
 public class StatementAspect {
 
-    private static final String QUERY_TYPE = "SQL";
-
     private static final ConfigService configService = Agent.getConfigService("jdbc");
 
     private static final BooleanProperty captureStatementClose =
@@ -316,7 +314,7 @@ public class StatementAspect {
                 // this shouldn't happen since just checked hasGlowrootStatementMirror() above
                 return null;
             }
-            QueryEntry query = context.startQueryEntry(QUERY_TYPE, sql,
+            QueryEntry query = context.startQueryEntry(mirror.getUrl(), sql,
                     QueryMessageSupplier.create("jdbc query: "), timerName);
             mirror.setLastQueryEntry(query);
             return query;
@@ -433,8 +431,8 @@ public class StatementAspect {
             } else {
                 queryMessageSupplier = QueryMessageSupplier.create("jdbc query: ");
             }
-            QueryEntry queryEntry =
-                    context.startQueryEntry(QUERY_TYPE, queryText, queryMessageSupplier, timerName);
+            QueryEntry queryEntry = context.startQueryEntry(mirror.getUrl(), queryText,
+                    queryMessageSupplier, timerName);
             mirror.setLastQueryEntry(queryEntry);
             return queryEntry;
         }
@@ -570,7 +568,7 @@ public class StatementAspect {
             } else {
                 queryMessageSupplier = new BatchPreparedStatementMessageSupplier2(batchSize);
             }
-            QueryEntry queryEntry = context.startQueryEntry(QUERY_TYPE, queryText, batchSize,
+            QueryEntry queryEntry = context.startQueryEntry(mirror.getUrl(), queryText, batchSize,
                     queryMessageSupplier, timerName);
             mirror.setLastQueryEntry(queryEntry);
             mirror.clearBatch();
@@ -593,7 +591,7 @@ public class StatementAspect {
                 }
                 concatenated = sb.toString();
             }
-            QueryEntry queryEntry = context.startQueryEntry(QUERY_TYPE, concatenated,
+            QueryEntry queryEntry = context.startQueryEntry(mirror.getUrl(), concatenated,
                     QueryMessageSupplier.create("jdbc query: "), timerName);
             mirror.setLastQueryEntry(queryEntry);
             mirror.clearBatch();

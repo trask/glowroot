@@ -217,10 +217,11 @@ public class CommitRollbackIT {
 
     public abstract static class ExecuteJdbcCommitThrowingBase
             implements AppUnderTest, TransactionMarker {
-        protected Connection connection;
+        protected Connection delegatingConnection;
         @Override
         public void executeApp() throws Exception {
-            connection = new DelegatingConnection(Connections.createConnection()) {
+            Connection connection = Connections.createConnection();
+            delegatingConnection = new DelegatingConnection(connection) {
                 @Override
                 public void commit() throws SQLException {
                     throw new SQLException("A commit failure");
@@ -238,7 +239,7 @@ public class CommitRollbackIT {
             }
         }
         void executeInsert() throws Exception {
-            Statement statement = connection.createStatement();
+            Statement statement = delegatingConnection.createStatement();
             try {
                 statement.execute("insert into employee (name) values ('john doe')");
             } finally {
@@ -268,7 +269,7 @@ public class CommitRollbackIT {
         public void transactionMarker() throws Exception {
             executeInsert();
             try {
-                connection.commit();
+                delegatingConnection.commit();
             } catch (SQLException e) {
             }
         }
@@ -279,7 +280,7 @@ public class CommitRollbackIT {
         public void transactionMarker() throws Exception {
             executeInsert();
             try {
-                connection.rollback();
+                delegatingConnection.rollback();
             } catch (SQLException e) {
             }
         }

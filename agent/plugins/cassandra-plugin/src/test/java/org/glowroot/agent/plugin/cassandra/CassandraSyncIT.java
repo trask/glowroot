@@ -1,5 +1,5 @@
 /**
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,7 +79,7 @@ public class CassandraSyncIT {
         Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
 
         Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("CQL");
+        assertThat(query.getDest()).isEqualTo("Cassandra [localhost:9042]");
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
                 .isEqualTo("SELECT * FROM test.users");
         assertThat(query.getExecutionCount()).isEqualTo(1);
@@ -110,7 +110,7 @@ public class CassandraSyncIT {
         Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
 
         Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("CQL");
+        assertThat(query.getDest()).isEqualTo("Cassandra [localhost:9042]");
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
                 .isEqualTo("SELECT * FROM test.users where id = 12345");
         assertThat(query.getExecutionCount()).isEqualTo(1);
@@ -142,7 +142,7 @@ public class CassandraSyncIT {
         Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
 
         Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("CQL");
+        assertThat(query.getDest()).isEqualTo("Cassandra [localhost:9042]");
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
                 .isEqualTo("SELECT * FROM test.users where id = 12345");
         assertThat(query.getExecutionCount()).isEqualTo(1);
@@ -174,7 +174,7 @@ public class CassandraSyncIT {
         Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
 
         Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("CQL");
+        assertThat(query.getDest()).isEqualTo("Cassandra [localhost:9042]");
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
                 .isEqualTo("SELECT * FROM test.users");
         assertThat(query.getExecutionCount()).isEqualTo(1);
@@ -206,7 +206,7 @@ public class CassandraSyncIT {
         Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
 
         Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("CQL");
+        assertThat(query.getDest()).isEqualTo("Cassandra [localhost:9042]");
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
                 .isEqualTo("INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
         assertThat(query.getExecutionCount()).isEqualTo(1);
@@ -243,7 +243,7 @@ public class CassandraSyncIT {
         Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
 
         Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("CQL");
+        assertThat(query.getDest()).isEqualTo("Cassandra [localhost:9042]");
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
                 .isEqualTo("[batch] INSERT INTO test.users (id,  fname, lname)"
                         + " VALUES (100, 'f100', 'l100'),"

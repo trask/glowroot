@@ -254,7 +254,7 @@ class TransactionJsonService {
         List<Query> queryList = Lists.newArrayList();
         for (MutableQuery loopQuery : queries) {
             queryList.add(ImmutableQuery.builder()
-                    .queryType(loopQuery.getType())
+                    .dest(loopQuery.getDest())
                     .truncatedQueryText(loopQuery.getTruncatedText())
                     .fullQueryTextSha1(loopQuery.getFullTextSha1())
                     .totalDurationNanos(loopQuery.getTotalDurationNanos())
@@ -318,7 +318,7 @@ class TransactionJsonService {
         List<ServiceCall> serviceCallList = Lists.newArrayList();
         for (MutableServiceCall loopServiceCall : serviceCalls) {
             serviceCallList.add(ImmutableServiceCall.builder()
-                    .type(loopServiceCall.getType())
+                    .dest(loopServiceCall.getDest())
                     .text(loopServiceCall.getText())
                     .totalDurationNanos(loopServiceCall.getTotalDurationNanos())
                     .executionCount(loopServiceCall.getExecutionCount())
@@ -950,7 +950,7 @@ class TransactionJsonService {
 
     @Value.Immutable
     interface Query {
-        String queryType();
+        String dest();
         String truncatedQueryText();
         @Nullable
         String fullQueryTextSha1();
@@ -962,7 +962,7 @@ class TransactionJsonService {
 
     @Value.Immutable
     interface ServiceCall {
-        String type();
+        String dest();
         String text();
         double totalDurationNanos();
         long executionCount();

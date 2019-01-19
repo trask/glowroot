@@ -244,9 +244,9 @@ class AggregateInsert implements JdbcUpdate {
         preparedStatement.setBytes(i++, durationNanosHistogramBytes);
     }
 
-    private static List<Stored.QueriesByType> toStored(List<Aggregate.Query> aggregateQueries,
-            List<TruncatedQueryText> truncatedQueryTexts) {
-        Map<String, Stored.QueriesByType.Builder> builders = Maps.newHashMap();
+    private static List<Stored.QueriesByDest> toStored(
+            List<Aggregate.Query> aggregateQueries, List<TruncatedQueryText> truncatedQueryTexts) {
+        Map<String, Stored.QueriesByDest.Builder> builders = Maps.newHashMap();
         for (Aggregate.Query aggregateQuery : aggregateQueries) {
             TruncatedQueryText truncatedQueryText =
                     truncatedQueryTexts.get(aggregateQuery.getSharedQueryTextIndex());
@@ -260,26 +260,28 @@ class AggregateInsert implements JdbcUpdate {
                         .setValue(aggregateQuery.getTotalRows().getValue())
                         .build());
             }
-            String queryType = aggregateQuery.getType();
-            Stored.QueriesByType.Builder queriesByType = builders.get(queryType);
-            if (queriesByType == null) {
-                queriesByType = Stored.QueriesByType.newBuilder().setType(queryType);
-                builders.put(queryType, queriesByType);
+            String dest = aggregateQuery.getDest();
+            Stored.QueriesByDest.Builder queriesByDest = builders.get(dest);
+            if (queriesByDest == null) {
+                queriesByDest = Stored.QueriesByDest.newBuilder()
+                        .setDest(dest);
+                builders.put(dest, queriesByDest);
             }
-            queriesByType.addQuery(query.build());
+            queriesByDest.addQuery(query.build());
         }
-        List<Stored.QueriesByType> queries = Lists.newArrayList();
-        for (Stored.QueriesByType.Builder builder : builders.values()) {
+        List<Stored.QueriesByDest> queries = Lists.newArrayList();
+        for (Stored.QueriesByDest.Builder builder : builders.values()) {
             queries.add(builder.build());
         }
         return queries;
     }
 
-    private static List<Stored.QueriesByType> toStored(@Nullable QueryCollector collector) {
+    private static List<Stored.QueriesByDest> toStored(
+            @Nullable QueryCollector collector) {
         if (collector == null) {
             return ImmutableList.of();
         }
-        Map<String, Stored.QueriesByType.Builder> builders = Maps.newHashMap();
+        Map<String, Stored.QueriesByDest.Builder> builders = Maps.newHashMap();
         for (MutableQuery mutableQuery : collector.getSortedAndTruncatedQueries()) {
             Stored.Query.Builder query = Stored.Query.newBuilder()
                     .setTruncatedText(mutableQuery.getTruncatedText())
@@ -291,75 +293,76 @@ class AggregateInsert implements JdbcUpdate {
                         .setValue(mutableQuery.getTotalRows())
                         .build());
             }
-            String queryType = mutableQuery.getType();
-            Stored.QueriesByType.Builder queriesByType = builders.get(queryType);
-            if (queriesByType == null) {
-                queriesByType = Stored.QueriesByType.newBuilder().setType(queryType);
-                builders.put(queryType, queriesByType);
+            String dest = mutableQuery.getDest();
+            Stored.QueriesByDest.Builder queriesByDest = builders.get(dest);
+            if (queriesByDest == null) {
+                queriesByDest = Stored.QueriesByDest.newBuilder()
+                        .setDest(dest);
+                builders.put(dest, queriesByDest);
             }
-            queriesByType.addQuery(query.build());
+            queriesByDest.addQuery(query.build());
         }
-        List<Stored.QueriesByType> queries = Lists.newArrayList();
-        for (Stored.QueriesByType.Builder builder : builders.values()) {
+        List<Stored.QueriesByDest> queries = Lists.newArrayList();
+        for (Stored.QueriesByDest.Builder builder : builders.values()) {
             queries.add(builder.build());
         }
         return queries;
     }
 
-    private static List<Stored.ServiceCallsByType> toStored(
+    private static List<Stored.ServiceCallsByDest> toStored(
             List<Aggregate.ServiceCall> aggregateServiceCalls) {
-        Map<String, Stored.ServiceCallsByType.Builder> builders = Maps.newHashMap();
+        Map<String, Stored.ServiceCallsByDest.Builder> builders = Maps.newHashMap();
         for (Aggregate.ServiceCall aggregateServiceCall : aggregateServiceCalls) {
             Stored.ServiceCall.Builder serviceCall = Stored.ServiceCall.newBuilder()
                     .setText(aggregateServiceCall.getText())
                     .setTotalDurationNanos(aggregateServiceCall.getTotalDurationNanos())
                     .setExecutionCount(aggregateServiceCall.getExecutionCount());
-            String serviceCallType = aggregateServiceCall.getType();
-            Stored.ServiceCallsByType.Builder serviceCallsByType = builders.get(serviceCallType);
-            if (serviceCallsByType == null) {
-                serviceCallsByType =
-                        Stored.ServiceCallsByType.newBuilder().setType(serviceCallType);
-                builders.put(serviceCallType, serviceCallsByType);
+            String dest = aggregateServiceCall.getDest();
+            Stored.ServiceCallsByDest.Builder serviceCallsByDest = builders.get(dest);
+            if (serviceCallsByDest == null) {
+                serviceCallsByDest = Stored.ServiceCallsByDest.newBuilder()
+                        .setDest(dest);
+                builders.put(dest, serviceCallsByDest);
             }
-            serviceCallsByType.addServiceCall(serviceCall.build());
+            serviceCallsByDest.addServiceCall(serviceCall.build());
         }
-        List<Stored.ServiceCallsByType> serviceCalls = Lists.newArrayList();
-        for (Stored.ServiceCallsByType.Builder builder : builders.values()) {
+        List<Stored.ServiceCallsByDest> serviceCalls = Lists.newArrayList();
+        for (Stored.ServiceCallsByDest.Builder builder : builders.values()) {
             serviceCalls.add(builder.build());
         }
         return serviceCalls;
     }
 
-    private static List<Stored.ServiceCallsByType> toStored(
+    private static List<Stored.ServiceCallsByDest> toStored(
             @Nullable ServiceCallCollector collector) {
         if (collector == null) {
             return ImmutableList.of();
         }
-        Map<String, Stored.ServiceCallsByType.Builder> builders = Maps.newHashMap();
+        Map<String, Stored.ServiceCallsByDest.Builder> builders = Maps.newHashMap();
         for (MutableServiceCall mutableServiceCall : collector
                 .getSortedAndTruncatedServiceCalls()) {
             Stored.ServiceCall.Builder serviceCall = Stored.ServiceCall.newBuilder()
                     .setText(mutableServiceCall.getText())
                     .setTotalDurationNanos(mutableServiceCall.getTotalDurationNanos())
                     .setExecutionCount(mutableServiceCall.getExecutionCount());
-            String serviceCallType = mutableServiceCall.getType();
-            Stored.ServiceCallsByType.Builder serviceCallsByType = builders.get(serviceCallType);
-            if (serviceCallsByType == null) {
-                serviceCallsByType =
-                        Stored.ServiceCallsByType.newBuilder().setType(serviceCallType);
-                builders.put(serviceCallType, serviceCallsByType);
+            String dest = mutableServiceCall.getDest();
+            Stored.ServiceCallsByDest.Builder serviceCallsByDest = builders.get(dest);
+            if (serviceCallsByDest == null) {
+                serviceCallsByDest = Stored.ServiceCallsByDest.newBuilder()
+                        .setDest(dest);
+                builders.put(dest, serviceCallsByDest);
             }
-            serviceCallsByType.addServiceCall(serviceCall.build());
+            serviceCallsByDest.addServiceCall(serviceCall.build());
         }
-        List<Stored.ServiceCallsByType> serviceCalls = Lists.newArrayList();
-        for (Stored.ServiceCallsByType.Builder builder : builders.values()) {
+        List<Stored.ServiceCallsByDest> serviceCalls = Lists.newArrayList();
+        for (Stored.ServiceCallsByDest.Builder builder : builders.values()) {
             serviceCalls.add(builder.build());
         }
         return serviceCalls;
     }
 
     private static @Nullable Long writeQueries(CappedDatabase cappedDatabase,
-            List<Stored.QueriesByType> queries) throws IOException {
+            List<Stored.QueriesByDest> queries) throws IOException {
         if (queries.isEmpty()) {
             return null;
         }
@@ -367,7 +370,7 @@ class AggregateInsert implements JdbcUpdate {
     }
 
     private static @Nullable Long writeServiceCalls(CappedDatabase cappedDatabase,
-            List<Stored.ServiceCallsByType> serviceCalls) throws IOException {
+            List<Stored.ServiceCallsByDest> serviceCalls) throws IOException {
         if (serviceCalls.isEmpty()) {
             return null;
         }

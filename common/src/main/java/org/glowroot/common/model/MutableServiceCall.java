@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,18 +28,18 @@ public class MutableServiceCall {
                 }
             };
 
-    private final String type;
+    private final String dest;
     private final String text;
     private double totalDurationNanos;
     private long executionCount;
 
-    MutableServiceCall(String type, String text) {
-        this.type = type;
+    MutableServiceCall(String dest, String text) {
+        this.dest = dest;
         this.text = text;
     }
 
-    public String getType() {
-        return type;
+    public String getDest() {
+        return dest;
     }
 
     public String getText() {

@@ -626,7 +626,7 @@ class TraceCommonService {
     }
 
     private static void writeJson(Aggregate.Query query, JsonGenerator jg) throws IOException {
-        jg.writeStringField("type", query.getType());
+        jg.writeStringField("dest", query.getDest());
         jg.writeNumberField("sharedQueryTextIndex", query.getSharedQueryTextIndex());
         jg.writeNumberField("totalDurationNanos", query.getTotalDurationNanos());
         jg.writeNumberField("executionCount", query.getExecutionCount());

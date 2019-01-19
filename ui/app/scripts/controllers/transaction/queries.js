@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, HandlebarsRendering, angular, $, gtClipboard, console */
+/* global glowroot, HandlebarsRendering, angular, $, gtClipboard */
 
 glowroot.controller('TransactionQueriesCtrl', [
   '$scope',
@@ -43,20 +43,20 @@ glowroot.controller('TransactionQueriesCtrl', [
 
     // these are needed for handling opening a direct link to a modal query
     var firstLocation = true;
-    var firstLocationModalQueryType;
     var firstLocationModalQueryText;
     var firstLocationModalQueryTextSha1;
+    var firstLocationModalQueryFormat;
 
 
     $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh'], function () {
       refreshData();
     });
 
-    $scope.$watch('queryType', function () {
-      if ($scope.queryType) {
-        $location.search('query-type', $scope.queryType);
+    $scope.$watch('page.queryDest', function () {
+      if ($scope.page.queryDest !== '___all___') {
+        $location.search('query-dest', $scope.page.queryDest);
       } else {
-        $location.search('query-type', null);
+        $location.search('query-dest', null);
       }
     });
 
@@ -73,8 +73,8 @@ glowroot.controller('TransactionQueriesCtrl', [
       if ($scope.sortAttribute === attributeName && !$scope.sortAsc) {
         query['sort-direction'] = 'asc';
       }
-      if ($scope.queryType) {
-        query['query-type'] = $scope.queryType;
+      if ($scope.page.queryDest !== '___all___') {
+        query['query-dest'] = $scope.page.queryDest;
       }
       return queryStrings.encodeObject(query);
     };
@@ -121,34 +121,37 @@ glowroot.controller('TransactionQueriesCtrl', [
       } else if ($scope.sortAttribute === 'rows-per-execution') {
         $scope.sortAttr = '-rowsPerExecution';
       }
-      $scope.queryType = $location.search()['query-type'];
+      $scope.page.queryDest = $location.search()['query-dest'];
+      if (!$scope.page.queryDest) {
+        $scope.page.queryDest = '___all___';
+      }
 
-      var modalQueryType = $location.search()['modal-query-type'];
       var modalQueryText = $location.search()['modal-query-text'];
       var modalQueryTextSha1 = $location.search()['modal-query-text-sha1'];
+      var modalQueryFormat = $location.search()['modal-query-format'];
       if (firstLocationModalQueryText || firstLocationModalQueryTextSha1) {
-        $location.search('modal-query-type', firstLocationModalQueryType);
         $location.search('modal-query-text', firstLocationModalQueryText);
         $location.search('modal-query-text-sha1', firstLocationModalQueryTextSha1);
-        firstLocationModalQueryType = undefined;
+        $location.search('modal-query-format', firstLocationModalQueryFormat);
         firstLocationModalQueryText = undefined;
         firstLocationModalQueryTextSha1 = undefined;
+        firstLocationModalQueryFormat = undefined;
       } else if (modalQueryText || modalQueryTextSha1) {
         if (firstLocation) {
-          $location.search('modal-query-type', null);
           $location.search('modal-query-text', null);
           $location.search('modal-query-text-sha1', null);
+          $location.search('modal-query-format', null);
           $location.replace();
-          firstLocationModalQueryType = modalQueryType;
           firstLocationModalQueryText = modalQueryText;
           firstLocationModalQueryTextSha1 = modalQueryTextSha1;
+          firstLocationModalQueryFormat = modalQueryFormat;
         } else {
           $('#queryModal').data('location-query', [
-            'modal-query-type',
             'modal-query-text',
-            'modal-query-text-sha1'
+            'modal-query-text-sha1',
+            'modal-query-format'
           ]);
-          displayModal(modalQueryType, modalQueryText, modalQueryTextSha1);
+          displayModal(modalQueryText, modalQueryTextSha1, modalQueryFormat);
         }
       } else {
         $('#queryModal').modal('hide');
@@ -157,15 +160,25 @@ glowroot.controller('TransactionQueriesCtrl', [
     });
 
     $scope.showQueryModal = function (query) {
-      $location.search('modal-query-type', query.queryType);
       if (query.fullQueryTextSha1) {
         $location.search('modal-query-text-sha1', query.fullQueryTextSha1);
       } else {
         $location.search('modal-query-text', query.truncatedQueryText);
       }
+      var index = query.dest.indexOf(' ');
+      var destFirstWord;
+      if (index === -1) {
+        destFirstWord = query.dest;
+      } else {
+        destFirstWord = query.dest.substring(0, index);
+      }
+      var sqlDestFirstWords = ['SQL', 'HSQLDB', 'H2', 'PostgreSQL', 'Oracle'];
+      if (sqlDestFirstWords.indexOf(destFirstWord) !== -1) {
+        $location.search('modal-query-format', 'sql');
+      }
     };
 
-    function displayModal(modalQueryType, modalQueryText, modalQueryTextSha1) {
+    function displayModal(modalQueryText, modalQueryTextSha1, modalQueryFormat) {
       // clear previous content
       var $unformattedQuery = $('#unformattedQuery');
       var $formattedQuery = $('#formattedQuery');
@@ -220,15 +233,12 @@ glowroot.controller('TransactionQueriesCtrl', [
           return $scope.showFormatted ? $scope.formattedQuery : $scope.unformattedQuery;
         });
 
-        if (modalQueryType !== 'SQL') {
-          applyCss();
+        if (modalQueryFormat !== 'sql') {
           return;
         }
 
         var formatted = HandlebarsRendering.sqlPrettyPrint(fullText);
         if (typeof formatted === 'object') {
-          console.log(formatted.message);
-          console.log(fullText);
           applyCss();
           return;
         }
@@ -289,31 +299,34 @@ glowroot.controller('TransactionQueriesCtrl', [
       $http.get('backend/transaction/queries' + queryStrings.encodeObject(query))
           .then(function (response) {
             $scope.showSpinner--;
+            $scope.queriesMap = {
+              ___all___: []
+            };
+            $scope.limitExceededBucketMap = {};
             var data = response.data;
             if (data.overwritten) {
               $scope.showOverwrittenMessage = true;
               $scope.showQueries = false;
-              $scope.queries = [];
               return;
             }
             $scope.showQueries = data.length;
-            $scope.queries = data;
-            var queryTypes = {};
+            var queries = data;
+            var queryDests = {};
             var maxTotalDurationNanos = 0;
             var maxExecutionCount = 0;
             var maxTimePerExecution = 0;
             var maxRowsPerExecution = 0;
-            angular.forEach($scope.queries, function (query) {
+            angular.forEach(queries, function (query) {
               query.timePerExecution = query.totalDurationNanos / (1000000 * query.executionCount);
               if (query.totalRows === undefined) {
                 query.rowsPerExecution = undefined;
               } else {
                 query.rowsPerExecution = query.totalRows / query.executionCount;
               }
-              if (queryTypes[query.queryType] === undefined) {
-                queryTypes[query.queryType] = 0;
+              if (queryDests[query.dest] === undefined) {
+                queryDests[query.dest] = 0;
               }
-              queryTypes[query.queryType] += query.totalDurationNanos;
+              queryDests[query.dest] += query.totalDurationNanos;
               maxTotalDurationNanos = Math.max(maxTotalDurationNanos, query.totalDurationNanos);
               maxExecutionCount = Math.max(maxExecutionCount, query.executionCount);
               maxTimePerExecution = Math.max(maxTimePerExecution, query.timePerExecution);
@@ -324,27 +337,71 @@ glowroot.controller('TransactionQueriesCtrl', [
                 + HandlebarsRendering.formatMillis(maxTimePerExecution).length
                 + HandlebarsRendering.formatCount(maxRowsPerExecution).length;
             var maxQueryTextLength = 98 - otherColumnsLength * 0.6;
-            angular.forEach($scope.queries, function (query) {
+            angular.forEach(queries, function (query) {
               if (query.truncatedQueryText.length > maxQueryTextLength) {
                 query.text = query.truncatedQueryText.substring(0, maxQueryTextLength - 3) + '...';
               } else {
                 query.text = query.truncatedQueryText;
               }
             });
-            $scope.limitExceededBucket = undefined;
-            for (var i = 0; i < $scope.queries.length; i++) {
-              if ($scope.queries[i].text === 'LIMIT EXCEEDED BUCKET') {
-                $scope.limitExceededBucket = $scope.queries[i];
-                $scope.queries.splice(i, 1);
-                break;
-              }
-            }
-            $scope.queryTypes = Object.keys(queryTypes);
-            $scope.queryTypes.sort(function (left, right) {
-              return queryTypes[right] - queryTypes[left];
+            $scope.queryDests = Object.keys(queryDests);
+            $scope.queryDests.sort(function (left, right) {
+              return queryDests[right] - queryDests[left];
             });
-            if ($scope.queryType && $scope.queryTypes.indexOf($scope.queryType) === -1) {
-              $scope.queryTypes.push($scope.queryType);
+            var mergedQueriesBySha1 = {};
+            var mergedQueriesByQueryText = {};
+            angular.forEach(queries, function (query) {
+              function newMergedQuery(query) {
+                // intentionally keeping the first 'dest' merged so it can used for modal-query-format
+                return angular.copy(query);
+              }
+
+              function mergeQuery(mergedQuery, query) {
+                mergedQuery.totalDurationNanos += query.totalDurationNanos;
+                mergedQuery.executionCount += query.executionCount;
+                mergedQuery.totalRows += query.totalRows;
+              }
+
+              if (query.text === 'LIMIT EXCEEDED BUCKET') {
+                $scope.limitExceededBucketMap[query.dest] = query;
+                if ($scope.limitExceededBucketMap.___all___) {
+                  mergeQuery($scope.limitExceededBucketMap.___all___, query);
+                } else {
+                  $scope.limitExceededBucketMap.___all___ = newMergedQuery(query);
+                }
+              } else {
+                var queriesForDest = $scope.queriesMap[query.dest];
+                if (!queriesForDest) {
+                  queriesForDest = [];
+                  $scope.queriesMap[query.dest] = queriesForDest;
+                }
+                queriesForDest.push(query);
+                var mergedQuery;
+                if (query.fullQueryTextSha1) {
+                  mergedQuery = mergedQueriesBySha1[query.fullQueryTextSha1];
+                  if (mergedQuery) {
+                    mergeQuery(mergedQuery, query);
+                  } else {
+                    mergedQuery = newMergedQuery(query);
+                    mergedQueriesBySha1[query.fullQueryTextSha1] = mergedQuery;
+                    $scope.queriesMap.___all___.push(mergedQuery);
+                  }
+                } else {
+                  mergedQuery = mergedQueriesByQueryText[query.truncatedQueryText];
+                  if (mergedQuery) {
+                    mergeQuery(mergedQuery, query);
+                  } else {
+                    mergedQuery = newMergedQuery(query);
+                    mergedQueriesByQueryText[query.fullQueryTextSha1] = mergedQuery;
+                    $scope.queriesMap.___all___.push(mergedQuery);
+                  }
+                }
+              }
+            });
+
+            if ($scope.page.queryDest && $scope.page.queryDest !== '___all___'
+                && $scope.queryDests.indexOf($scope.page.queryDest) === -1) {
+              $scope.queryDests.push($scope.page.queryDest);
             }
           }, function (response) {
             $scope.showSpinner--;

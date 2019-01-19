@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.glowroot.agent.plugin.jdbc;
 
 import org.glowroot.agent.plugin.api.Agent;
+import org.glowroot.agent.plugin.api.Logger;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.Timer;
@@ -25,20 +26,25 @@ import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.config.BooleanProperty;
 import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
+import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindReturn;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
 import org.glowroot.agent.plugin.api.weaving.IsEnabled;
+import org.glowroot.agent.plugin.api.weaving.Mixin;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
+import org.glowroot.agent.plugin.api.weaving.Shim;
 import org.glowroot.agent.plugin.jdbc.StatementAspect.HasStatementMirrorMixin;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class ConnectionAspect {
+
+    private static final Logger logger = Logger.getLogger(ConnectionAspect.class);
 
     private static final ConfigService configService = Agent.getConfigService("jdbc");
 
@@ -50,6 +56,51 @@ public class ConnectionAspect {
             configService.getBooleanProperty("captureConnectionLifecycleTraceEntries");
     private static final BooleanProperty captureTransactionLifecycleTraceEntries =
             configService.getBooleanProperty("captureTransactionLifecycleTraceEntries");
+
+    private static volatile boolean loggedExceptionInGetUrl;
+
+    @Shim("java.sql.Connection")
+    public interface Connection {
+        @Shim("java.sql.DatabaseMetaData getMetaData()")
+        @Nullable
+        DatabaseMetaData glowroot$getMetaData();
+    }
+
+    @Shim("java.sql.DatabaseMetaData")
+    public interface DatabaseMetaData {
+        @Nullable
+        String getURL();
+    }
+
+    // ===================== Mixin =====================
+
+    // the field and method names are verbose since they will be mixed in to existing classes
+    @Mixin("java.sql.Connection")
+    public static class ConnectionImpl implements ConnectionMixin {
+
+        // does not need to be volatile, app/framework must provide visibility of Connections if
+        // used across threads and this can piggyback
+        private transient @Nullable String glowroot$dest;
+
+        @Override
+        public @Nullable String glowroot$getDest() {
+            return glowroot$dest;
+        }
+
+        @Override
+        public void glowroot$setDest(@Nullable String dest) {
+            glowroot$dest = dest;
+        }
+    }
+
+    // the method names are verbose since they will be mixed in to existing classes
+    public interface ConnectionMixin {
+
+        @Nullable
+        String glowroot$getDest();
+
+        void glowroot$setDest(@Nullable String dest);
+    }
 
     // ===================== Statement Preparation =====================
 
@@ -68,13 +119,15 @@ public class ConnectionAspect {
             }
         }
         @OnReturn
-        public static void onReturn(@BindReturn @Nullable HasStatementMirrorMixin preparedStatement,
-                @BindParameter @Nullable String sql) {
+        public static <T extends Connection & ConnectionMixin> void onReturn(
+                @BindReturn @Nullable HasStatementMirrorMixin preparedStatement,
+                @BindReceiver T connection, @BindParameter @Nullable String sql) {
             if (preparedStatement == null || sql == null) {
                 // seems nothing sensible to do here other than ignore
                 return;
             }
-            preparedStatement.glowroot$setStatementMirror(new PreparedStatementMirror(sql));
+            preparedStatement.glowroot$setStatementMirror(
+                    new PreparedStatementMirror(getDest(connection), sql));
         }
         @OnAfter
         public static void onAfter(@BindTraveler @Nullable Timer timer) {
@@ -85,15 +138,17 @@ public class ConnectionAspect {
     }
 
     @Pointcut(className = "java.sql.Connection", methodName = "createStatement",
-            methodParameterTypes = {".."})
+            methodParameterTypes = {".."}, nestingGroup = "jdbc")
     public static class CreateStatementAdvice {
         @OnReturn
-        public static void onReturn(@BindReturn @Nullable HasStatementMirrorMixin statement) {
+        public static <T extends Connection & ConnectionMixin> void onReturn(
+                @BindReturn @Nullable HasStatementMirrorMixin statement,
+                @BindReceiver T connection) {
             if (statement == null) {
                 // seems nothing sensible to do here other than ignore
                 return;
             }
-            statement.glowroot$setStatementMirror(new StatementMirror());
+            statement.glowroot$setStatementMirror(new StatementMirror(getDest(connection)));
         }
     }
 
@@ -198,6 +253,39 @@ public class ConnectionAspect {
         public static void onThrow(@BindThrowable Throwable t,
                 @BindTraveler TraceEntry traceEntry) {
             traceEntry.endWithError(t);
+        }
+    }
+
+    private static <T extends Connection & ConnectionMixin> String getDest(T connection) {
+        String dest = connection.glowroot$getDest();
+        if (dest != null) {
+            return dest;
+        }
+        dest = JdbcUrlToDest.getDest(getUrl(connection));
+        connection.glowroot$setDest(dest);
+        return dest;
+    }
+
+    private static String getUrl(Connection connection) {
+        try {
+            DatabaseMetaData metaData = connection.glowroot$getMetaData();
+            if (metaData == null) {
+                return "jdbc:";
+            }
+            String url = metaData.getURL();
+            if (url == null) {
+                return "jdbc:";
+            }
+            return url;
+        } catch (Exception e) {
+            // getMetaData and getURL can throw SQLException
+            if (loggedExceptionInGetUrl) {
+                logger.debug(e.getMessage(), e);
+            } else {
+                logger.warn(e.getMessage(), e);
+                loggedExceptionInGetUrl = true;
+            }
+            return "jdbc:";
         }
     }
 }

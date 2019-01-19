@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 the original author or authors.
+ * Copyright 2018-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,10 +86,10 @@ class AsyncComponents {
 
     void mergeQueriesInto(QueryCollector collector) {
         for (Map.Entry<String, Map<String, AsyncQueryData>> outerEntry : asyncQueries.entrySet()) {
-            String queryType = outerEntry.getKey();
+            String dest = outerEntry.getKey();
             for (Map.Entry<String, AsyncQueryData> innerEntry : outerEntry.getValue().entrySet()) {
                 AsyncQueryData queryData = innerEntry.getValue();
-                collector.mergeQuery(queryType, queryData.getQueryText(),
+                collector.mergeQuery(dest, queryData.getQueryText(),
                         queryData.getTotalDurationNanos(ticker), queryData.getExecutionCount(),
                         queryData.hasTotalRows(), queryData.getTotalRows(), queryData.isActive());
             }
@@ -99,10 +99,10 @@ class AsyncComponents {
     void mergeServiceCallsInto(ServiceCallCollector collector) {
         for (Map.Entry<String, Map<String, AsyncQueryData>> outerEntry : asyncServiceCalls
                 .entrySet()) {
-            String serviceCallType = outerEntry.getKey();
+            String dest = outerEntry.getKey();
             for (Map.Entry<String, AsyncQueryData> innerEntry : outerEntry.getValue().entrySet()) {
                 AsyncQueryData queryData = innerEntry.getValue();
-                collector.mergeServiceCall(serviceCallType, queryData.getQueryText(),
+                collector.mergeServiceCall(dest, queryData.getQueryText(),
                         queryData.getTotalDurationNanos(ticker), queryData.getExecutionCount());
             }
         }
@@ -141,59 +141,60 @@ class AsyncComponents {
         return asyncTimer;
     }
 
-    AsyncQueryData getOrCreateAsyncQueryData(String queryType, String queryText,
+    AsyncQueryData getOrCreateAsyncQueryData(String dest, String queryText,
             boolean bypassLimit) {
-        Map<String, AsyncQueryData> queriesForType = asyncQueries.get(queryType);
-        if (queriesForType == null) {
-            queriesForType = Maps.newConcurrentMap();
-            asyncQueries.put(queryType, queriesForType);
+        Map<String, AsyncQueryData> queriesForDest = asyncQueries.get(dest);
+        if (queriesForDest == null) {
+            queriesForDest = Maps.newConcurrentMap();
+            asyncQueries.put(dest, queriesForDest);
         }
-        AsyncQueryData queryData = queriesForType.get(queryText);
+        AsyncQueryData queryData = queriesForDest.get(queryText);
         if (queryData == null) {
-            queryData = createQueryData(queriesForType, queryText, bypassLimit);
-            queriesForType.put(queryText, queryData);
+            queryData = createQueryData(queriesForDest, queryText, bypassLimit);
+            queriesForDest.put(queryText, queryData);
         }
         return queryData;
     }
 
-    private AsyncQueryData createQueryData(Map<String, AsyncQueryData> queriesForType,
+    private AsyncQueryData createQueryData(Map<String, AsyncQueryData> queriesForDest,
             String queryText, boolean bypassLimit) {
         if (allowAnotherQueryAggregate(bypassLimit)) {
-            return createQueryData(queriesForType, queryText);
+            return createQueryData(queriesForDest, queryText);
         } else {
-            AsyncQueryData limitExceededBucket = queriesForType.get(LIMIT_EXCEEDED_BUCKET);
+            AsyncQueryData limitExceededBucket = queriesForDest.get(LIMIT_EXCEEDED_BUCKET);
             if (limitExceededBucket == null) {
-                limitExceededBucket = createQueryData(queriesForType, LIMIT_EXCEEDED_BUCKET);
+                limitExceededBucket = createQueryData(queriesForDest, LIMIT_EXCEEDED_BUCKET);
             }
             return new AsyncQueryData(queryText, limitExceededBucket);
         }
     }
 
-    AsyncQueryData getOrCreateAsyncServiceCallData(String serviceCallType, String serviceCallText,
+    AsyncQueryData getOrCreateAsyncServiceCallData(String dest, String serviceCallText,
             boolean bypassLimit) {
-        Map<String, AsyncQueryData> serviceCallsForType = asyncServiceCalls.get(serviceCallType);
-        if (serviceCallsForType == null) {
-            serviceCallsForType = Maps.newConcurrentMap();
-            asyncServiceCalls.put(serviceCallType, serviceCallsForType);
+        Map<String, AsyncQueryData> serviceCallsForDest = asyncServiceCalls.get(dest);
+        if (serviceCallsForDest == null) {
+            serviceCallsForDest = Maps.newConcurrentMap();
+            asyncServiceCalls.put(dest, serviceCallsForDest);
         }
-        AsyncQueryData serviceCallData = serviceCallsForType.get(serviceCallText);
+        AsyncQueryData serviceCallData = serviceCallsForDest.get(serviceCallText);
         if (serviceCallData == null) {
             serviceCallData =
-                    createServiceCallData(serviceCallsForType, serviceCallText, bypassLimit);
-            serviceCallsForType.put(serviceCallText, serviceCallData);
+                    createServiceCallData(serviceCallsForDest, serviceCallText, bypassLimit);
+            serviceCallsForDest.put(serviceCallText, serviceCallData);
         }
         return serviceCallData;
     }
 
-    private AsyncQueryData createServiceCallData(Map<String, AsyncQueryData> serviceCallsForType,
+    private AsyncQueryData createServiceCallData(Map<String, AsyncQueryData> serviceCallsForDest,
             String serviceCallText, boolean bypassLimit) {
         if (allowAnotherServiceCallAggregate(bypassLimit)) {
-            return createServiceCallData(serviceCallsForType, serviceCallText);
+            return createServiceCallData(serviceCallsForDest, serviceCallText);
         } else {
-            AsyncQueryData limitExceededBucket = serviceCallsForType.get(LIMIT_EXCEEDED_BUCKET);
+            AsyncQueryData limitExceededBucket =
+                    serviceCallsForDest.get(LIMIT_EXCEEDED_BUCKET);
             if (limitExceededBucket == null) {
                 limitExceededBucket =
-                        createServiceCallData(serviceCallsForType, LIMIT_EXCEEDED_BUCKET);
+                        createServiceCallData(serviceCallsForDest, LIMIT_EXCEEDED_BUCKET);
             }
             return new AsyncQueryData(serviceCallText, limitExceededBucket);
         }
@@ -213,17 +214,17 @@ class AsyncComponents {
                 || bypassLimit;
     }
 
-    private static AsyncQueryData createQueryData(Map<String, AsyncQueryData> queriesForType,
+    private static AsyncQueryData createQueryData(Map<String, AsyncQueryData> queriesForDest,
             String queryText) {
         AsyncQueryData queryData = new AsyncQueryData(queryText, null);
-        queriesForType.put(queryText, queryData);
+        queriesForDest.put(queryText, queryData);
         return queryData;
     }
 
     private static AsyncQueryData createServiceCallData(
-            Map<String, AsyncQueryData> serviceCallsForType, String serviceCallText) {
+            Map<String, AsyncQueryData> serviceCallsForDest, String serviceCallText) {
         AsyncQueryData serviceCallData = new AsyncQueryData(serviceCallText, null);
-        serviceCallsForType.put(serviceCallText, serviceCallData);
+        serviceCallsForDest.put(serviceCallText, serviceCallData);
         return serviceCallData;
     }
 

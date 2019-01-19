@@ -1,5 +1,5 @@
 /**
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,7 +82,7 @@ public class ElasticsearchAsyncIT {
         Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
 
         Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("Elasticsearch");
+        assertThat(query.getDest()).isEqualTo("Elasticsearch");
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
                 .isEqualTo("PUT testindex/testtype");
         assertThat(query.getExecutionCount()).isEqualTo(1);
@@ -115,7 +115,7 @@ public class ElasticsearchAsyncIT {
         Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
 
         Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("Elasticsearch");
+        assertThat(query.getDest()).isEqualTo("Elasticsearch");
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
                 .isEqualTo("GET testindex/testtype");
         assertThat(query.getExecutionCount()).isEqualTo(1);
@@ -150,7 +150,7 @@ public class ElasticsearchAsyncIT {
         Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
 
         Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("Elasticsearch");
+        assertThat(query.getDest()).isEqualTo("Elasticsearch");
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
                 .isEqualTo("GET testindex/testtype");
         assertThat(query.getExecutionCount()).isEqualTo(100);
@@ -183,7 +183,7 @@ public class ElasticsearchAsyncIT {
         Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
 
         Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("Elasticsearch");
+        assertThat(query.getDest()).isEqualTo("Elasticsearch");
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
                 .isEqualTo("PUT testindex/testtype");
         assertThat(query.getExecutionCount()).isEqualTo(1);
@@ -216,7 +216,7 @@ public class ElasticsearchAsyncIT {
         Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
 
         Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("Elasticsearch");
+        assertThat(query.getDest()).isEqualTo("Elasticsearch");
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
                 .isEqualTo("DELETE testindex/testtype");
         assertThat(query.getExecutionCount()).isEqualTo(1);
@@ -249,7 +249,7 @@ public class ElasticsearchAsyncIT {
         Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
 
         Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("Elasticsearch");
+        assertThat(query.getDest()).isEqualTo("Elasticsearch");
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
                 .startsWith("SEARCH testindex/testtype {");
         assertThat(query.getExecutionCount()).isEqualTo(1);
@@ -282,7 +282,7 @@ public class ElasticsearchAsyncIT {
         Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
 
         Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("Elasticsearch");
+        assertThat(query.getDest()).isEqualTo("Elasticsearch");
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
                 .startsWith("SEARCH _any/testtype {");
         assertThat(query.getExecutionCount()).isEqualTo(1);
@@ -317,7 +317,7 @@ public class ElasticsearchAsyncIT {
         Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
 
         Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("Elasticsearch");
+        assertThat(query.getDest()).isEqualTo("Elasticsearch");
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
                 .startsWith("SEARCH / {");
         assertThat(query.getExecutionCount()).isEqualTo(1);
@@ -352,7 +352,7 @@ public class ElasticsearchAsyncIT {
         Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
 
         Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("Elasticsearch");
+        assertThat(query.getDest()).isEqualTo("Elasticsearch");
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
                 .startsWith("SEARCH testindex,testindex2/testtype,testtype2 {");
         assertThat(query.getExecutionCount()).isEqualTo(1);
@@ -385,7 +385,7 @@ public class ElasticsearchAsyncIT {
         Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
 
         Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("Elasticsearch");
+        assertThat(query.getDest()).isEqualTo("Elasticsearch");
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
                 .startsWith("SEARCH testindex/testtype {");
         assertThat(query.getExecutionCount()).isEqualTo(1);

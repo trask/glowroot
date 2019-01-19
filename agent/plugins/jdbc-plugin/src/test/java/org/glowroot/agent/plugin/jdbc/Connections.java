@@ -86,6 +86,35 @@ public class Connections {
         }
     }
 
+    static String getDest() {
+        switch (connectionType) {
+            case HSQLDB:
+                return "HSQLDB [mem]";
+            case H2:
+                return "H2 [mem]";
+            case COMMONS_DBCP_WRAPPED:
+                return "HSQLDB [mem]";
+            case COMMONS_DBCP2_WRAPPED:
+                return "HSQLDB [mem]";
+            case TOMCAT_JDBC_POOL_WRAPPED:
+                return "HSQLDB [mem]";
+            case GLASSFISH_JDBC_POOL_WRAPPED:
+                return "HSQLDB [mem]";
+            case HIKARI_CP_WRAPPED:
+                return "HSQLDB [mem]";
+            case BITRONIX_WRAPPED:
+                return "HSQLDB [mem]";
+            case POSTGRES:
+                return "PostgreSQL [localhost]";
+            case ORACLE:
+                return "Oracle [localhost]";
+            case MSSQL:
+                return "SQL Server [localhost]";
+            default:
+                throw new IllegalStateException("Unexpected connection type: " + connectionType);
+        }
+    }
+
     static void closeConnection(Connection connection) throws SQLException {
         Statement statement = connection.createStatement();
         try {
@@ -154,7 +183,7 @@ public class Connections {
         return (DataSource) connectionFactory.createConnectionFactory();
     }
 
-    static HikariDataSource createHikariCpDataSource() throws AssertionError {
+    static HikariDataSource createHikariCpDataSource() {
         if (Connections.class.getClassLoader() instanceof IsolatedWeavingClassLoader) {
             try {
                 Class.forName("com.zaxxer.hikari.proxy.JavassistProxyFactory");
@@ -173,7 +202,7 @@ public class Connections {
         return new HikariDataSource(config);
     }
 
-    static PoolingDataSource createBitronixWrappedDataSource() throws AssertionError {
+    static PoolingDataSource createBitronixWrappedDataSource() {
         if (Connections.class.getClassLoader() instanceof IsolatedWeavingClassLoader) {
             throw new AssertionError("Bitronix loads JdbcProxyFactory implementation using a"
                     + " parent-first class loader, which bypasses IsolatedWeavingClassLoader, must"

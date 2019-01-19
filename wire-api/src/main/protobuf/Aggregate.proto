@@ -91,8 +91,9 @@ message Aggregate {
   }
 
   message Query {
-    // e.g. "SQL", "CQL"
-    string type = 1;
+    // e.g. "PostgreSQL", "MySQL", "Cassandra", "MongoDB" (unknown jdbc dest is "SQL")
+    // with optional second component e.g. "host:port", separated from first component by "|"
+    string dest = 1;
     int32 shared_query_text_index = 2;
     double total_duration_nanos = 3;
     int64 execution_count = 4;
@@ -115,8 +116,9 @@ message Aggregate {
   }
 
   message ServiceCall {
-    // e.g. "HTTP"
-    string type = 1;
+    // e.g. "HTTP", "HTTPS", "Kafka"
+    // with optional second component e.g. "host:port", separated from first component by "|"
+    string dest = 1;
     string text = 2;
     double total_duration_nanos = 3;
     int64 execution_count = 4;
