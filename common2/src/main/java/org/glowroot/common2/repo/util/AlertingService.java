@@ -16,8 +16,13 @@
 package org.glowroot.common2.repo.util;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.UnknownHostException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -38,8 +43,10 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.io.ByteStreams;
 import com.google.common.util.concurrent.RateLimiter;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.serial.Serial;
@@ -72,6 +79,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification.SlackNotification;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertSeverity;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -80,6 +88,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class AlertingService {
 
     private static final Logger logger = LoggerFactory.getLogger(AlertingService.class);
+
+    private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final ConfigRepository configRepository;
     private final IncidentRepository incidentRepository;
@@ -367,7 +377,7 @@ public class AlertingService {
                         agentRollupId, slackNotification.getSlackWebhookId());
             } else {
                 for (String slackChannel : slackNotification.getSlackChannelList()) {
-                    sendSlackWithRetry(centralDisplay, agentRollupDisplay, slackWebhookUrl,
+                    sendSlack(centralDisplay, agentRollupDisplay, slackWebhookUrl,
                             slackChannel, endTime, subject, messageText, ok);
                 }
             }
@@ -382,7 +392,7 @@ public class AlertingService {
         sendPagerDuty.run();
     }
 
-    private void sendSlackWithRetry(String centralDisplay, String agentRollupDisplay,
+    private void sendSlack(String centralDisplay, String agentRollupDisplay,
             String slackWebhookUrl, String slackChannel, long endTime, String subject,
             String messageText, boolean ok) {
         try {
@@ -541,6 +551,61 @@ public class AlertingService {
             };
         }
         return Session.getInstance(props, authenticator);
+    }
+
+    public static void main(String[] args) throws IOException {
+        sendZabbix();
+        System.out.println("REMOVE THIS METHOD");
+    }
+
+    private static void sendZabbix() throws IOException {
+        Socket socket = new Socket();
+        socket.setSoTimeout(5000);
+
+        socket.connect(new InetSocketAddress("localhost", 10051), 5000);
+
+        InputStream in = socket.getInputStream();
+        OutputStream out = socket.getOutputStream();
+
+        byte[] x = buildJson("mytest", "asdf", "something");
+        System.out.println(new String(x));
+        writeMessage(out, x);
+        out.flush();
+
+        byte[] bytes = ByteStreams.toByteArray(in);
+        // header('ZBXD\1') + len + 0
+        // 5 + 4 + 4
+        System.out.println(new String(bytes, 13, bytes.length - 13, UTF_8));
+
+    }
+
+    private static byte[] buildJson(String host, String key, String value) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        JsonGenerator jg = mapper.getFactory().createGenerator(baos);
+        try {
+            jg.writeStartObject();
+            jg.writeStringField("request", "sender data");
+            jg.writeArrayFieldStart("data");
+            jg.writeStartObject();
+            jg.writeStringField("host", host);
+            jg.writeStringField("key", key);
+            jg.writeStringField("value", value);
+            jg.writeEndObject();
+            jg.writeEndArray();
+            jg.writeEndObject();
+        } finally {
+            jg.close();
+        }
+        return baos.toByteArray();
+    }
+
+    // see https://www.zabbix.org/wiki/Docs/protocols/zabbix_sender/1.8/java_example
+    private static void writeMessage(OutputStream out, byte[] data) throws IOException {
+        int length = data.length;
+        out.write(new byte[] {'Z', 'B', 'X', 'D', '\1', (byte) (length & 0xFF),
+                (byte) ((length >> 8) & 0x00FF), (byte) ((length >> 16) & 0x0000FF),
+                (byte) ((length >> 24) & 0x000000FF), '\0', '\0', '\0', '\0'});
+        out.write(data);
     }
 
     private static String getPassword(SmtpConfig smtpConfig, @Nullable String passwordOverride,
