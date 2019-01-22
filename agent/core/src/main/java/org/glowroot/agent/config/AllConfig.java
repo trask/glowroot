@@ -28,6 +28,7 @@ import org.glowroot.common.config.AlertConfig;
 import org.glowroot.common.config.GaugeConfig;
 import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.common.config.JvmConfig;
+import org.glowroot.common.config.StatsdConfig;
 import org.glowroot.common.config.SyntheticMonitorConfig;
 import org.glowroot.common.config.TransactionConfig;
 import org.glowroot.common.config.UiDefaultsConfig;
@@ -39,6 +40,7 @@ public abstract class AllConfig {
 
     abstract TransactionConfig transaction();
     abstract JvmConfig jvm();
+    abstract StatsdConfig statsd();
     abstract UiDefaultsConfig uiDefaults();
     abstract AdvancedConfig advanced();
     abstract List<GaugeConfig> gauges();
@@ -51,6 +53,7 @@ public abstract class AllConfig {
         ImmutableAllConfig.Builder builder = ImmutableAllConfig.builder()
                 .transaction(TransactionConfig.create(config.getTransactionConfig()))
                 .jvm(JvmConfig.create(config.getJvmConfig()))
+                .statsd(StatsdConfig.create(config.getStatsdConfig()))
                 .uiDefaults(UiDefaultsConfig.create(config.getUiDefaultsConfig()))
                 .advanced(AdvancedConfig.create(config.getAdvancedConfig()));
         for (AgentConfig.GaugeConfig gaugeConfig : config.getGaugeConfigList()) {

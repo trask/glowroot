@@ -516,6 +516,11 @@ glowroot.config([
       templateUrl: 'views/config/alert.html',
       controller: 'ConfigAlertCtrl'
     });
+    $stateProvider.state('config.statsd', {
+      url: '/statsd',
+      templateUrl: 'views/config/statsd.html',
+      controller: 'ConfigStatsdCtrl'
+    });
     $stateProvider.state('config.uiDefaults', {
       url: '/ui-defaults',
       templateUrl: 'views/config/ui-defaults.html',

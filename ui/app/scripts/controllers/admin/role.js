@@ -168,6 +168,8 @@ glowroot.controller('AdminRoleCtrl', [
         permissionBlock.config.edit.syntheticMonitors = true;
       } else if (permission === 'agent:config:edit:alerts') {
         permissionBlock.config.edit.alerts = true;
+      } else if (permission === 'agent:config:edit:statsd') {
+        permissionBlock.config.edit.statsd = true;
       } else if (permission === 'agent:config:edit:uiDefaults') {
         permissionBlock.config.edit.uiDefaults = true;
       } else if (permission === 'agent:config:edit:plugins') {
@@ -216,6 +218,7 @@ glowroot.controller('AdminRoleCtrl', [
           permissionsObj.config.edit.syntheticMonitors = false;
         }
         permissionsObj.config.edit.alerts = false;
+        permissionsObj.config.edit.statsd = false;
         permissionsObj.config.edit.uiDefaults = false;
         permissionsObj.config.edit.plugins = false;
         permissionsObj.config.edit.instrumentation = false;
@@ -242,9 +245,9 @@ glowroot.controller('AdminRoleCtrl', [
       return permissionsObj.config.edit._ || ($scope.layout.central && permissionsObj.config.edit.general)
           || permissionsObj.config.edit.transaction || permissionsObj.config.edit.gauges
           || permissionsObj.config.edit.jvm || ($scope.layout.central && permissionsObj.config.edit.syntheticMonitors)
-          || permissionsObj.config.edit.alerts || permissionsObj.config.edit.uiDefaults
-          || permissionsObj.config.edit.plugins || permissionsObj.config.edit.instrumentation
-          || permissionsObj.config.edit.advanced;
+          || permissionsObj.config.edit.alerts || permissionsObj.config.edit.statsd
+          || permissionsObj.config.edit.uiDefaults || permissionsObj.config.edit.plugins
+          || permissionsObj.config.edit.instrumentation || permissionsObj.config.edit.advanced;
     };
 
     function permissionsObjToList(permissionsObj) {
@@ -335,6 +338,9 @@ glowroot.controller('AdminRoleCtrl', [
       }
       if (permissionsObj.config.edit.alerts) {
         permissions.push('agent:config:edit:alerts');
+      }
+      if (permissionsObj.config.edit.statsd) {
+        permissions.push('agent:config:edit:statsd');
       }
       if (permissionsObj.config.edit.uiDefaults) {
         permissions.push('agent:config:edit:uiDefaults');
@@ -448,6 +454,7 @@ glowroot.controller('AdminRoleCtrl', [
             gauges: false,
             jvm: false,
             alerts: false,
+            statsd: false,
             uiDefaults: false,
             plugin: false,
             instrumentation: false,

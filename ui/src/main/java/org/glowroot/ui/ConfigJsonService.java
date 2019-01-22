@@ -52,6 +52,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfi
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty.StringList;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SlowThresholdOverride;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.StatsdConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiDefaultsConfig;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
@@ -104,6 +105,12 @@ class ConfigJsonService {
     String getJvmConfig(@BindAgentId String agentId) throws Exception {
         JvmConfig config = configRepository.getJvmConfig(agentId);
         return mapper.writeValueAsString(JvmConfigDto.create(config));
+    }
+
+    @GET(path = "/backend/config/statsd", permission = "agent:config:view:statsd")
+    String getStatsdConfig(@BindAgentId String agentId) throws Exception {
+        StatsdConfig config = configRepository.getStatsdConfig(agentId);
+        return mapper.writeValueAsString(StatsdConfigDto.create(config));
     }
 
     // central supports ui defaults config on rollups
@@ -201,6 +208,17 @@ class ConfigJsonService {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
         return getJvmConfig(agentId);
+    }
+
+    @POST(path = "/backend/config/statsd", permission = "agent:config:edit:statsd")
+    String updateStatsdConfig(@BindAgentId String agentId, @BindRequest StatsdConfigDto configDto)
+            throws Exception {
+        try {
+            configRepository.updateStatsdConfig(agentId, configDto.convert(), configDto.version());
+        } catch (OptimisticLockException e) {
+            throw new JsonServiceException(PRECONDITION_FAILED, e);
+        }
+        return getStatsdConfig(agentId);
     }
 
     // central supports ui defaults config on rollups
@@ -451,6 +469,37 @@ class ConfigJsonService {
             return ImmutableJvmConfigDto.builder()
                     .maskSystemProperties(config.getMaskSystemPropertyList())
                     .maskMBeanAttributes(config.getMaskMbeanAttributeList())
+                    .version(Versions.getVersion(config))
+                    .build();
+        }
+    }
+
+    @Value.Immutable
+    abstract static class StatsdConfigDto {
+
+        abstract String host();
+        abstract @Nullable Integer port();
+        abstract String prefix();
+        abstract String version();
+
+        private StatsdConfig convert() {
+            StatsdConfig.Builder builder = StatsdConfig.newBuilder()
+                    .setHost(host());
+            Integer port = port();
+            if (port != null) {
+                builder.setPort(OptionalInt32.newBuilder().setValue(port));
+            }
+            return builder.setPrefix(prefix())
+                    .build();
+        }
+
+        private static StatsdConfigDto create(StatsdConfig config) {
+            ImmutableStatsdConfigDto.Builder builder = ImmutableStatsdConfigDto.builder()
+                    .host(config.getHost());
+            if (config.hasPort()) {
+                builder.port(config.getPort().getValue());
+            }
+            return builder.prefix(config.getPrefix())
                     .version(Versions.getVersion(config))
                     .build();
         }

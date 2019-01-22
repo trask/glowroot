@@ -385,6 +385,8 @@ class LayoutService {
                                 // central supports alert configs on rollups
                                 .alerts(authentication.isPermittedForAgentRollup(agentRollupId,
                                         "agent:config:edit:alerts") && !configReadOnly)
+                                .statsd(authentication.isPermittedForAgentRollup(agentRollupId,
+                                        "agent:config:edit:statsd") && !configReadOnly)
                                 // central supports ui defaults config on rollups
                                 .uiDefaults(authentication.isPermittedForAgentRollup(agentRollupId,
                                         "agent:config:edit:uiDefaults") && !configReadOnly)
@@ -571,6 +573,7 @@ class LayoutService {
         boolean jvm();
         boolean syntheticMonitors();
         boolean alerts();
+        boolean statsd();
         boolean uiDefaults();
         boolean plugins();
         boolean instrumentation();

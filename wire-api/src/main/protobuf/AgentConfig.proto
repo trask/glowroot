@@ -14,6 +14,7 @@ message AgentConfig {
   GeneralConfig general_config = 16; // only stored in central
   TransactionConfig transaction_config = 2;
   JvmConfig jvm_config = 17;
+  StatsdConfig statsd_config = 19;
   UiDefaultsConfig ui_defaults_config = 3;
   AdvancedConfig advanced_config = 5;
 
@@ -46,6 +47,12 @@ message AgentConfig {
   message JvmConfig {
     repeated string mask_system_property = 1;
     repeated string mask_mbean_attribute = 2;
+  }
+
+  message StatsdConfig {
+    string host = 1;
+    OptionalInt32 port = 2;
+    string prefix = 3;
   }
 
   message UiDefaultsConfig {

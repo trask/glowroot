@@ -43,6 +43,7 @@ import org.glowroot.common.config.ImmutableGaugeConfig;
 import org.glowroot.common.config.ImmutableInstrumentationConfig;
 import org.glowroot.common.config.ImmutableJvmConfig;
 import org.glowroot.common.config.ImmutableMBeanAttribute;
+import org.glowroot.common.config.ImmutableStatsdConfig;
 import org.glowroot.common.config.ImmutableSyntheticMonitorConfig;
 import org.glowroot.common.config.ImmutableTransactionConfig;
 import org.glowroot.common.config.ImmutableUiDefaultsConfig;
@@ -50,6 +51,7 @@ import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.common.config.JvmConfig;
 import org.glowroot.common.config.PropertyValue;
 import org.glowroot.common.config.PropertyValue.PropertyType;
+import org.glowroot.common.config.StatsdConfig;
 import org.glowroot.common.config.SyntheticMonitorConfig;
 import org.glowroot.common.config.TransactionConfig;
 import org.glowroot.common.config.UiDefaultsConfig;
@@ -72,6 +74,7 @@ public class ConfigService {
 
     private volatile TransactionConfig transactionConfig;
     private volatile JvmConfig jvmConfig;
+    private volatile StatsdConfig statsdConfig;
     private volatile UiDefaultsConfig uiDefaultsConfig;
     private volatile AdvancedConfig advancedConfig;
     private volatile ImmutableList<GaugeConfig> gaugeConfigs;
@@ -113,6 +116,12 @@ public class ConfigService {
             this.jvmConfig = ImmutableJvmConfig.builder().build();
         } else {
             this.jvmConfig = jvmConfig;
+        }
+        StatsdConfig statsdConfig = configFile.getConfig("statsd", ImmutableStatsdConfig.class);
+        if (statsdConfig == null) {
+            this.statsdConfig = ImmutableStatsdConfig.builder().build();
+        } else {
+            this.statsdConfig = statsdConfig;
         }
         UiDefaultsConfig uiDefaultsConfig =
                 configFile.getConfig("uiDefaults", ImmutableUiDefaultsConfig.class);
@@ -176,6 +185,10 @@ public class ConfigService {
         return jvmConfig;
     }
 
+    public StatsdConfig getStatsdConfig() {
+        return statsdConfig;
+    }
+
     public UiDefaultsConfig getUiDefaultsConfig() {
         return uiDefaultsConfig;
     }
@@ -215,25 +228,26 @@ public class ConfigService {
 
     public AgentConfig getAgentConfig() {
         AgentConfig.Builder builder = AgentConfig.newBuilder()
-                .setTransactionConfig(transactionConfig.toProto());
+                .setTransactionConfig(transactionConfig.toProto())
+                .setJvmConfig(jvmConfig.toProto())
+                .setStatsdConfig(statsdConfig.toProto())
+                .setUiDefaultsConfig(uiDefaultsConfig.toProto())
+                .setAdvancedConfig(advancedConfig.toProto());
         for (GaugeConfig gaugeConfig : gaugeConfigs) {
             builder.addGaugeConfig(gaugeConfig.toProto());
         }
-        builder.setJvmConfig(jvmConfig.toProto());
         for (SyntheticMonitorConfig syntheticMonitorConfig : syntheticMonitorConfigs) {
             builder.addSyntheticMonitorConfig(syntheticMonitorConfig.toProto());
         }
         for (AlertConfig alertConfig : alertConfigs) {
             builder.addAlertConfig(alertConfig.toProto());
         }
-        builder.setUiDefaultsConfig(uiDefaultsConfig.toProto());
         for (PluginConfig pluginConfig : pluginConfigs) {
             builder.addPluginConfig(pluginConfig.toProto());
         }
         for (InstrumentationConfig instrumentationConfig : instrumentationConfigs) {
             builder.addInstrumentationConfig(instrumentationConfig.toProto());
         }
-        builder.setAdvancedConfig(advancedConfig.toProto());
         return builder.build();
     }
 
@@ -277,6 +291,12 @@ public class ConfigService {
         notifyConfigListeners();
     }
 
+    public void updateStatsdConfig(StatsdConfig config) throws IOException {
+        configFile.writeConfig("statsd", config);
+        statsdConfig = config;
+        notifyConfigListeners();
+    }
+
     public void updateUiDefaultsConfig(UiDefaultsConfig config) throws IOException {
         configFile.writeConfig("uiDefaults", config);
         uiDefaultsConfig = config;
@@ -307,6 +327,7 @@ public class ConfigService {
         Map<String, Object> configs = Maps.newHashMap();
         configs.put("transactions", config.transaction());
         configs.put("jvm", config.jvm());
+        configs.put("statsd", config.statsd());
         configs.put("uiDefaults", config.uiDefaults());
         configs.put("advanced", config.advanced());
         configs.put("gauges", config.gauges());
@@ -317,6 +338,7 @@ public class ConfigService {
         configFile.writeAllConfigs(configs);
         this.transactionConfig = config.transaction();
         this.jvmConfig = config.jvm();
+        this.statsdConfig = config.statsd();
         this.uiDefaultsConfig = config.uiDefaults();
         this.advancedConfig = config.advanced();
         this.gaugeConfigs = ImmutableList.copyOf(config.gauges());
@@ -367,6 +389,7 @@ public class ConfigService {
                 .slowThresholdMillis(0) // default for tests
                 .build();
         jvmConfig = ImmutableJvmConfig.builder().build();
+        statsdConfig = ImmutableStatsdConfig.builder().build();
         uiDefaultsConfig = ImmutableUiDefaultsConfig.builder().build();
         advancedConfig = ImmutableAdvancedConfig.builder().build();
         gaugeConfigs = getDefaultGaugeConfigs();
@@ -384,6 +407,7 @@ public class ConfigService {
         Map<String, Object> configs = Maps.newHashMap();
         configs.put("transactions", transactionConfig);
         configs.put("jvm", jvmConfig);
+        configs.put("statsd", statsdConfig);
         configs.put("uiDefaults", uiDefaultsConfig);
         configs.put("advanced", advancedConfig);
         configs.put("gauges", gaugeConfigs);

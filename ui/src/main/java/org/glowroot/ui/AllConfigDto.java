@@ -32,12 +32,14 @@ import org.glowroot.common.config.ImmutableAlertConfig;
 import org.glowroot.common.config.ImmutableGaugeConfig;
 import org.glowroot.common.config.ImmutableInstrumentationConfig;
 import org.glowroot.common.config.ImmutableJvmConfig;
+import org.glowroot.common.config.ImmutableStatsdConfig;
 import org.glowroot.common.config.ImmutableSyntheticMonitorConfig;
 import org.glowroot.common.config.ImmutableTransactionConfig;
 import org.glowroot.common.config.ImmutableUiDefaultsConfig;
 import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.common.config.JvmConfig;
 import org.glowroot.common.config.PropertyValue;
+import org.glowroot.common.config.StatsdConfig;
 import org.glowroot.common.config.SyntheticMonitorConfig;
 import org.glowroot.common.config.TransactionConfig;
 import org.glowroot.common.config.UiDefaultsConfig;
@@ -56,6 +58,11 @@ abstract class AllConfigDto {
     @Value.Default
     ImmutableJvmConfig jvm() {
         return ImmutableJvmConfig.builder().build();
+    }
+
+    @Value.Default
+    ImmutableStatsdConfig statsd() {
+        return ImmutableStatsdConfig.builder().build();
     }
 
     @Value.Default
@@ -89,6 +96,7 @@ abstract class AllConfigDto {
         AgentConfig.Builder builder = AgentConfig.newBuilder()
                 .setTransactionConfig(transactions().toProto())
                 .setJvmConfig(jvm().toProto())
+                .setStatsdConfig(statsd().toProto())
                 .setUiDefaultsConfig(uiDefaults().toProto())
                 .setAdvancedConfig(advanced().toProto());
         for (GaugeConfig gaugeConfig : gauges()) {
@@ -113,6 +121,7 @@ abstract class AllConfigDto {
         ImmutableAllConfigDto.Builder builder = ImmutableAllConfigDto.builder()
                 .transactions(TransactionConfig.create(config.getTransactionConfig()))
                 .jvm(JvmConfig.create(config.getJvmConfig()))
+                .statsd(StatsdConfig.create(config.getStatsdConfig()))
                 .uiDefaults(UiDefaultsConfig.create(config.getUiDefaultsConfig()))
                 .advanced(AdvancedConfig.create(config.getAdvancedConfig()));
         for (AgentConfig.GaugeConfig gaugeConfig : config.getGaugeConfigList()) {

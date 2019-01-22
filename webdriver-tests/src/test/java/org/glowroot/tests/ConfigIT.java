@@ -21,6 +21,7 @@ import org.openqa.selenium.WebElement;
 import org.glowroot.tests.config.AdvancedConfigPage;
 import org.glowroot.tests.config.ConfigSidebar;
 import org.glowroot.tests.config.JvmConfigPage;
+import org.glowroot.tests.config.StatsdConfigPage;
 import org.glowroot.tests.config.TransactionConfigPage;
 import org.glowroot.tests.config.UiDefaultsConfigPage;
 import org.glowroot.tests.util.Utils;
@@ -90,6 +91,39 @@ public class ConfigIT extends WebDriverIT {
         configSidebar.clickJvmLink();
         assertThat(page.getMaskSystemPropertiesTextField().getAttribute("value"))
                 .isEqualTo("abc, xyz");
+    }
+
+    @Test
+    public void shouldUpdateStatsdConfig() throws Exception {
+        // given
+        App app = app();
+        GlobalNavbar globalNavbar = globalNavbar();
+        ConfigSidebar configSidebar = new ConfigSidebar(driver);
+        StatsdConfigPage page = new StatsdConfigPage(driver);
+
+        app.open();
+        globalNavbar.clickConfigLink();
+        configSidebar.clickStatsdLink();
+
+        // when
+        page.getHostTextField().clear();
+        page.getHostTextField().sendKeys(""); // don't set host or it will try to send data and log
+                                              // error
+        page.getPortTextField().clear();
+        page.getPortTextField().sendKeys("1234");
+        page.getPrefixTextField().clear();
+        page.getPrefixTextField().sendKeys("b");
+        page.clickSaveButton();
+        // wait for save to finish
+        SECONDS.sleep(1);
+
+        // then
+        app.open();
+        globalNavbar.clickConfigLink();
+        configSidebar.clickStatsdLink();
+        assertThat(page.getHostTextField().getAttribute("value")).isEqualTo("");
+        assertThat(page.getPortTextField().getAttribute("value")).isEqualTo("1234");
+        assertThat(page.getPrefixTextField().getAttribute("value")).isEqualTo("b");
     }
 
     @Test

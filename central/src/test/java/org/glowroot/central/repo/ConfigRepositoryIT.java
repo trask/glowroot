@@ -60,6 +60,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.Instrumenta
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.MethodModifier;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.JvmConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.MBeanAttribute;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.StatsdConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiDefaultsConfig;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
@@ -150,6 +151,27 @@ public class ConfigRepositoryIT {
         configRepository.updateJvmConfig(agentId, updatedConfig,
                 Versions.getVersion(config));
         config = configRepository.getJvmConfig(agentId);
+
+        // then
+        assertThat(config).isEqualTo(updatedConfig);
+    }
+
+    @Test
+    public void shouldUpdateStatsdConfig() throws Exception {
+        // given
+        String agentId = UUID.randomUUID().toString();
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
+        StatsdConfig config = configRepository.getStatsdConfig(agentId);
+        StatsdConfig updatedConfig = StatsdConfig.newBuilder()
+                .setHost("") // don't set host or it will try to send data and log error
+                .setPort(OptionalInt32.newBuilder().setValue(1234))
+                .setPrefix("a")
+                .build();
+
+        // when
+        configRepository.updateStatsdConfig(agentId, updatedConfig,
+                Versions.getVersion(config));
+        config = configRepository.getStatsdConfig(agentId);
 
         // then
         assertThat(config).isEqualTo(updatedConfig);

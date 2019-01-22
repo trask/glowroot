@@ -40,6 +40,7 @@ import org.glowroot.common.config.GaugeConfig;
 import org.glowroot.common.config.ImmutableAlertConfig;
 import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.common.config.JvmConfig;
+import org.glowroot.common.config.StatsdConfig;
 import org.glowroot.common.config.TransactionConfig;
 import org.glowroot.common.config.UiDefaultsConfig;
 import org.glowroot.common.util.OnlyUsedByTests;
@@ -110,8 +111,13 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public AgentConfig.JvmConfig getJvmConfig(String agentRollupId) {
+    public AgentConfig.JvmConfig getJvmConfig(String agentId) {
         return configService.getJvmConfig().toProto();
+    }
+
+    @Override
+    public AgentConfig.StatsdConfig getStatsdConfig(String agentId) {
+        return configService.getStatsdConfig().toProto();
     }
 
     @Override
@@ -444,8 +450,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             String priorVersion) throws Exception {
         JvmConfig config = JvmConfig.create(protoConfig);
         synchronized (writeLock) {
-            String currVersion =
-                    Versions.getVersion(configService.getJvmConfig().toProto());
+            String currVersion = Versions.getVersion(configService.getJvmConfig().toProto());
             checkVersionsEqual(currVersion, priorVersion);
             configService.updateJvmConfig(config);
         }
@@ -527,6 +532,17 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                 throw new OptimisticLockException();
             }
             configService.updateAlertConfigs(configs);
+        }
+    }
+
+    @Override
+    public void updateStatsdConfig(String agentId, AgentConfig.StatsdConfig protoConfig,
+            String priorVersion) throws Exception {
+        StatsdConfig config = StatsdConfig.create(protoConfig);
+        synchronized (writeLock) {
+            String currVersion = Versions.getVersion(configService.getStatsdConfig().toProto());
+            checkVersionsEqual(currVersion, priorVersion);
+            configService.updateStatsdConfig(config);
         }
     }
 

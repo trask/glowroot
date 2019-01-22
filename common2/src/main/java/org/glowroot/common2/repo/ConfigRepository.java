@@ -49,6 +49,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GeneralConf
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.JvmConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.StatsdConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiDefaultsConfig;
@@ -83,6 +84,8 @@ public interface ConfigRepository {
     TransactionConfig getTransactionConfig(String agentId) throws Exception;
 
     JvmConfig getJvmConfig(String agentId) throws Exception;
+
+    StatsdConfig getStatsdConfig(String agentId) throws Exception;
 
     // central supports ui config on rollups
     UiDefaultsConfig getUiDefaultsConfig(String agentRollupId) throws Exception;
@@ -207,6 +210,9 @@ public interface ConfigRepository {
 
     // central supports alert configs on rollups
     void deleteAlertConfig(String agentRollupId, String version) throws Exception;
+
+    void updateStatsdConfig(String agentId, StatsdConfig config, String priorVersion)
+            throws Exception;
 
     // central supports ui config on rollups
     void updateUiDefaultsConfig(String agentRollupId, UiDefaultsConfig config, String priorVersion)

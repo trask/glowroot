@@ -153,6 +153,12 @@
            gt-sub-active="currentUrl() === 'config/alert'">
       </div>
       <div gt-sidebar-item
+           gt-display="StatsD"
+           gt-url="config/statsd{{agentQueryString()}}"
+           gt-active="currentUrl() === 'config/statsd'"
+           ng-if="!isAgentRollup()">
+      </div>
+      <div gt-sidebar-item
            gt-display="UI Defaults"
            gt-url="config/ui-defaults{{agentQueryString()}}"
            gt-active="currentUrl() === 'config/ui-defaults'">
