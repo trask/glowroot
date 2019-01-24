@@ -519,6 +519,80 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
+    public void updateJvmConfig(String agentId, JvmConfig config, String priorVersion)
+            throws Exception {
+        agentConfigDao.update(agentId, new AgentConfigUpdater() {
+            @Override
+            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
+                String existingVersion = Versions.getVersion(agentConfig.getJvmConfig());
+                if (!priorVersion.equals(existingVersion)) {
+                    throw new OptimisticLockException();
+                }
+                return agentConfig.toBuilder()
+                        .setJvmConfig(config)
+                        .build();
+            }
+        });
+        notifyAgentConfigListeners(agentId);
+    }
+
+    @Override
+    public void updateStatsdConfig(String agentRollupId, StatsdConfig config,
+            String priorVersion) throws Exception {
+        agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
+            @Override
+            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
+                String existingVersion = Versions.getVersion(agentConfig.getStatsdConfig());
+                if (!priorVersion.equals(existingVersion)) {
+                    throw new OptimisticLockException();
+                }
+                return agentConfig.toBuilder()
+                        .setStatsdConfig(config)
+                        .build();
+            }
+        });
+        notifyAgentConfigListeners(agentRollupId);
+    }
+
+    // central supports ui config on rollups
+    @Override
+    public void updateUiDefaultsConfig(String agentRollupId, UiDefaultsConfig config,
+            String priorVersion) throws Exception {
+        agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
+            @Override
+            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
+                String existingVersion = Versions.getVersion(agentConfig.getUiDefaultsConfig());
+                if (!priorVersion.equals(existingVersion)) {
+                    throw new OptimisticLockException();
+                }
+                return agentConfig.toBuilder()
+                        .setUiDefaultsConfig(config)
+                        .build();
+            }
+        });
+        notifyAgentConfigListeners(agentRollupId);
+    }
+
+    @Override
+    public void updateAdvancedConfig(String agentRollupId, AdvancedConfig config,
+            String priorVersion) throws Exception {
+        agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
+            @Override
+            public AgentConfig updateAgentConfig(AgentConfig agentConfig)
+                    throws OptimisticLockException {
+                String existingVersion = Versions.getVersion(agentConfig.getAdvancedConfig());
+                if (!priorVersion.equals(existingVersion)) {
+                    throw new OptimisticLockException();
+                }
+                return agentConfig.toBuilder()
+                        .setAdvancedConfig(config)
+                        .build();
+            }
+        });
+        notifyAgentConfigListeners(agentRollupId);
+    }
+
+    @Override
     public void insertGaugeConfig(String agentId, GaugeConfig config) throws Exception {
         agentConfigDao.update(agentId, new AgentConfigUpdater() {
             @Override
@@ -595,24 +669,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                 return agentConfig.toBuilder()
                         .clearGaugeConfig()
                         .addAllGaugeConfig(existingConfigs)
-                        .build();
-            }
-        });
-        notifyAgentConfigListeners(agentId);
-    }
-
-    @Override
-    public void updateJvmConfig(String agentId, JvmConfig config, String priorVersion)
-            throws Exception {
-        agentConfigDao.update(agentId, new AgentConfigUpdater() {
-            @Override
-            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
-                String existingVersion = Versions.getVersion(agentConfig.getJvmConfig());
-                if (!priorVersion.equals(existingVersion)) {
-                    throw new OptimisticLockException();
-                }
-                return agentConfig.toBuilder()
-                        .setJvmConfig(config)
                         .build();
             }
         });
@@ -797,43 +853,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateStatsdConfig(String agentRollupId, StatsdConfig config,
-            String priorVersion) throws Exception {
-        agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
-            @Override
-            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
-                String existingVersion = Versions.getVersion(agentConfig.getStatsdConfig());
-                if (!priorVersion.equals(existingVersion)) {
-                    throw new OptimisticLockException();
-                }
-                return agentConfig.toBuilder()
-                        .setStatsdConfig(config)
-                        .build();
-            }
-        });
-        notifyAgentConfigListeners(agentRollupId);
-    }
-
-    // central supports ui config on rollups
-    @Override
-    public void updateUiDefaultsConfig(String agentRollupId, UiDefaultsConfig config,
-            String priorVersion) throws Exception {
-        agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
-            @Override
-            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
-                String existingVersion = Versions.getVersion(agentConfig.getUiDefaultsConfig());
-                if (!priorVersion.equals(existingVersion)) {
-                    throw new OptimisticLockException();
-                }
-                return agentConfig.toBuilder()
-                        .setUiDefaultsConfig(config)
-                        .build();
-            }
-        });
-        notifyAgentConfigListeners(agentRollupId);
-    }
-
-    @Override
     public void updatePluginConfig(String agentId, PluginConfig config, String priorVersion)
             throws Exception {
         agentConfigDao.update(agentId, new AgentConfigUpdater() {
@@ -950,25 +969,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             }
         });
         notifyAgentConfigListeners(agentId);
-    }
-
-    @Override
-    public void updateAdvancedConfig(String agentRollupId, AdvancedConfig config,
-            String priorVersion) throws Exception {
-        agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
-            @Override
-            public AgentConfig updateAgentConfig(AgentConfig agentConfig)
-                    throws OptimisticLockException {
-                String existingVersion = Versions.getVersion(agentConfig.getAdvancedConfig());
-                if (!priorVersion.equals(existingVersion)) {
-                    throw new OptimisticLockException();
-                }
-                return agentConfig.toBuilder()
-                        .setAdvancedConfig(config)
-                        .build();
-            }
-        });
-        notifyAgentConfigListeners(agentRollupId);
     }
 
     @Override

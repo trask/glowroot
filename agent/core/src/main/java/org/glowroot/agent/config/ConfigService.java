@@ -266,15 +266,33 @@ public class ConfigService {
         notifyConfigListeners();
     }
 
-    public void updateGaugeConfigs(List<GaugeConfig> configs) throws IOException {
-        configFile.writeConfig("gauges", configs);
-        gaugeConfigs = ImmutableList.copyOf(configs);
-        notifyConfigListeners();
-    }
-
     public void updateJvmConfig(JvmConfig config) throws IOException {
         configFile.writeConfig("jvm", config);
         jvmConfig = config;
+        notifyConfigListeners();
+    }
+
+    public void updateStatsdConfig(StatsdConfig config) throws IOException {
+        configFile.writeConfig("statsd", config);
+        statsdConfig = config;
+        notifyConfigListeners();
+    }
+
+    public void updateUiDefaultsConfig(UiDefaultsConfig config) throws IOException {
+        configFile.writeConfig("uiDefaults", config);
+        uiDefaultsConfig = config;
+        notifyConfigListeners();
+    }
+
+    public void updateAdvancedConfig(AdvancedConfig config) throws IOException {
+        configFile.writeConfig("advanced", config);
+        advancedConfig = config;
+        notifyConfigListeners();
+    }
+
+    public void updateGaugeConfigs(List<GaugeConfig> configs) throws IOException {
+        configFile.writeConfig("gauges", configs);
+        gaugeConfigs = ImmutableList.copyOf(configs);
         notifyConfigListeners();
     }
 
@@ -291,18 +309,6 @@ public class ConfigService {
         notifyConfigListeners();
     }
 
-    public void updateStatsdConfig(StatsdConfig config) throws IOException {
-        configFile.writeConfig("statsd", config);
-        statsdConfig = config;
-        notifyConfigListeners();
-    }
-
-    public void updateUiDefaultsConfig(UiDefaultsConfig config) throws IOException {
-        configFile.writeConfig("uiDefaults", config);
-        uiDefaultsConfig = config;
-        notifyConfigListeners();
-    }
-
     public void updatePluginConfigs(List<PluginConfig> configs) throws IOException {
         // configs passed in are already sorted
         configFile.writeConfig("plugins", stripEmptyPluginConfigs(configs));
@@ -314,12 +320,6 @@ public class ConfigService {
             throws IOException {
         configFile.writeConfig("instrumentation", configs);
         instrumentationConfigs = ImmutableList.copyOf(configs);
-        notifyConfigListeners();
-    }
-
-    public void updateAdvancedConfig(AdvancedConfig config) throws IOException {
-        configFile.writeConfig("advanced", config);
-        advancedConfig = config;
         notifyConfigListeners();
     }
 

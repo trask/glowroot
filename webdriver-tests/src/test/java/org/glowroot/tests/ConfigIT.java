@@ -154,6 +154,35 @@ public class ConfigIT extends WebDriverIT {
     }
 
     @Test
+    public void shouldUpdatePluginConfig() throws Exception {
+        // given
+        App app = app();
+        GlobalNavbar globalNavbar = globalNavbar();
+        ConfigSidebar configSidebar = new ConfigSidebar(driver);
+
+        app.open();
+        globalNavbar.clickConfigLink();
+        configSidebar.clickPluginsLink();
+
+        clickLinkWithWait("Jdbc Plugin");
+        clickWithWait(xpath("//div[@gt-label='ResultSet navigation']//label"));
+        clickWithWait(xpath("//button[normalize-space()='Save changes']"));
+
+        // wait for save to finish
+        SECONDS.sleep(1);
+
+        // then
+        app.open();
+        globalNavbar.clickConfigLink();
+        configSidebar.clickPluginsLink();
+
+        clickLinkWithWait("Jdbc Plugin");
+        WebElement element =
+                Utils.getWithWait(driver, xpath("//div[@gt-label='ResultSet navigation']//input"));
+        assertThat(element.isSelected()).isFalse();
+    }
+
+    @Test
     public void shouldUpdateAdvancedConfig() throws Exception {
         // given
         App app = app();
@@ -197,34 +226,5 @@ public class ConfigIT extends WebDriverIT {
                 .isEqualTo("2345");
         assertThat(page.getMaxProfileSamplesPerTransactionTextField().getAttribute("value"))
                 .isEqualTo("3456");
-    }
-
-    @Test
-    public void shouldUpdatePluginConfig() throws Exception {
-        // given
-        App app = app();
-        GlobalNavbar globalNavbar = globalNavbar();
-        ConfigSidebar configSidebar = new ConfigSidebar(driver);
-
-        app.open();
-        globalNavbar.clickConfigLink();
-        configSidebar.clickPluginsLink();
-
-        clickLinkWithWait("Jdbc Plugin");
-        clickWithWait(xpath("//div[@gt-label='ResultSet navigation']//label"));
-        clickWithWait(xpath("//button[normalize-space()='Save changes']"));
-
-        // wait for save to finish
-        SECONDS.sleep(1);
-
-        // then
-        app.open();
-        globalNavbar.clickConfigLink();
-        configSidebar.clickPluginsLink();
-
-        clickLinkWithWait("Jdbc Plugin");
-        WebElement element =
-                Utils.getWithWait(driver, xpath("//div[@gt-label='ResultSet navigation']//input"));
-        assertThat(element.isSelected()).isFalse();
     }
 }

@@ -180,14 +180,25 @@ public interface ConfigRepository {
     void updateTransactionConfig(String agentId, TransactionConfig config, String priorVersion)
             throws Exception;
 
+    void updateJvmConfig(String agentId, JvmConfig config, String priorVersion) throws Exception;
+
+    void updateStatsdConfig(String agentId, StatsdConfig config, String priorVersion)
+            throws Exception;
+
+    // central supports ui config on rollups
+    void updateUiDefaultsConfig(String agentRollupId, UiDefaultsConfig config, String priorVersion)
+            throws Exception;
+
+    // central supports advanced config on rollups (maxQueryAggregates and maxServiceCallAggregates)
+    void updateAdvancedConfig(String agentRollupId, AdvancedConfig config, String priorVersion)
+            throws Exception;
+
     void insertGaugeConfig(String agentId, GaugeConfig config) throws Exception;
 
     void updateGaugeConfig(String agentId, GaugeConfig config, String priorVersion)
             throws Exception;
 
     void deleteGaugeConfig(String agentId, String version) throws Exception;
-
-    void updateJvmConfig(String agentId, JvmConfig config, String priorVersion) throws Exception;
 
     // central supports synthetic monitor configs on rollups
     void insertSyntheticMonitorConfig(String agentRollupId, SyntheticMonitorConfig config)
@@ -211,13 +222,6 @@ public interface ConfigRepository {
     // central supports alert configs on rollups
     void deleteAlertConfig(String agentRollupId, String version) throws Exception;
 
-    void updateStatsdConfig(String agentId, StatsdConfig config, String priorVersion)
-            throws Exception;
-
-    // central supports ui config on rollups
-    void updateUiDefaultsConfig(String agentRollupId, UiDefaultsConfig config, String priorVersion)
-            throws Exception;
-
     // only plugin id and property names and values are used
     void updatePluginConfig(String agentId, PluginConfig config, String priorVersion)
             throws Exception;
@@ -230,10 +234,6 @@ public interface ConfigRepository {
     void deleteInstrumentationConfigs(String agentId, List<String> versions) throws Exception;
 
     void insertInstrumentationConfigs(String agentId, List<InstrumentationConfig> configs)
-            throws Exception;
-
-    // central supports advanced config on rollups (maxQueryAggregates and maxServiceCallAggregates)
-    void updateAdvancedConfig(String agentRollupId, AdvancedConfig config, String priorVersion)
             throws Exception;
 
     void updateAllConfig(String agentId, AgentConfig config, @Nullable String priorVersion)

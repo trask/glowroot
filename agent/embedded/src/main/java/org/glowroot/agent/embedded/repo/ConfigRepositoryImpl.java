@@ -382,6 +382,50 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
+    public void updateJvmConfig(String agentId, AgentConfig.JvmConfig protoConfig,
+            String priorVersion) throws Exception {
+        JvmConfig config = JvmConfig.create(protoConfig);
+        synchronized (writeLock) {
+            String currVersion = Versions.getVersion(configService.getJvmConfig().toProto());
+            checkVersionsEqual(currVersion, priorVersion);
+            configService.updateJvmConfig(config);
+        }
+    }
+
+    @Override
+    public void updateStatsdConfig(String agentId, AgentConfig.StatsdConfig protoConfig,
+            String priorVersion) throws Exception {
+        StatsdConfig config = StatsdConfig.create(protoConfig);
+        synchronized (writeLock) {
+            String currVersion = Versions.getVersion(configService.getStatsdConfig().toProto());
+            checkVersionsEqual(currVersion, priorVersion);
+            configService.updateStatsdConfig(config);
+        }
+    }
+
+    @Override
+    public void updateUiDefaultsConfig(String agentId, AgentConfig.UiDefaultsConfig protoConfig,
+            String priorVersion) throws Exception {
+        UiDefaultsConfig config = UiDefaultsConfig.create(protoConfig);
+        synchronized (writeLock) {
+            String currVersion = Versions.getVersion(configService.getUiDefaultsConfig().toProto());
+            checkVersionsEqual(currVersion, priorVersion);
+            configService.updateUiDefaultsConfig(config);
+        }
+    }
+
+    @Override
+    public void updateAdvancedConfig(String agentId, AgentConfig.AdvancedConfig protoConfig,
+            String priorVersion) throws Exception {
+        AdvancedConfig config = AdvancedConfig.create(protoConfig);
+        synchronized (writeLock) {
+            String currVersion = Versions.getVersion(configService.getAdvancedConfig().toProto());
+            checkVersionsEqual(currVersion, priorVersion);
+            configService.updateAdvancedConfig(config);
+        }
+    }
+
+    @Override
     public void insertGaugeConfig(String agentId, AgentConfig.GaugeConfig protoConfig)
             throws Exception {
         GaugeConfig config = GaugeConfig.create(protoConfig);
@@ -442,17 +486,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                 throw new OptimisticLockException();
             }
             configService.updateGaugeConfigs(configs);
-        }
-    }
-
-    @Override
-    public void updateJvmConfig(String agentId, AgentConfig.JvmConfig protoConfig,
-            String priorVersion) throws Exception {
-        JvmConfig config = JvmConfig.create(protoConfig);
-        synchronized (writeLock) {
-            String currVersion = Versions.getVersion(configService.getJvmConfig().toProto());
-            checkVersionsEqual(currVersion, priorVersion);
-            configService.updateJvmConfig(config);
         }
     }
 
@@ -532,28 +565,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                 throw new OptimisticLockException();
             }
             configService.updateAlertConfigs(configs);
-        }
-    }
-
-    @Override
-    public void updateStatsdConfig(String agentId, AgentConfig.StatsdConfig protoConfig,
-            String priorVersion) throws Exception {
-        StatsdConfig config = StatsdConfig.create(protoConfig);
-        synchronized (writeLock) {
-            String currVersion = Versions.getVersion(configService.getStatsdConfig().toProto());
-            checkVersionsEqual(currVersion, priorVersion);
-            configService.updateStatsdConfig(config);
-        }
-    }
-
-    @Override
-    public void updateUiDefaultsConfig(String agentId, AgentConfig.UiDefaultsConfig protoConfig,
-            String priorVersion) throws Exception {
-        UiDefaultsConfig config = UiDefaultsConfig.create(protoConfig);
-        synchronized (writeLock) {
-            String currVersion = Versions.getVersion(configService.getUiDefaultsConfig().toProto());
-            checkVersionsEqual(currVersion, priorVersion);
-            configService.updateUiDefaultsConfig(config);
         }
     }
 
@@ -660,17 +671,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                 }
             }
             configService.updateInstrumentationConfigs(existingConfigs);
-        }
-    }
-
-    @Override
-    public void updateAdvancedConfig(String agentId, AgentConfig.AdvancedConfig protoConfig,
-            String priorVersion) throws Exception {
-        AdvancedConfig config = AdvancedConfig.create(protoConfig);
-        synchronized (writeLock) {
-            String currVersion = Versions.getVersion(configService.getAdvancedConfig().toProto());
-            checkVersionsEqual(currVersion, priorVersion);
-            configService.updateAdvancedConfig(config);
         }
     }
 
