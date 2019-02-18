@@ -108,6 +108,7 @@ public class Transaction {
     private static final Random random = new Random();
 
     private volatile @Nullable String traceId;
+    private volatile @Nullable String spanId;
 
     private final long startTime;
     private final long startTick;
@@ -214,9 +215,10 @@ public class Transaction {
     private boolean stopMergingAuxThreadContexts;
 
     Transaction(long startTime, long startTick, String transactionType, String transactionName,
-            MessageSupplier messageSupplier, TimerName timerName, boolean captureThreadStats,
-            int maxTraceEntries, int maxQueryAggregates, int maxServiceCallAggregates,
-            int maxProfileSamples, @Nullable ThreadAllocatedBytes threadAllocatedBytes,
+            @Nullable String traceId, @Nullable String spanId, MessageSupplier messageSupplier,
+            TimerName timerName, boolean captureThreadStats, int maxTraceEntries,
+            int maxQueryAggregates, int maxServiceCallAggregates, int maxProfileSamples,
+            @Nullable ThreadAllocatedBytes threadAllocatedBytes,
             CompletionCallback completionCallback, Ticker ticker,
             TransactionRegistry transactionRegistry, TransactionService transactionService,
             ConfigService configService, ThreadContextThreadLocal.Holder threadContextHolder,
@@ -225,6 +227,8 @@ public class Transaction {
         this.startTick = startTick;
         this.transactionType = transactionType;
         this.transactionName = transactionName;
+        this.traceId = traceId;
+        this.spanId = spanId;
         this.maxTraceEntries = maxTraceEntries;
         this.maxQueryAggregates = maxQueryAggregates;
         this.maxServiceCallAggregates = maxServiceCallAggregates;
@@ -257,6 +261,25 @@ public class Transaction {
             }
         }
         return traceId;
+    }
+
+    public String getOrCreateSpanId() {
+        if (spanId == null) {
+            // double-checked locking works here because spanId is volatile
+            //
+            // synchronized on "this" as a micro-optimization just so don't need to create an empty
+            // object to lock on
+            synchronized (this) {
+                if (spanId == null) {
+                    spanId = buildSpanId();
+                }
+            }
+        }
+        return spanId;
+    }
+
+    public @Nullable String getSpanId() {
+        return spanId;
     }
 
     public long getStartTick() {
@@ -765,11 +788,11 @@ public class Transaction {
     }
 
     TraceEntryImpl startInnerTransaction(String transactionType, String transactionName,
-            MessageSupplier messageSupplier, TimerName timerName,
-            ThreadContextThreadLocal.Holder threadContextHolder, int rootNestingGroupId,
-            int rootSuppressionKeyId) {
-        return transactionService.startTransaction(transactionType, transactionName,
-                messageSupplier, timerName, threadContextHolder, rootNestingGroupId,
+            @Nullable String traceId, @Nullable String spanId, MessageSupplier messageSupplier,
+            TimerName timerName, ThreadContextThreadLocal.Holder threadContextHolder,
+            int rootNestingGroupId, int rootSuppressionKeyId) {
+        return transactionService.startTransaction(transactionType, transactionName, traceId,
+                spanId, messageSupplier, timerName, threadContextHolder, rootNestingGroupId,
                 rootSuppressionKeyId);
     }
 
@@ -1110,6 +1133,13 @@ public class Transaction {
         random.nextBytes(bytes);
         // lower 6 bytes of current time will wrap only every 8925 years
         return lowerSixBytesHex(startTime) + BaseEncoding.base16().lowerCase().encode(bytes);
+    }
+
+    @VisibleForTesting
+    static String buildSpanId() {
+        byte[] bytes = new byte[8];
+        random.nextBytes(bytes);
+        return BaseEncoding.base16().lowerCase().encode(bytes);
     }
 
     @VisibleForTesting

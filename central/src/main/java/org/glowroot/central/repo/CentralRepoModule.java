@@ -61,6 +61,7 @@ public class CentralRepoModule {
     private final FullQueryTextDao fullQueryTextDao;
     private final AggregateDao aggregateDao;
     private final TraceDao traceDao;
+    private final SpanDao spanDao;
     private final GaugeValueDao gaugeValueDao;
     private final SyntheticResultDao syntheticResultDao;
     private final V09AgentRollupDao v09AgentRollupDao;
@@ -163,6 +164,7 @@ public class CentralRepoModule {
             traceDao = new TraceDaoWithV09Support(agentRollupIdsWithV09Data, v09LastCaptureTime,
                     v09FqtLastExpirationTime, clock, traceDaoImpl);
         }
+        spanDao = new SpanDao(session, configRepository);
         // need to create V09AgentRollupDao as long as new v09 agents may connect in the future
         v09AgentRollupDao = new V09AgentRollupDao(session, clusterManager);
     }
@@ -225,6 +227,10 @@ public class CentralRepoModule {
 
     public TraceDao getTraceDao() {
         return traceDao;
+    }
+
+    public SpanDao getSpanDao() {
+        return spanDao;
     }
 
     public GaugeValueDao getGaugeValueDao() {

@@ -63,6 +63,7 @@ public class SimpleRepoModule {
     private final AggregateDao aggregateDao;
     private final TraceAttributeNameDao traceAttributeNameDao;
     private final TraceDao traceDao;
+    private final SpanDao spanDao;
     private final GaugeValueDao gaugeValueDao;
     private final IncidentDao incidentDao;
     private final ConfigRepositoryImpl configRepository;
@@ -109,6 +110,7 @@ public class SimpleRepoModule {
         traceAttributeNameDao = new TraceAttributeNameDao(dataSource);
         traceDao = new TraceDao(dataSource, traceCappedDatabase, transactionTypeDao,
                 fullQueryTextDao, traceAttributeNameDao);
+        spanDao = new SpanDao(dataSource, clock);
         GaugeIdDao gaugeIdDao = new GaugeIdDao(dataSource);
         GaugeNameDao gaugeNameDao = new GaugeNameDao(dataSource);
         gaugeValueDao = new GaugeValueDao(dataSource, gaugeIdDao, gaugeNameDao, clock);
@@ -174,6 +176,10 @@ public class SimpleRepoModule {
 
     public TraceDao getTraceDao() {
         return traceDao;
+    }
+
+    public SpanDao getSpanDao() {
+        return spanDao;
     }
 
     public GaugeValueDao getGaugeValueDao() {

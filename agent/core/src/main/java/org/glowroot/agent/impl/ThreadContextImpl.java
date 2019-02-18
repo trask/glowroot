@@ -542,14 +542,22 @@ public class ThreadContextImpl implements ThreadContextPlus {
     @Override
     public TraceEntry startTransaction(String transactionType, String transactionName,
             MessageSupplier messageSupplier, TimerName timerName) {
-        return startTransaction(transactionType, transactionName, messageSupplier, timerName,
-                AlreadyInTransactionBehavior.CAPTURE_TRACE_ENTRY);
+        return startTransaction(transactionType, transactionName, null, null, messageSupplier,
+                timerName, AlreadyInTransactionBehavior.CAPTURE_TRACE_ENTRY);
     }
 
     @Override
     public TraceEntry startTransaction(String transactionType, String transactionName,
             MessageSupplier messageSupplier, TimerName timerName,
             AlreadyInTransactionBehavior alreadyInTransactionBehavior) {
+        return startTransaction(transactionType, transactionName, null, null, messageSupplier,
+                timerName, alreadyInTransactionBehavior);
+    }
+
+    @Override
+    public TraceEntry startTransaction(String transactionType, String transactionName,
+            @Nullable String traceId, @Nullable String spanId, MessageSupplier messageSupplier,
+            TimerName timerName, AlreadyInTransactionBehavior alreadyInTransactionBehavior) {
         if (transactionType == null) {
             logger.error("startTransaction(): argument 'transactionType' must be non-null");
             return NopTransactionService.TRACE_ENTRY;
@@ -571,8 +579,8 @@ public class ThreadContextImpl implements ThreadContextPlus {
         if (transaction.isOuter()
                 || alreadyInTransactionBehavior == AlreadyInTransactionBehavior.CAPTURE_NEW_TRANSACTION) {
             TraceEntryImpl traceEntry = transaction.startInnerTransaction(transactionType,
-                    transactionName, messageSupplier, timerName, threadContextHolder,
-                    currentNestingGroupId, currentSuppressionKeyId);
+                    transactionName, traceId, spanId, messageSupplier, timerName,
+                    threadContextHolder, currentNestingGroupId, currentSuppressionKeyId);
             innerTransactionThreadContext =
                     (ThreadContextImpl) checkNotNull(threadContextHolder.get());
             return traceEntry;

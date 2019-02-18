@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage.LogEvent;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.SpanMessage.Span;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -75,6 +76,17 @@ public class CollectorProxy implements Collector {
             }
         } else {
             instance.collectTrace(traceReader);
+        }
+    }
+
+    @Override
+    public void collectSpans(List<Span> spans) throws Exception {
+        if (instance == null) {
+            if (latch.await(2, MINUTES)) {
+                checkNotNull(instance).collectSpans(spans);
+            }
+        } else {
+            instance.collectSpans(spans);
         }
     }
 

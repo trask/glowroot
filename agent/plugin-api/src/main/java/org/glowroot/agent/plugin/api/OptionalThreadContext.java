@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 package org.glowroot.agent.plugin.api;
+
+import org.glowroot.agent.plugin.api.checker.Nullable;
 
 public interface OptionalThreadContext extends ThreadContext {
 
@@ -32,6 +34,10 @@ public interface OptionalThreadContext extends ThreadContext {
     TraceEntry startTransaction(String transactionType, String transactionName,
             MessageSupplier messageSupplier, TimerName timerName,
             AlreadyInTransactionBehavior alreadyInTransactionBehavior);
+
+    TraceEntry startTransaction(String transactionType, String transactionName,
+            @Nullable String traceId, @Nullable String spanId, MessageSupplier messageSupplier,
+            TimerName timerName, AlreadyInTransactionBehavior alreadyInTransactionBehavior);
 
     enum AlreadyInTransactionBehavior {
         CAPTURE_TRACE_ENTRY, CAPTURE_NEW_TRANSACTION

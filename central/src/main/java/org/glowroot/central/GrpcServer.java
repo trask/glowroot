@@ -47,6 +47,7 @@ import org.glowroot.central.repo.AggregateDao;
 import org.glowroot.central.repo.EnvironmentDao;
 import org.glowroot.central.repo.GaugeValueDao;
 import org.glowroot.central.repo.HeartbeatDao;
+import org.glowroot.central.repo.SpanDao;
 import org.glowroot.central.repo.TraceDao;
 import org.glowroot.central.repo.V09AgentRollupDao;
 import org.glowroot.central.util.ClusterManager;
@@ -78,16 +79,17 @@ class GrpcServer {
             File confDir, AgentDisplayDao agentDisplayDao, AgentConfigDao agentConfigDao,
             ActiveAgentDao activeAgentDao, EnvironmentDao environmentDao, HeartbeatDao heartbeatDao,
             AggregateDao aggregateDao, GaugeValueDao gaugeValueDao, TraceDao traceDao,
-            V09AgentRollupDao v09AgentRollupDao, CentralAlertingService centralAlertingService,
-            ClusterManager clusterManager, Clock clock, String version) throws IOException {
+            SpanDao spanDao, V09AgentRollupDao v09AgentRollupDao,
+            CentralAlertingService centralAlertingService, ClusterManager clusterManager,
+            Clock clock, String version) throws IOException {
 
         GrpcCommon grpcCommon = new GrpcCommon(v09AgentRollupDao);
         downstreamService = new DownstreamServiceImpl(grpcCommon, clusterManager);
 
         CollectorServiceImpl collectorService = new CollectorServiceImpl(agentDisplayDao,
                 agentConfigDao, activeAgentDao, environmentDao, heartbeatDao, aggregateDao,
-                gaugeValueDao, traceDao, v09AgentRollupDao, grpcCommon, centralAlertingService,
-                clock, version);
+                gaugeValueDao, traceDao, spanDao, v09AgentRollupDao, grpcCommon,
+                centralAlertingService, clock, version);
 
         if (httpPort == null) {
             httpServer = null;

@@ -27,7 +27,9 @@ import javax.servlet.http.HttpSession;
 
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.AuxThreadContext;
+import org.glowroot.agent.plugin.api.EUM;
 import org.glowroot.agent.plugin.api.OptionalThreadContext;
+import org.glowroot.agent.plugin.api.OptionalThreadContext.AlreadyInTransactionBehavior;
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.ThreadContext.Priority;
 import org.glowroot.agent.plugin.api.TimerName;
@@ -56,6 +58,19 @@ import org.glowroot.agent.plugin.servlet._.Strings;
 
 // this plugin is careful not to rely on request or session objects being thread-safe
 public class ServletAspect {
+
+    public static boolean maybeHandleEumPingBack(@Nullable Object req) {
+        if (!(req instanceof HttpServletRequest)) {
+            return false;
+        }
+        HttpServletRequest request = (HttpServletRequest) req;
+        String requestQueryString = request.getQueryString();
+        if (requestQueryString != null && requestQueryString.startsWith("--glowroot-eum&")) {
+            EUM.captureEumSpanFromQueryString(requestQueryString);
+            return true;
+        }
+        return false;
+    }
 
     @Pointcut(className = "javax.servlet.Servlet", methodName = "service",
             methodParameterTypes = {"javax.servlet.ServletRequest",
@@ -188,8 +203,17 @@ public class ServletAspect {
             } else {
                 transactionType = "Web";
             }
-            TraceEntry traceEntry = context.startTransaction(transactionType, requestUri,
-                    messageSupplier, timerName);
+            TraceEntry traceEntry;
+            String traceId = request.getHeader("Glowroot-Trace-Id");
+            if (traceId == null) {
+                traceEntry = context.startTransaction(transactionType, requestUri, messageSupplier,
+                        timerName);
+            } else {
+                String spanId = request.getHeader("Glowroot-Span-Id");
+                traceEntry = context.startTransaction(transactionType, requestUri, traceId, spanId,
+                        messageSupplier, timerName,
+                        AlreadyInTransactionBehavior.CAPTURE_TRACE_ENTRY);
+            }
             if (setWithCoreMaxPriority) {
                 context.setTransactionType(transactionType, Priority.CORE_MAX);
             }

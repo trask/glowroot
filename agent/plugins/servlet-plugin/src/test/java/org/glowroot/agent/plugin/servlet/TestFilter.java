@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,14 @@ class TestFilter implements Filter, AppUnderTest {
 
     @Override
     public void executeApp() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/testfilter");
+        MockHttpServletRequest request;
+        if (getClass().getName().endsWith("EUM")) {
+            String queryString = "--glowroot-eum&trace-id=1234567890abcdef1234567890abcdef";
+            request = new MockCatalinaHttpServletRequest("GET", "/testfilter?" + queryString);
+            request.setQueryString(queryString);
+        } else {
+            request = new MockCatalinaHttpServletRequest("GET", "/testfilter");
+        }
         MockHttpServletResponse response = new MockHttpServletResponse();
         doFilter(request, response, null);
     }

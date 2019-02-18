@@ -25,6 +25,7 @@ import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage.LogEvent;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.SpanMessage.Span;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
@@ -38,6 +39,8 @@ public interface Collector {
     void collectGaugeValues(List<GaugeValue> gaugeValues) throws Exception;
 
     void collectTrace(TraceReader traceReader) throws Exception;
+
+    void collectSpans(List<Span> spans) throws Exception;
 
     void log(LogEvent logEvent) throws Exception;
 

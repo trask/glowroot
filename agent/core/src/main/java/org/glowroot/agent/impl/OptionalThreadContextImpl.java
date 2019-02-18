@@ -74,14 +74,22 @@ class OptionalThreadContextImpl implements ThreadContextPlus {
     @Override
     public TraceEntry startTransaction(String transactionType, String transactionName,
             MessageSupplier messageSupplier, TimerName timerName) {
-        return startTransaction(transactionType, transactionName, messageSupplier, timerName,
-                AlreadyInTransactionBehavior.CAPTURE_TRACE_ENTRY);
+        return startTransaction(transactionType, transactionName, null, null, messageSupplier,
+                timerName, AlreadyInTransactionBehavior.CAPTURE_TRACE_ENTRY);
     }
 
     @Override
     public TraceEntry startTransaction(String transactionType, String transactionName,
             MessageSupplier messageSupplier, TimerName timerName,
             AlreadyInTransactionBehavior alreadyInTransactionBehavior) {
+        return startTransaction(transactionType, transactionName, null, null, messageSupplier,
+                timerName, alreadyInTransactionBehavior);
+    }
+
+    @Override
+    public TraceEntry startTransaction(String transactionType, String transactionName,
+            @Nullable String traceId, @Nullable String spanId, MessageSupplier messageSupplier,
+            TimerName timerName, AlreadyInTransactionBehavior alreadyInTransactionBehavior) {
         if (transactionType == null) {
             logger.error("startTransaction(): argument 'transactionType' must be non-null");
             return NopTransactionService.TRACE_ENTRY;
@@ -100,8 +108,8 @@ class OptionalThreadContextImpl implements ThreadContextPlus {
         }
         if (threadContext == null) {
             TraceEntry traceEntry = transactionService.startTransaction(transactionType,
-                    transactionName, messageSupplier, timerName, threadContextHolder,
-                    rootNestingGroupId, rootSuppressionKeyId);
+                    transactionName, traceId, spanId, messageSupplier, timerName,
+                    threadContextHolder, rootNestingGroupId, rootSuppressionKeyId);
             threadContext = checkNotNull(threadContextHolder.get());
             return traceEntry;
         } else {
