@@ -269,6 +269,7 @@ message ReweaveResponse {
 
 message HeaderRequest {
   string trace_id = 1;
+  string span_id = 2;
 }
 
 message HeaderResponse {
@@ -277,10 +278,12 @@ message HeaderResponse {
 
 message EntriesRequest {
   string trace_id = 1;
+  string span_id = 2;
 }
 
 message QueriesRequest {
   string trace_id = 1;
+  string span_id = 2;
 }
 
 message EntriesResponse {
@@ -301,6 +304,7 @@ message QueriesResponse {
 
 message MainThreadProfileRequest {
   string trace_id = 1;
+  string span_id = 2;
 }
 
 message MainThreadProfileResponse {
@@ -309,6 +313,7 @@ message MainThreadProfileResponse {
 
 message AuxThreadProfileRequest {
   string trace_id = 1;
+  string span_id = 2;
 }
 
 message AuxThreadProfileResponse {
@@ -317,6 +322,7 @@ message AuxThreadProfileResponse {
 
 message FullTraceRequest {
   string trace_id = 1;
+  string span_id = 2;
 }
 
 message FullTraceResponse {
@@ -346,6 +352,7 @@ message ThreadDump {
     // trace id is only included if a trace will be stored for this transaction
     // (e.g. the transaction exceeds the slow threshold)
     string trace_id = 4;
+    string span_id = 8;
     repeated Thread thread = 5;
   }
 

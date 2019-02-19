@@ -36,9 +36,11 @@ import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.util.JavaVersion;
 import org.glowroot.common.config.AdvancedConfig;
 import org.glowroot.common.config.AlertConfig;
+import org.glowroot.common.config.EumConfig;
 import org.glowroot.common.config.GaugeConfig;
 import org.glowroot.common.config.ImmutableAdvancedConfig;
 import org.glowroot.common.config.ImmutableAlertConfig;
+import org.glowroot.common.config.ImmutableEumConfig;
 import org.glowroot.common.config.ImmutableGaugeConfig;
 import org.glowroot.common.config.ImmutableInstrumentationConfig;
 import org.glowroot.common.config.ImmutableJvmConfig;
@@ -71,6 +73,7 @@ public class ConfigService {
     private final Set<ConfigListener> pluginConfigListeners = Sets.newCopyOnWriteArraySet();
 
     private volatile TransactionConfig transactionConfig;
+    private volatile EumConfig eumConfig;
     private volatile JvmConfig jvmConfig;
     private volatile UiDefaultsConfig uiDefaultsConfig;
     private volatile AdvancedConfig advancedConfig;
@@ -107,6 +110,12 @@ public class ConfigService {
             this.transactionConfig = ImmutableTransactionConfig.builder().build();
         } else {
             this.transactionConfig = transactionConfig;
+        }
+        EumConfig eumConfig = configFile.getConfig("eum", ImmutableEumConfig.class);
+        if (eumConfig == null) {
+            this.eumConfig = ImmutableEumConfig.builder().build();
+        } else {
+            this.eumConfig = eumConfig;
         }
         JvmConfig jvmConfig = configFile.getConfig("jvm", ImmutableJvmConfig.class);
         if (jvmConfig == null) {
@@ -172,6 +181,10 @@ public class ConfigService {
         return transactionConfig;
     }
 
+    public EumConfig getEumConfig() {
+        return eumConfig;
+    }
+
     public JvmConfig getJvmConfig() {
         return jvmConfig;
     }
@@ -219,6 +232,7 @@ public class ConfigService {
         for (GaugeConfig gaugeConfig : gaugeConfigs) {
             builder.addGaugeConfig(gaugeConfig.toProto());
         }
+        builder.setEumConfig(eumConfig.toProto());
         builder.setJvmConfig(jvmConfig.toProto());
         for (SyntheticMonitorConfig syntheticMonitorConfig : syntheticMonitorConfigs) {
             builder.addSyntheticMonitorConfig(syntheticMonitorConfig.toProto());
@@ -249,6 +263,12 @@ public class ConfigService {
     public void updateTransactionConfig(TransactionConfig config) throws IOException {
         configFile.writeConfig("transactions", config);
         transactionConfig = config;
+        notifyConfigListeners();
+    }
+
+    public void updateEumConfig(EumConfig config) throws IOException {
+        configFile.writeConfig("eum", config);
+        eumConfig = config;
         notifyConfigListeners();
     }
 
@@ -316,6 +336,7 @@ public class ConfigService {
         configs.put("instrumentation", config.instrumentation());
         configFile.writeAllConfigs(configs);
         this.transactionConfig = config.transaction();
+        this.eumConfig = config.eum();
         this.jvmConfig = config.jvm();
         this.uiDefaultsConfig = config.uiDefaults();
         this.advancedConfig = config.advanced();
@@ -366,6 +387,7 @@ public class ConfigService {
         transactionConfig = ImmutableTransactionConfig.builder()
                 .slowThresholdMillis(0) // default for tests
                 .build();
+        eumConfig = ImmutableEumConfig.builder().build();
         jvmConfig = ImmutableJvmConfig.builder().build();
         uiDefaultsConfig = ImmutableUiDefaultsConfig.builder().build();
         advancedConfig = ImmutableAdvancedConfig.builder().build();
@@ -383,6 +405,7 @@ public class ConfigService {
     private void writeAll() throws IOException {
         Map<String, Object> configs = Maps.newHashMap();
         configs.put("transactions", transactionConfig);
+        configs.put("eum", eumConfig);
         configs.put("jvm", jvmConfig);
         configs.put("uiDefaults", uiDefaultsConfig);
         configs.put("advanced", advancedConfig);

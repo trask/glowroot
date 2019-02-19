@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 the original author or authors.
+ * Copyright 2014-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package org.glowroot.agent.impl;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.List;
@@ -30,12 +32,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.config.ConfigService;
+import org.glowroot.agent.plugin.api.config.EumConfigService;
 import org.glowroot.agent.plugin.api.internal.PluginService;
 import org.glowroot.agent.weaving.Beans;
 
@@ -47,8 +51,13 @@ public class PluginServiceImpl implements PluginService {
 
     private final LoadingCache<String, ConfigService> configServices;
 
+    private final EumConfigService eumConfigServices;
+
+    private volatile @MonotonicNonNull EumSpanCollector spanCollector;
+
     public PluginServiceImpl(TimerNameCache timerNameCache,
-            final ConfigServiceFactory configServiceFactory) {
+            final ConfigServiceFactory configServiceFactory,
+            org.glowroot.agent.config.ConfigService configService) {
         this.timerNameCache = timerNameCache;
         configServices = CacheBuilder.newBuilder()
                 .build(new CacheLoader<String, ConfigService>() {
@@ -57,6 +66,11 @@ public class PluginServiceImpl implements PluginService {
                         return configServiceFactory.create(pluginId);
                     }
                 });
+        eumConfigServices = EumConfigServiceImpl.create(configService);
+    }
+
+    public void setCollector(EumSpanCollector spanCollector) {
+        this.spanCollector = spanCollector;
     }
 
     @Override
@@ -72,6 +86,11 @@ public class PluginServiceImpl implements PluginService {
     @Override
     public ConfigService getConfigService(String pluginId) {
         return configServices.getUnchecked(pluginId);
+    }
+
+    @Override
+    public EumConfigService getEumConfigService() {
+        return eumConfigServices;
     }
 
     public interface ConfigServiceFactory {
@@ -101,6 +120,20 @@ public class PluginServiceImpl implements PluginService {
     @Override
     public Map<String, String> getBeanPropertiesAsText(Object obj) {
         return Beans2.propertiesAsText(obj);
+    }
+
+    @Override
+    public void captureEumSpanFromQueryString(String queryString) {
+        if (spanCollector != null) {
+            spanCollector.collectEumDataFromQueryString(queryString);
+        }
+    }
+
+    @Override
+    public void captureEumSpanFromPostBody(InputStream in, String charsetName) throws IOException {
+        if (spanCollector != null) {
+            spanCollector.collectEumDataFromPostBody(in, charsetName);
+        }
     }
 
     @VisibleForTesting

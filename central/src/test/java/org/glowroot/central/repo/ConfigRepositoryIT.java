@@ -54,6 +54,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification.EmailNotification;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.EumConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
@@ -135,6 +136,25 @@ public class ConfigRepositoryIT {
     }
 
     @Test
+    public void shouldUpdateEumConfig() throws Exception {
+        // given
+        String agentId = UUID.randomUUID().toString();
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
+        EumConfig config = configRepository.getEumConfig(agentId);
+        EumConfig updatedConfig = EumConfig.newBuilder()
+                .setEnabled(true)
+                .setReportingUrl("/here")
+                .build();
+
+        // when
+        configRepository.updateEumConfig(agentId, updatedConfig, Versions.getVersion(config));
+        config = configRepository.getEumConfig(agentId);
+
+        // then
+        assertThat(config).isEqualTo(updatedConfig);
+    }
+
+    @Test
     public void shouldUpdateJvmConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
@@ -147,8 +167,7 @@ public class ConfigRepositoryIT {
                 .build();
 
         // when
-        configRepository.updateJvmConfig(agentId, updatedConfig,
-                Versions.getVersion(config));
+        configRepository.updateJvmConfig(agentId, updatedConfig, Versions.getVersion(config));
         config = configRepository.getJvmConfig(agentId);
 
         // then

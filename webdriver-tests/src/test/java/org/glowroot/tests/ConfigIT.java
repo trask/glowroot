@@ -20,6 +20,7 @@ import org.openqa.selenium.WebElement;
 
 import org.glowroot.tests.config.AdvancedConfigPage;
 import org.glowroot.tests.config.ConfigSidebar;
+import org.glowroot.tests.config.EumConfigPage;
 import org.glowroot.tests.config.JvmConfigPage;
 import org.glowroot.tests.config.TransactionConfigPage;
 import org.glowroot.tests.config.UiDefaultsConfigPage;
@@ -63,6 +64,35 @@ public class ConfigIT extends WebDriverIT {
         assertThat(page.getSlowThresholdTextField().getAttribute("value")).isEqualTo("2345");
         assertThat(page.getProfilingIntervalTextField().getAttribute("value")).isEqualTo("3456");
         assertThat(page.getCaptureThreadStatsCheckBoxValue()).isFalse();
+    }
+
+    @Test
+    public void shouldUpdateEumConfig() throws Exception {
+        // given
+        App app = app();
+        GlobalNavbar globalNavbar = globalNavbar();
+        ConfigSidebar configSidebar = new ConfigSidebar(driver);
+        EumConfigPage page = new EumConfigPage(driver);
+
+        app.open();
+        globalNavbar.clickConfigLink();
+        configSidebar.clickEumLink();
+
+        // when
+        page.clickEnabledCheckBox();
+        page.getReportingUrlTextField().clear();
+        page.getReportingUrlTextField().sendKeys("/abc/--glowroot-eum");
+        page.clickSaveButton();
+        // wait for save to finish
+        SECONDS.sleep(1);
+
+        // then
+        app.open();
+        globalNavbar.clickConfigLink();
+        configSidebar.clickEumLink();
+        assertThat(page.getEnabledCheckBoxValue()).isTrue();
+        assertThat(page.getReportingUrlTextField().getAttribute("value"))
+                .isEqualTo("/abc/--glowroot-eum");
     }
 
     @Test

@@ -79,6 +79,7 @@ public class TraceDao implements TraceRepository {
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
     private static final ImmutableList<Column> traceColumns = ImmutableList.<Column>of(
+            // ideally this should be two columns, trace_id and span_id
             ImmutableColumn.of("id", ColumnType.VARCHAR),
             ImmutableColumn.of("partial", ColumnType.BOOLEAN),
             ImmutableColumn.of("slow", ColumnType.BOOLEAN),
@@ -99,11 +100,12 @@ public class TraceDao implements TraceRepository {
             ImmutableColumn.of("aux_thread_profile_capped_id", ColumnType.BIGINT));
 
     // capture_time column is used for expiring records without using FK with on delete cascade
-    private static final ImmutableList<Column> traceAttributeColumns =
-            ImmutableList.<Column>of(ImmutableColumn.of("trace_id", ColumnType.VARCHAR),
-                    ImmutableColumn.of("name", ColumnType.VARCHAR),
-                    ImmutableColumn.of("value", ColumnType.VARCHAR),
-                    ImmutableColumn.of("capture_time", ColumnType.BIGINT));
+    private static final ImmutableList<Column> traceAttributeColumns = ImmutableList.<Column>of(
+            // ideally this should be two columns, trace_id and span_id
+            ImmutableColumn.of("trace_id", ColumnType.VARCHAR),
+            ImmutableColumn.of("name", ColumnType.VARCHAR),
+            ImmutableColumn.of("value", ColumnType.VARCHAR),
+            ImmutableColumn.of("capture_time", ColumnType.BIGINT));
 
     private static final ImmutableList<Index> traceIndexes = ImmutableList.<Index>of(
             // duration_nanos, id and error columns are included so database can return the
@@ -173,7 +175,8 @@ public class TraceDao implements TraceRepository {
     public void store(TraceReader traceReader) throws Exception {
         final long captureTime = traceReader.captureTime();
         final Trace.Builder builder = Trace.newBuilder()
-                .setId(traceReader.traceId())
+                .setTraceId(traceReader.traceId())
+                .setSpanId(traceReader.spanId())
                 .setUpdate(traceReader.update());
 
         TraceVisitorImpl traceVisitor = new TraceVisitorImpl(captureTime, builder);
@@ -184,7 +187,8 @@ public class TraceDao implements TraceRepository {
         dataSource.update(new TraceMerge(trace));
         if (header.getAttributeCount() > 0) {
             if (trace.getUpdate()) {
-                dataSource.update("delete from trace_attribute where trace_id = ?", trace.getId());
+                dataSource.update("delete from trace_attribute where trace_id = ?",
+                        concat(trace.getTraceId(), trace.getSpanId()));
             }
             dataSource.batchUpdate(new TraceAttributeInsert(trace));
             for (Trace.Attribute attribute : header.getAttributeList()) {
@@ -267,26 +271,30 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public @Nullable HeaderPlus readHeaderPlus(String agentId, String traceId) throws Exception {
-        return dataSource.queryAtMostOne(new TraceHeaderQuery(traceId));
+    public @Nullable HeaderPlus readHeaderPlus(String agentId, String traceId, String spanId)
+            throws Exception {
+        return dataSource.queryAtMostOne(new TraceHeaderQuery(traceId, spanId));
     }
 
     @Override
-    public @Nullable Entries readEntries(String agentId, String traceId) throws Exception {
-        return dataSource.query(new EntriesQuery(traceId));
+    public @Nullable Entries readEntries(String agentId, String traceId, String spanId)
+            throws Exception {
+        return dataSource.query(new EntriesQuery(traceId, spanId));
     }
 
     @Override
-    public @Nullable Queries readQueries(String agentId, String traceId) throws Exception {
-        return dataSource.query(new QueriesQuery(traceId));
+    public @Nullable Queries readQueries(String agentId, String traceId, String spanId)
+            throws Exception {
+        return dataSource.query(new QueriesQuery(traceId, spanId));
     }
 
     // since this is only used by export, SharedQueryTexts are always returned with fullTrace
     // (never with truncatedText/truncatedEndText/fullTraceSha1)
     @Override
     public @Nullable EntriesAndQueries readEntriesAndQueriesForExport(String agentId,
-            String traceId) throws Exception {
-        EntriesAndQueries entriesAndQueries = dataSource.query(new EntriesAndQueriesQuery(traceId));
+            String traceId, String spanId) throws Exception {
+        EntriesAndQueries entriesAndQueries =
+                dataSource.query(new EntriesAndQueriesQuery(traceId, spanId));
         if (entriesAndQueries == null) {
             return null;
         }
@@ -298,10 +306,11 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public @Nullable Profile readMainThreadProfile(String agentId, String traceId)
+    public @Nullable Profile readMainThreadProfile(String agentId, String traceId, String spanId)
             throws Exception {
         Long cappedId = dataSource.queryForOptionalLong(
-                "select main_thread_profile_capped_id from trace where id = ?", traceId);
+                "select main_thread_profile_capped_id from trace where id = ?",
+                concat(traceId, spanId));
         if (cappedId == null) {
             // trace must have just expired while user was viewing it, or data source is closing
             return null;
@@ -310,9 +319,11 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public @Nullable Profile readAuxThreadProfile(String agentId, String traceId) throws Exception {
+    public @Nullable Profile readAuxThreadProfile(String agentId, String traceId, String spanId)
+            throws Exception {
         Long cappedId = dataSource.queryForOptionalLong(
-                "select aux_thread_profile_capped_id from trace where id = ?", traceId);
+                "select aux_thread_profile_capped_id from trace where id = ?",
+                concat(traceId, spanId));
         if (cappedId == null) {
             // trace must have just expired while user was viewing it, or data source is closing
             return null;
@@ -358,6 +369,14 @@ public class TraceDao implements TraceRepository {
             }
         }
         return sharedQueryTextsForExport;
+    }
+
+    private static String concat(String traceId, String spanId) {
+        if (spanId.isEmpty()) {
+            return traceId;
+        } else {
+            return traceId + ":" + spanId;
+        }
     }
 
     private static void appendQuery(StringBuilder sql, TraceQuery query) {
@@ -464,6 +483,7 @@ public class TraceDao implements TraceRepository {
     private class TraceMerge implements JdbcUpdate {
 
         private final String traceId;
+        private final String spanId;
         private final Trace.Header header;
         private final @Nullable Long entriesCappedId;
         private final @Nullable Long queriesCappedId;
@@ -472,7 +492,8 @@ public class TraceDao implements TraceRepository {
         private final @Nullable Long auxThreadProfileId;
 
         private TraceMerge(Trace trace) throws IOException {
-            this.traceId = trace.getId();
+            this.traceId = trace.getTraceId();
+            this.spanId = trace.getSpanId();
             this.header = trace.getHeader();
 
             List<Trace.Entry> entries = trace.getEntryList();
@@ -524,7 +545,7 @@ public class TraceDao implements TraceRepository {
         @Override
         public void bind(PreparedStatement preparedStatement) throws SQLException {
             int i = 1;
-            preparedStatement.setString(i++, traceId);
+            preparedStatement.setString(i++, concat(traceId, spanId));
             preparedStatement.setBoolean(i++, header.getPartial());
             preparedStatement.setBoolean(i++, header.getSlow());
             preparedStatement.setBoolean(i++, header.hasError());
@@ -577,7 +598,7 @@ public class TraceDao implements TraceRepository {
             for (Trace.Attribute attribute : header.getAttributeList()) {
                 for (String value : attribute.getValueList()) {
                     int i = 1;
-                    preparedStatement.setString(i++, trace.getId());
+                    preparedStatement.setString(i++, concat(trace.getTraceId(), trace.getSpanId()));
                     preparedStatement.setString(i++, attribute.getName());
                     preparedStatement.setString(i++, value);
                     preparedStatement.setLong(i++, header.getCaptureTime());
@@ -612,10 +633,21 @@ public class TraceDao implements TraceRepository {
         @Override
         public TracePoint mapRow(ResultSet resultSet) throws SQLException {
             int i = 1;
-            String traceId = checkNotNull(resultSet.getString(i++));
+            String concatId = checkNotNull(resultSet.getString(i++));
+            String traceId;
+            String spanId;
+            int index = concatId.indexOf(':');
+            if (index == -1) {
+                traceId = concatId;
+                spanId = "";
+            } else {
+                traceId = concatId.substring(0, index);
+                spanId = concatId.substring(index + 1);
+            }
             return ImmutableTracePoint.builder()
                     .agentId(AGENT_ID)
                     .traceId(traceId)
+                    .spanId(spanId)
                     .captureTime(resultSet.getLong(i++))
                     .durationNanos(resultSet.getLong(i++))
                     .partial(resultSet.getBoolean(i++))
@@ -628,9 +660,11 @@ public class TraceDao implements TraceRepository {
     private class TraceHeaderQuery implements JdbcRowQuery<HeaderPlus> {
 
         private final String traceId;
+        private final String spanId;
 
-        private TraceHeaderQuery(String traceId) {
+        private TraceHeaderQuery(String traceId, String spanId) {
             this.traceId = traceId;
+            this.spanId = spanId;
         }
 
         @Override
@@ -642,7 +676,7 @@ public class TraceDao implements TraceRepository {
 
         @Override
         public void bind(PreparedStatement preparedStatement) throws SQLException {
-            preparedStatement.setString(1, traceId);
+            preparedStatement.setString(1, concat(traceId, spanId));
         }
 
         @Override
@@ -684,9 +718,11 @@ public class TraceDao implements TraceRepository {
     private class EntriesQuery implements JdbcQuery</*@Nullable*/ Entries> {
 
         private final String traceId;
+        private final String spanId;
 
-        private EntriesQuery(String traceId) {
+        private EntriesQuery(String traceId, String spanId) {
             this.traceId = traceId;
+            this.spanId = spanId;
         }
 
         @Override
@@ -696,7 +732,7 @@ public class TraceDao implements TraceRepository {
 
         @Override
         public void bind(PreparedStatement preparedStatement) throws SQLException {
-            preparedStatement.setString(1, traceId);
+            preparedStatement.setString(1, concat(traceId, spanId));
         }
 
         @Override
@@ -733,9 +769,11 @@ public class TraceDao implements TraceRepository {
     private class QueriesQuery implements JdbcQuery</*@Nullable*/ Queries> {
 
         private final String traceId;
+        private final String spanId;
 
-        private QueriesQuery(String traceId) {
+        private QueriesQuery(String traceId, String spanId) {
             this.traceId = traceId;
+            this.spanId = spanId;
         }
 
         @Override
@@ -745,7 +783,7 @@ public class TraceDao implements TraceRepository {
 
         @Override
         public void bind(PreparedStatement preparedStatement) throws SQLException {
-            preparedStatement.setString(1, traceId);
+            preparedStatement.setString(1, concat(traceId, spanId));
         }
 
         @Override
@@ -782,9 +820,11 @@ public class TraceDao implements TraceRepository {
     private class EntriesAndQueriesQuery implements JdbcQuery</*@Nullable*/ EntriesAndQueries> {
 
         private final String traceId;
+        private final String spanId;
 
-        private EntriesAndQueriesQuery(String traceId) {
+        private EntriesAndQueriesQuery(String traceId, String spanId) {
             this.traceId = traceId;
+            this.spanId = spanId;
         }
 
         @Override
@@ -795,7 +835,7 @@ public class TraceDao implements TraceRepository {
 
         @Override
         public void bind(PreparedStatement preparedStatement) throws SQLException {
-            preparedStatement.setString(1, traceId);
+            preparedStatement.setString(1, concat(traceId, spanId));
         }
 
         @Override

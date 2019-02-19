@@ -26,9 +26,11 @@ import org.immutables.value.Value;
 
 import org.glowroot.common.config.AdvancedConfig;
 import org.glowroot.common.config.AlertConfig;
+import org.glowroot.common.config.EumConfig;
 import org.glowroot.common.config.GaugeConfig;
 import org.glowroot.common.config.ImmutableAdvancedConfig;
 import org.glowroot.common.config.ImmutableAlertConfig;
+import org.glowroot.common.config.ImmutableEumConfig;
 import org.glowroot.common.config.ImmutableGaugeConfig;
 import org.glowroot.common.config.ImmutableInstrumentationConfig;
 import org.glowroot.common.config.ImmutableJvmConfig;
@@ -51,6 +53,11 @@ abstract class AllConfigDto {
     @Value.Default
     ImmutableTransactionConfig transactions() {
         return ImmutableTransactionConfig.builder().build();
+    }
+
+    @Value.Default
+    ImmutableEumConfig eum() {
+        return ImmutableEumConfig.builder().build();
     }
 
     @Value.Default
@@ -88,6 +95,7 @@ abstract class AllConfigDto {
     AgentConfig toProto() {
         AgentConfig.Builder builder = AgentConfig.newBuilder()
                 .setTransactionConfig(transactions().toProto())
+                .setEumConfig(eum().toProto())
                 .setJvmConfig(jvm().toProto())
                 .setUiDefaultsConfig(uiDefaults().toProto())
                 .setAdvancedConfig(advanced().toProto());
@@ -112,6 +120,7 @@ abstract class AllConfigDto {
     static AllConfigDto create(AgentConfig config) {
         ImmutableAllConfigDto.Builder builder = ImmutableAllConfigDto.builder()
                 .transactions(TransactionConfig.create(config.getTransactionConfig()))
+                .eum(EumConfig.create(config.getEumConfig()))
                 .jvm(JvmConfig.create(config.getJvmConfig()))
                 .uiDefaults(UiDefaultsConfig.create(config.getUiDefaultsConfig()))
                 .advanced(AdvancedConfig.create(config.getAdvancedConfig()));

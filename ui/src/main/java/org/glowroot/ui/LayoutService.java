@@ -374,6 +374,8 @@ class LayoutService {
                                         "agent:config:edit:general") && !configReadOnly)
                                 .transaction(authentication.isPermittedForAgentRollup(agentRollupId,
                                         "agent:config:edit:transaction") && !configReadOnly)
+                                .eum(authentication.isPermittedForAgentRollup(agentRollupId,
+                                        "agent:config:edit:eum") && !configReadOnly)
                                 .gauges(authentication.isPermittedForAgentRollup(agentRollupId,
                                         "agent:config:edit:gauges") && !configReadOnly)
                                 .jvm(authentication.isPermittedForAgentRollup(agentRollupId,
@@ -567,6 +569,7 @@ class LayoutService {
     interface EditConfigPermissions {
         boolean general();
         boolean transaction();
+        boolean eum();
         boolean gauges();
         boolean jvm();
         boolean syntheticMonitors();

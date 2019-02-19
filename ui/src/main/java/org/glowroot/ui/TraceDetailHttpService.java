@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,16 +57,18 @@ class TraceDetailHttpService implements HttpService {
         List<String> traceIds = request.getParameters("trace-id");
         checkState(!traceIds.isEmpty(), "Missing trace id in query string: %s", request.getUri());
         String traceId = traceIds.get(0);
+        List<String> spanIds = request.getParameters("span-id");
+        String spanId = spanIds.isEmpty() ? "" : spanIds.get(0);
         // check-live-traces is an optimization so the central collector only has to check with
         // remote agents when necessary
         List<String> checkLiveTracesParams = request.getParameters("check-live-traces");
         boolean checkLiveTraces = !checkLiveTracesParams.isEmpty()
                 && Boolean.parseBoolean(checkLiveTracesParams.get(0));
-        logger.debug("handleRequest(): traceComponent={}, agentId={}, traceId={},"
-                + " checkLiveTraces={}", traceComponent, agentId, traceId, checkLiveTraces);
+        logger.debug("handleRequest(): traceComponent={}, agentId={}, traceId={}, spanId={},"
+                + " checkLiveTraces={}", traceComponent, agentId, traceId, spanId, checkLiveTraces);
 
         ChunkSource detail =
-                getDetailChunkSource(traceComponent, agentId, traceId, checkLiveTraces);
+                getDetailChunkSource(traceComponent, agentId, traceId, spanId, checkLiveTraces);
         if (detail == null) {
             return new CommonResponse(NOT_FOUND);
         }
@@ -74,10 +76,10 @@ class TraceDetailHttpService implements HttpService {
     }
 
     private @Nullable ChunkSource getDetailChunkSource(String traceComponent, String agentId,
-            String traceId, boolean checkLiveTraces) throws Exception {
+            String traceId, String spanId, boolean checkLiveTraces) throws Exception {
         if (traceComponent.equals("entries")) {
             String entriesJson =
-                    traceCommonService.getEntriesJson(agentId, traceId, checkLiveTraces);
+                    traceCommonService.getEntriesJson(agentId, traceId, spanId, checkLiveTraces);
             if (entriesJson == null) {
                 // this includes trace was found but the trace had no entries
                 // caller should check trace.entry_count
@@ -87,7 +89,7 @@ class TraceDetailHttpService implements HttpService {
         }
         if (traceComponent.equals("queries")) {
             String queriesJson =
-                    traceCommonService.getQueriesJson(agentId, traceId, checkLiveTraces);
+                    traceCommonService.getQueriesJson(agentId, traceId, spanId, checkLiveTraces);
             if (queriesJson == null) {
                 // this includes trace was found but the trace had no queries
                 // caller should check trace.query_count
@@ -96,16 +98,16 @@ class TraceDetailHttpService implements HttpService {
             return ChunkSource.wrap(queriesJson);
         }
         if (traceComponent.equals("main-thread-profile")) {
-            String profileJson =
-                    traceCommonService.getMainThreadProfileJson(agentId, traceId, checkLiveTraces);
+            String profileJson = traceCommonService.getMainThreadProfileJson(agentId, traceId,
+                    spanId, checkLiveTraces);
             if (profileJson == null) {
                 return null;
             }
             return ChunkSource.wrap(profileJson);
         }
         if (traceComponent.equals("aux-thread-profile")) {
-            String profileJson =
-                    traceCommonService.getAuxThreadProfileJson(agentId, traceId, checkLiveTraces);
+            String profileJson = traceCommonService.getAuxThreadProfileJson(agentId, traceId,
+                    spanId, checkLiveTraces);
             if (profileJson == null) {
                 return null;
             }

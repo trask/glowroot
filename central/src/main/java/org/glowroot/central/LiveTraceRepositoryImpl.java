@@ -35,33 +35,39 @@ class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public Trace. /*@Nullable*/ Header getHeader(String agentId, String traceId) throws Exception {
-        return downstreamService.getHeader(agentId, traceId);
+    public Trace. /*@Nullable*/ Header getHeader(String agentId, String traceId, String spanId)
+            throws Exception {
+        return downstreamService.getHeader(agentId, traceId, spanId);
     }
 
     @Override
-    public @Nullable Entries getEntries(String agentId, String traceId) throws Exception {
-        return downstreamService.getEntries(agentId, traceId);
+    public @Nullable Entries getEntries(String agentId, String traceId, String spanId)
+            throws Exception {
+        return downstreamService.getEntries(agentId, traceId, spanId);
     }
 
     @Override
-    public @Nullable Queries getQueries(String agentId, String traceId) throws Exception {
-        return downstreamService.getQueries(agentId, traceId);
+    public @Nullable Queries getQueries(String agentId, String traceId, String spanId)
+            throws Exception {
+        return downstreamService.getQueries(agentId, traceId, spanId);
     }
 
     @Override
-    public @Nullable Profile getMainThreadProfile(String agentId, String traceId) throws Exception {
-        return downstreamService.getMainThreadProfile(agentId, traceId);
+    public @Nullable Profile getMainThreadProfile(String agentId, String traceId, String spanId)
+            throws Exception {
+        return downstreamService.getMainThreadProfile(agentId, traceId, spanId);
     }
 
     @Override
-    public @Nullable Profile getAuxThreadProfile(String agentId, String traceId) throws Exception {
-        return downstreamService.getAuxThreadProfile(agentId, traceId);
+    public @Nullable Profile getAuxThreadProfile(String agentId, String traceId, String spanId)
+            throws Exception {
+        return downstreamService.getAuxThreadProfile(agentId, traceId, spanId);
     }
 
     @Override
-    public @Nullable Trace getFullTrace(String agentId, String traceId) throws Exception {
-        return downstreamService.getFullTrace(agentId, traceId);
+    public @Nullable Trace getFullTrace(String agentId, String traceId, String spanId)
+            throws Exception {
+        return downstreamService.getFullTrace(agentId, traceId, spanId);
     }
 
     @Override

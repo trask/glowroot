@@ -44,6 +44,7 @@ import org.glowroot.common2.repo.util.LazySecretKey;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.EumConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GeneralConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
@@ -81,6 +82,8 @@ public interface ConfigRepository {
     GeneralConfig getGeneralConfig(String agentRollupId) throws Exception;
 
     TransactionConfig getTransactionConfig(String agentId) throws Exception;
+
+    EumConfig getEumConfig(String agentId) throws Exception;
 
     JvmConfig getJvmConfig(String agentId) throws Exception;
 
@@ -176,6 +179,8 @@ public interface ConfigRepository {
 
     void updateTransactionConfig(String agentId, TransactionConfig config, String priorVersion)
             throws Exception;
+
+    void updateEumConfig(String agentId, EumConfig config, String priorVersion) throws Exception;
 
     void insertGaugeConfig(String agentId, GaugeConfig config) throws Exception;
 

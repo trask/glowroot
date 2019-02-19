@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,6 +67,8 @@ class TraceExportHttpService implements HttpService {
         List<String> traceIds = request.getParameters("trace-id");
         checkState(!traceIds.isEmpty(), "Missing trace id in query string: %s", request.getUri());
         String traceId = traceIds.get(0);
+        List<String> spanIds = request.getParameters("span-id");
+        String spanId = spanIds.isEmpty() ? "" : spanIds.get(0);
         // check-live-traces is an optimization so the central collector only has to check with
         // remote agents when necessary
         List<String> checkLiveTracesParams = request.getParameters("check-live-traces");
@@ -74,7 +76,8 @@ class TraceExportHttpService implements HttpService {
                 && Boolean.parseBoolean(checkLiveTracesParams.get(0));
         logger.debug("handleRequest(): agentId={}, traceId={}, checkLiveTraces={}", agentId,
                 traceId, checkLiveTraces);
-        TraceExport traceExport = traceCommonService.getExport(agentId, traceId, checkLiveTraces);
+        TraceExport traceExport =
+                traceCommonService.getExport(agentId, traceId, spanId, checkLiveTraces);
         if (traceExport == null) {
             logger.warn("no trace found for id: {}", traceId);
             return new CommonResponse(NOT_FOUND);

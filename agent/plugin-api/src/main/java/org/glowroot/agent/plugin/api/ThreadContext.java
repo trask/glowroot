@@ -315,6 +315,8 @@ public interface ThreadContext {
 
     void trackResourceReleased(Object resource);
 
+    String getTraceId();
+
     @Nullable
     ServletRequestInfo getServletRequestInfo();
 

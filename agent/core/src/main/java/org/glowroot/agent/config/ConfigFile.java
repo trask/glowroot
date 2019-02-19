@@ -40,7 +40,7 @@ class ConfigFile {
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private static final List<String> keyOrder =
-            ImmutableList.of("transactions", "jvm", "uiDefaults", "advanced", "gauges",
+            ImmutableList.of("transactions", "eum", "jvm", "uiDefaults", "advanced", "gauges",
                     "syntheticMonitors", "alerts", "plugins", "instrumentation");
 
     private final File file;

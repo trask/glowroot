@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,12 +44,13 @@ public class TraceCreator {
     public static TraceReader createTraceReaderForPartial(Transaction transaction, long captureTime,
             long captureTick) {
         return new TraceReaderImpl(transaction, true, captureTime, captureTick,
-                transaction.getTraceId(), true, transaction.isPartiallyStored());
+                transaction.getTraceId(), transaction.getSpanId(), true,
+                transaction.isPartiallyStored());
     }
 
     public static TraceReader createTraceReaderForCompleted(Transaction transaction, boolean slow) {
         return new TraceReaderImpl(transaction, slow, transaction.getCaptureTime(),
-                transaction.getEndTick(), transaction.getTraceId(), false,
+                transaction.getEndTick(), transaction.getTraceId(), transaction.getSpanId(), false,
                 transaction.isPartiallyStored());
     }
 
@@ -170,18 +171,20 @@ public class TraceCreator {
         private final long captureTime;
         private final long captureTick;
         private final String traceId;
+        private final String spanId;
         private final boolean partial;
         private final boolean update;
 
         private Trace. /*@Nullable*/ Header header;
 
         private TraceReaderImpl(Transaction transaction, boolean slow, long captureTime,
-                long captureTick, String traceId, boolean partial, boolean update) {
+                long captureTick, String traceId, String spanId, boolean partial, boolean update) {
             this.transaction = transaction;
             this.slow = slow;
             this.captureTime = captureTime;
             this.captureTick = captureTick;
             this.traceId = traceId;
+            this.spanId = spanId;
             this.partial = partial;
             this.update = update;
         }
@@ -246,6 +249,11 @@ public class TraceCreator {
         @Override
         public String traceId() {
             return traceId;
+        }
+
+        @Override
+        public String spanId() {
+            return spanId;
         }
 
         @Override

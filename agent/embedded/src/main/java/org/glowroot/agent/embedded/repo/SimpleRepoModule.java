@@ -63,6 +63,7 @@ public class SimpleRepoModule {
     private final AggregateDao aggregateDao;
     private final TraceAttributeNameDao traceAttributeNameDao;
     private final TraceDao traceDao;
+    private final EumSpanDao eumSpanDao;
     private final GaugeValueDao gaugeValueDao;
     private final IncidentDao incidentDao;
     private final ConfigRepositoryImpl configRepository;
@@ -109,6 +110,7 @@ public class SimpleRepoModule {
         traceAttributeNameDao = new TraceAttributeNameDao(dataSource);
         traceDao = new TraceDao(dataSource, traceCappedDatabase, transactionTypeDao,
                 fullQueryTextDao, traceAttributeNameDao);
+        eumSpanDao = new EumSpanDao(dataSource);
         GaugeIdDao gaugeIdDao = new GaugeIdDao(dataSource);
         GaugeNameDao gaugeNameDao = new GaugeNameDao(dataSource);
         gaugeValueDao = new GaugeValueDao(dataSource, gaugeIdDao, gaugeNameDao, clock);
@@ -132,8 +134,8 @@ public class SimpleRepoModule {
             reaperRunnable = null;
         } else {
             reaperRunnable = new ReaperRunnable(configRepository, aggregateDao, traceDao,
-                    gaugeIdDao, gaugeNameDao, gaugeValueDao, transactionTypeDao, fullQueryTextDao,
-                    incidentDao, clock);
+                    eumSpanDao, gaugeIdDao, gaugeNameDao, gaugeValueDao, transactionTypeDao,
+                    fullQueryTextDao, incidentDao, clock);
             reaperRunnable.scheduleWithFixedDelay(backgroundExecutor, 0,
                     SNAPSHOT_REAPER_PERIOD_MINUTES, MINUTES);
         }
@@ -174,6 +176,10 @@ public class SimpleRepoModule {
 
     public TraceDao getTraceDao() {
         return traceDao;
+    }
+
+    public EumSpanDao getSpanDao() {
+        return eumSpanDao;
     }
 
     public GaugeValueDao getGaugeValueDao() {

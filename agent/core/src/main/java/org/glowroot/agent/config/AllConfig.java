@@ -25,6 +25,7 @@ import org.immutables.value.Value;
 
 import org.glowroot.common.config.AdvancedConfig;
 import org.glowroot.common.config.AlertConfig;
+import org.glowroot.common.config.EumConfig;
 import org.glowroot.common.config.GaugeConfig;
 import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.common.config.JvmConfig;
@@ -38,6 +39,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginPrope
 public abstract class AllConfig {
 
     abstract TransactionConfig transaction();
+    abstract EumConfig eum();
     abstract JvmConfig jvm();
     abstract UiDefaultsConfig uiDefaults();
     abstract AdvancedConfig advanced();
@@ -50,6 +52,7 @@ public abstract class AllConfig {
     public static AllConfig create(AgentConfig config, List<PluginDescriptor> pluginDescriptors) {
         ImmutableAllConfig.Builder builder = ImmutableAllConfig.builder()
                 .transaction(TransactionConfig.create(config.getTransactionConfig()))
+                .eum(EumConfig.create(config.getEumConfig()))
                 .jvm(JvmConfig.create(config.getJvmConfig()))
                 .uiDefaults(UiDefaultsConfig.create(config.getUiDefaultsConfig()))
                 .advanced(AdvancedConfig.create(config.getAdvancedConfig()));

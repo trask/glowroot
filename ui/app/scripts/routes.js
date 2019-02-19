@@ -482,6 +482,11 @@ glowroot.config([
       templateUrl: 'views/config/transaction.html',
       controller: 'ConfigTransactionCtrl'
     });
+    $stateProvider.state('config.eum', {
+      url: '/eum',
+      templateUrl: 'views/config/eum.html',
+      controller: 'ConfigEumCtrl'
+    });
     $stateProvider.state('config.gaugeList', {
       url: '/gauge-list',
       templateUrl: 'views/config/gauge-list.html',

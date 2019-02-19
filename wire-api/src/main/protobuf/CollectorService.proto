@@ -19,6 +19,8 @@ service CollectorService {
   // deprecated in 0.9.5, replaced by collectTraceStream
   rpc collectTrace(OldTraceMessage) returns (EmptyMessage);
   rpc collectTraceStream(stream TraceStreamMessage) returns (EmptyMessage);
+  rpc collectEumServerSpans(EumServerSpanMessage) returns (EmptyMessage);
+  rpc collectEumClientSpans(EumClientSpanMessage) returns (EmptyMessage);
   rpc log(LogMessage) returns (EmptyMessage);
 }
 
@@ -143,6 +145,7 @@ message TraceStreamMessage {
   message TraceStreamHeader {
     string agent_id = 1;
     string trace_id = 2;
+    string span_id = 5;
     bool update = 3;
     bool post_v09 = 4;
   }
@@ -154,6 +157,34 @@ message TraceStreamMessage {
   message TraceStreamCounts {
     int32 entry_count = 2;
     int32 shared_query_text_count = 1;
+  }
+}
+
+message EumServerSpanMessage {
+
+  string agent_id = 1;
+  repeated EumServerSpan eum_server_span = 2;
+
+  message EumServerSpan {
+    string trace_id = 1;
+    string span_id = 2;
+    int64 capture_time = 3;
+    int64 duration_nanos = 4;
+    string transaction_type = 5;
+    string transaction_name = 6;
+  }
+}
+
+message EumClientSpanMessage {
+
+  string agent_id = 1; // this is not necessarily the agent_id of the EumServerSpan (since postback
+                       // could arrive at another node) and is only used by collector for throttling
+  repeated EumClientSpan eum_client_span = 2;
+
+  message EumClientSpan {
+    string trace_id = 1;
+    string span_id = 2;
+    int64 duration_nanos = 3;
   }
 }
 

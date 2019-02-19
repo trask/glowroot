@@ -42,6 +42,7 @@ import org.glowroot.agent.config.PluginDescriptor;
 import org.glowroot.agent.impl.BytecodeServiceImpl;
 import org.glowroot.agent.impl.BytecodeServiceImpl.OnEnteringMain;
 import org.glowroot.agent.impl.ConfigServiceImpl;
+import org.glowroot.agent.impl.EumSpanCollector;
 import org.glowroot.agent.impl.GlowrootServiceHolder;
 import org.glowroot.agent.impl.GlowrootServiceImpl;
 import org.glowroot.agent.impl.PluginServiceImpl;
@@ -58,7 +59,6 @@ import org.glowroot.agent.live.LiveAggregateRepositoryImpl;
 import org.glowroot.agent.live.LiveJvmServiceImpl;
 import org.glowroot.agent.live.LiveTraceRepositoryImpl;
 import org.glowroot.agent.live.LiveWeavingServiceImpl;
-import org.glowroot.agent.plugin.api.internal.PluginService;
 import org.glowroot.agent.plugin.api.internal.PluginServiceHolder;
 import org.glowroot.agent.util.JavaVersion;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
@@ -103,11 +103,13 @@ public class AgentModule {
     private final Weaver weaver;
     private final Random random;
 
+    private final PluginServiceImpl pluginService;
     private final TransactionService transactionService;
     private final BytecodeServiceImpl bytecodeService;
 
     private volatile @MonotonicNonNull DeadlockedActiveWeavingRunnable deadlockedActiveWeavingRunnable;
     private volatile @MonotonicNonNull TraceCollector traceCollector;
+    private volatile @MonotonicNonNull EumSpanCollector eumSpanCollector;
     private volatile @MonotonicNonNull TransactionProcessor transactionProcessor;
 
     private volatile @MonotonicNonNull LazyPlatformMBeanServer lazyPlatformMBeanServer;
@@ -169,7 +171,7 @@ public class AgentModule {
                         pluginId);
             }
         };
-        PluginService pluginService = new PluginServiceImpl(timerNameCache, configServiceFactory);
+        pluginService = new PluginServiceImpl(timerNameCache, configServiceFactory, configService);
         PluginServiceHolder.set(pluginService);
         random = new Random();
         transactionService = TransactionService.create(transactionRegistry, configService,
@@ -252,6 +254,8 @@ public class AgentModule {
         OptionalService<ThreadAllocatedBytes> threadAllocatedBytes = ThreadAllocatedBytes.create();
         transactionService.setThreadAllocatedBytes(threadAllocatedBytes.getService());
         traceCollector = new TraceCollector(configService, collector, clock, ticker);
+        eumSpanCollector = new EumSpanCollector(collector);
+        pluginService.setCollector(eumSpanCollector);
         transactionProcessor = new TransactionProcessor(collector, traceCollector, configService,
                 ROLLUP_0_INTERVAL_MILLIS, clock);
         transactionService.setTransactionProcessor(transactionProcessor);
@@ -451,11 +455,14 @@ public class AgentModule {
         if (lazyPlatformMBeanServer != null) {
             lazyPlatformMBeanServer.close();
         }
-        if (traceCollector != null) {
-            traceCollector.close();
-        }
         if (transactionProcessor != null) {
             transactionProcessor.close();
+        }
+        if (eumSpanCollector != null) {
+            eumSpanCollector.close();
+        }
+        if (traceCollector != null) {
+            traceCollector.close();
         }
         if (deadlockedActiveWeavingRunnable != null) {
             deadlockedActiveWeavingRunnable.cancel();

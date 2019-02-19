@@ -98,8 +98,9 @@ public class TraceDaoTest {
         Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
 
         // when
+        TracePoint tracePoint = queryResult.records().get(0);
         Trace.Header header2 = traceDao
-                .readHeaderPlus(AGENT_ID, queryResult.records().get(0).traceId())
+                .readHeaderPlus(AGENT_ID, tracePoint.traceId(), tracePoint.spanId())
                 .header();
 
         // then
@@ -366,6 +367,7 @@ public class TraceDaoTest {
         // when
         traceDao.deleteBefore(100);
         // then
-        assertThat(traceDao.readHeaderPlus(AGENT_ID, traceReader.traceId())).isNull();
+        assertThat(traceDao.readHeaderPlus(AGENT_ID, traceReader.traceId(), traceReader.spanId()))
+                .isNull();
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,8 @@ import org.glowroot.wire.api.model.CollectorServiceGrpc.CollectorServiceImplBase
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateResponseMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateStreamMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.EumClientSpanMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.EumServerSpanMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueResponseMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage;
@@ -197,6 +199,7 @@ class GrpcServerWrapper {
             return new StreamObserver<TraceStreamMessage>() {
 
                 private @MonotonicNonNull String traceId;
+                private @MonotonicNonNull String spanId;
                 private List<Trace.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
                 private List<Trace.Entry> entries = Lists.newArrayList();
                 private List<Aggregate.Query> queries = Lists.newArrayList();
@@ -239,6 +242,7 @@ class GrpcServerWrapper {
                     switch (value.getMessageCase()) {
                         case STREAM_HEADER:
                             traceId = value.getStreamHeader().getTraceId();
+                            spanId = value.getStreamHeader().getSpanId();
                             break;
                         case SHARED_QUERY_TEXT:
                             sharedQueryTexts.add(Trace.SharedQueryText.newBuilder()
@@ -271,7 +275,8 @@ class GrpcServerWrapper {
                 private void onCompletedInternal(
                         final StreamObserver<EmptyMessage> responseObserver) {
                     Trace.Builder trace = Trace.newBuilder()
-                            .setId(checkNotNull(traceId))
+                            .setTraceId(checkNotNull(traceId))
+                            .setSpanId(checkNotNull(spanId))
                             .setHeader(checkNotNull(header))
                             .addAllSharedQueryText(sharedQueryTexts)
                             .addAllEntry(entries)
@@ -293,6 +298,20 @@ class GrpcServerWrapper {
                     responseObserver.onCompleted();
                 }
             };
+        }
+
+        @Override
+        public void collectEumServerSpans(EumServerSpanMessage request,
+                StreamObserver<EmptyMessage> responseObserver) {
+            responseObserver.onNext(EmptyMessage.getDefaultInstance());
+            responseObserver.onCompleted();
+        }
+
+        @Override
+        public void collectEumClientSpans(EumClientSpanMessage request,
+                StreamObserver<EmptyMessage> responseObserver) {
+            responseObserver.onNext(EmptyMessage.getDefaultInstance());
+            responseObserver.onCompleted();
         }
 
         @Override

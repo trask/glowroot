@@ -51,37 +51,37 @@ public interface TraceRepository {
 
     // null return value means trace not found
     @Nullable
-    HeaderPlus readHeaderPlus(String agentId, String traceId) throws Exception;
+    HeaderPlus readHeaderPlus(String agentId, String traceId, String spanId) throws Exception;
 
     // null return value means trace not found or was found but had no entries
     //
     // SharedQueryTexts are returned with either fullTrace or
     // truncatedText/truncatedEndText/fullTraceSha1
     @Nullable
-    Entries readEntries(String agentId, String traceId) throws Exception;
+    Entries readEntries(String agentId, String traceId, String spanId) throws Exception;
 
     // null return value means trace not found or was found but had no queries
     //
     // SharedQueryTexts are returned with either fullTrace or
     // truncatedText/truncatedEndText/fullTraceSha1
     @Nullable
-    Queries readQueries(String agentId, String traceId) throws Exception;
+    Queries readQueries(String agentId, String traceId, String spanId) throws Exception;
 
     // null return value means trace not found or was found but had no entries
     //
     // since this is only used by export, SharedQueryTexts are always returned with fullTrace
     // (never with truncatedText/truncatedEndText/fullTraceSha1)
     @Nullable
-    EntriesAndQueries readEntriesAndQueriesForExport(String agentId, String traceId)
+    EntriesAndQueries readEntriesAndQueriesForExport(String agentId, String traceId, String spanId)
             throws Exception;
 
     // null return value means trace not found or was found but had no main thread profile
     @Nullable
-    Profile readMainThreadProfile(String agentId, String traceId) throws Exception;
+    Profile readMainThreadProfile(String agentId, String traceId, String spanId) throws Exception;
 
     // null return value means trace not found or was found but had no aux thread profile
     @Nullable
-    Profile readAuxThreadProfile(String agentId, String traceId) throws Exception;
+    Profile readAuxThreadProfile(String agentId, String traceId, String spanId) throws Exception;
 
     @Value.Immutable
     interface TraceQuery {

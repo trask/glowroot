@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -119,7 +119,8 @@ class TraceCollector {
     public void collectTrace(Trace trace) {
         for (int i = 0; i < traces.size(); i++) {
             Trace loopTrace = traces.get(i);
-            if (loopTrace.getId().equals(trace.getId())) {
+            if (loopTrace.getTraceId().equals(trace.getTraceId())
+                    && loopTrace.getSpanId().equals(trace.getSpanId())) {
                 if (trace.getHeader().getDurationNanos() >= loopTrace.getHeader()
                         .getDurationNanos()) {
                     traces.set(i, trace);

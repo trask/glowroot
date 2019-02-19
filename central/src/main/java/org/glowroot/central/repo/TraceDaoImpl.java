@@ -599,8 +599,9 @@ public class TraceDaoImpl implements TraceDao {
 
     private void storeInternal(String agentId, List<String> agentRollupIds,
             List<String> agentRollupIdsForMeta, Trace trace) throws Exception {
-        String traceId = trace.getId();
-        Trace.Header priorHeader = trace.getUpdate() ? readHeader(agentId, traceId) : null;
+        String traceId = trace.getTraceId();
+        String spanId = trace.getSpanId();
+        Trace.Header priorHeader = trace.getUpdate() ? readHeader(agentId, traceId, spanId) : null;
         Trace.Header header = trace.getHeader();
         if (header.getPartial()) {
             header = header.toBuilder()
@@ -649,8 +650,8 @@ public class TraceDaoImpl implements TraceDao {
                 } else {
                     boundStatement = insertOverallSlowPoint.bind();
                 }
-                bindSlowPoint(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
-                        true, header.getPartial(), cassandra2x);
+                bindSlowPoint(boundStatement, agentRollupId, agentId, traceId, spanId, header,
+                        adjustedTTL, true, header.getPartial(), cassandra2x);
                 futures.add(session.writeAsync(boundStatement));
 
                 if (header.getPartial()) {
@@ -658,8 +659,8 @@ public class TraceDaoImpl implements TraceDao {
                 } else {
                     boundStatement = insertTransactionSlowPoint.bind();
                 }
-                bindSlowPoint(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
-                        false, header.getPartial(), cassandra2x);
+                bindSlowPoint(boundStatement, agentRollupId, agentId, traceId, spanId, header,
+                        adjustedTTL, false, header.getPartial(), cassandra2x);
                 futures.add(session.writeAsync(boundStatement));
 
                 if (header.getPartial()) {
@@ -667,8 +668,8 @@ public class TraceDaoImpl implements TraceDao {
                 } else {
                     boundStatement = insertOverallSlowCount.bind();
                 }
-                bindCount(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
-                        true, header.getPartial(), cassandra2x);
+                bindCount(boundStatement, agentRollupId, agentId, traceId, spanId, header,
+                        adjustedTTL, true, header.getPartial(), cassandra2x);
                 futures.add(session.writeAsync(boundStatement));
 
                 if (header.getPartial()) {
@@ -676,8 +677,8 @@ public class TraceDaoImpl implements TraceDao {
                 } else {
                     boundStatement = insertTransactionSlowCount.bind();
                 }
-                bindCount(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
-                        false, header.getPartial(), cassandra2x);
+                bindCount(boundStatement, agentRollupId, agentId, traceId, spanId, header,
+                        adjustedTTL, false, header.getPartial(), cassandra2x);
                 futures.add(session.writeAsync(boundStatement));
 
                 if (priorHeader != null && priorHeader.getCaptureTimePartialRollup() != header
@@ -687,23 +688,23 @@ public class TraceDaoImpl implements TraceDao {
                             priorHeader.getCaptureTimePartialRollup() != 0;
 
                     boundStatement = deleteOverallSlowPointPartial.bind();
-                    bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, true,
+                    bind(boundStatement, agentRollupId, agentId, traceId, spanId, priorHeader, true,
                             useCaptureTimePartialRollup);
                     futures.add(session.writeAsync(boundStatement));
 
                     boundStatement = deleteTransactionSlowPointPartial.bind();
-                    bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, false,
-                            useCaptureTimePartialRollup);
+                    bind(boundStatement, agentRollupId, agentId, traceId, spanId, priorHeader,
+                            false, useCaptureTimePartialRollup);
                     futures.add(session.writeAsync(boundStatement));
 
                     boundStatement = deleteOverallSlowCountPartial.bind();
-                    bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, true,
+                    bind(boundStatement, agentRollupId, agentId, traceId, spanId, priorHeader, true,
                             useCaptureTimePartialRollup);
                     futures.add(session.writeAsync(boundStatement));
 
                     boundStatement = deleteTransactionSlowCountPartial.bind();
-                    bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, false,
-                            useCaptureTimePartialRollup);
+                    bind(boundStatement, agentRollupId, agentId, traceId, spanId, priorHeader,
+                            false, useCaptureTimePartialRollup);
                     futures.add(session.writeAsync(boundStatement));
                 }
             }
@@ -711,33 +712,33 @@ public class TraceDaoImpl implements TraceDao {
             // and this avoids having to clean up partial trace data when trace is complete
             if (header.hasError() && !header.getPartial()) {
                 BoundStatement boundStatement = insertOverallErrorMessage.bind();
-                bindErrorMessage(boundStatement, agentRollupId, agentId, traceId, header,
+                bindErrorMessage(boundStatement, agentRollupId, agentId, traceId, spanId, header,
                         adjustedTTL, true);
                 futures.add(session.writeAsync(boundStatement));
 
                 boundStatement = insertTransactionErrorMessage.bind();
-                bindErrorMessage(boundStatement, agentRollupId, agentId, traceId, header,
+                bindErrorMessage(boundStatement, agentRollupId, agentId, traceId, spanId, header,
                         adjustedTTL, false);
                 futures.add(session.writeAsync(boundStatement));
 
                 boundStatement = insertOverallErrorPoint.bind();
-                bindErrorPoint(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
-                        true);
+                bindErrorPoint(boundStatement, agentRollupId, agentId, traceId, spanId, header,
+                        adjustedTTL, true);
                 futures.add(session.writeAsync(boundStatement));
 
                 boundStatement = insertTransactionErrorPoint.bind();
-                bindErrorPoint(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
-                        false);
+                bindErrorPoint(boundStatement, agentRollupId, agentId, traceId, spanId, header,
+                        adjustedTTL, false);
                 futures.add(session.writeAsync(boundStatement));
 
                 boundStatement = insertOverallErrorCount.bind();
-                bindCount(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
-                        true, false, cassandra2x);
+                bindCount(boundStatement, agentRollupId, agentId, traceId, spanId, header,
+                        adjustedTTL, true, false, cassandra2x);
                 futures.add(session.writeAsync(boundStatement));
 
                 boundStatement = insertTransactionErrorCount.bind();
-                bindCount(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
-                        false, false, cassandra2x);
+                bindCount(boundStatement, agentRollupId, agentId, traceId, spanId, header,
+                        adjustedTTL, false, false, cassandra2x);
                 futures.add(session.writeAsync(boundStatement));
             }
         }
@@ -751,7 +752,8 @@ public class TraceDaoImpl implements TraceDao {
         BoundStatement boundStatement = insertHeaderV2.bind();
         int i = 0;
         boundStatement.setString(i++, agentId);
-        boundStatement.setString(i++, traceId);
+        String concatId = concat(traceId, spanId);
+        boundStatement.setString(i++, concatId);
         boundStatement.setBytes(i++, ByteBuffer.wrap(header.toByteArray()));
         boundStatement.setInt(i++, adjustedTTL);
         futures.add(session.writeAsync(boundStatement));
@@ -761,7 +763,7 @@ public class TraceDaoImpl implements TraceDao {
             boundStatement = insertEntryV2.bind();
             i = 0;
             boundStatement.setString(i++, agentId);
-            boundStatement.setString(i++, traceId);
+            boundStatement.setString(i++, concatId);
             boundStatement.setInt(i++, index++);
             boundStatement.setInt(i++, entry.getDepth());
             boundStatement.setLong(i++, entry.getStartOffsetNanos());
@@ -806,7 +808,7 @@ public class TraceDaoImpl implements TraceDao {
             boundStatement = insertQueryV2.bind();
             i = 0;
             boundStatement.setString(i++, agentId);
-            boundStatement.setString(i++, traceId);
+            boundStatement.setString(i++, concatId);
             boundStatement.setString(i++, query.getType());
             boundStatement.setInt(i++, query.getSharedQueryTextIndex());
             boundStatement.setDouble(i++, query.getTotalDurationNanos());
@@ -826,7 +828,7 @@ public class TraceDaoImpl implements TraceDao {
             boundStatement = insertSharedQueryTextV2.bind();
             i = 0;
             boundStatement.setString(i++, agentId);
-            boundStatement.setString(i++, traceId);
+            boundStatement.setString(i++, concatId);
             boundStatement.setInt(i++, index++);
             String fullText = sharedQueryText.getFullText();
             if (fullText.isEmpty()) {
@@ -844,14 +846,14 @@ public class TraceDaoImpl implements TraceDao {
 
         if (trace.hasMainThreadProfile()) {
             boundStatement = insertMainThreadProfileV2.bind();
-            bindThreadProfile(boundStatement, agentId, traceId, trace.getMainThreadProfile(),
-                    adjustedTTL);
+            bindThreadProfile(boundStatement, agentId, traceId, spanId,
+                    trace.getMainThreadProfile(), adjustedTTL);
             futures.add(session.writeAsync(boundStatement));
         }
 
         if (trace.hasAuxThreadProfile()) {
             boundStatement = insertAuxThreadProfileV2.bind();
-            bindThreadProfile(boundStatement, agentId, traceId, trace.getAuxThreadProfile(),
+            bindThreadProfile(boundStatement, agentId, traceId, spanId, trace.getAuxThreadProfile(),
                     adjustedTTL);
             futures.add(session.writeAsync(boundStatement));
         }
@@ -1024,8 +1026,9 @@ public class TraceDaoImpl implements TraceDao {
     }
 
     @Override
-    public @Nullable HeaderPlus readHeaderPlus(String agentId, String traceId) throws Exception {
-        Trace.Header header = readHeader(agentId, traceId);
+    public @Nullable HeaderPlus readHeaderPlus(String agentId, String traceId, String spanId)
+            throws Exception {
+        Trace.Header header = readHeader(agentId, traceId, spanId);
         if (header == null) {
             return null;
         }
@@ -1042,31 +1045,32 @@ public class TraceDaoImpl implements TraceDao {
     }
 
     @Override
-    public Entries readEntries(String agentId, String traceId) throws Exception {
+    public Entries readEntries(String agentId, String traceId, String spanId) throws Exception {
         return ImmutableEntries.builder()
-                .addAllEntries(readEntriesInternal(agentId, traceId))
-                .addAllSharedQueryTexts(readSharedQueryTexts(agentId, traceId))
+                .addAllEntries(readEntriesInternal(agentId, traceId, spanId))
+                .addAllSharedQueryTexts(readSharedQueryTexts(agentId, traceId, spanId))
                 .build();
     }
 
     @Override
-    public Queries readQueries(String agentId, String traceId) throws Exception {
+    public Queries readQueries(String agentId, String traceId, String spanId) throws Exception {
         return ImmutableQueries.builder()
-                .addAllQueries(readQueriesInternal(agentId, traceId))
-                .addAllSharedQueryTexts(readSharedQueryTexts(agentId, traceId))
+                .addAllQueries(readQueriesInternal(agentId, traceId, spanId))
+                .addAllSharedQueryTexts(readSharedQueryTexts(agentId, traceId, spanId))
                 .build();
     }
 
     // since this is only used by export, SharedQueryTexts are always returned with fullTrace
     // (never with truncatedText/truncatedEndText/fullTraceSha1)
     @Override
-    public EntriesAndQueries readEntriesAndQueriesForExport(String agentId, String traceId)
-            throws Exception {
+    public EntriesAndQueries readEntriesAndQueriesForExport(String agentId, String traceId,
+            String spanId) throws Exception {
         ImmutableEntriesAndQueries.Builder entries = ImmutableEntriesAndQueries.builder()
-                .addAllEntries(readEntriesInternal(agentId, traceId))
-                .addAllQueries(readQueriesInternal(agentId, traceId));
+                .addAllEntries(readEntriesInternal(agentId, traceId, spanId))
+                .addAllQueries(readQueriesInternal(agentId, traceId, spanId));
         List<Trace.SharedQueryText> sharedQueryTexts = new ArrayList<>();
-        for (Trace.SharedQueryText sharedQueryText : readSharedQueryTexts(agentId, traceId)) {
+        for (Trace.SharedQueryText sharedQueryText : readSharedQueryTexts(agentId, traceId,
+                spanId)) {
             String fullTextSha1 = sharedQueryText.getFullTextSha1();
             if (fullTextSha1.isEmpty()) {
                 sharedQueryTexts.add(sharedQueryText);
@@ -1090,20 +1094,21 @@ public class TraceDaoImpl implements TraceDao {
     }
 
     @Override
-    public @Nullable Profile readMainThreadProfile(String agentId, String traceId)
+    public @Nullable Profile readMainThreadProfile(String agentId, String traceId, String spanId)
             throws Exception {
-        Profile profile = readMainThreadProfileUsingPS(agentId, traceId, readMainThreadProfileV2);
+        Profile profile =
+                readMainThreadProfileUsingPS(agentId, traceId, spanId, readMainThreadProfileV2);
         if (profile != null) {
             return profile;
         }
-        return readMainThreadProfileUsingPS(agentId, traceId, readMainThreadProfileV1);
+        return readMainThreadProfileUsingPS(agentId, traceId, spanId, readMainThreadProfileV1);
     }
 
     public @Nullable Profile readMainThreadProfileUsingPS(String agentId, String traceId,
-            PreparedStatement readPS) throws Exception {
+            String spanId, PreparedStatement readPS) throws Exception {
         BoundStatement boundStatement = readPS.bind();
         boundStatement.setString(0, agentId);
-        boundStatement.setString(1, traceId);
+        boundStatement.setString(1, concat(traceId, spanId));
         ResultSet results = session.read(boundStatement);
         Row row = results.one();
         if (row == null) {
@@ -1113,19 +1118,21 @@ public class TraceDaoImpl implements TraceDao {
     }
 
     @Override
-    public @Nullable Profile readAuxThreadProfile(String agentId, String traceId) throws Exception {
-        Profile profile = readAuxThreadProfileUsingPS(agentId, traceId, readAuxThreadProfileV2);
+    public @Nullable Profile readAuxThreadProfile(String agentId, String traceId, String spanId)
+            throws Exception {
+        Profile profile =
+                readAuxThreadProfileUsingPS(agentId, traceId, spanId, readAuxThreadProfileV2);
         if (profile != null) {
             return profile;
         }
-        return readAuxThreadProfileUsingPS(agentId, traceId, readAuxThreadProfileV1);
+        return readAuxThreadProfileUsingPS(agentId, traceId, spanId, readAuxThreadProfileV1);
     }
 
     public @Nullable Profile readAuxThreadProfileUsingPS(String agentId, String traceId,
-            PreparedStatement readPS) throws Exception {
+            String spanId, PreparedStatement readPS) throws Exception {
         BoundStatement boundStatement = readPS.bind();
         boundStatement.setString(0, agentId);
-        boundStatement.setString(1, traceId);
+        boundStatement.setString(1, concat(traceId, spanId));
         ResultSet results = session.read(boundStatement);
         Row row = results.one();
         if (row == null) {
@@ -1134,20 +1141,20 @@ public class TraceDaoImpl implements TraceDao {
         return Profile.parseFrom(checkNotNull(row.getBytes(0)));
     }
 
-    private Trace. /*@Nullable*/ Header readHeader(String agentId, String traceId)
+    private Trace. /*@Nullable*/ Header readHeader(String agentId, String traceId, String spanId)
             throws Exception {
-        Trace.Header header = readHeaderUsingPS(agentId, traceId, readHeaderV2);
+        Trace.Header header = readHeaderUsingPS(agentId, traceId, spanId, readHeaderV2);
         if (header != null) {
             return header;
         }
-        return readHeaderUsingPS(agentId, traceId, readHeaderV1);
+        return readHeaderUsingPS(agentId, traceId, spanId, readHeaderV1);
     }
 
     private Trace. /*@Nullable*/ Header readHeaderUsingPS(String agentId, String traceId,
-            PreparedStatement readPS) throws Exception {
+            String spanId, PreparedStatement readPS) throws Exception {
         BoundStatement boundStatement = readPS.bind();
         boundStatement.setString(0, agentId);
-        boundStatement.setString(1, traceId);
+        boundStatement.setString(1, concat(traceId, spanId));
         ResultSet results = session.read(boundStatement);
         Row row = results.one();
         if (row == null) {
@@ -1156,19 +1163,20 @@ public class TraceDaoImpl implements TraceDao {
         return Trace.Header.parseFrom(checkNotNull(row.getBytes(0)));
     }
 
-    private List<Trace.Entry> readEntriesInternal(String agentId, String traceId) throws Exception {
-        List<Trace.Entry> entries = readEntriesUsingPS(agentId, traceId, readEntriesV2);
+    private List<Trace.Entry> readEntriesInternal(String agentId, String traceId, String spanId)
+            throws Exception {
+        List<Trace.Entry> entries = readEntriesUsingPS(agentId, traceId, spanId, readEntriesV2);
         if (!entries.isEmpty()) {
             return entries;
         }
-        return readEntriesUsingPS(agentId, traceId, readEntriesV1);
+        return readEntriesUsingPS(agentId, traceId, spanId, readEntriesV1);
     }
 
-    private List<Trace.Entry> readEntriesUsingPS(String agentId, String traceId,
+    private List<Trace.Entry> readEntriesUsingPS(String agentId, String traceId, String spanId,
             PreparedStatement readPS) throws Exception {
         BoundStatement boundStatement = readPS.bind();
         boundStatement.setString(0, agentId);
-        boundStatement.setString(1, traceId);
+        boundStatement.setString(1, concat(traceId, spanId));
         ResultSet results = session.read(boundStatement);
         List<Trace.Entry> entries = new ArrayList<>();
         while (!results.isExhausted()) {
@@ -1213,11 +1221,11 @@ public class TraceDaoImpl implements TraceDao {
         return entries;
     }
 
-    private List<Aggregate.Query> readQueriesInternal(String agentId, String traceId)
+    private List<Aggregate.Query> readQueriesInternal(String agentId, String traceId, String spanId)
             throws Exception {
         BoundStatement boundStatement = readQueriesV2.bind();
         boundStatement.setString(0, agentId);
-        boundStatement.setString(1, traceId);
+        boundStatement.setString(1, concat(traceId, spanId));
         ResultSet results = session.read(boundStatement);
         List<Aggregate.Query> queries = new ArrayList<>();
         while (!results.isExhausted()) {
@@ -1238,21 +1246,21 @@ public class TraceDaoImpl implements TraceDao {
         return queries;
     }
 
-    private List<Trace.SharedQueryText> readSharedQueryTexts(String agentId, String traceId)
-            throws Exception {
+    private List<Trace.SharedQueryText> readSharedQueryTexts(String agentId, String traceId,
+            String spanId) throws Exception {
         List<Trace.SharedQueryText> sharedQueryTexts =
-                readSharedQueryTextsUsingPS(agentId, traceId, readSharedQueryTextsV2);
+                readSharedQueryTextsUsingPS(agentId, traceId, spanId, readSharedQueryTextsV2);
         if (!sharedQueryTexts.isEmpty()) {
             return sharedQueryTexts;
         }
-        return readSharedQueryTextsUsingPS(agentId, traceId, readSharedQueryTextsV1);
+        return readSharedQueryTextsUsingPS(agentId, traceId, spanId, readSharedQueryTextsV1);
     }
 
     private List<Trace.SharedQueryText> readSharedQueryTextsUsingPS(String agentId, String traceId,
-            PreparedStatement readPS) throws Exception {
+            String spanId, PreparedStatement readPS) throws Exception {
         BoundStatement boundStatement = readPS.bind();
         boundStatement.setString(0, agentId);
-        boundStatement.setString(1, traceId);
+        boundStatement.setString(1, concat(traceId, spanId));
         ResultSet results = session.read(boundStatement);
         List<Trace.SharedQueryText> sharedQueryTexts = new ArrayList<>();
         while (!results.isExhausted()) {
@@ -1304,10 +1312,18 @@ public class TraceDaoImpl implements TraceDao {
         session.updateSchemaWithRetry("truncate table trace_aux_thread_profile_v2");
     }
 
+    private static String concat(String traceId, String spanId) {
+        if (spanId.isEmpty()) {
+            return traceId;
+        } else {
+            return traceId + ":" + spanId;
+        }
+    }
+
     private static void bindSlowPoint(BoundStatement boundStatement, String agentRollupId,
-            String agentId, String traceId, Trace.Header header, int adjustedTTL, boolean overall,
-            boolean partial, boolean cassandra2x) throws IOException {
-        int i = bind(boundStatement, agentRollupId, agentId, traceId, header, overall,
+            String agentId, String traceId, String spanId, Trace.Header header, int adjustedTTL,
+            boolean overall, boolean partial, boolean cassandra2x) throws IOException {
+        int i = bind(boundStatement, agentRollupId, agentId, traceId, spanId, header, overall,
                 partial && !cassandra2x);
         if (partial) {
             if (cassandra2x) {
@@ -1331,9 +1347,9 @@ public class TraceDaoImpl implements TraceDao {
     }
 
     private static void bindCount(BoundStatement boundStatement, String agentRollupId,
-            String agentId, String traceId, Trace.Header header, int adjustedTTL, boolean overall,
-            boolean partial, boolean cassandra2x) {
-        int i = bind(boundStatement, agentRollupId, agentId, traceId, header, overall,
+            String agentId, String traceId, String spanId, Trace.Header header, int adjustedTTL,
+            boolean overall, boolean partial, boolean cassandra2x) {
+        int i = bind(boundStatement, agentRollupId, agentId, traceId, spanId, header, overall,
                 partial && !cassandra2x);
         if (partial) {
             if (cassandra2x) {
@@ -1347,16 +1363,19 @@ public class TraceDaoImpl implements TraceDao {
     }
 
     private static void bindErrorMessage(BoundStatement boundStatement, String agentRollupId,
-            String agentId, String traceId, Trace.Header header, int adjustedTTL, boolean overall) {
-        int i = bind(boundStatement, agentRollupId, agentId, traceId, header, overall, false);
+            String agentId, String traceId, String spanId, Trace.Header header, int adjustedTTL,
+            boolean overall) {
+        int i = bind(boundStatement, agentRollupId, agentId, traceId, spanId, header, overall,
+                false);
         boundStatement.setString(i++, header.getError().getMessage());
         boundStatement.setInt(i++, adjustedTTL);
     }
 
     private static void bindErrorPoint(BoundStatement boundStatement, String agentRollupId,
-            String agentId, String traceId, Trace.Header header, int adjustedTTL, boolean overall)
-            throws IOException {
-        int i = bind(boundStatement, agentRollupId, agentId, traceId, header, overall, false);
+            String agentId, String traceId, String spanId, Trace.Header header, int adjustedTTL,
+            boolean overall) throws IOException {
+        int i = bind(boundStatement, agentRollupId, agentId, traceId, spanId, header, overall,
+                false);
         boundStatement.setLong(i++, header.getDurationNanos());
         boundStatement.setString(i++, header.getError().getMessage());
         boundStatement.setString(i++, header.getHeadline());
@@ -1371,7 +1390,7 @@ public class TraceDaoImpl implements TraceDao {
     }
 
     private static int bind(BoundStatement boundStatement, String agentRollupId, String agentId,
-            String traceId, Trace.Header header, boolean overall,
+            String traceId, String spanId, Trace.Header header, boolean overall,
             boolean useCaptureTimePartialRollup) {
         int i = 0;
         boundStatement.setString(i++, agentRollupId);
@@ -1385,15 +1404,15 @@ public class TraceDaoImpl implements TraceDao {
             boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
         }
         boundStatement.setString(i++, agentId);
-        boundStatement.setString(i++, traceId);
+        boundStatement.setString(i++, concat(traceId, spanId));
         return i;
     }
 
     private static void bindThreadProfile(BoundStatement boundStatement, String agentId,
-            String traceId, Profile profile, int adjustedTTL) {
+            String traceId, String spanId, Profile profile, int adjustedTTL) {
         int i = 0;
         boundStatement.setString(i++, agentId);
-        boundStatement.setString(i++, traceId);
+        boundStatement.setString(i++, concat(traceId, spanId));
         boundStatement.setBytes(i++, ByteBuffer.wrap(profile.toByteArray()));
         boundStatement.setInt(i++, adjustedTTL);
     }
@@ -1442,7 +1461,7 @@ public class TraceDaoImpl implements TraceDao {
         for (Row row : results) {
             int i = 0;
             String agentId = checkNotNull(row.getString(i++));
-            String traceId = checkNotNull(row.getString(i++));
+            String concatId = checkNotNull(row.getString(i++));
             long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
             if (partial) {
                 // real_capture_time is only present for data written starting with 0.13.1
@@ -1468,9 +1487,20 @@ public class TraceDaoImpl implements TraceDao {
                     && filter.matchesError(errorMessage)
                     && filter.matchesUser(user)
                     && filter.matchesAttributes(attributes)) {
+                String traceId;
+                String spanId;
+                int index = concatId.indexOf(':');
+                if (index == -1) {
+                    traceId = concatId;
+                    spanId = "";
+                } else {
+                    traceId = concatId.substring(0, index);
+                    spanId = concatId.substring(index + 1);
+                }
                 tracePoints.add(ImmutableTracePoint.builder()
                         .agentId(agentId)
                         .traceId(traceId)
+                        .spanId(spanId)
                         .captureTime(captureTime)
                         .durationNanos(durationNanos)
                         .partial(partial)

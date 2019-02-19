@@ -76,6 +76,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.EumConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GeneralConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
@@ -139,6 +140,15 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             throw new AgentConfigNotFoundException(agentId);
         }
         return agentConfig.getTransactionConfig();
+    }
+
+    @Override
+    public EumConfig getEumConfig(String agentId) throws Exception {
+        AgentConfig agentConfig = agentConfigDao.read(agentId);
+        if (agentConfig == null) {
+            throw new AgentConfigNotFoundException(agentId);
+        }
+        return agentConfig.getEumConfig();
     }
 
     @Override
@@ -502,6 +512,24 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                 }
                 return agentConfig.toBuilder()
                         .setTransactionConfig(config)
+                        .build();
+            }
+        });
+        notifyAgentConfigListeners(agentId);
+    }
+
+    @Override
+    public void updateEumConfig(String agentId, EumConfig config, String priorVersion)
+            throws Exception {
+        agentConfigDao.update(agentId, new AgentConfigUpdater() {
+            @Override
+            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
+                String existingVersion = Versions.getVersion(agentConfig.getEumConfig());
+                if (!priorVersion.equals(existingVersion)) {
+                    throw new OptimisticLockException();
+                }
+                return agentConfig.toBuilder()
+                        .setEumConfig(config)
                         .build();
             }
         });

@@ -125,71 +125,75 @@ public class TraceDaoWithV09Support implements TraceDao {
     }
 
     @Override
-    public @Nullable HeaderPlus readHeaderPlus(String agentId, String traceId) throws Exception {
-        HeaderPlus headerPlus = delegate.readHeaderPlus(agentId, traceId);
-        if (headerPlus == null && checkV09(agentId, traceId)) {
-            headerPlus = delegate.readHeaderPlus(V09Support.convertToV09(agentId), traceId);
+    public @Nullable HeaderPlus readHeaderPlus(String agentId, String traceId, String spanId)
+            throws Exception {
+        HeaderPlus headerPlus = delegate.readHeaderPlus(agentId, traceId, spanId);
+        if (headerPlus == null && checkV09(agentId, traceId, spanId)) {
+            headerPlus = delegate.readHeaderPlus(V09Support.convertToV09(agentId), traceId, spanId);
         }
         return headerPlus;
     }
 
     @Override
-    public Entries readEntries(String agentId, String traceId) throws Exception {
-        Entries entries = delegate.readEntries(agentId, traceId);
-        if (entries.entries().isEmpty() && checkV09(agentId, traceId)) {
-            return delegate.readEntries(V09Support.convertToV09(agentId), traceId);
+    public Entries readEntries(String agentId, String traceId, String spanId) throws Exception {
+        Entries entries = delegate.readEntries(agentId, traceId, spanId);
+        if (entries.entries().isEmpty() && checkV09(agentId, traceId, spanId)) {
+            return delegate.readEntries(V09Support.convertToV09(agentId), traceId, spanId);
         }
         return entries;
     }
 
     @Override
-    public Queries readQueries(String agentId, String traceId) throws Exception {
-        Queries queries = delegate.readQueries(agentId, traceId);
-        if (queries.queries().isEmpty() && checkV09(agentId, traceId)) {
-            return delegate.readQueries(V09Support.convertToV09(agentId), traceId);
+    public Queries readQueries(String agentId, String traceId, String spanId) throws Exception {
+        Queries queries = delegate.readQueries(agentId, traceId, spanId);
+        if (queries.queries().isEmpty() && checkV09(agentId, traceId, spanId)) {
+            return delegate.readQueries(V09Support.convertToV09(agentId), traceId, spanId);
         }
         return queries;
     }
 
     @Override
-    public EntriesAndQueries readEntriesAndQueriesForExport(String agentId, String traceId)
-            throws Exception {
+    public EntriesAndQueries readEntriesAndQueriesForExport(String agentId, String traceId,
+            String spanId) throws Exception {
         EntriesAndQueries entriesAndQueries =
-                delegate.readEntriesAndQueriesForExport(agentId, traceId);
+                delegate.readEntriesAndQueriesForExport(agentId, traceId, spanId);
         if (entriesAndQueries.entries().isEmpty()
                 && clock.currentTimeMillis() < v09FqtLastExpirationTime
-                && checkV09(agentId, traceId)) {
+                && checkV09(agentId, traceId, spanId)) {
             return delegate.readEntriesAndQueriesForExport(V09Support.convertToV09(agentId),
-                    traceId);
+                    traceId, spanId);
         }
         return entriesAndQueries;
     }
 
     @Override
-    public @Nullable Profile readMainThreadProfile(String agentId, String traceId)
+    public @Nullable Profile readMainThreadProfile(String agentId, String traceId, String spanId)
             throws Exception {
-        Profile profile = delegate.readMainThreadProfile(agentId, traceId);
-        if (profile == null && checkV09(agentId, traceId)) {
-            profile = delegate.readMainThreadProfile(V09Support.convertToV09(agentId), traceId);
+        Profile profile = delegate.readMainThreadProfile(agentId, traceId, spanId);
+        if (profile == null && checkV09(agentId, traceId, spanId)) {
+            profile = delegate.readMainThreadProfile(V09Support.convertToV09(agentId), traceId,
+                    spanId);
         }
         return profile;
     }
 
     @Override
-    public @Nullable Profile readAuxThreadProfile(String agentId, String traceId) throws Exception {
-        Profile profile = delegate.readAuxThreadProfile(agentId, traceId);
-        if (profile == null && checkV09(agentId, traceId)) {
-            profile = delegate.readAuxThreadProfile(V09Support.convertToV09(agentId), traceId);
+    public @Nullable Profile readAuxThreadProfile(String agentId, String traceId, String spanId)
+            throws Exception {
+        Profile profile = delegate.readAuxThreadProfile(agentId, traceId, spanId);
+        if (profile == null && checkV09(agentId, traceId, spanId)) {
+            profile = delegate.readAuxThreadProfile(V09Support.convertToV09(agentId), traceId,
+                    spanId);
         }
         return profile;
     }
 
-    private boolean checkV09(String agentId, String traceId) throws Exception {
+    private boolean checkV09(String agentId, String traceId, String spanId) throws Exception {
         if (!agentRollupIdsWithV09Data.contains(agentId)) {
             return false;
         }
         HeaderPlus headerPlusV09 =
-                delegate.readHeaderPlus(V09Support.convertToV09(agentId), traceId);
+                delegate.readHeaderPlus(V09Support.convertToV09(agentId), traceId, spanId);
         return headerPlusV09 != null
                 && headerPlusV09.header().getCaptureTime() <= v09LastCaptureTime;
     }

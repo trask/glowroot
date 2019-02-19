@@ -23,6 +23,7 @@ import java.util.concurrent.Executors;
 
 import javax.annotation.concurrent.GuardedBy;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
@@ -37,6 +38,7 @@ import org.glowroot.agent.util.RateLimitedLogger;
 import org.glowroot.agent.util.ThreadFactories;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.EumServerSpanMessage.EumServerSpan;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -235,6 +237,20 @@ public class TransactionProcessor {
                 flushAndResetActiveIntervalCollector(pendingTransaction.captureTime);
             }
             activeIntervalCollector.add(transaction);
+
+            // FIXME queue them up and flush in batch
+            try {
+                collector.collectEumServerSpans(ImmutableList.of(EumServerSpan.newBuilder()
+                        .setTraceId(Strings.nullToEmpty(transaction.getTraceIdOrNull()))
+                        .setSpanId(Strings.nullToEmpty(transaction.getSpanId()))
+                        .setCaptureTime(transaction.getCaptureTime())
+                        .setDurationNanos(transaction.getDurationNanos())
+                        .setTransactionType(transaction.getTransactionType())
+                        .setTransactionName(transaction.getTransactionName())
+                        .build()));
+            } catch (Exception e) {
+                logger.error(e.getMessage(), e);
+            }
         }
 
         private void maybeEndOfInterval() {

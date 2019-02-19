@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 import org.glowroot.agent.collector.Collector;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.EumClientSpanMessage.EumClientSpan;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.EumServerSpanMessage.EumServerSpan;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage.LogEvent;
@@ -75,6 +77,28 @@ public class CollectorProxy implements Collector {
             }
         } else {
             instance.collectTrace(traceReader);
+        }
+    }
+
+    @Override
+    public void collectEumServerSpans(List<EumServerSpan> eumServerSpans) throws Exception {
+        if (instance == null) {
+            if (latch.await(2, MINUTES)) {
+                checkNotNull(instance).collectEumServerSpans(eumServerSpans);
+            }
+        } else {
+            instance.collectEumServerSpans(eumServerSpans);
+        }
+    }
+
+    @Override
+    public void collectEumClientSpans(List<EumClientSpan> eumClientSpans) throws Exception {
+        if (instance == null) {
+            if (latch.await(2, MINUTES)) {
+                checkNotNull(instance).collectEumClientSpans(eumClientSpans);
+            }
+        } else {
+            instance.collectEumClientSpans(eumClientSpans);
         }
     }
 

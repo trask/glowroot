@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.glowroot.agent.plugin.api;
 
 import org.glowroot.agent.plugin.api.config.ConfigService;
+import org.glowroot.agent.plugin.api.config.EumConfigService;
 import org.glowroot.agent.plugin.api.internal.PluginService;
 import org.glowroot.agent.plugin.api.internal.PluginServiceHolder;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
@@ -49,9 +50,17 @@ public class Agent {
      * Returns the {@code ConfigService} instance for the specified {@code pluginId}.
      * 
      * The return value can (and should) be cached by the plugin for the life of the jvm to avoid
-     * looking it up every time it is needed (which is often).
+     * looking it up every time it is needed.
      */
     public static ConfigService getConfigService(String pluginId) {
         return service.getConfigService(pluginId);
+    }
+
+    /**
+     * The return value can (and should) be cached by the plugin for the life of the jvm to avoid
+     * looking it up every time it is needed.
+     */
+    public static EumConfigService getEumConfigService() {
+        return service.getEumConfigService();
     }
 }

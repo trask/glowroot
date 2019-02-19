@@ -20,11 +20,13 @@ import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -89,6 +91,13 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private static final ConcurrentMap<String, Integer> suppressionKeyIds =
             new ConcurrentHashMap<String, Integer>();
 
+    // TODO this is hacky!
+    private static final Set<String> eumAspects =
+            ImmutableSet.of("org/glowroot/agent/plugin/servlet/ServletAspect$ServiceAdvice",
+                    "org/glowroot/agent/plugin/servlet/ServletAspect$ServiceAdvice_",
+                    "org/glowroot/agent/plugin/servlet/ServletAspect$DoFilterAdvice",
+                    "org/glowroot/agent/plugin/servlet/ServletAspect$DoFilterAdvice_");
+
     private final boolean frames;
     private final int access;
     private final String name;
@@ -102,6 +111,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private final boolean needsOnReturn;
     private final boolean needsOnThrow;
     private final Object[] implicitFrameLocals;
+    private final boolean callHandleEum;
+    private final boolean callHandleEumCollocated;
 
     private final Map<Advice, Integer> enabledLocals = Maps.newHashMap();
     private final Map<Advice, Integer> travelerLocals = Maps.newHashMap();
@@ -180,6 +191,22 @@ class WeavingMethodVisitor extends AdviceAdapter {
             implicitFrameLocals[i++] = convert(argumentType);
         }
         this.implicitFrameLocals = implicitFrameLocals;
+
+        boolean callHandleEum = false;
+        boolean callHandleEumCollocated = false;
+        for (Advice advice : advisors) {
+            String internalName = advice.adviceType().getInternalName();
+            if (eumAspects.contains(internalName)) {
+                if (internalName.endsWith("_")) {
+                    callHandleEumCollocated = true;
+                } else {
+                    callHandleEum = true;
+                }
+                break;
+            }
+        }
+        this.callHandleEum = callHandleEum;
+        this.callHandleEumCollocated = callHandleEumCollocated;
     }
 
     @Override
@@ -329,6 +356,21 @@ class WeavingMethodVisitor extends AdviceAdapter {
     }
 
     private void onMethodEnterInternal() {
+        if (callHandleEum || callHandleEumCollocated) {
+            loadArg(0);
+            loadArg(1);
+            String typeName = "org/glowroot/agent/plugin/servlet/ServletAspect$ServiceAdvice";
+            if (callHandleEumCollocated) {
+                typeName += "_";
+            }
+            visitMethodInsn(INVOKESTATIC, typeName, "handleEum",
+                    "(Ljavax/servlet/ServletRequest;Ljavax/servlet/ServletResponse;)Z", false);
+            Label label = new Label();
+            visitJumpInsn(IFEQ, label);
+            super.visitInsn(RETURN);
+            visitLabel(label);
+            visitImplicitFrame();
+        }
         for (int i = 0; i < advisors.size(); i++) {
             Advice advice = advisors.get(i);
             if (!name.equals("<init>")) {

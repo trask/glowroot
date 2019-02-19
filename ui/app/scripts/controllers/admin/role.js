@@ -160,6 +160,8 @@ glowroot.controller('AdminRoleCtrl', [
         permissionBlock.config.edit.general = true;
       } else if (permission === 'agent:config:edit:transaction') {
         permissionBlock.config.edit.transaction = true;
+      } else if (permission === 'agent:config:edit:eum') {
+        permissionBlock.config.edit.eum = true;
       } else if (permission === 'agent:config:edit:gauges') {
         permissionBlock.config.edit.gauges = true;
       } else if (permission === 'agent:config:edit:jvm') {
@@ -210,6 +212,7 @@ glowroot.controller('AdminRoleCtrl', [
           permissionsObj.config.edit.general = false;
         }
         permissionsObj.config.edit.transaction = false;
+        permissionsObj.config.edit.eum = false;
         permissionsObj.config.edit.gauges = false;
         permissionsObj.config.edit.jvm = false;
         if ($scope.layout.central) {
@@ -240,8 +243,9 @@ glowroot.controller('AdminRoleCtrl', [
         return false;
       }
       return permissionsObj.config.edit._ || ($scope.layout.central && permissionsObj.config.edit.general)
-          || permissionsObj.config.edit.transaction || permissionsObj.config.edit.gauges
-          || permissionsObj.config.edit.jvm || ($scope.layout.central && permissionsObj.config.edit.syntheticMonitors)
+          || permissionsObj.config.edit.transaction || permissionsObj.config.edit.eum
+          || permissionsObj.config.edit.gauges || permissionsObj.config.edit.jvm
+          || ($scope.layout.central && permissionsObj.config.edit.syntheticMonitors)
           || permissionsObj.config.edit.alerts || permissionsObj.config.edit.uiDefaults
           || permissionsObj.config.edit.plugins || permissionsObj.config.edit.instrumentation
           || permissionsObj.config.edit.advanced;
@@ -323,6 +327,9 @@ glowroot.controller('AdminRoleCtrl', [
       }
       if (permissionsObj.config.edit.transaction) {
         permissions.push('agent:config:edit:transaction');
+      }
+      if (permissionsObj.config.edit.eum) {
+        permissions.push('agent:config:edit:eum');
       }
       if (permissionsObj.config.edit.gauges) {
         permissions.push('agent:config:edit:gauges');
@@ -445,6 +452,7 @@ glowroot.controller('AdminRoleCtrl', [
           edit: {
             _: false,
             transaction: false,
+            eum: false,
             gauges: false,
             jvm: false,
             alerts: false,

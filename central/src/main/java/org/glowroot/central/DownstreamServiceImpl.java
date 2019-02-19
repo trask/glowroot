@@ -341,10 +341,12 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
         return responseWrapper.getReweaveResponse().getClassUpdateCount();
     }
 
-    Trace. /*@Nullable*/ Header getHeader(String agentId, String traceId) throws Exception {
+    Trace. /*@Nullable*/ Header getHeader(String agentId, String traceId, String spanId)
+            throws Exception {
         AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
                 .setHeaderRequest(HeaderRequest.newBuilder()
-                        .setTraceId(traceId))
+                        .setTraceId(traceId)
+                        .setSpanId(spanId))
                 .build());
         HeaderResponse response = responseWrapper.getHeaderResponse();
         if (response.hasHeader()) {
@@ -355,10 +357,11 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
     }
 
     @Nullable
-    Entries getEntries(String agentId, String traceId) throws Exception {
+    Entries getEntries(String agentId, String traceId, String spanId) throws Exception {
         AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
                 .setEntriesRequest(EntriesRequest.newBuilder()
-                        .setTraceId(traceId))
+                        .setTraceId(traceId)
+                        .setSpanId(spanId))
                 .build());
         EntriesResponse response = responseWrapper.getEntriesResponse();
         List<Trace.Entry> entries = response.getEntryList();
@@ -373,10 +376,11 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
     }
 
     @Nullable
-    Queries getQueries(String agentId, String traceId) throws Exception {
+    Queries getQueries(String agentId, String traceId, String spanId) throws Exception {
         AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
                 .setQueriesRequest(QueriesRequest.newBuilder()
-                        .setTraceId(traceId))
+                        .setTraceId(traceId)
+                        .setSpanId(spanId))
                 .build());
         QueriesResponse response = responseWrapper.getQueriesResponse();
         List<Aggregate.Query> queries = response.getQueryList();
@@ -391,10 +395,11 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
     }
 
     @Nullable
-    Profile getMainThreadProfile(String agentId, String traceId) throws Exception {
+    Profile getMainThreadProfile(String agentId, String traceId, String spanId) throws Exception {
         AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
                 .setMainThreadProfileRequest(MainThreadProfileRequest.newBuilder()
-                        .setTraceId(traceId))
+                        .setTraceId(traceId)
+                        .setSpanId(spanId))
                 .build());
         MainThreadProfileResponse response = responseWrapper.getMainThreadProfileResponse();
         if (response.hasProfile()) {
@@ -405,10 +410,11 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
     }
 
     @Nullable
-    Profile getAuxThreadProfile(String agentId, String traceId) throws Exception {
+    Profile getAuxThreadProfile(String agentId, String traceId, String spanId) throws Exception {
         AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
                 .setAuxThreadProfileRequest(AuxThreadProfileRequest.newBuilder()
-                        .setTraceId(traceId))
+                        .setTraceId(traceId)
+                        .setSpanId(spanId))
                 .build());
         AuxThreadProfileResponse response = responseWrapper.getAuxThreadProfileResponse();
         if (response.hasProfile()) {
@@ -419,10 +425,11 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
     }
 
     @Nullable
-    Trace getFullTrace(String agentId, String traceId) throws Exception {
+    Trace getFullTrace(String agentId, String traceId, String spanId) throws Exception {
         AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
                 .setFullTraceRequest(FullTraceRequest.newBuilder()
-                        .setTraceId(traceId))
+                        .setTraceId(traceId)
+                        .setSpanId(spanId))
                 .build());
         FullTraceResponse response = responseWrapper.getFullTraceResponse();
         if (response.hasTrace()) {

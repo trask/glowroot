@@ -33,35 +33,36 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 public interface LiveTraceRepository {
 
     // null return value means trace not found
-    Trace. /*@Nullable*/ Header getHeader(String agentId, String traceId) throws Exception;
+    Trace. /*@Nullable*/ Header getHeader(String agentId, String traceId, String spanId)
+            throws Exception;
 
     // null return value means trace not found or was found but had no entries
     //
     // SharedQueryTexts are returned with either fullTrace or
     // truncatedText/truncatedEndText/fullTraceSha1
     @Nullable
-    Entries getEntries(String agentId, String traceId) throws Exception;
+    Entries getEntries(String agentId, String traceId, String spanId) throws Exception;
 
     // null return value means trace not found or was found but had no queries
     //
     // SharedQueryTexts are returned with either fullTrace or truncatedText/fullTraceSha1
     @Nullable
-    Queries getQueries(String agentId, String traceId) throws Exception;
+    Queries getQueries(String agentId, String traceId, String spanId) throws Exception;
 
     // null return value means trace not found or was found but had no main thread profile
     @Nullable
-    Profile getMainThreadProfile(String agentId, String traceId) throws Exception;
+    Profile getMainThreadProfile(String agentId, String traceId, String spanId) throws Exception;
 
     // null return value means trace not found or was found but had no aux thread profile
     @Nullable
-    Profile getAuxThreadProfile(String agentId, String traceId) throws Exception;
+    Profile getAuxThreadProfile(String agentId, String traceId, String spanId) throws Exception;
 
     // null return value means trace not found
     //
     // since this is only used by export, SharedQueryTexts are always returned with fullTrace
     // (never with truncatedText/truncatedEndText/fullTraceSha1)
     @Nullable
-    Trace getFullTrace(String agentId, String traceId) throws Exception;
+    Trace getFullTrace(String agentId, String traceId, String spanId) throws Exception;
 
     int getMatchingTraceCount(String transactionType, @Nullable String transactionName);
 
@@ -167,6 +168,7 @@ public interface LiveTraceRepository {
     interface TracePoint {
         String agentId();
         String traceId();
+        String spanId();
         long captureTime();
         long durationNanos();
         boolean partial();
@@ -192,32 +194,35 @@ public interface LiveTraceRepository {
         }
 
         @Override
-        public Trace. /*@Nullable*/ Header getHeader(String agentId, String traceId) {
+        public Trace. /*@Nullable*/ Header getHeader(String agentId, String traceId,
+                String spanId) {
             return null;
         }
 
         @Override
-        public @Nullable Entries getEntries(String agentId, String traceId) {
+        public @Nullable Entries getEntries(String agentId, String traceId, String spanId) {
             return null;
         }
 
         @Override
-        public @Nullable Queries getQueries(String agentId, String traceId) {
+        public @Nullable Queries getQueries(String agentId, String traceId, String spanId) {
             return null;
         }
 
         @Override
-        public @Nullable Profile getMainThreadProfile(String agentId, String traceId) {
+        public @Nullable Profile getMainThreadProfile(String agentId, String traceId,
+                String spanId) {
             return null;
         }
 
         @Override
-        public @Nullable Profile getAuxThreadProfile(String agentId, String traceId) {
+        public @Nullable Profile getAuxThreadProfile(String agentId, String traceId,
+                String spanId) {
             return null;
         }
 
         @Override
-        public @Nullable Trace getFullTrace(String agentId, String traceId) {
+        public @Nullable Trace getFullTrace(String agentId, String traceId, String spanId) {
             return null;
         }
 

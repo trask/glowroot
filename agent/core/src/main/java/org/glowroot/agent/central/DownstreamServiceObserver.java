@@ -704,7 +704,8 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             StreamObserver<AgentResponse> responseObserver) {
         Trace.Header header;
         try {
-            header = liveTraceRepository.getHeader("", request.getHeaderRequest().getTraceId());
+            header = liveTraceRepository.getHeader("", request.getHeaderRequest().getTraceId(),
+                    request.getHeaderRequest().getSpanId());
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             sendExceptionResponse(request, responseObserver);
@@ -728,7 +729,8 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             StreamObserver<AgentResponse> responseObserver) {
         Entries entries;
         try {
-            entries = liveTraceRepository.getEntries("", request.getEntriesRequest().getTraceId());
+            entries = liveTraceRepository.getEntries("", request.getEntriesRequest().getTraceId(),
+                    request.getEntriesRequest().getSpanId());
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             sendExceptionResponse(request, responseObserver);
@@ -750,7 +752,8 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             StreamObserver<AgentResponse> responseObserver) {
         Queries queries;
         try {
-            queries = liveTraceRepository.getQueries("", request.getQueriesRequest().getTraceId());
+            queries = liveTraceRepository.getQueries("", request.getQueriesRequest().getTraceId(),
+                    request.getQueriesRequest().getSpanId());
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             sendExceptionResponse(request, responseObserver);
@@ -773,7 +776,8 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
         Profile profile;
         try {
             profile = liveTraceRepository.getMainThreadProfile("",
-                    request.getMainThreadProfileRequest().getTraceId());
+                    request.getMainThreadProfileRequest().getTraceId(),
+                    request.getMainThreadProfileRequest().getSpanId());
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             sendExceptionResponse(request, responseObserver);
@@ -798,7 +802,8 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
         Profile profile;
         try {
             profile = liveTraceRepository.getAuxThreadProfile("",
-                    request.getAuxThreadProfileRequest().getTraceId());
+                    request.getAuxThreadProfileRequest().getTraceId(),
+                    request.getAuxThreadProfileRequest().getSpanId());
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             sendExceptionResponse(request, responseObserver);
@@ -823,7 +828,8 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
         Trace trace;
         try {
             trace = liveTraceRepository.getFullTrace("",
-                    request.getFullTraceRequest().getTraceId());
+                    request.getFullTraceRequest().getTraceId(),
+                    request.getFullTraceRequest().getSpanId());
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             sendExceptionResponse(request, responseObserver);

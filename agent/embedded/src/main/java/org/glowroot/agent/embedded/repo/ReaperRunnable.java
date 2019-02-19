@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ class ReaperRunnable extends ScheduledRunnable {
     private final ConfigRepositoryImpl configRepository;
     private final AggregateDao aggregateDao;
     private final TraceDao traceDao;
+    private final EumSpanDao eumSpanDao;
     private final GaugeIdDao gaugeIdDao;
     private final GaugeNameDao gaugeNameDao;
     private final GaugeValueDao gaugeValueDao;
@@ -36,12 +37,13 @@ class ReaperRunnable extends ScheduledRunnable {
     private final Clock clock;
 
     ReaperRunnable(ConfigRepositoryImpl configService, AggregateDao aggregateDao, TraceDao traceDao,
-            GaugeIdDao gaugeIdDao, GaugeNameDao gaugeNameDao, GaugeValueDao gaugeValueDao,
-            TransactionTypeDao transactionTypeDao, FullQueryTextDao fullQueryTextDao,
-            IncidentDao incidentDao, Clock clock) {
+            EumSpanDao eumSpanDao, GaugeIdDao gaugeIdDao, GaugeNameDao gaugeNameDao,
+            GaugeValueDao gaugeValueDao, TransactionTypeDao transactionTypeDao,
+            FullQueryTextDao fullQueryTextDao, IncidentDao incidentDao, Clock clock) {
         this.configRepository = configService;
         this.aggregateDao = aggregateDao;
         this.traceDao = traceDao;
+        this.eumSpanDao = eumSpanDao;
         this.gaugeIdDao = gaugeIdDao;
         this.gaugeNameDao = gaugeNameDao;
         this.gaugeValueDao = gaugeValueDao;
@@ -79,6 +81,8 @@ class ReaperRunnable extends ScheduledRunnable {
         if (traceExpirationHours != 0) {
             long traceCaptureTime = currentTime - HOURS.toMillis(traceExpirationHours);
             traceDao.deleteBefore(traceCaptureTime);
+            // FIXME delete earlier, after initial rollup
+            eumSpanDao.deleteBefore(traceCaptureTime);
             minCaptureTime = Math.min(minCaptureTime, traceCaptureTime);
         }
         if (minCaptureTime != 0) {

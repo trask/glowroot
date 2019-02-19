@@ -13,6 +13,7 @@ message AgentConfig {
 
   GeneralConfig general_config = 16; // only stored in central
   TransactionConfig transaction_config = 2;
+  EumConfig eum_config = 19;
   JvmConfig jvm_config = 17;
   UiDefaultsConfig ui_defaults_config = 3;
   AdvancedConfig advanced_config = 5;
@@ -34,6 +35,11 @@ message AgentConfig {
     OptionalInt32 profiling_interval_millis = 2; // optional used due to non-zero default value
     bool capture_thread_stats = 3;
     repeated SlowThresholdOverride slow_threshold_override = 4;
+  }
+
+  message EumConfig {
+    bool enabled = 1;
+    string reporting_url = 2;
   }
 
   message SlowThresholdOverride {

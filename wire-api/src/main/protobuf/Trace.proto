@@ -13,7 +13,8 @@ message Trace {
   // starting in 0.9.13, trace fields moved to TraceMessage for streaming over the wire
   // (though Trace still used by DownstreamService FullTraceResponse)
 
-  string id = 1; // this is a uuid
+  string trace_id = 1;
+  string span_id = 10;
   Header header = 2;
   repeated Entry entry = 3; // entry ordering is pre-order depth-first
                             // there are typically multiple "root" nodes (with depth=0)

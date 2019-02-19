@@ -185,8 +185,8 @@ class EmbeddedAgentModule {
                         Collector collector = new EmbeddedCollector(
                                 simpleRepoModule.getEnvironmentDao(),
                                 simpleRepoModule.getAggregateDao(), simpleRepoModule.getTraceDao(),
-                                simpleRepoModule.getGaugeValueDao(), configRepository,
-                                simpleRepoModule.getAlertingService(),
+                                simpleRepoModule.getSpanDao(), simpleRepoModule.getGaugeValueDao(),
+                                configRepository, simpleRepoModule.getAlertingService(),
                                 simpleRepoModule.getAlertingDisabledDao(),
                                 simpleRepoModule.getHttpClient(), clock);
                         if (collectorProxyClass != null) {

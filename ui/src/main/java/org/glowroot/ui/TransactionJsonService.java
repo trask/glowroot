@@ -492,10 +492,10 @@ class TransactionJsonService {
         Profile profile;
         if (request.auxiliary()) {
             profile = traceCommonService.getAuxThreadProfile(agentId, request.traceId(),
-                    request.checkLiveTraces());
+                    request.spanId(), request.checkLiveTraces());
         } else {
             profile = traceCommonService.getMainThreadProfile(agentId, request.traceId(),
-                    request.checkLiveTraces());
+                    request.spanId(), request.checkLiveTraces());
         }
         MutableProfile mutableProfile = new MutableProfile();
         if (profile != null) {
@@ -936,6 +936,10 @@ class TransactionJsonService {
     @Value.Immutable
     abstract static class TraceFlameGraphRequest {
         abstract String traceId();
+        @Value.Default
+        String spanId() {
+            return "";
+        }
         abstract boolean auxiliary();
         // intentionally not plural since maps from query string
         abstract ImmutableList<String> include();

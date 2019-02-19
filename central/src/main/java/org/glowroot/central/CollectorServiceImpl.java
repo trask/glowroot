@@ -59,6 +59,8 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateStreamMes
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateStreamMessage.OverallAggregate;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateStreamMessage.TransactionAggregate;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.EumClientSpanMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.EumServerSpanMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueResponseMessage;
@@ -221,6 +223,22 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
     public void collectTrace(OldTraceMessage request,
             StreamObserver<EmptyMessage> responseObserver) {
         throttledCollectTrace(request.getAgentId(), false, request.getTrace(), responseObserver);
+    }
+
+    @Override
+    public void collectEumServerSpans(EumServerSpanMessage request,
+            StreamObserver<EmptyMessage> responseObserver) {
+        // FIXME
+        responseObserver.onNext(EmptyMessage.getDefaultInstance());
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void collectEumClientSpans(EumClientSpanMessage request,
+            StreamObserver<EmptyMessage> responseObserver) {
+        // FIXME
+        responseObserver.onNext(EmptyMessage.getDefaultInstance());
+        responseObserver.onCompleted();
     }
 
     @Instrumentation.Transaction(transactionType = "gRPC", transactionName = "Log",
@@ -731,7 +749,8 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
                     return;
                 }
                 Trace.Builder builder = Trace.newBuilder()
-                        .setId(streamHeader.getTraceId())
+                        .setTraceId(streamHeader.getTraceId())
+                        .setSpanId(streamHeader.getSpanId())
                         .setUpdate(streamHeader.getUpdate())
                         .setHeader(checkNotNull(header))
                         .addAllEntry(entries)

@@ -15,10 +15,12 @@
  */
 package org.glowroot.agent.plugin.servlet;
 
+import java.io.IOException;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.Map;
 
+import javax.servlet.ServletInputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
@@ -27,12 +29,17 @@ import javax.servlet.http.HttpSession;
 
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.AuxThreadContext;
+import org.glowroot.agent.plugin.api.EUM;
+import org.glowroot.agent.plugin.api.Logger;
 import org.glowroot.agent.plugin.api.OptionalThreadContext;
+import org.glowroot.agent.plugin.api.OptionalThreadContext.AlreadyInTransactionBehavior;
+import org.glowroot.agent.plugin.api.ParameterHolder;
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.ThreadContext.Priority;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.checker.Nullable;
+import org.glowroot.agent.plugin.api.config.BooleanProperty;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal;
 import org.glowroot.agent.plugin.api.weaving.BindClassMeta;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
@@ -45,6 +52,7 @@ import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
+import org.glowroot.agent.plugin.servlet._.EumWeaselPrintWriter;
 import org.glowroot.agent.plugin.servlet._.RequestHostAndPortDetail;
 import org.glowroot.agent.plugin.servlet._.RequestInvoker;
 import org.glowroot.agent.plugin.servlet._.ResponseInvoker;
@@ -54,8 +62,22 @@ import org.glowroot.agent.plugin.servlet._.ServletPluginProperties;
 import org.glowroot.agent.plugin.servlet._.ServletPluginProperties.SessionAttributePath;
 import org.glowroot.agent.plugin.servlet._.Strings;
 
+import static java.util.concurrent.TimeUnit.DAYS;
+
 // this plugin is careful not to rely on request or session objects being thread-safe
 public class ServletAspect {
+
+    private static final Logger logger = Logger.getLogger(ServletAspect.class);
+
+    // needs to be public so it can be seen from collocated pointcut
+    public static final long TEN_YEARS = DAYS.toMillis(3650);
+
+    // needs to be public so it can be seen from collocated pointcut
+    public static BooleanProperty eumEnabled = Agent.getEumConfigService().getEnabledProperty();
+
+    // needs to be public so it can be seen from collocated pointcut
+    public static final FastThreadLocal</*@Nullable*/ String> sendError =
+            new FastThreadLocal</*@Nullable*/ String>();
 
     @Pointcut(className = "javax.servlet.Servlet", methodName = "service",
             methodParameterTypes = {"javax.servlet.ServletRequest",
@@ -66,8 +88,9 @@ public class ServletAspect {
         @OnBefore
         public static @Nullable TraceEntry onBefore(OptionalThreadContext context,
                 @BindParameter @Nullable ServletRequest req,
+                @BindParameter ParameterHolder<ServletResponse> res,
                 @BindClassMeta RequestInvoker requestInvoker) {
-            return onBeforeCommon(context, req, null, requestInvoker);
+            return onBeforeCommon(context, req, res, null, requestInvoker);
         }
         @OnReturn
         public static void onReturn(OptionalThreadContext context,
@@ -122,14 +145,19 @@ public class ServletAspect {
             context.setServletRequestInfo(null);
         }
         private static @Nullable TraceEntry onBeforeCommon(OptionalThreadContext context,
-                @Nullable ServletRequest req, @Nullable String transactionTypeOverride,
-                RequestInvoker requestInvoker) {
+                @Nullable ServletRequest req, ParameterHolder<ServletResponse> res,
+                @Nullable String transactionTypeOverride, RequestInvoker requestInvoker) {
             if (context.getServletRequestInfo() != null) {
                 return null;
             }
             if (!(req instanceof HttpServletRequest)) {
                 // seems nothing sensible to do here other than ignore
                 return null;
+            }
+            ServletResponse response = res.get();
+            if (true && response instanceof HttpServletResponse) {
+                res.set(new HttpServletResponseWrapper((HttpServletRequest) req,
+                        (HttpServletResponse) response, context));
             }
             HttpServletRequest request = (HttpServletRequest) req;
             AuxThreadContext auxContextObj = (AuxThreadContext) request
@@ -188,8 +216,21 @@ public class ServletAspect {
             } else {
                 transactionType = "Web";
             }
-            TraceEntry traceEntry = context.startTransaction(transactionType, requestUri,
-                    messageSupplier, timerName);
+            TraceEntry traceEntry;
+            String traceId = request.getHeader("X-Glowroot-T");
+            if (traceId == null) {
+                // this is needed to support an early deployment, but is now deprecated
+                traceId = request.getHeader("Glowroot-Trace-Id");
+            }
+            if (traceId == null) {
+                traceEntry = context.startTransaction(transactionType, requestUri, messageSupplier,
+                        timerName);
+            } else {
+                String spanId = request.getHeader("X-Glowroot-S");
+                traceEntry = context.startTransaction(transactionType, requestUri, traceId, spanId,
+                        messageSupplier, timerName,
+                        AlreadyInTransactionBehavior.CAPTURE_TRACE_ENTRY);
+            }
             if (setWithCoreMaxPriority) {
                 context.setTransactionType(transactionType, Priority.CORE_MAX);
             }
@@ -205,6 +246,77 @@ public class ServletAspect {
             }
             return traceEntry;
         }
+        // needs to be inside collocated pointcut
+        public static boolean handleEum(@Nullable ServletRequest req,
+                @Nullable ServletResponse res) {
+            if (!(req instanceof HttpServletRequest)) {
+                return false;
+            }
+            if (!(res instanceof HttpServletResponse)) {
+                return false;
+            }
+            HttpServletRequest request = (HttpServletRequest) req;
+            String requestURI = request.getRequestURI();
+            if (requestURI == null) {
+                return false;
+            }
+            if (requestURI.endsWith("/--glowroot-eum")) {
+                if ("POST".equals(request.getMethod())) {
+                    ServletInputStream in = null;
+                    try {
+                        in = request.getInputStream();
+                        String characterEncoding = request.getCharacterEncoding();
+                        if (characterEncoding == null) {
+                            // no explicit encoding, so use the default encoding
+                            characterEncoding = "ISO-8859-1";
+                        }
+                        EUM.captureEumSpanFromPostBody(in, characterEncoding);
+                    } catch (IOException e) {
+                        // can fail due to browser/network disconnect
+                        logger.error(e.getMessage(), e); // FIXME back to debug
+                    } finally {
+                        if (in != null) {
+                            try {
+                                in.close();
+                            } catch (IOException e) {
+                                // can fail due to browser/network disconnect
+                                logger.error(e.getMessage(), e);
+                            }
+                        }
+                    }
+                } else {
+                    // GET
+                    EUM.captureEumSpanFromQueryString(request.getQueryString());
+                }
+                return true;
+            }
+            if (requestURI.regionMatches(requestURI.length() - "/--glowroot-eum.js".length() - 9,
+                    "/--glowroot-eum.", 0, "/--glowroot-eum.".length())
+                    && requestURI.endsWith(".js")) {
+                try {
+                    handleEumJs(request, (HttpServletResponse) res);
+                } catch (IOException e) {
+                    // can fail due to browser/network disconnect
+                    logger.debug(e.getMessage(), e);
+                }
+                return true;
+            }
+            return false;
+        }
+        private static void handleEumJs(HttpServletRequest request, HttpServletResponse response)
+                throws IOException {
+            if (request.getHeader("if-modified-since") != null) {
+                response.setStatus(304); // not modified, since always versioned
+                return;
+            }
+            byte[] eumJs = EumWeaselPrintWriter.EUM_JS;
+            response.setContentLength(eumJs.length);
+            response.setContentType("text/javascript; charset=utf-8");
+            response.setDateHeader("last-modified", 0);
+            response.setDateHeader("expires", System.currentTimeMillis() + TEN_YEARS);
+            response.setHeader("cache-control", "public, max-age=" + TEN_YEARS + ", immutable");
+            response.getOutputStream().write(eumJs);
+        }
     }
 
     @Pointcut(className = "javax.servlet.Filter", methodName = "doFilter",
@@ -215,8 +327,9 @@ public class ServletAspect {
         @OnBefore
         public static @Nullable TraceEntry onBefore(OptionalThreadContext context,
                 @BindParameter @Nullable ServletRequest req,
+                @BindParameter ParameterHolder<ServletResponse> res,
                 @BindClassMeta RequestInvoker requestInvoker) {
-            return ServiceAdvice.onBeforeCommon(context, req, null, requestInvoker);
+            return ServiceAdvice.onBeforeCommon(context, req, res, null, requestInvoker);
         }
         @OnReturn
         public static void onReturn(OptionalThreadContext context,
@@ -251,8 +364,9 @@ public class ServletAspect {
                 @SuppressWarnings("unused") @BindParameter @Nullable String target,
                 @SuppressWarnings("unused") @BindParameter @Nullable Object baseRequest,
                 @BindParameter @Nullable ServletRequest req,
+                @BindParameter ParameterHolder<ServletResponse> res,
                 @BindClassMeta RequestInvoker requestInvoker) {
-            return ServiceAdvice.onBeforeCommon(context, req, null, requestInvoker);
+            return ServiceAdvice.onBeforeCommon(context, req, res, null, requestInvoker);
         }
         @OnReturn
         public static void onReturn(OptionalThreadContext context,
@@ -288,8 +402,9 @@ public class ServletAspect {
         @OnBefore
         public static @Nullable TraceEntry onBefore(OptionalThreadContext context,
                 @BindParameter @Nullable ServletRequest req,
+                @BindParameter ParameterHolder<ServletResponse> res,
                 @BindClassMeta RequestInvoker requestInvoker) {
-            return ServiceAdvice.onBeforeCommon(context, req, "WireMock", requestInvoker);
+            return ServiceAdvice.onBeforeCommon(context, req, res, "WireMock", requestInvoker);
         }
         @OnReturn
         public static void onReturn(OptionalThreadContext context,

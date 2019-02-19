@@ -127,6 +127,12 @@
            ng-if="!isAgentRollup()">
       </div>
       <div gt-sidebar-item
+           gt-display="End user monitoring"
+           gt-url="config/eum{{agentQueryString()}}"
+           gt-active="currentUrl() === 'config/eum'"
+           ng-if="!isAgentRollup()">
+      </div>
+      <div gt-sidebar-item
            gt-display="Gauges"
            gt-url="config/gauge-list{{agentQueryString()}}"
            gt-active="currentUrl() === 'config/gauge-list'"

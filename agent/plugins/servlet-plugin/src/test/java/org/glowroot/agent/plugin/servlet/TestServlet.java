@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,16 @@ class TestServlet extends HttpServlet implements AppUnderTest {
 
     @Override
     public void executeApp() throws Exception {
-        MockHttpServletRequest request = new MockCatalinaHttpServletRequest("GET", "/testservlet");
+        MockHttpServletRequest request;
+        if (getClass().getName().endsWith("EUM")) {
+            String queryString = "t=1234567890abcdef1234567890abcdef&d=123";
+            request = new MockCatalinaHttpServletRequest("GET", "/--glowroot-eum");
+            request.setQueryString(queryString);
+        } else if (getClass().getName().endsWith("EumJS")) {
+            request = new MockCatalinaHttpServletRequest("GET", "/--glowroot-eum.1234abcd.js");
+        } else {
+            request = new MockCatalinaHttpServletRequest("GET", "/testservlet");
+        }
         MockHttpServletResponse response = new PatchedMockHttpServletResponse();
         before(request, response);
         service((ServletRequest) request, (ServletResponse) response);

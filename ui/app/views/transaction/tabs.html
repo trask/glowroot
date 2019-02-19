@@ -1,5 +1,5 @@
 <!--
-  Copyright 2015-2018 the original author or authors.
+  Copyright 2015-2019 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -19,9 +19,19 @@
        ng-class="{active: activeTabItem === 'time'}"
        ng-href="transaction/average{{tabQueryString()}}"
        ng-click="clickTab('time', $event)"
-       ng-keydown="keydownTab(null, 'tab_traces', $event)"
+       ng-keydown="keydownTab(null, 'tab_eum', $event)"
        id="tab_time">
       Response time
+    </a>
+  </li>
+  <li class="nav-item" role="presentation">
+    <a class="nav-link"
+       ng-class="{active: activeTabItem === 'eum'}"
+       ng-href="transaction/eum{{tabQueryString()}}"
+       ng-click="clickTab('eum', $event)"
+       ng-keydown="keydownTab(null, 'tab_traces', $event)"
+       id="tab_eum">
+      End user monitoring
     </a>
   </li>
   <li class="nav-item" role="presentation">
@@ -29,7 +39,7 @@
        ng-class="{active: activeTabItem === 'traces'}"
        ng-href="transaction/traces{{tabQueryString()}}"
        ng-click="clickTab('traces', $event)"
-       ng-keydown="keydownTab('tab_time', 'tab_queries', $event)"
+       ng-keydown="keydownTab('tab_eum', 'tab_queries', $event)"
        ng-if="agentRollup.permissions.transaction.traces"
        id="tab_traces">
       {{transactionType === 'Startup' ? 'Traces' : 'Slow traces'}} ({{traceCountDisplay()}})

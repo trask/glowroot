@@ -46,6 +46,7 @@ import org.glowroot.common2.repo.TransactionTypeRepository;
 import org.glowroot.ui.GaugeValueJsonService.GaugeOrdering;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.EumConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GeneralConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.JvmConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
@@ -98,6 +99,12 @@ class ConfigJsonService {
                         configRepository.getUiDefaultsConfig(agentId).getDefaultTransactionType())
                 .addAllAllTransactionTypes(transactionTypes)
                 .build());
+    }
+
+    @GET(path = "/backend/config/eum", permission = "agent:config:view:eum")
+    String getEumConfig(@BindAgentId String agentId) throws Exception {
+        EumConfig config = configRepository.getEumConfig(agentId);
+        return mapper.writeValueAsString(EumConfigDto.create(config));
     }
 
     @GET(path = "/backend/config/jvm", permission = "agent:config:view:jvm")
@@ -190,6 +197,17 @@ class ConfigJsonService {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
         return getTransactionConfig(agentId);
+    }
+
+    @POST(path = "/backend/config/eum", permission = "agent:config:edit:eum")
+    String updateEumConfig(@BindAgentId String agentId, @BindRequest EumConfigDto configDto)
+            throws Exception {
+        try {
+            configRepository.updateEumConfig(agentId, configDto.convert(), configDto.version());
+        } catch (OptimisticLockException e) {
+            throw new JsonServiceException(PRECONDITION_FAILED, e);
+        }
+        return getEumConfig(agentId);
     }
 
     @POST(path = "/backend/config/jvm", permission = "agent:config:edit:jvm")
@@ -430,6 +448,29 @@ class ConfigJsonService {
                 return compare;
             }
             return left.thresholdMillis() - right.thresholdMillis();
+        }
+    }
+
+    @Value.Immutable
+    abstract static class EumConfigDto {
+
+        abstract boolean enabled();
+        abstract String reportingUrl();
+        abstract String version();
+
+        private EumConfig convert() {
+            return EumConfig.newBuilder()
+                    .setEnabled(enabled())
+                    .setReportingUrl(reportingUrl())
+                    .build();
+        }
+
+        private static EumConfigDto create(EumConfig config) {
+            return ImmutableEumConfigDto.builder()
+                    .enabled(config.getEnabled())
+                    .reportingUrl(config.getReportingUrl())
+                    .version(Versions.getVersion(config))
+                    .build();
         }
     }
 

@@ -68,10 +68,10 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     // checks active traces first, then pending traces (and finally caller should check stored
     // traces) to make sure that the trace is not missed if it is in transition between these states
     @Override
-    public Trace. /*@Nullable*/ Header getHeader(String agentId, String traceId) {
+    public Trace. /*@Nullable*/ Header getHeader(String agentId, String traceId, String spanId) {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 traceCollector.getPendingTransactions())) {
-            if (transaction.getTraceId().equals(traceId)) {
+            if (matchesTraceAndSpanIds(transaction, traceId, spanId)) {
                 return createTraceHeader(transaction);
             }
         }
@@ -79,10 +79,10 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public @Nullable Entries getEntries(String agentId, String traceId) {
+    public @Nullable Entries getEntries(String agentId, String traceId, String spanId) {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 traceCollector.getPendingTransactions())) {
-            if (transaction.getTraceId().equals(traceId)) {
+            if (matchesTraceAndSpanIds(transaction, traceId, spanId)) {
                 CollectingEntryVisitor visitor = new CollectingEntryVisitor();
                 transaction.visitEntries(ticker.read(), visitor);
                 return ImmutableEntries.builder()
@@ -96,10 +96,10 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public @Nullable Queries getQueries(String agentId, String traceId) {
+    public @Nullable Queries getQueries(String agentId, String traceId, String spanId) {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 traceCollector.getPendingTransactions())) {
-            if (transaction.getTraceId().equals(traceId)) {
+            if (matchesTraceAndSpanIds(transaction, traceId, spanId)) {
                 return ImmutableQueries.builder()
                         .addAllQueries(transaction.getQueries())
                         .addAllSharedQueryTexts(
@@ -111,10 +111,10 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public @Nullable Profile getMainThreadProfile(String agentId, String traceId) {
+    public @Nullable Profile getMainThreadProfile(String agentId, String traceId, String spanId) {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 traceCollector.getPendingTransactions())) {
-            if (transaction.getTraceId().equals(traceId)) {
+            if (matchesTraceAndSpanIds(transaction, traceId, spanId)) {
                 return transaction.getMainThreadProfileProtobuf();
             }
         }
@@ -122,10 +122,10 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public @Nullable Profile getAuxThreadProfile(String agentId, String traceId) {
+    public @Nullable Profile getAuxThreadProfile(String agentId, String traceId, String spanId) {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 traceCollector.getPendingTransactions())) {
-            if (transaction.getTraceId().equals(traceId)) {
+            if (matchesTraceAndSpanIds(transaction, traceId, spanId)) {
                 return transaction.getAuxThreadProfileProtobuf();
             }
         }
@@ -133,15 +133,17 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public @Nullable Trace getFullTrace(String agentId, String traceId) throws Exception {
+    public @Nullable Trace getFullTrace(String agentId, String traceId, String spanId)
+            throws Exception {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 traceCollector.getPendingTransactions())) {
-            if (transaction.getTraceId().equals(traceId)) {
+            if (matchesTraceAndSpanIds(transaction, traceId, spanId)) {
                 CollectingTraceVisitor traceVisitor = new CollectingTraceVisitor();
                 TraceReader traceReader = createTraceReader(transaction);
                 traceReader.accept(traceVisitor);
                 Trace.Builder builder = Trace.newBuilder()
-                        .setId(traceId)
+                        .setTraceId(traceId)
+                        .setSpanId(spanId)
                         .setUpdate(transaction.isPartiallyStored());
                 Profile mainThreadProfile = traceVisitor.mainThreadProfile;
                 if (mainThreadProfile != null) {
@@ -189,6 +191,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
                 activeTracePoints.add(ImmutableTracePoint.builder()
                         .agentId(AGENT_ID)
                         .traceId(transaction.getTraceId())
+                        .spanId(transaction.getSpanId())
                         .captureTime(captureTime)
                         .durationNanos(captureTick - startTick)
                         .partial(true)
@@ -220,6 +223,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
                 points.add(ImmutableTracePoint.builder()
                         .agentId(AGENT_ID)
                         .traceId(transaction.getTraceId())
+                        .spanId(transaction.getSpanId())
                         // by the time transaction is in pending list, the capture time is set
                         .captureTime(transaction.getCaptureTime())
                         .durationNanos(transaction.getDurationNanos())
@@ -297,6 +301,11 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
             // TraceKind.ERROR
             return traceCollector.shouldStoreError(transaction);
         }
+    }
+
+    private static boolean matchesTraceAndSpanIds(Transaction transaction, String traceId,
+            String spanId) {
+        return transaction.getTraceId().equals(traceId) && transaction.getSpanId().equals(spanId);
     }
 
     private static boolean matchesTransactionType(Transaction transaction, String transactionType) {
