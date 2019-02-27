@@ -194,10 +194,7 @@ var defaultVars = {
   page: undefined,
   wrapEventHandlers: false,
   wrappedEventHandlersOriginalFunctionStorageKey: '__weaselOriginalFunctions__',
-  wrapTimers: false,
-  userId: undefined,
-  userName: undefined,
-  userEmail: undefined
+  wrapTimers: false
 };
 
 var state = {
@@ -251,17 +248,7 @@ function addCommonBeaconProperties(beacon) {
   beacon['r'] = defaultVars.referenceTimestamp;
   beacon['p'] = defaultVars.page;
   beacon['pl'] = defaultVars.pageLoadTraceId;
-  beacon['ui'] = defaultVars.userId;
-  beacon['un'] = defaultVars.userName;
-  beacon['ue'] = defaultVars.userEmail;
-  beacon['ul'] = languages;
   beacon['ph'] = getActivePhase();
-  beacon['ww'] = win.innerWidth;
-  beacon['wh'] = win.innerHeight;
-
-  if (doc.visibilityState) {
-    beacon['h'] = doc.visibilityState === 'hidden' ? 1 : 0;
-  }
 
   addMetaDataToBeacon(beacon);
 }
@@ -1068,7 +1055,6 @@ function instrumentXMLHttpRequest() {
       'l': win.location.href,
       'm': '',
       'u': '',
-      'a': 1,
       'st': 0,
       'e': undefined
     };
@@ -1173,7 +1159,6 @@ function instrumentXMLHttpRequest() {
       beacon['s'] = spanId;
       beacon['m'] = method;
       beacon['u'] = normalizeUrl(url);
-      beacon['a'] = async ? 1 : 0;
       beacon['bc'] = setBackendCorrelationHeaders ? 1 : 0;
 
       try {
@@ -1211,7 +1196,6 @@ function instrumentXMLHttpRequest() {
       if (setBackendCorrelationHeaders) {
         originalSetRequestHeader.call(xhr, 'X-Glowroot-T', traceId);
         originalSetRequestHeader.call(xhr, 'X-Glowroot-S', spanId);
-        originalSetRequestHeader.call(xhr, 'X-Glowroot-L', '1');
       }
 
       beacon['ts'] = now() - defaultVars.referenceTimestamp;
@@ -1464,7 +1448,6 @@ function instrumentFetch() {
       'l': win.location.href,
       'm': '',
       'u': '',
-      'a': 1,
       'st': 0,
       'e': undefined
     };
@@ -1482,13 +1465,11 @@ function instrumentFetch() {
     beacon['s'] = spanId;
     beacon['m'] = request.method;
     beacon['u'] = normalizeUrl(url);
-    beacon['a'] = 1;
     beacon['bc'] = setBackendCorrelationHeaders ? 1 : 0;
 
     if (setBackendCorrelationHeaders) {
       request.headers.append('X-Glowroot-T', traceId);
       request.headers.append('X-Glowroot-S', spanId);
-      request.headers.append('X-Glowroot-L', '1');
     }
 
     return originalFetch(request).then(function (response) {
@@ -1585,17 +1566,6 @@ function processCommand(command) {
       break;
     case 'getPageLoadId':
       return defaultVars.pageLoadTraceId;
-    case 'user':
-      if (command[1]) {
-        defaultVars.userId = String(command[1]).substring(0, 128);
-      }
-      if (command[2]) {
-        defaultVars.userName = String(command[2]).substring(0, 128);
-      }
-      if (command[3]) {
-        defaultVars.userEmail = String(command[3]).substring(0, 128);
-      }
-      break;
     default:
       {
         warn('Unsupported command: ' + command[0]);
