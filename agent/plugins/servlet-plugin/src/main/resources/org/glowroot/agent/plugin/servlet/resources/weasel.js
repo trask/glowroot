@@ -1108,9 +1108,11 @@ function instrumentXMLHttpRequest() {
       }
 
       traceId = getActiveTraceId();
-      spanId = generateUniqueId();
-      if (!traceId) {
-        traceId = spanId;
+      if (traceId) {
+        spanId = generateUniqueId();
+      } else {
+        traceId = generateUniqueId();
+        spanId = void 0;
       }
 
       setBackendCorrelationHeaders = isSameOrigin(url) || isWhitelistedOrigin(url);
@@ -1152,7 +1154,9 @@ function instrumentXMLHttpRequest() {
 
       if (setBackendCorrelationHeaders) {
         originalSetRequestHeader.call(xhr, 'X-Glowroot-T', traceId);
-        originalSetRequestHeader.call(xhr, 'X-Glowroot-S', spanId);
+        if (spanId) {
+          originalSetRequestHeader.call(xhr, 'X-Glowroot-S', spanId);
+        }
       }
 
       beacon['ts'] = now() - defaultVars.referenceTimestamp;
@@ -1403,11 +1407,14 @@ function instrumentFetch() {
     addCommonBeaconProperties(beacon);
 
     var traceId = getActiveTraceId();
-    var spanId = generateUniqueId();
-    var setBackendCorrelationHeaders = isSameOrigin(url) || isWhitelistedOrigin(url);
-    if (!traceId) {
-      traceId = spanId;
+    var spanId;
+    if (traceId) {
+      spanId = generateUniqueId();
+    } else {
+      traceId = generateUniqueId();
+      spanId = void 0;
     }
+    var setBackendCorrelationHeaders = isSameOrigin(url) || isWhitelistedOrigin(url);
 
     beacon['t'] = traceId;
     beacon['s'] = spanId;
@@ -1417,7 +1424,9 @@ function instrumentFetch() {
 
     if (setBackendCorrelationHeaders) {
       request.headers.append('X-Glowroot-T', traceId);
-      request.headers.append('X-Glowroot-S', spanId);
+      if (spanId) {
+        request.headers.append('X-Glowroot-S', spanId);
+      }
     }
 
     return originalFetch(request).then(function (response) {
