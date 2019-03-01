@@ -178,7 +178,6 @@ var defaultVars = {
   initializerExecutionTimestamp: now(),
   reportingUrl: null,
   apiKey: null,
-  meta: {},
   ignoreUrls: [],
   ignorePings: true,
   ignoreErrorMessages: [],
@@ -187,7 +186,6 @@ var defaultVars = {
   manualPageLoadEvent: false,
   manualPageLoadTriggered: false,
   autoClearResourceTimings: true,
-  page: undefined,
   wrapEventHandlers: false,
   wrappedEventHandlersOriginalFunctionStorageKey: '__weaselOriginalFunctions__',
   wrapTimers: false
@@ -225,36 +223,11 @@ function onLoad() {
   transitionTo('pageLoaded');
 }
 
-function addMetaDataToBeacon(beacon) {
-  for (var key in defaultVars.meta) {
-    if (hasOwnProperty(defaultVars.meta, key)) {
-      beacon['m_' + key] = defaultVars.meta[key];
-    }
-  }
-}
-
-var languages = determineLanguages();
-
 function addCommonBeaconProperties(beacon) {
   beacon['k'] = defaultVars.apiKey;
   beacon['r'] = defaultVars.referenceTimestamp;
-  beacon['p'] = defaultVars.page;
   beacon['pl'] = defaultVars.pageLoadTraceId;
   beacon['ph'] = getActivePhase();
-
-  addMetaDataToBeacon(beacon);
-}
-
-function determineLanguages() {
-  if (nav.languages && nav.languages.length > 0) {
-    return nav.languages.slice(0, 5).join(',');
-  }
-
-  if (typeof nav.userLanguage === 'string') {
-    return [nav.userLanguage].join(',');
-  }
-
-  return undefined;
 }
 
 var INTERNAL_END_MARKER = '<END>';
@@ -1463,9 +1436,6 @@ function processCommand(command) {
     case 'reportingUrl':
       defaultVars.reportingUrl = command[1];
       break;
-    case 'meta':
-      defaultVars.meta[command[1]] = command[2];
-      break;
     case 'traceId':
       defaultVars.pageLoadBackendTraceId = command[1];
       break;
@@ -1499,9 +1469,6 @@ function processCommand(command) {
       break;
     case 'autoClearResourceTimings':
       defaultVars.autoClearResourceTimings = command[1];
-      break;
-    case 'page':
-      defaultVars.page = command[1];
       break;
     case 'ignorePings':
       defaultVars.ignorePings = command[1];
