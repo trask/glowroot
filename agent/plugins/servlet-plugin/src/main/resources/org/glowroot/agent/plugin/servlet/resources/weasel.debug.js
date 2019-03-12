@@ -174,7 +174,7 @@ var isResourceTimingAvailable = performance && performance.getEntriesByType;
 
 var defaultVars = {
   nameOfLongGlobal: 'EumObject',
-  pageLoadTraceId: generateUniqueId(),
+  pageLoadTraceId: null,
   pageLoadBackendTraceId: null,
   serverTimingBackendTraceIdEntryName: 'intid',
   referenceTimestamp: now(),
@@ -234,7 +234,6 @@ function onLoad() {
 function addCommonBeaconProperties(beacon) {
   beacon['k'] = defaultVars.apiKey;
   beacon['r'] = defaultVars.referenceTimestamp;
-  beacon['pl'] = defaultVars.pageLoadTraceId;
   beacon['ph'] = getActivePhase();
 }
 
@@ -724,7 +723,6 @@ function sendPageLoadBeacon() {
 
   beacon['ty'] = 'pl';
   beacon['t'] = defaultVars.pageLoadTraceId;
-  beacon['bt'] = defaultVars.pageLoadBackendTraceId;
   beacon['u'] = win.location.href;
   beacon['ph'] = pageLoad;
 
@@ -1192,7 +1190,7 @@ function instrumentXMLHttpRequest() {
   win.XMLHttpRequest = InstrumentedXMLHttpRequest;
 }
 
-function getPageLoadBackendTraceId() {
+function getPageLoadTraceId() {
   if (!isResourceTimingAvailable) {
     return null;
   }
