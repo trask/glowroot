@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 the original author or authors.
+ * Copyright 2018-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,6 +100,10 @@ public class MongoDB {
         run("3.8.0");
         run("3.8.1");
         run("3.8.2");
+        run("3.9.0");
+        run("3.9.1");
+        run("3.10.0");
+        run("3.10.1");
     }
 
     private static void run(String version) throws Exception {

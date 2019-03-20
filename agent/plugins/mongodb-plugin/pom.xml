@@ -127,7 +127,7 @@
     <profile>
       <id>mongodb-3.7.x</id>
       <properties>
-        <mongodb.driver.version>3.8.2</mongodb.driver.version>
+        <mongodb.driver.version>3.10.1</mongodb.driver.version>
       </properties>
       <dependencies>
         <dependency>
