@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,21 +92,7 @@ public class ResultSetAspect {
         }
     }
 
-    @Pointcut(className = "java.lang.Iterable",
-            subTypeRestriction = "com.datastax.driver.core.ResultSet",
-            methodName = "iterator", methodParameterTypes = {})
-    public static class IteratorAdvice {
-
-        @OnReturn
-        public static void onReturn(@BindReceiver ResultSetMixin resultSet) {
-            QueryEntry queryEntry = resultSet.glowroot$getQueryEntry();
-            if (queryEntry == null) {
-                // tracing must be disabled (e.g. exceeded trace entry limit)
-                return;
-            }
-            queryEntry.rowNavigationAttempted();
-        }
-    }
+    // TODO support all()
 
     @Pointcut(className = "com.datastax.driver.core.PagingIterable"
             + "|com.datastax.driver.core.ResultSet",
