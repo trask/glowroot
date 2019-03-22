@@ -71,146 +71,14 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-camel-plugin</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-cassandra-plugin</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-ejb-plugin</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-elasticsearch-plugin</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-executor-plugin</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-grails-plugin</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-hibernate-plugin</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-http-client-plugin</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-java-http-server-plugin</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-jaxrs-plugin</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-jdbc-plugin</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-jms-plugin</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-jsf-plugin</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-jsp-plugin</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-kafka-plugin</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-logger-plugin</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-mail-plugin</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-mongodb-plugin</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-play-plugin</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-netty-plugin</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-quartz-plugin</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-redis-plugin</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-servlet-plugin</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-spring-plugin</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-struts-plugin</artifactId>
+      <groupId>org.glowroot.xyzzy.instrumentation</groupId>
+      <artifactId>instrumentation-all</artifactId>
       <version>${project.version}</version>
     </dependency>
   </dependencies>
 
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.glowroot</groupId>
-        <artifactId>glowroot-agent-dist-maven-plugin</artifactId>
-        <version>${project.version}</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>generate</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
         <configuration>
@@ -225,17 +93,9 @@
               the transitive dependencies end up being included without this explicit includes -->
             <includes>
               <include>org.glowroot:glowroot-agent-core</include>
-              <include>org.glowroot:glowroot-agent-*-plugin</include>
+              <include>org.glowroot.xyzzy.instrumentation:glowroot-instrumentation-all</include>
             </includes>
           </artifactSet>
-          <filters>
-            <filter>
-              <artifact>org.glowroot:glowroot-agent-*-plugin</artifact>
-              <excludes>
-                <exclude>META-INF/glowroot.plugin.json</exclude>
-              </excludes>
-            </filter>
-          </filters>
           <transformers>
             <transformer
               implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">

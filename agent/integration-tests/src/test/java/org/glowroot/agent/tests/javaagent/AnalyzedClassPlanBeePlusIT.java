@@ -30,8 +30,8 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.CustomInstrumentationConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.CustomInstrumentationConfig.CaptureKind;
 
 public class AnalyzedClassPlanBeePlusIT {
 
@@ -55,8 +55,8 @@ public class AnalyzedClassPlanBeePlusIT {
     @Test
     public void shouldLogWarningInAnalyzedWorldPlanB() throws Exception {
         // given
-        updateInstrumentationConfigs();
-        container.addExpectedLogMessage("org.glowroot.agent.weaving.AnalyzedWorld",
+        updateCustomInstrumentationConfigs();
+        container.addExpectedLogMessage("org.glowroot.xyzzy.engine.weaving.AnalyzedWorld",
                 AnalyzedClassPlanBeePlusIT.class.getName()
                         + "$Y was not woven with requested advice");
         // when
@@ -65,15 +65,15 @@ public class AnalyzedClassPlanBeePlusIT {
         // container close will validate that there were no unexpected warnings or errors
     }
 
-    private static void updateInstrumentationConfigs() throws Exception {
-        InstrumentationConfig config = InstrumentationConfig.newBuilder()
+    private static void updateCustomInstrumentationConfigs() throws Exception {
+        CustomInstrumentationConfig config = CustomInstrumentationConfig.newBuilder()
                 .setClassName(AnalyzedClassPlanBeePlusIT.class.getName() + "$Y")
                 .setMethodName("y")
                 .setMethodReturnType("")
                 .setCaptureKind(CaptureKind.TIMER)
                 .setTimerName("y")
                 .build();
-        container.getConfigService().updateInstrumentationConfigs(ImmutableList.of(config));
+        container.getConfigService().updateCustomInstrumentationConfigs(ImmutableList.of(config));
     }
 
     public static class ShouldLogWarningInAnalyzedWorldPlanB implements AppUnderTest {

@@ -50,9 +50,9 @@ import com.ning.compress.lzf.util.ChunkEncoderFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.util.JavaVersion;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.SizeLimitBypassingParser;
+import org.glowroot.xyzzy.engine.util.JavaVersion;
 
 import static com.google.common.base.Charsets.UTF_8;
 

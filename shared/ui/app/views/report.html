@@ -1,0 +1,59 @@
+<!--
+  Copyright 2016-2018 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<div class="gt-header">
+  <div class="gt-header-lhs"
+       ng-if="!layout.embeddedAgentRollup.display">
+    <h1 class="gt-header-text">
+      Reporting
+    </h1>
+  </div>
+  <div class="gt-header-lhs"
+       ng-if="layout.embeddedAgentRollup.display">
+    <div class="gt-header-text">
+      {{layout.embeddedAgentRollup.display}}
+    </div>
+    <!-- don't use border to simulate vertical bar since this will jitter on reload (at least in Chrome)
+         while chrome guesses the placement of the border based on default font and then it moves slightly
+         once font is available -->
+    <div class="gt-header-text gt-separator">
+      |
+    </div>
+    <h1 class="gt-header-text">
+      Reporting
+    </h1>
+  </div>
+</div>
+
+<div class="gt-sidebar hidden-print">
+  <div class="card">
+    <div class="list-group">
+      <div gt-sidebar-item
+           gt-display="Ad hoc report"
+           gt-url="report/ad-hoc"
+           gt-active="currentUrl() === 'report/ad-hoc'">
+      </div>
+    </div>
+  </div>
+</div>
+<div class="card gt-main-column">
+  <div class="card-header">
+    <h2>{{heading}}</h2>
+  </div>
+  <div class="card-body">
+    <div ui-view>
+    </div>
+  </div>
+</div>

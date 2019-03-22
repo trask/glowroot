@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,10 +33,11 @@ public class JRebelWorkaround {
         try {
             // cannot check ManagementFactory.getRuntimeMXBean().getInputArguments() here because
             // that can trigger java.util.logging.Logger to be loaded (e.g. on WebSphere 8.5) before
-            // weaving is put in place (preventing the logger plugin from weaving JUL Logger)
+            // weaving is put in place (preventing the logger instrumentation from weaving JUL
+            // Logger)
             //
             // also cannot use ExecutorService here before weaving is put in place (preventing the
-            // executor plugin from weaving ExecutorService)
+            // executor instrumentation from weaving ExecutorService)
             Thread thread = new Thread(new Runnable() {
                 @Override
                 public void run() {

@@ -166,7 +166,7 @@
                 glowroot.logback.xml configuration file (don't want to use jul-to-slf4j because that
                 will affect the whole JVM under test) -->
               <pattern>java.util.logging</pattern>
-              <shadedPattern>org.glowroot.agent.jul</shadedPattern>
+              <shadedPattern>org.glowroot.xyzzy.engine.jul</shadedPattern>
             </relocation>
             <relocation>
               <!-- leveraging logback shaded in glowroot-agent-core so that they can share same

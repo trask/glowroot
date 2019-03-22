@@ -1,0 +1,17 @@
+{
+  "name": "HTTP Client",
+  "id": "http-client",
+  "classes": [
+    "org.glowroot.xyzzy.instrumentation.httpclient.ApacheHttpClientInstrumentation",
+    "org.glowroot.xyzzy.instrumentation.httpclient.ApacheHttpAsyncClientInstrumentation",
+    "org.glowroot.xyzzy.instrumentation.httpclient.ApacheHttpClient3xInstrumentation",
+    "org.glowroot.xyzzy.instrumentation.httpclient.AsyncHttpClient1xInstrumentation",
+    "org.glowroot.xyzzy.instrumentation.httpclient.AsyncHttpClientInstrumentation",
+    "org.glowroot.xyzzy.instrumentation.httpclient.HttpURLConnectionInstrumentation",
+    "org.glowroot.xyzzy.instrumentation.httpclient.OkHttpInstrumentation",
+    "org.glowroot.xyzzy.instrumentation.httpclient.OkHttp2xInstrumentation",
+    "org.glowroot.xyzzy.instrumentation.httpclient.AxisClientInstrumentation",
+    "org.glowroot.xyzzy.instrumentation.httpclient.WiremockApacheHttpClientInstrumentation"
+  ],
+  "collocate": true
+}

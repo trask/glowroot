@@ -54,8 +54,6 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.impl.TraceCollector;
 import org.glowroot.agent.impl.TransactionRegistry;
-import org.glowroot.agent.util.JavaVersion;
-import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.common.live.LiveJvmService;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.Masking;
@@ -66,6 +64,8 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapHistogram;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDump;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpRequest.MBeanDumpKind;
+import org.glowroot.xyzzy.engine.util.JavaVersion;
+import org.glowroot.xyzzy.engine.util.LazyPlatformMBeanServer;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanMeta;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
 

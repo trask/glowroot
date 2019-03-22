@@ -1,0 +1,42 @@
+{
+  "name": "JMS",
+  "id": "jms",
+  "advice": [
+    {
+      "className": "javax.jms.MessageListener",
+      "methodName": "onMessage",
+      "methodParameterTypes": [
+        "javax.jms.Message"
+      ],
+      "nestingGroup": "jms",
+      "captureKind": "transaction",
+      "transactionType": "Background",
+      "transactionNameTemplate": "JMS Message: {{this.class.simpleName}}",
+      "alreadyInTransactionBehavior": "capture-trace-entry",
+      "timerName": "jms message"
+    },
+    {
+      "className": "javax.jms.MessageProducer",
+      "methodName": "send",
+      "methodParameterTypes": [
+        "javax.jms.Message",
+        ".."
+      ],
+      "nestingGroup": "jms",
+      "captureKind": "timer",
+      "timerName": "jms send message"
+    },
+    {
+      "className": "javax.jms.MessageProducer",
+      "methodName": "send",
+      "methodParameterTypes": [
+        "javax.jms.Destination",
+        "javax.jms.Message",
+        ".."
+      ],
+      "nestingGroup": "jms",
+      "captureKind": "timer",
+      "timerName": "jms send message"
+    }
+  ]
+}

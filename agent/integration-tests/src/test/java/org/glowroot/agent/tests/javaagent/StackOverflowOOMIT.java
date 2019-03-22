@@ -26,7 +26,6 @@ import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
 import org.glowroot.agent.tests.app.StackOverflowTester;
-import org.glowroot.agent.util.JavaVersion;
 
 public class StackOverflowOOMIT {
 
@@ -35,7 +34,7 @@ public class StackOverflowOOMIT {
     @BeforeClass
     public static void setUp() throws Exception {
         // need memory limited javaagent
-        if (JavaVersion.isJ9Jvm()) {
+        if (isJ9Jvm()) {
             // memory is slightly higher for IBM J9 VM and much higher for Eclipse OpenJ9 VM
             container = JavaagentContainer.createWithExtraJvmArgs(ImmutableList.of("-Xmx512m"));
         } else {
@@ -60,6 +59,11 @@ public class StackOverflowOOMIT {
         container.execute(StackOverflowOOMApp.class);
         // then
         // don't run OOM
+    }
+
+    private static boolean isJ9Jvm() {
+        String javaVmName = System.getProperty("java.vm.name");
+        return "IBM J9 VM".equals(javaVmName) || "Eclipse OpenJ9 VM".equals(javaVmName);
     }
 
     public static class StackOverflowOOMApp implements AppUnderTest, TransactionMarker {

@@ -44,8 +44,8 @@ class JavaagentServiceImpl extends JavaagentServiceImplBase {
 
     static {
         // only check threads for glowroot-agent-integration-tests
-        // it is not always possible to clean up threads in plugin tests, e.g. OkHttp starts a
-        // couple of threads that are not stoppable
+        // it is not always possible to clean up threads in instrumentation tests, e.g. OkHttp
+        // starts a couple of threads that are not stoppable
         CHECK_THREADS = Boolean.getBoolean("glowroot.test.checkThreads");
     }
 

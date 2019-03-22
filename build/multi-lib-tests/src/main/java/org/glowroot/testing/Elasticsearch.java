@@ -20,7 +20,7 @@ import static org.glowroot.testing.JavaVersion.JAVA8;
 
 public class Elasticsearch {
 
-    private static final String MODULE_PATH = "agent/plugins/elasticsearch-plugin";
+    private static final String MODULE_PATH = "instrumentation/elasticsearch";
 
     public static void main(String[] args) throws Exception {
         run2x("2.0.0");

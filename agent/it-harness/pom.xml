@@ -24,7 +24,7 @@
     </dependency>
     <dependency>
       <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-wire-api</artifactId>
+      <artifactId>glowroot-shared-wire-api</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -67,9 +67,9 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>org.glowroot.build</groupId>
-      <artifactId>glowroot-build-error-prone-jdk6</artifactId>
-      <version>${project.version}</version>
+      <groupId>com.github.trask</groupId>
+      <artifactId>error-prone-annotations-for-jdk6</artifactId>
+      <version>1.0.0</version>
       <!-- don't need this dependency at runtime since only annotations -->
       <optional>true</optional>
     </dependency>
@@ -149,9 +149,9 @@
       </activation>
       <dependencies>
         <dependency>
-          <groupId>org.glowroot.build</groupId>
-          <artifactId>glowroot-build-checker-jdk6</artifactId>
-          <version>${project.version}</version>
+          <groupId>com.github.trask</groupId>
+          <artifactId>checker-framework-annotations-for-jdk6</artifactId>
+          <version>1.0.0</version>
           <!-- don't need this dependency at runtime since only annotations -->
           <optional>true</optional>
         </dependency>

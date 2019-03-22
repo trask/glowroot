@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,11 @@ import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
-import org.glowroot.agent.plugin.api.AuxThreadContext;
-import org.glowroot.agent.plugin.api.ThreadContext.ServletRequestInfo;
-import org.glowroot.agent.plugin.api.TraceEntry;
+import org.glowroot.xyzzy.engine.bytecode.api.ThreadContextThreadLocal;
+import org.glowroot.xyzzy.engine.impl.NopTransactionService;
+import org.glowroot.xyzzy.instrumentation.api.AuxThreadContext;
+import org.glowroot.xyzzy.instrumentation.api.TraceEntry;
+import org.glowroot.xyzzy.instrumentation.api.ThreadContext.ServletRequestInfo;
 
 import static org.glowroot.agent.util.Checkers.castInitialized;
 
@@ -46,20 +46,18 @@ class AuxThreadContextImpl implements AuxThreadContext {
     private final @Nullable ServletRequestInfo servletRequestInfo;
     private final @Nullable ImmutableList<StackTraceElement> locationStackTrace;
     private final TransactionRegistry transactionRegistry;
-    private final TransactionService transactionService;
 
     AuxThreadContextImpl(Transaction transaction, @Nullable TraceEntryImpl parentTraceEntry,
             @Nullable TraceEntryImpl parentThreadContextPriorEntry,
             @Nullable ServletRequestInfo servletRequestInfo,
             @Nullable ImmutableList<StackTraceElement> locationStackTrace,
-            TransactionRegistry transactionRegistry, TransactionService transactionService) {
+            TransactionRegistry transactionRegistry) {
         this.transaction = transaction;
         this.parentTraceEntry = parentTraceEntry;
         this.parentThreadContextPriorEntry = parentThreadContextPriorEntry;
         this.servletRequestInfo = servletRequestInfo;
         this.locationStackTrace = locationStackTrace;
         this.transactionRegistry = transactionRegistry;
-        this.transactionService = transactionService;
         if (logger.isDebugEnabled()
                 && !Thread.currentThread().getName().startsWith("Glowroot-GRPC-")
                 && inAuxDebugLogging.get() == null) {
@@ -95,7 +93,7 @@ class AuxThreadContextImpl implements AuxThreadContext {
             }
             return NopTransactionService.TRACE_ENTRY;
         }
-        context = transactionService.startAuxThreadContextInternal(transaction, parentTraceEntry,
+        context = transactionRegistry.startAuxThreadContextInternal(transaction, parentTraceEntry,
                 parentThreadContextPriorEntry, servletRequestInfo, threadContextHolder);
         if (context == null) {
             // transaction is already complete or auxiliary thread context limit exceeded

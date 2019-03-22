@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.util;
 
+import org.glowroot.xyzzy.engine.util.JavaVersion;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -55,10 +56,9 @@ public class MissingOptionalDependenciesReflectionTest {
         DefaultContextCache.class.getDeclaredField("hitCount");
     }
 
-    @Test
     public void testReflectionsGetAnyMethod() throws Exception {
         thrown.expect(NoSuchMethodException.class);
-        Reflections.getAnyMethod(DefaultContextCache.class, "size");
+        DefaultContextCache.class.getDeclaredMethod("size");
     }
 
     @Test

@@ -1,0 +1,21 @@
+{
+  "name": "Camel",
+  "id": "camel",
+  "advice": [
+    {
+      "className": "org.apache.camel.processor.Pipeline",
+      "methodName": "process",
+      "methodParameterTypes": [
+        "org.apache.camel.Exchange",
+        ".."
+      ],
+      "nestingGroup": "camel-process",
+      "captureKind": "transaction",
+      "transactionType": "Background",
+      "transactionNameTemplate": "Camel pipeline",
+      "alreadyInTransactionBehavior": "capture-trace-entry",
+      "traceEntryMessageTemplate": "camel pipeline => {{_}}",
+      "timerName": "camel pipeline"
+    }
+  ]
+}

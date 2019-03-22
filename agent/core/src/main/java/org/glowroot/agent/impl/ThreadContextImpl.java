@@ -32,10 +32,6 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.bytecode.api.BytecodeServiceHolder;
-import org.glowroot.agent.bytecode.api.ThreadContextPlus;
-import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
-import org.glowroot.agent.impl.NopTransactionService.NopTimer;
 import org.glowroot.agent.model.AsyncQueryData;
 import org.glowroot.agent.model.AsyncTimer;
 import org.glowroot.agent.model.ErrorMessage;
@@ -47,21 +43,26 @@ import org.glowroot.agent.model.ServiceCallCollector;
 import org.glowroot.agent.model.SyncQueryData;
 import org.glowroot.agent.model.ThreadStats;
 import org.glowroot.agent.model.ThreadStatsComponent;
-import org.glowroot.agent.model.TimerNameImpl;
-import org.glowroot.agent.plugin.api.AsyncQueryEntry;
-import org.glowroot.agent.plugin.api.AsyncTraceEntry;
-import org.glowroot.agent.plugin.api.AuxThreadContext;
-import org.glowroot.agent.plugin.api.MessageSupplier;
-import org.glowroot.agent.plugin.api.QueryEntry;
-import org.glowroot.agent.plugin.api.QueryMessageSupplier;
-import org.glowroot.agent.plugin.api.ThreadContext;
-import org.glowroot.agent.plugin.api.Timer;
-import org.glowroot.agent.plugin.api.TimerName;
-import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.agent.util.Tickers;
 import org.glowroot.common.config.AdvancedConfig;
 import org.glowroot.common.util.NotAvailableAware;
+import org.glowroot.xyzzy.engine.bytecode.api.BytecodeServiceHolder;
+import org.glowroot.xyzzy.engine.bytecode.api.ThreadContextPlus;
+import org.glowroot.xyzzy.engine.bytecode.api.ThreadContextThreadLocal;
+import org.glowroot.xyzzy.engine.impl.NopTransactionService;
+import org.glowroot.xyzzy.engine.impl.OptionalThreadContextImpl;
+import org.glowroot.xyzzy.engine.impl.TimerNameImpl;
+import org.glowroot.xyzzy.instrumentation.api.AsyncQueryEntry;
+import org.glowroot.xyzzy.instrumentation.api.AsyncTraceEntry;
+import org.glowroot.xyzzy.instrumentation.api.AuxThreadContext;
+import org.glowroot.xyzzy.instrumentation.api.MessageSupplier;
+import org.glowroot.xyzzy.instrumentation.api.QueryEntry;
+import org.glowroot.xyzzy.instrumentation.api.QueryMessageSupplier;
+import org.glowroot.xyzzy.instrumentation.api.ThreadContext;
+import org.glowroot.xyzzy.instrumentation.api.Timer;
+import org.glowroot.xyzzy.instrumentation.api.TimerName;
+import org.glowroot.xyzzy.instrumentation.api.TraceEntry;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.agent.util.Checkers.castInitialized;
@@ -433,7 +434,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
         ImmutableList<StackTraceElement> locationStackTrace = null;
         if (CAPTURE_AUXILIARY_THREAD_LOCATION_STACK_TRACES) {
             StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-            // strip up through this method, plus 1 additional method (the plugin advice method)
+            // strip up through this method, plus 1 (the instrumentation advice method)
             int index = getNormalizedStartIndex(stackTrace, "createAuxThreadContext", 1);
             locationStackTrace = ImmutableList.copyOf(stackTrace).subList(index, stackTrace.length);
         }
@@ -441,13 +442,12 @@ public class ThreadContextImpl implements ThreadContextPlus {
             // no auxiliary thread context hierarchy after limit exceeded in order to limit the
             // retention of auxiliary thread contexts
             return new AuxThreadContextImpl(transaction, null, null, servletRequestInfo,
-                    locationStackTrace, transaction.getTransactionRegistry(),
-                    transaction.getTransactionService());
+                    locationStackTrace, transaction.getTransactionRegistry());
         } else {
             mayHaveChildAuxThreadContext = true;
             return new AuxThreadContextImpl(transaction, traceEntryComponent.getActiveEntry(),
                     traceEntryComponent.getTailEntry(), servletRequestInfo, locationStackTrace,
-                    transaction.getTransactionRegistry(), transaction.getTransactionService());
+                    transaction.getTransactionRegistry());
         }
     }
 
@@ -570,7 +570,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
         transaction.getConfigService().readMemoryBarrier();
         if (transaction.isOuter()
                 || alreadyInTransactionBehavior == AlreadyInTransactionBehavior.CAPTURE_NEW_TRANSACTION) {
-            TraceEntryImpl traceEntry = transaction.startInnerTransaction(transactionType,
+            TraceEntry traceEntry = transaction.startInnerTransaction(transactionType,
                     transactionName, messageSupplier, timerName, threadContextHolder,
                     currentNestingGroupId, currentSuppressionKeyId);
             innerTransactionThreadContext =
@@ -807,11 +807,11 @@ public class ThreadContextImpl implements ThreadContextPlus {
     public Timer startTimer(TimerName timerName) {
         if (timerName == null) {
             logger.error("startTimer(): argument 'timerName' must be non-null");
-            return NopTimer.INSTANCE;
+            return NopTransactionService.TIMER;
         }
         if (currentTimer == null) {
             logger.warn("startTimer(): called on completed thread context");
-            return NopTimer.INSTANCE;
+            return NopTransactionService.TIMER;
         }
         return currentTimer.startNestedTimer(timerName);
     }
@@ -1197,7 +1197,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
                         // thread context has ended, cannot extend sync timer
                         // (this is ok, see https://github.com/glowroot/glowroot/issues/418)
                         selfNestingLevel--;
-                        return NopTimer.INSTANCE;
+                        return NopTransactionService.TIMER;
                     }
                     extendSync(ticker.read(), currentTimerLocal);
                 }
@@ -1274,10 +1274,10 @@ public class ThreadContextImpl implements ThreadContextPlus {
         @Override
         public Timer extendSyncTimer(ThreadContext currThreadContext) {
             if (currThreadContext != this) {
-                return NopTimer.INSTANCE;
+                return NopTransactionService.TIMER;
             }
-            // this thread context was passed in from plugin, so it is still active, and so current
-            // timer must be non-null
+            // this thread context was passed in from instrumentation, so it is still active, and so
+            // current timer must be non-null
             return syncTimer.extend(checkNotNull(getCurrentTimer()));
         }
 

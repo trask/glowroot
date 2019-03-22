@@ -1,0 +1,196 @@
+<!--
+  Copyright 2012-2019 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<div class="card">
+  <div class="card-header">
+    <h2>Custom instrumentation</h2>
+  </div>
+  <div class="card-body">
+    <div ng-hide="hideMainContent()">
+      <div ng-include src="'template/gt-loading-overlay.html'"></div>
+      <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+      <div style="margin: 15px;">
+        <div ng-if="!configs.length"
+             style="font-style: italic;">
+          There is no custom instrumentation
+        </div>
+        <div ng-repeat="config in configs"
+             class="gt-second-line-indent"
+             style="padding-bottom: 8px;">
+          <span style="padding-right: 20px;">
+            {{displayExtra(config)}}
+          </span>
+          <a ng-href="config/custom-instrumentation{{customInstrumentationQueryString(config)}}">
+            {{display(config)}}
+          </a>
+        </div>
+        <div style="margin: 20px 60px 0 0;" ng-if="dirty">
+          <strong>
+            Restart the JVM to apply changes<span ng-if="showApplyChangesButton()">, or use the
+            "Apply changes without restart" button below.</span><span ng-if="!showApplyChangesButton()">.</span>
+          </strong>
+        </div>
+        <!-- ng-if="loaded" is used to prevent jitter of seeing this section very briefly
+             before it gets pushed down by existing custom instrumentation -->
+        <div ng-if="loaded && agentRollup.permissions.config.edit.instrumentation"
+             style="font-size: 1rem; margin-top: 30px;">
+          <!-- using gt-button-group even though only a single gt-button because otherwise the success message will be
+               tied to the gt-button which will then get hidden due to ng-if="dirty" -->
+          <div gt-button-group>
+            <a class="btn btn-primary gt-button-spacing"
+               href="config/custom-instrumentation{{newQueryString()}}">
+              Add new
+            </a>
+            <button ng-click="displayImportModal()"
+                    class="btn btn-secondary gt-button-spacing">
+              Import
+            </button>
+            <button ng-click="displayExportModal()"
+                    ng-if="configs.length"
+                    class="btn btn-secondary gt-button-spacing">
+              Export all
+            </button>
+            <button ng-click="displayDeleteAllConfirmationModal()"
+                    ng-if="configs.length"
+                    class="btn btn-danger gt-button-spacing">
+              Delete all
+            </button>
+            <div gt-button
+                 gt-btn-class="btn-secondary"
+                 gt-label="Apply changes without restart"
+                 gt-click="retransformClasses(deferred)"
+                 gt-confirm-header="Apply changes without restart?"
+                 gt-confirm-body="Warning: This has chance of crashing the JVM (especially on older JVMs)."
+                 ng-if="dirty && jvmRetransformClassesSupported"
+                 class="d-inline-block">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal"
+     role="dialog"
+     tabindex="-1"
+     id="importModal">
+  <div class="modal-dialog modal-dialog-centered gt-modal-dialog-md"
+       role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Import instrumentation</h3>
+        <button type="button"
+                class="close"
+                data-dismiss="modal"
+                aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding-top: 20px; padding-bottom: 20px;">
+        <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label for="jsonToImport" class="col-form-label">JSON definition</label>
+          <textarea class="form-control"
+                    ng-model="jsonToImport"
+                    id="jsonToImport"
+                    rows="15">
+          </textarea>
+        </div>
+        <div style="min-height: 60px;">
+          <div class="d-inline-block">
+            <div gt-spinner
+                 gt-show="importing"
+                 class="gt-left-aligned-spinner"
+                 style="width: 50px; margin-bottom: -30px;">
+            </div>
+          </div>
+          <div class="gt-button-message gt-button-message-error"
+               style="margin-left: 0; padding-top: 20px;"
+               ng-if="importErrorMessage">
+            {{importErrorMessage}}
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" ng-click="importFromJson()">Import</button>
+        <button class="btn btn-primary" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal"
+     role="dialog"
+     tabindex="-1"
+     id="exportModal">
+  <div class="modal-dialog modal-dialog-centered gt-modal-dialog-md"
+       role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          Instrumentation JSON
+          <span class="fas fa-clipboard gt-clip"
+                style="font-size: 14px; vertical-align: 5px; position: inherit; margin-left: 5px;"></span>
+        </h3>
+        <button type="button"
+                class="close"
+                data-dismiss="modal"
+                aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding-top: 20px; height: 500px; overflow-y: auto;">
+        <pre id="jsonExport" style="white-space: pre-wrap; word-wrap: break-word;">{{jsonExport}}</pre>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal"
+     role="dialog"
+     tabindex="-1"
+     id="deleteAllConfirmationModal">
+  <div class="modal-dialog modal-dialog-centered"
+       role="document"
+       style="max-width: 500px;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Delete all</h3>
+        <button type="button"
+                class="close"
+                data-dismiss="modal"
+                aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete all custom instrumentation?</p>
+        <div style="min-height: 60px;">
+          <div class="d-inline-block">
+            <div gt-spinner
+                 gt-show="deletingAll"
+                 class="gt-left-aligned-spinner"
+                 style="width: 50px; margin-bottom: -30px;">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-danger" ng-click="deleteAll()">Yes</button>
+        <button class="btn btn-primary" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- each page with confirmation dialog needs its own confirmation dom so that it is deleted on $destroy -->
+<div ng-include="'template/gt-confirmation.html'"></div>

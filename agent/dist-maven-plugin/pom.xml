@@ -19,16 +19,6 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-core-unshaded</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-common</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-plugin-api</artifactId>
       <!-- version should match requireMavenVersion in parent pom -->
@@ -49,30 +39,6 @@
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
     </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-annotations</artifactId>
-    </dependency>
-    <dependency>
-      <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
-      <groupId>org.ow2.asm</groupId>
-      <artifactId>asm</artifactId>
-      <version>7.0</version>
-    </dependency>
-    <dependency>
-      <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
-      <groupId>org.ow2.asm</groupId>
-      <artifactId>asm-commons</artifactId>
-      <version>7.0</version>
-    </dependency>
   </dependencies>
 
   <build>
@@ -90,4 +56,27 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <!-- use custom-built jdk6 compatible checker framework annotations by default except when
+        actually running checker framework code quality tests, in which case the real checker
+        framework annotations are provided -->
+      <id>not-the-checker-build</id>
+      <activation>
+        <property>
+          <name>!glowroot.checker.build</name>
+        </property>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>com.github.trask</groupId>
+          <artifactId>checker-framework-annotations-for-jdk6</artifactId>
+          <version>1.0.0</version>
+          <!-- don't need this dependency at runtime since only annotations -->
+          <optional>true</optional>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
 </project>

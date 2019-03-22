@@ -22,9 +22,6 @@ import java.util.concurrent.ExecutorService;
 import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.glowroot.agent.api.Instrumentation;
-import org.glowroot.agent.api.Instrumentation.AlreadyInTransactionBehavior;
 import org.glowroot.central.repo.AlertingDisabledDao;
 import org.glowroot.central.repo.ConfigRepositoryImpl;
 import org.glowroot.central.util.MoreExecutors2;
@@ -33,6 +30,8 @@ import org.glowroot.common2.repo.ConfigRepository.AgentConfigNotFoundException;
 import org.glowroot.common2.repo.util.AlertingService;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
+import org.glowroot.xyzzy.annotation.api.Instrumentation;
+import org.glowroot.xyzzy.annotation.api.Instrumentation.AlreadyInTransactionBehavior;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;

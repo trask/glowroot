@@ -250,7 +250,7 @@
                 java util logging from being initialized early (e.g. in the case of wildfly which
                 wants to do some setup before jul is initialized) -->
               <pattern>java.util.logging</pattern>
-              <shadedPattern>org.glowroot.agent.jul</shadedPattern>
+              <shadedPattern>org.glowroot.xyzzy.engine.jul</shadedPattern>
               <excludes>
                 <!-- don't shade the system property key "java.util.logging.manager" (unshaded
                   string is needed in LazyPlatformMBeanServer) -->

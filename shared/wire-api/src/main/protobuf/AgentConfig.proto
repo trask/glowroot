@@ -1,0 +1,264 @@
+syntax = "proto3";
+
+import "Common.proto";
+
+package org_glowroot_wire_api_model;
+
+option java_package = "org.glowroot.wire.api.model";
+
+message AgentConfig {
+
+  // only used when sending to central and storing in central
+  bool config_read_only = 18;
+
+  GeneralConfig general_config = 16; // only stored in central
+  TransactionConfig transaction_config = 2;
+  JvmConfig jvm_config = 17;
+  UiDefaultsConfig ui_defaults_config = 3;
+  AdvancedConfig advanced_config = 5;
+
+  repeated GaugeConfig gauge_config = 10;
+  repeated SyntheticMonitorConfig synthetic_monitor_config = 14;
+  repeated OldAlertConfig old_alert_config = 11;
+  repeated AlertConfig alert_config = 15;
+  repeated InstrumentationConfig instrumentation_config = 12;
+  repeated CustomInstrumentationConfig custom_instrumentation_config = 13;
+
+  // only stored in central
+  message GeneralConfig {
+    string display = 1;
+  }
+
+  message TransactionConfig {
+    OptionalInt32 slow_threshold_millis = 1; // optional used due to non-zero default value
+    OptionalInt32 profiling_interval_millis = 2; // optional used due to non-zero default value
+    bool capture_thread_stats = 3;
+    repeated SlowThresholdOverride slow_threshold_override = 4;
+  }
+
+  message SlowThresholdOverride {
+    string transaction_type = 1;
+    string transaction_name = 2;
+    string user = 4;
+    int32 threshold_millis = 3;
+  }
+
+  message JvmConfig {
+    repeated string mask_system_property = 1;
+    repeated string mask_mbean_attribute = 2;
+  }
+
+  message UiDefaultsConfig {
+    string default_transaction_type = 1;
+    repeated double default_percentile = 2;
+    repeated string default_gauge_name = 3;
+  }
+
+  message AdvancedConfig {
+    // optionals used below due to non-zero default value
+    OptionalInt32 immediate_partial_store_threshold_seconds = 2;
+    OptionalInt32 max_transaction_aggregates = 3;
+    OptionalInt32 max_query_aggregates = 4;
+    OptionalInt32 max_service_call_aggregates = 5;
+    OptionalInt32 max_trace_entries_per_transaction = 6;
+    OptionalInt32 max_profile_samples_per_transaction = 7;
+    OptionalInt32 mbean_gauge_not_found_delay_seconds = 8;
+    bool weaving_timer = 1;
+  }
+
+  message GaugeConfig {
+    string mbean_object_name = 1;
+    repeated MBeanAttribute mbean_attribute = 2;
+  }
+
+  message SyntheticMonitorConfig {
+    string id = 1;
+    SyntheticMonitorKind kind = 3;
+    string display = 2; // optional for type ping, required for type java
+    string ping_url = 4;
+    string java_source = 5;
+
+    enum SyntheticMonitorKind {
+      PING = 0;
+      JAVA = 1;
+    }
+  }
+
+  message OldAlertConfig {
+    AlertKind kind = 1;
+    string transaction_type = 2;
+    OptionalDouble transaction_percentile = 3;
+    OptionalInt32 min_transaction_count = 5;
+    string gauge_name = 6;
+    OptionalDouble gauge_threshold = 7;
+    string synthetic_monitor_id = 12;
+    OptionalInt32 threshold_millis = 4; // used by TRANSACTION, SYNTHETIC_MONITOR
+    int32 time_period_seconds = 8; // used by TRANSACTION, GAUGE, HEARTBEAT
+    repeated string email_address = 9;
+
+    // string id = 1000; // not used on agent side
+
+    enum AlertKind {
+      TRANSACTION = 0;
+      GAUGE = 1;
+      HEARTBEAT = 2;
+      SYNTHETIC_MONITOR = 4;
+    }
+  }
+
+  message AlertConfig {
+
+    // condition and notification are split out into their own messages because it is convenient
+    // for passing them around and storing them separately from their AlertConfig
+    // (e.g. the condition is used and stored separately as unique key to track incidents
+    // independent of any notifications, including any changes to the notifications)
+
+    AlertCondition condition = 1;
+    AlertSeverity severity = 3;
+    AlertNotification notification = 2;
+
+    // do not use field number 4 -- it was used in a 0.13.0-SNAPSHOT release (for a 'disabled' flag)
+
+    message AlertCondition {
+      oneof val {
+        MetricCondition metric_condition = 1;
+        SyntheticMonitorCondition synthetic_monitor_condition = 2;
+        HeartbeatCondition heartbeat_condition = 3;
+      }
+
+      message MetricCondition {
+        string metric = 1;
+        string transaction_type = 2;
+        string transaction_name = 3;
+        OptionalDouble percentile = 4;
+        string error_message_filter = 5;
+
+        double threshold = 100;
+        bool lower_bound_threshold = 101;
+        int32 time_period_seconds = 102;
+        int64 min_transaction_count = 103; // not applicable for all metric conditions
+                                           // see AlertingService.hasMinTransactionCount()
+        // OptionalInt32 consecutive_time_periods = 104; // e.g. two consecutive time periods
+      }
+
+      message SyntheticMonitorCondition {
+        string synthetic_monitor_id = 1;
+        int32 threshold_millis = 2;
+        int32 consecutive_count = 3; // introduced in 0.12.4, for backwards compatibility
+                                     // 0 (missing) is treated as 1
+      }
+
+      message HeartbeatCondition {
+        int32 time_period_seconds = 1;
+      }
+    }
+
+    message AlertNotification {
+      EmailNotification email_notification = 1;
+      PagerDutyNotification pager_duty_notification = 2;
+      SlackNotification slack_notification = 3;
+
+      message EmailNotification {
+        repeated string email_address = 1;
+      }
+
+      message PagerDutyNotification {
+        string pager_duty_integration_key = 1;
+      }
+
+      message SlackNotification {
+        string slack_webhook_id = 1;
+        repeated string slack_channel = 2;
+      }
+    }
+
+    enum AlertSeverity {
+      CRITICAL = 0;
+      HIGH = 1;
+      MEDIUM = 2;
+      LOW = 3;
+    }
+  }
+
+  message InstrumentationConfig {
+    string id = 1;
+    string name = 2;
+    repeated InstrumentationProperty property = 3;
+  }
+
+  message CustomInstrumentationConfig {
+    string class_name = 1;
+    string class_annotation = 2;
+    string sub_type_restriction = 24;
+    string super_type_restriction = 25;
+    string method_declaring_class_name = 3; // deprecated in 0.9.16, still supported here for
+                                            // glowroot central 0.9.16 or newer running agent 0.9.15
+                                            // or older
+    string method_name = 4;
+    string method_annotation = 5;
+    repeated string method_parameter_type = 6;
+    string method_return_type = 7;
+    repeated MethodModifier method_modifier = 8;
+    string nesting_group = 9;
+    int32 order = 10;
+    CaptureKind capture_kind = 11;
+    string timer_name = 12;
+    string trace_entry_message_template = 13;
+    OptionalInt32 trace_entry_stack_threshold_millis = 14; // absent means N/A
+    bool trace_entry_capture_self_nested = 15;
+    AlreadyInTransactionBehavior already_in_transaction_behavior = 26;
+    string transaction_type = 16;
+    string transaction_name_template = 17;
+    string transaction_user_template = 18;
+    map<string, string> transaction_attribute_templates = 19;
+    OptionalInt32 transaction_slow_threshold_millis = 20; // absent means N/A
+    bool transaction_outer = 23;
+
+    enum MethodModifier {
+      PUBLIC = 0;
+      STATIC = 1;
+      NOT_STATIC = 2;
+    }
+
+    enum CaptureKind {
+      TRANSACTION = 0;
+      TRACE_ENTRY = 1;
+      TIMER = 2;
+      OTHER = 3;
+    }
+
+    enum AlreadyInTransactionBehavior {
+      CAPTURE_TRACE_ENTRY = 0;
+      CAPTURE_NEW_TRANSACTION = 1;
+      DO_NOTHING = 2;
+    }
+  }
+
+  message MBeanAttribute {
+    string name = 1;
+    bool counter = 2;
+  }
+
+  message InstrumentationProperty {
+    string name = 1;
+    Value value = 2;
+    Value default = 3;
+    string label = 4;
+    string checkbox_label = 5;
+    string description = 6;
+
+    message Value {
+      oneof val {
+        bool bval = 1;
+        bool dval_null = 2; // simple one field OptionalDouble won't work inside "oneof"
+        double dval = 3;
+        string sval = 4;
+        StringList lval = 5;
+      }
+    }
+
+    message StringList {
+      repeated string val = 1;
+    }
+  }
+}

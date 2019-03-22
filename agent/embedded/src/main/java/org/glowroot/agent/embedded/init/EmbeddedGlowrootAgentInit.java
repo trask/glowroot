@@ -28,12 +28,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.collector.Collector;
-import org.glowroot.agent.impl.BytecodeServiceImpl.OnEnteringMain;
 import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.GlowrootAgentInit;
 import org.glowroot.agent.init.NettyInit;
-import org.glowroot.agent.init.PreCheckLoadedClasses.PreCheckClassFileTransformer;
 import org.glowroot.common.util.OnlyUsedByTests;
+import org.glowroot.xyzzy.engine.init.PreCheckLoadedClasses.PreCheckClassFileTransformer;
+import org.glowroot.xyzzy.engine.weaving.BytecodeServiceImpl.OnEnteringMain;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -57,18 +57,19 @@ class EmbeddedGlowrootAgentInit implements GlowrootAgentInit {
     private @MonotonicNonNull EmbeddedAgentModule embeddedAgentModule;
 
     @Override
-    public void init(@Nullable File pluginsDir, final List<File> confDirs, File logDir, File tmpDir,
-            final @Nullable File glowrootJarFile, final Map<String, String> properties,
+    public void init(@Nullable File instrumentationDir, final List<File> confDirs, File logDir,
+            File tmpDir, final @Nullable File glowrootJarFile, final Map<String, String> properties,
             final @Nullable Instrumentation instrumentation,
             @Nullable PreCheckClassFileTransformer preCheckClassFileTransformer,
-            final String glowrootVersion, Closeable agentDirLockCloseable) throws Exception {
+            Class<?>[] allPreCheckLoadedClasses, final String glowrootVersion,
+            Closeable agentDirLockCloseable) throws Exception {
 
         this.agentDirLockCloseable = agentDirLockCloseable;
         final boolean configReadOnly =
                 Boolean.parseBoolean(properties.get("glowroot.config.readOnly"));
-        embeddedAgentModule = new EmbeddedAgentModule(pluginsDir, confDirs, configReadOnly, logDir,
-                tmpDir, instrumentation, preCheckClassFileTransformer, glowrootJarFile,
-                glowrootVersion, offlineViewer);
+        embeddedAgentModule = new EmbeddedAgentModule(instrumentationDir, confDirs, configReadOnly,
+                logDir, tmpDir, instrumentation, preCheckClassFileTransformer,
+                allPreCheckLoadedClasses, glowrootJarFile, glowrootVersion, offlineViewer);
         OnEnteringMain onEnteringMain = new OnEnteringMain() {
             @Override
             public void run(@Nullable String mainClass) throws Exception {

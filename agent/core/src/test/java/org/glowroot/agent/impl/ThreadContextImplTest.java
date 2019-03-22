@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,11 @@ package org.glowroot.agent.impl;
 import com.google.common.base.Ticker;
 import org.junit.Before;
 import org.junit.Test;
-
-import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
-import org.glowroot.agent.impl.NopTransactionService.NopTimer;
-import org.glowroot.agent.model.TimerNameImpl;
-import org.glowroot.agent.plugin.api.MessageSupplier;
-import org.glowroot.agent.plugin.api.QueryMessageSupplier;
+import org.glowroot.xyzzy.engine.bytecode.api.ThreadContextThreadLocal;
+import org.glowroot.xyzzy.engine.impl.NopTransactionService;
+import org.glowroot.xyzzy.engine.impl.TimerNameImpl;
+import org.glowroot.xyzzy.instrumentation.api.MessageSupplier;
+import org.glowroot.xyzzy.instrumentation.api.QueryMessageSupplier;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -161,10 +160,10 @@ public class ThreadContextImplTest {
 
     @Test
     public void testStartTimer() {
-        assertThat(threadContext.startTimer(null)).isEqualTo(NopTimer.INSTANCE);
+        assertThat(threadContext.startTimer(null)).isEqualTo(NopTransactionService.TIMER);
 
         threadContext.setCurrentTimer(null);
-        assertThat(threadContext.startTimer(timerName)).isEqualTo(NopTimer.INSTANCE);
+        assertThat(threadContext.startTimer(timerName)).isEqualTo(NopTransactionService.TIMER);
     }
 
     @Test

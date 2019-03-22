@@ -32,8 +32,7 @@ public abstract class ToolMain {
         @SuppressWarnings("argument.type.incompatible")
         File glowrootJarFile = AgentPremain.getGlowrootJarFile(codeSource);
         Directories directories = new Directories(glowrootJarFile);
-        MainEntryPoint.initLogging(directories.getConfDirs(), directories.getLogDir(),
-                directories.getLoggingLogstashJarFile(), null);
+        MainEntryPoint.initLogging(directories.getConfDirs(), directories.getLogDir(), null);
         if (args.length == 1 && args[0].equals("version")) {
             System.out.println(Version.getVersion(MainEntryPoint.class));
             return;

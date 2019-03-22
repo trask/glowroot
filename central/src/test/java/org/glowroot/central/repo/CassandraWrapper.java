@@ -39,7 +39,7 @@ import org.rauschig.jarchivelib.CompressionType;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-// see copies of this class in glowroot-agent-cassandra-plugin and glowroot-webdriver-tests
+// see copies of this class in instrumentation-cassandra and glowroot-shared-webdriver-tests
 class CassandraWrapper {
 
     static final String CASSANDRA_VERSION;

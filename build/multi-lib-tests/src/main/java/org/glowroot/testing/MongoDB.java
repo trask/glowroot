@@ -19,7 +19,7 @@ import static org.glowroot.testing.JavaVersion.JAVA8;
 
 public class MongoDB {
 
-    private static final String MODULE_PATH = "agent/plugins/mongodb-plugin";
+    private static final String MODULE_PATH = "instrumentation/mongodb";
 
     public static void main(String[] args) throws Exception {
         run("0.11");
