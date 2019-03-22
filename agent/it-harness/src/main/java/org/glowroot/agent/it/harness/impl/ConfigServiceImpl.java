@@ -23,17 +23,17 @@ import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.it.harness.ConfigService;
-import org.glowroot.agent.util.JavaVersion;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.CustomInstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationProperty;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationProperty.StringList;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.MBeanAttribute;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty.StringList;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
+import org.glowroot.xyzzy.engine.util.JavaVersion;
 
 class ConfigServiceImpl implements ConfigService {
 
@@ -54,44 +54,46 @@ class ConfigServiceImpl implements ConfigService {
     }
 
     @Override
-    public void setPluginProperty(String pluginId, String propertyName, boolean propertyValue)
-            throws Exception {
-        updatePluginConfig(pluginId, propertyName,
-                PluginProperty.Value.newBuilder().setBval(propertyValue).build());
+    public void setInstrumentationProperty(String instrumentationId, String propertyName,
+            boolean propertyValue) throws Exception {
+        updateInstrumentationConfig(instrumentationId, propertyName,
+                InstrumentationProperty.Value.newBuilder().setBval(propertyValue).build());
     }
 
     @Override
-    public void setPluginProperty(String pluginId, String propertyName,
+    public void setInstrumentationProperty(String instrumentationId, String propertyName,
             @Nullable Double propertyValue) throws Exception {
         if (propertyValue == null) {
-            updatePluginConfig(pluginId, propertyName,
-                    PluginProperty.Value.newBuilder().setDvalNull(true).build());
+            updateInstrumentationConfig(instrumentationId, propertyName,
+                    InstrumentationProperty.Value.newBuilder().setDvalNull(true).build());
         } else {
-            updatePluginConfig(pluginId, propertyName,
-                    PluginProperty.Value.newBuilder().setDval(propertyValue).build());
+            updateInstrumentationConfig(instrumentationId, propertyName,
+                    InstrumentationProperty.Value.newBuilder().setDval(propertyValue).build());
         }
     }
 
     @Override
-    public void setPluginProperty(String pluginId, String propertyName, String propertyValue)
-            throws Exception {
-        updatePluginConfig(pluginId, propertyName,
-                PluginProperty.Value.newBuilder().setSval(propertyValue).build());
+    public void setInstrumentationProperty(String instrumentationId, String propertyName,
+            String propertyValue) throws Exception {
+        updateInstrumentationConfig(instrumentationId, propertyName,
+                InstrumentationProperty.Value.newBuilder().setSval(propertyValue).build());
     }
 
     @Override
-    public void setPluginProperty(String pluginId, String propertyName, List<String> propertyValue)
-            throws Exception {
-        updatePluginConfig(pluginId, propertyName, PluginProperty.Value.newBuilder()
-                .setLval(StringList.newBuilder().addAllVal(propertyValue)).build());
+    public void setInstrumentationProperty(String instrumentationId, String propertyName,
+            List<String> propertyValue) throws Exception {
+        updateInstrumentationConfig(instrumentationId, propertyName,
+                InstrumentationProperty.Value.newBuilder()
+                        .setLval(StringList.newBuilder().addAllVal(propertyValue)).build());
     }
 
     @Override
-    public int updateInstrumentationConfigs(List<InstrumentationConfig> configs) throws Exception {
+    public int updateCustomInstrumentationConfigs(List<CustomInstrumentationConfig> configs)
+            throws Exception {
         AgentConfig agentConfig = server.getAgentConfig();
         server.updateAgentConfig(agentConfig.toBuilder()
-                .clearInstrumentationConfig()
-                .addAllInstrumentationConfig(configs)
+                .clearCustomInstrumentationConfig()
+                .addAllCustomInstrumentationConfig(configs)
                 .build());
         if (reweavable) {
             return server.reweave();
@@ -117,32 +119,34 @@ class ConfigServiceImpl implements ConfigService {
     }
 
     void resetConfigForTests() throws Exception {
-        AgentConfig.Builder builder = AgentConfig.newBuilder()
+        AgentConfig.Builder agentConfigBuilder = AgentConfig.newBuilder()
                 .setTransactionConfig(getDefaultTransactionConfigForTests())
                 .setAdvancedConfig(getDefaultAdvancedConfigForTests())
                 .addAllGaugeConfig(getDefaultGaugeConfigsForTests());
-        for (PluginConfig pluginConfig : server.getAgentConfig().getPluginConfigList()) {
-            PluginConfig.Builder pluginConfigBuilder = PluginConfig.newBuilder()
-                    .setId(pluginConfig.getId());
-            for (PluginProperty pluginProperty : pluginConfig.getPropertyList()) {
-                pluginConfigBuilder.addProperty(pluginProperty.toBuilder()
-                        .setValue(pluginProperty.getDefault()));
+        for (InstrumentationConfig config : server.getAgentConfig()
+                .getInstrumentationConfigList()) {
+            InstrumentationConfig.Builder builder = InstrumentationConfig.newBuilder()
+                    .setId(config.getId());
+            for (InstrumentationProperty property : config.getPropertyList()) {
+                builder.addProperty(property.toBuilder()
+                        .setValue(property.getDefault()));
             }
-            builder.addPluginConfig(pluginConfigBuilder.build());
+            agentConfigBuilder.addInstrumentationConfig(builder.build());
         }
-        server.updateAgentConfig(builder.build());
+        server.updateAgentConfig(agentConfigBuilder.build());
     }
 
-    private void updatePluginConfig(String pluginId, String name, PluginProperty.Value value)
+    private void updateInstrumentationConfig(String instrumentationId, String name,
+            InstrumentationProperty.Value value)
             throws Exception {
-        PluginConfig pluginConfig = getPluginConfig(pluginId);
-        List<PluginProperty> properties = Lists.newArrayList(pluginConfig.getPropertyList());
-        ListIterator<PluginProperty> i = properties.listIterator();
+        InstrumentationConfig config = getInstrumentationConfig(instrumentationId);
+        List<InstrumentationProperty> properties = Lists.newArrayList(config.getPropertyList());
+        ListIterator<InstrumentationProperty> i = properties.listIterator();
         boolean found = false;
         while (i.hasNext()) {
-            PluginProperty existingPluginProperty = i.next();
-            if (existingPluginProperty.getName().equals(name)) {
-                i.set(existingPluginProperty.toBuilder()
+            InstrumentationProperty existingInstrumentationProperty = i.next();
+            if (existingInstrumentationProperty.getName().equals(name)) {
+                i.set(existingInstrumentationProperty.toBuilder()
                         .setValue(value)
                         .build());
                 found = true;
@@ -150,28 +154,32 @@ class ConfigServiceImpl implements ConfigService {
             }
         }
         if (!found) {
-            throw new IllegalStateException("Could not find plugin property with name: " + name);
+            throw new IllegalStateException(
+                    "Could not find instrumentation property with name: " + name);
         }
-        updatePluginConfig(pluginConfig.toBuilder()
+        updateInstrumentationConfig(config.toBuilder()
                 .clearProperty()
                 .addAllProperty(properties)
                 .build());
     }
 
-    private PluginConfig getPluginConfig(String pluginId) throws InterruptedException {
+    private InstrumentationConfig getInstrumentationConfig(String instrumentationId)
+            throws InterruptedException {
         AgentConfig agentConfig = server.getAgentConfig();
-        for (PluginConfig pluginConfig : agentConfig.getPluginConfigList()) {
-            if (pluginConfig.getId().equals(pluginId)) {
-                return pluginConfig;
+        for (InstrumentationConfig config : agentConfig.getInstrumentationConfigList()) {
+            if (config.getId().equals(instrumentationId)) {
+                return config;
             }
         }
-        throw new IllegalStateException("Could not find plugin with id: " + pluginId);
+        throw new IllegalStateException(
+                "Could not find instrumentation with id: " + instrumentationId);
     }
 
-    private void updatePluginConfig(PluginConfig config) throws Exception {
+    private void updateInstrumentationConfig(InstrumentationConfig config) throws Exception {
         AgentConfig agentConfig = server.getAgentConfig();
-        List<PluginConfig> pluginConfigs = Lists.newArrayList(agentConfig.getPluginConfigList());
-        ListIterator<PluginConfig> i = pluginConfigs.listIterator();
+        List<InstrumentationConfig> InstrumentationConfigs =
+                Lists.newArrayList(agentConfig.getInstrumentationConfigList());
+        ListIterator<InstrumentationConfig> i = InstrumentationConfigs.listIterator();
         boolean found = false;
         while (i.hasNext()) {
             if (i.next().getId().equals(config.getId())) {
@@ -181,11 +189,12 @@ class ConfigServiceImpl implements ConfigService {
             }
         }
         if (!found) {
-            throw new IllegalStateException("Could not find plugin with id: " + config.getId());
+            throw new IllegalStateException(
+                    "Could not find instrumentation with id: " + config.getId());
         }
         server.updateAgentConfig(agentConfig.toBuilder()
-                .clearPluginConfig()
-                .addAllPluginConfig(pluginConfigs)
+                .clearInstrumentationConfig()
+                .addAllInstrumentationConfig(InstrumentationConfigs)
                 .build());
     }
 

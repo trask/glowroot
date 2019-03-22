@@ -17,7 +17,7 @@ package org.glowroot.agent.tests.app;
 
 public class ExceptionalClass {
 
-    // this method corresponds to pointcut defined in glowroot.plugin.json
+    // this method corresponds to pointcut defined in xyzzy.instrumentation.json
     public void aMethodThatThrowsAnException() {
         throw new RuntimeException("This is exceptional");
     }

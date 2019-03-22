@@ -23,16 +23,17 @@ import java.util.Map;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import org.glowroot.agent.init.PreCheckLoadedClasses.PreCheckClassFileTransformer;
 import org.glowroot.common.util.OnlyUsedByTests;
+import org.glowroot.xyzzy.engine.init.PreCheckLoadedClasses.PreCheckClassFileTransformer;
 
 public interface GlowrootAgentInit {
 
-    void init(@Nullable File pluginsDir, List<File> confDirs, File logDir, File tmpDir,
+    void init(@Nullable File instrumentationDir, List<File> confDirs, File logDir, File tmpDir,
             @Nullable File glowrootJarFile, Map<String, String> properties,
             @Nullable Instrumentation instrumentation,
             @Nullable PreCheckClassFileTransformer preCheckClassFileTransformer,
-            String glowrootVersion, Closeable agentDirLockCloseable) throws Exception;
+            Class<?>[] allPreCheckLoadedClasses, String glowrootVersion,
+            Closeable agentDirLockCloseable) throws Exception;
 
     @OnlyUsedByTests
     void initConfigForTests() throws Exception;

@@ -17,7 +17,7 @@ package org.glowroot.agent.tests.app;
 
 class LevelFour {
 
-    // this method corresponds to pointcut defined in glowroot.plugin.json
+    // this method corresponds to pointcut defined in xyzzy.instrumentation.json
     void call(String arg1, String arg2) {
         new LevelFive().call(arg1, arg2);
     }

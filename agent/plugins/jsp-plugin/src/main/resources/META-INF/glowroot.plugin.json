@@ -1,7 +1,0 @@
-{
-  "name": "JSP Plugin",
-  "id": "jsp",
-  "aspects": [
-    "org.glowroot.agent.plugin.jsp.HttpJspPageAspect"
-  ]
-}

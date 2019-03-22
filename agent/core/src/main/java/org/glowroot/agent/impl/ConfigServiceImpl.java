@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,61 +28,61 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.ConfigService;
-import org.glowroot.agent.config.PluginConfig;
-import org.glowroot.agent.config.PluginDescriptor;
-import org.glowroot.agent.plugin.api.config.BooleanProperty;
-import org.glowroot.agent.plugin.api.config.ConfigListener;
-import org.glowroot.agent.plugin.api.config.DoubleProperty;
-import org.glowroot.agent.plugin.api.config.ListProperty;
-import org.glowroot.agent.plugin.api.config.StringProperty;
+import org.glowroot.agent.config.InstrumentationConfig;
+import org.glowroot.xyzzy.engine.config.InstrumentationDescriptor;
+import org.glowroot.xyzzy.instrumentation.api.config.BooleanProperty;
+import org.glowroot.xyzzy.instrumentation.api.config.ConfigListener;
+import org.glowroot.xyzzy.instrumentation.api.config.DoubleProperty;
+import org.glowroot.xyzzy.instrumentation.api.config.ListProperty;
+import org.glowroot.xyzzy.instrumentation.api.config.StringProperty;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class ConfigServiceImpl
-        implements org.glowroot.agent.plugin.api.config.ConfigService, ConfigListener {
+        implements org.glowroot.xyzzy.instrumentation.api.config.ConfigService, ConfigListener {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigServiceImpl.class);
 
     private final ConfigService configService;
 
-    // pluginId is either the id of a registered plugin or it is null
-    // (see validation in constructor)
-    private final @Nullable String pluginId;
+    // this is either the id of a registered instrumentation or it is null (see validation in
+    // constructor)
+    private final @Nullable String id;
 
     // cache for fast read access
     // visibility is provided by memoryBarrier in org.glowroot.config.ConfigService
-    private @MonotonicNonNull PluginConfig pluginConfig;
+    private @MonotonicNonNull InstrumentationConfig config;
 
     private final Map<ConfigListener, Boolean> configListeners =
             new MapMaker().weakKeys().makeMap();
 
     public static ConfigServiceImpl create(ConfigService configService,
-            List<PluginDescriptor> pluginDescriptors, String pluginId) {
-        ConfigServiceImpl configServiceImpl =
-                new ConfigServiceImpl(configService, pluginDescriptors, pluginId);
-        configService.addPluginConfigListener(configServiceImpl);
+            List<InstrumentationDescriptor> descriptors, String id) {
+        ConfigServiceImpl configServiceImpl = new ConfigServiceImpl(configService, descriptors, id);
+        configService.addInstrumentationConfigListener(configServiceImpl);
         configService.addConfigListener(configServiceImpl);
         return configServiceImpl;
     }
 
-    private ConfigServiceImpl(ConfigService configService, List<PluginDescriptor> pluginDescriptors,
-            String pluginId) {
+    private ConfigServiceImpl(ConfigService configService,
+            List<InstrumentationDescriptor> descriptors, String id) {
         this.configService = configService;
-        PluginConfig pluginConfig = configService.getPluginConfig(pluginId);
-        if (pluginConfig == null) {
-            if (pluginDescriptors.isEmpty()) {
-                logger.warn("unexpected plugin id: {} (there are no available plugins)", pluginId);
+        InstrumentationConfig config = configService.getInstrumentationConfig(id);
+        if (config == null) {
+            if (descriptors.isEmpty()) {
+                logger.warn("unexpected instrumentation id: {} (there is no available"
+                        + " instrumentation)", id);
             } else {
                 List<String> ids = Lists.newArrayList();
-                for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
-                    ids.add(pluginDescriptor.id());
+                for (InstrumentationDescriptor descriptor : descriptors) {
+                    ids.add(descriptor.id());
                 }
-                logger.warn("unexpected plugin id: {} (available plugin ids are {})", pluginId,
-                        Joiner.on(", ").join(ids));
+                logger.warn("unexpected instrumentation id: {} (available instrumentation ids are"
+                        + " {})", id, Joiner.on(", ").join(ids));
             }
-            this.pluginId = null;
+            this.id = null;
         } else {
-            this.pluginId = pluginId;
+            this.id = id;
         }
     }
 
@@ -132,26 +132,26 @@ public class ConfigServiceImpl
 
     @Override
     public void registerConfigListener(ConfigListener listener) {
-        if (pluginId == null) {
+        if (id == null) {
             return;
         }
         if (listener == null) {
             logger.error("registerConfigListener(): argument 'listener' must be non-null");
             return;
         }
-        configService.addPluginConfigListener(listener);
+        configService.addInstrumentationConfigListener(listener);
         listener.onChange();
         configService.writeMemoryBarrier();
     }
 
     @Override
     public void onChange() {
-        if (pluginId != null) {
-            PluginConfig pluginConfig = configService.getPluginConfig(pluginId);
-            // pluginConfig should not be null since pluginId was already validated
-            // at construction time and plugins cannot be removed (or their ids changed) at runtime
-            checkNotNull(pluginConfig);
-            this.pluginConfig = pluginConfig;
+        if (id != null) {
+            InstrumentationConfig config = configService.getInstrumentationConfig(id);
+            // config should not be null since the id was already validated at construction time and
+            // instrumentation cannot be removed (or their ids changed) at runtime
+            checkNotNull(config);
+            this.config = config;
         }
         for (ConfigListener configListener : configListeners.keySet()) {
             configListener.onChange();
@@ -165,8 +165,8 @@ public class ConfigServiceImpl
         private String value = "";
         private StringPropertyImpl(String name) {
             this.name = name;
-            if (pluginConfig != null) {
-                value = pluginConfig.getStringProperty(name);
+            if (config != null) {
+                value = config.getStringProperty(name);
             }
         }
         @Override
@@ -175,8 +175,8 @@ public class ConfigServiceImpl
         }
         @Override
         public void onChange() {
-            if (pluginConfig != null) {
-                value = pluginConfig.getStringProperty(name);
+            if (config != null) {
+                value = config.getStringProperty(name);
             }
         }
     }
@@ -187,8 +187,8 @@ public class ConfigServiceImpl
         private boolean value;
         private BooleanPropertyImpl(String name) {
             this.name = name;
-            if (pluginConfig != null) {
-                value = pluginConfig.getBooleanProperty(name);
+            if (config != null) {
+                value = config.getBooleanProperty(name);
             }
         }
         @Override
@@ -197,8 +197,8 @@ public class ConfigServiceImpl
         }
         @Override
         public void onChange() {
-            if (pluginConfig != null) {
-                value = pluginConfig.getBooleanProperty(name);
+            if (config != null) {
+                value = config.getBooleanProperty(name);
             }
         }
     }
@@ -209,8 +209,8 @@ public class ConfigServiceImpl
         private @Nullable Double value;
         private DoublePropertyImpl(String name) {
             this.name = name;
-            if (pluginConfig != null) {
-                value = pluginConfig.getDoubleProperty(name);
+            if (config != null) {
+                value = config.getDoubleProperty(name);
             }
         }
         @Override
@@ -219,8 +219,8 @@ public class ConfigServiceImpl
         }
         @Override
         public void onChange() {
-            if (pluginConfig != null) {
-                value = pluginConfig.getDoubleProperty(name);
+            if (config != null) {
+                value = config.getDoubleProperty(name);
             }
         }
     }
@@ -231,8 +231,8 @@ public class ConfigServiceImpl
         private List<String> value = ImmutableList.of();
         private ListPropertyImpl(String name) {
             this.name = name;
-            if (pluginConfig != null) {
-                value = pluginConfig.getListProperty(name);
+            if (config != null) {
+                value = config.getListProperty(name);
             }
         }
         @Override
@@ -241,8 +241,8 @@ public class ConfigServiceImpl
         }
         @Override
         public void onChange() {
-            if (pluginConfig != null) {
-                value = pluginConfig.getListProperty(name);
+            if (config != null) {
+                value = config.getListProperty(name);
             }
         }
     }

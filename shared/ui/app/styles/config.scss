@@ -1,0 +1,205 @@
+/*
+ * Copyright 2012-2019 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+@import "../../bower_components/bootstrap/scss/mixins";
+@import "variables";
+
+.help-block {
+  // override bootstrap styling to give a bit more space
+  margin-top: 10px;
+  color: #767676; // override bootstrap to meet accessibility contrast ratio
+}
+
+.card-header h2 {
+  margin: 10px 20px;
+  font-weight: 600;
+}
+
+// add more padding to the panels
+.card-body {
+  position: relative;
+  padding: 30px;
+  // min-height is needed for initial load spinner since no other content on page at that time
+  min-height: 150px;
+}
+
+.gt-panel-overlay {
+  background: rgba(255, 255, 255, 0.6);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding-top: 20px;
+  padding-left: 20px;
+  z-index: 500;
+}
+
+.gt-lighten-font {
+  color: #aaa;
+}
+
+.gt-left-aligned-spinner {
+  // relative position needed for spinner
+  position: relative;
+  width: 100px;
+  height: 80px;
+}
+
+.gt-disabled {
+  color: gray;
+}
+
+.gt-fieldset {
+  @extend .gt-fieldset-base;
+  @extend .pb-3;
+  @extend .pt-xl-3;
+}
+
+.gt-fieldset-environment {
+  @extend .gt-fieldset-base;
+  @extend .pb-4;
+}
+
+.gt-fieldset-base {
+  @extend .border;
+  @extend .px-4; // this needs to match padding in .gt-form-buttons-under-fieldset below
+  @extend .pt-1;
+  @extend .mb-3;
+}
+
+.gt-form-buttons-below-fieldset {
+  @extend .px-xl-4; // this needs to match padding in .gt-fieldset above
+  @extend .pt-3;
+}
+
+@include media-breakpoint-up(xl) {
+  .gt-fieldset-under-normal-form {
+    margin-left: -1.5rem !important; // this needs to match padding in .gt-fieldset above
+    margin-right: -1.5rem !important; // this needs to match padding in .gt-fieldset above
+  }
+}
+
+.gt-fieldset-under-normal-form .col-xl-3 {
+  @extend .pl-xl-4;
+}
+
+.gt-fieldset-under-normal-form .col-xl-9 {
+  @extend .pr-xl-4;
+}
+
+.gt-legend {
+  @extend .px-3;
+  @extend .w-auto;
+}
+
+.gt-form-label-xl {
+  @extend .col-form-label;
+  @extend .text-xl-right;
+  @extend .font-weight-600;
+  @extend .font-weight-xl-normal;
+}
+
+.gt-check-legend-xl {
+  @extend .gt-form-label-xl;
+  @extend .py-xl-0;
+}
+
+.has-error .help-block {
+  // override bootstrap default which turns help blocks red
+  // see bootstrap issue #1939
+  color: #767676 !important;
+}
+
+.btn-secondary:not(.btn-primary) .gt-role-inactive-agent {
+  color: $gt-red;
+}
+
+.gt-synthetic-java-source textarea {
+  font-family: Cousine, monospace;
+}
+
+.CodeMirror {
+  border: 1px solid #ddd;
+  height: auto !important;
+}
+
+.has-error .CodeMirror {
+  border: 1px solid $gt-red;
+}
+
+.codemirror-disabled .CodeMirror {
+  background-color: #eee;
+}
+
+@include media-breakpoint-up(md) {
+  .modal-dialog.gt-modal-dialog-md {
+    max-width: 700px;
+    margin: 1.75rem auto;
+  }
+}
+
+.gt-config-return-link {
+  display: block;
+  float: right;
+  margin: -10px 0 6px;
+  font-size: 1rem;
+}
+
+@include media-breakpoint-up(lg) {
+  .gt-config-return-link {
+    position: relative;
+    top: -.75rem;
+    height: 1rem; // needs some minimal height or else webdriver will not click on it
+    margin: -1rem 0 0;
+  }
+}
+
+.role-page label.custom-checkbox {
+  margin-bottom: 0.25rem;
+}
+
+@include media-breakpoint-up(lg) {
+  .gt-sidebar.gt-config-sidebar {
+    width: 240px;
+    display: inline-block;
+    vertical-align: top;
+  }
+
+  .gt-config-main-column {
+    width: 669px;
+    display: inline-block;
+    // this makes total 20px gap between sidebar and main
+    margin-left: 16px;
+  }
+}
+
+@include media-breakpoint-up(xl) {
+  .gt-config-main-column {
+    width: 849px;
+  }
+}
+
+@media screen and (min-width: 1400px) {
+  .gt-config-main-column {
+    width: 1049px;
+  }
+}
+
+@media screen and (min-width: 1600px) {
+  .gt-config-main-column {
+    width: 1249px;
+  }
+}

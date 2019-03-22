@@ -21,7 +21,7 @@ import static org.glowroot.testing.JavaVersion.JAVA8;
 
 public class Redis {
 
-    private static final String MODULE_PATH = "agent/plugins/redis-plugin";
+    private static final String MODULE_PATH = "instrumentation/redis";
 
     public static void main(String[] args) throws Exception {
         run("2.0.0");

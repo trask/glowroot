@@ -351,28 +351,27 @@ public class JavaagentContainer implements Container {
             if (name.matches("glowroot-agent-core(-unshaded)?-[0-9.]+(-SNAPSHOT)?.jar")
                     || name.matches("glowroot-agent-it-harness-[0-9.]+(-SNAPSHOT)?.jar")) {
                 javaagentJarFile = file;
-            } else if (name.matches("glowroot-common-[0-9.]+(-SNAPSHOT)?.jar")
-                    || name.matches("glowroot-wire-api-[0-9.]+(-SNAPSHOT)?.jar")
-                    || name.matches("glowroot-agent-plugin-api-[0-9.]+(-SNAPSHOT)?.jar")
-                    || name.matches("glowroot-agent-bytecode-api-[0-9.]+(-SNAPSHOT)?.jar")
-                    || name.matches("glowroot-build-error-prone-jdk6-[0-9.]+(-SNAPSHOT)?.jar")) {
+            } else if (name.matches("xyzzy-instrumentation-api-[0-9.]+(-SNAPSHOT)?.jar")
+                    || name.matches("xyzzy-engine-[0-9.]+(-SNAPSHOT)?.jar")
+                    || name.matches("glowroot-shared-common-[0-9.]+(-SNAPSHOT)?.jar")
+                    || name.matches("glowroot-shared-wire-api-[0-9.]+(-SNAPSHOT)?.jar")) {
                 // these are glowroot-agent-core-unshaded transitive dependencies
                 maybeBootPaths.add(path);
-            } else if (file.getAbsolutePath().endsWith(File.separator + "common" + targetClasses)
-                    || file.getAbsolutePath().endsWith(File.separator + "wire-api" + targetClasses)
+            } else if (file.getAbsolutePath()
+                    .endsWith(File.separator + "xyzzy-instrumentation-api" + targetClasses)
                     || file.getAbsolutePath()
-                            .endsWith(File.separator + "plugin-api" + targetClasses)
+                            .endsWith(File.separator + "xyzzy-engine" + targetClasses)
+                    || file.getAbsolutePath().endsWith(File.separator + "common" + targetClasses)
                     || file.getAbsolutePath()
-                            .endsWith(File.separator + "bytecode-api" + targetClasses)
-                    || file.getAbsolutePath()
-                            .endsWith(File.separator + "error-prone-jdk6" + targetClasses)) {
+                            .endsWith(File.separator + "wire-api" + targetClasses)) {
                 // these are glowroot-agent-core-unshaded transitive dependencies
                 maybeBootPaths.add(path);
-            } else if (name.matches("glowroot-agent-api-[0-9.]+(-SNAPSHOT)?.jar")) {
-                // agent-api lives with the application
+            } else if (name.matches("xyzzy-annotation-api-[0-9.]+(-SNAPSHOT)?.jar")) {
+                // annotation-api lives with the application
                 paths.add(path);
-            } else if (file.getAbsolutePath().endsWith(File.separator + "api" + targetClasses)) {
-                // agent-api lives with the application
+            } else if (file.getAbsolutePath()
+                    .endsWith(File.separator + "xyzzy-annotation-api" + targetClasses)) {
+                // annotation-api lives with the application
                 paths.add(path);
             } else if (name.matches("asm-.*\\.jar")
                     || name.matches("grpc-.*\\.jar")
@@ -381,8 +380,8 @@ public class JavaagentContainer implements Container {
                     // dependency of guava 27.0+ (which is used by glowroot-webdriver-tests)
                     || name.matches("failureaccess-.*\\.jar")
                     || name.matches("HdrHistogram-.*\\.jar")
-                    || name.matches("instrumentation-api-.*\\.jar")
                     || name.matches("jackson-.*\\.jar")
+                    || name.matches("gson-.*\\.jar")
                     || name.matches("logback-.*\\.jar")
                     // javax.servlet-api is needed because logback-classic has
                     // META-INF/services/javax.servlet.ServletContainerInitializer
@@ -407,8 +406,8 @@ public class JavaagentContainer implements Container {
                     || name.matches("jsr305-.*\\.jar")) {
                 // these are glowroot-agent-core-unshaded transitive dependencies
                 maybeBootPaths.add(path);
-            } else if (name.matches("glowroot-common2-[0-9.]+(-SNAPSHOT)?.jar")
-                    || name.matches("glowroot-ui-[0-9.]+(-SNAPSHOT)?.jar")
+            } else if (name.matches("glowroot-shared-common2-[0-9.]+(-SNAPSHOT)?.jar")
+                    || name.matches("glowroot-shared-ui-[0-9.]+(-SNAPSHOT)?.jar")
                     || name.matches(
                             "glowroot-agent-embedded(-unshaded)?-[0-9.]+(-SNAPSHOT)?.jar")) {
                 // these are glowroot-agent-embedded-unshaded transitive dependencies
@@ -438,20 +437,21 @@ public class JavaagentContainer implements Container {
                 bootPaths.add(path);
             } else if (name.endsWith(".jar") && file.getAbsolutePath()
                     .endsWith(File.separator + "target" + File.separator + name)) {
-                // this is the plugin under test
+                // this is the instrumentation under test
                 bootPaths.add(path);
-            } else if (name.matches("glowroot-agent-[a-z-]+-plugin-[0-9.]+(-SNAPSHOT)?.jar")) {
-                // this another (core) plugin that it depends on, e.g. the executor plugin
+            } else if (name.matches("instrumentation-[a-z-]+-[0-9.]+(-SNAPSHOT)?.jar")) {
+                // this another (core) instrumentation that it depends on, e.g. the executor
+                // instrumentation
                 bootPaths.add(path);
             } else if (file.getAbsolutePath().endsWith(targetClasses)) {
-                // this is the plugin under test
+                // this is the instrumentation under test
                 bootPaths.add(path);
             } else if (file.getAbsolutePath()
                     .endsWith(File.separator + "target" + File.separator + "test-classes")) {
-                // this is the plugin test classes
+                // this is the instrumentation test classes
                 paths.add(path);
             } else {
-                // these are plugin test dependencies
+                // these are instrumentation test dependencies
                 paths.add(path);
             }
         }

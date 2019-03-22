@@ -18,31 +18,32 @@ package org.glowroot.agent.it.harness;
 import java.util.List;
 
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.CustomInstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 
 public interface ConfigService {
 
     void updateTransactionConfig(TransactionConfig config) throws Exception;
 
-    // convenience methods wrapping updatePluginConfig()
-    void setPluginProperty(String pluginId, String propertyName, boolean propertyValue)
-            throws Exception;
+    // convenience methods wrapping updateInstrumentationConfig()
+    void setInstrumentationProperty(String instrumentationId, String propertyName,
+            boolean propertyValue) throws Exception;
 
-    // convenience methods wrapping updatePluginConfig()
-    void setPluginProperty(String pluginId, String propertyName, Double propertyValue)
-            throws Exception;
+    // convenience methods wrapping updateInstrumentationConfig()
+    void setInstrumentationProperty(String instrumentationId, String propertyName,
+            Double propertyValue) throws Exception;
 
-    // convenience methods wrapping updatePluginConfig()
-    void setPluginProperty(String pluginId, String propertyName, String propertyValue)
-            throws Exception;
+    // convenience methods wrapping updateInstrumentationConfig()
+    void setInstrumentationProperty(String instrumentationId, String propertyName,
+            String propertyValue) throws Exception;
 
-    // convenience methods wrapping updatePluginConfig()
-    void setPluginProperty(String pluginId, String propertyName, List<String> propertyValue)
-            throws Exception;
+    // convenience methods wrapping updateInstrumentationConfig()
+    void setInstrumentationProperty(String instrumentationId, String propertyName,
+            List<String> propertyValue) throws Exception;
 
     // returns the number of classes updated during re-weaving
-    int updateInstrumentationConfigs(List<InstrumentationConfig> configs) throws Exception;
+    int updateCustomInstrumentationConfigs(List<CustomInstrumentationConfig> configs)
+            throws Exception;
 
     void updateAdvancedConfig(AdvancedConfig config) throws Exception;
 }

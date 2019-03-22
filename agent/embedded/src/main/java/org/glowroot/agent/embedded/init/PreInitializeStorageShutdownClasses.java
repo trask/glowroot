@@ -81,11 +81,11 @@ class PreInitializeStorageShutdownClasses {
         types.add("org.glowroot.agent.embedded.util.CappedDatabaseOutputStream$FsyncRunnable");
         types.add("org.glowroot.agent.embedded.util.DataSource");
         types.add("org.glowroot.agent.embedded.util.DataSource$ShutdownHookThread");
-        types.add("org.glowroot.agent.util.JavaVersion");
         types.add("org.glowroot.common.util.Cancellable");
         types.add("org.glowroot.common.util.ScheduledRunnable");
         types.add("org.glowroot.common.util.ScheduledRunnable"
                 + "$TerminateSubsequentExecutionsException");
+        types.add("org.glowroot.xyzzy.engine.util.JavaVersion");
         return types;
     }
 

@@ -21,7 +21,7 @@ import static org.glowroot.testing.JavaVersion.JAVA8;
 
 public class JAXWS {
 
-    private static final String MODULE_PATH = "agent/plugins/jaxws-plugin";
+    private static final String MODULE_PATH = "instrumentation/jaxws";
 
     public static void main(String[] args) throws Exception {
         // see cxf-parent pom.xml for supported spring version range

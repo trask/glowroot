@@ -107,7 +107,7 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 90;
+    private static final int CURR_SCHEMA_VERSION = 91;
 
     private final Session session;
     private final Clock clock;
@@ -534,6 +534,11 @@ public class SchemaUpgrade {
         if (initialSchemaVersion < 90) {
             splitActiveAgentRollupTables(3);
             updateSchemaVersion(90);
+        }
+        // 0.13.4 to 0.14.0
+        if (initialSchemaVersion < 91) {
+            updateRolePermissionName3();
+            updateSchemaVersion(91);
         }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
@@ -2843,6 +2848,41 @@ public class SchemaUpgrade {
         dropTableIfExists("active_agent_rollup_" + rollupLevel);
         logger.info("populating active_top_level_rollup_{} and active_child_rollup_{} tables"
                 + " - complete", rollupLevel);
+    }
+
+    private void updateRolePermissionName3() throws Exception {
+        PreparedStatement insertPS =
+                session.prepare("insert into role (name, permissions) values (?, ?)");
+        ResultSet results = session.read("select name, permissions from role");
+        for (Row row : results) {
+            String name = row.getString(0);
+            Set<String> permissions = row.getSet(1, String.class);
+            boolean updated = false;
+            Set<String> upgradedPermissions = new HashSet<>();
+            for (String permission : permissions) {
+                PermissionParser parser = new PermissionParser(permission);
+                parser.parse();
+                if (parser.getPermission().equals("agent:config:edit:instrumentation")) {
+                    upgradedPermissions.add("agent:"
+                            + PermissionParser.quoteIfNeededAndJoin(parser.getAgentRollupIds())
+                            + ":config:edit:customInstrumentation");
+                    updated = true;
+                } else if (parser.getPermission().equals("agent:config:edit:plugins")) {
+                    upgradedPermissions.add("agent:"
+                            + PermissionParser.quoteIfNeededAndJoin(parser.getAgentRollupIds())
+                            + ":config:edit:instrumentation");
+                    updated = true;
+                } else {
+                    upgradedPermissions.add(permission);
+                }
+            }
+            if (updated) {
+                BoundStatement boundStatement = insertPS.bind();
+                boundStatement.setString(0, name);
+                boundStatement.setSet(1, upgradedPermissions, String.class);
+                session.write(boundStatement);
+            }
+        }
     }
 
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType)

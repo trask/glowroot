@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,10 +27,6 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.bytecode.api.BytecodeServiceHolder;
-import org.glowroot.agent.bytecode.api.ThreadContextPlus;
-import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
-import org.glowroot.agent.impl.NopTransactionService.NopTimer;
 import org.glowroot.agent.impl.Transaction.TraceEntryVisitor;
 import org.glowroot.agent.model.AsyncTimer;
 import org.glowroot.agent.model.DetailMapWriter;
@@ -38,21 +34,26 @@ import org.glowroot.agent.model.ErrorMessage;
 import org.glowroot.agent.model.QueryData;
 import org.glowroot.agent.model.QueryEntryBase;
 import org.glowroot.agent.model.SharedQueryTextCollection;
-import org.glowroot.agent.plugin.api.AsyncQueryEntry;
-import org.glowroot.agent.plugin.api.MessageSupplier;
-import org.glowroot.agent.plugin.api.QueryMessageSupplier;
-import org.glowroot.agent.plugin.api.ThreadContext;
-import org.glowroot.agent.plugin.api.Timer;
-import org.glowroot.agent.plugin.api.internal.ReadableMessage;
-import org.glowroot.agent.plugin.api.internal.ReadableQueryMessage;
 import org.glowroot.agent.util.Tickers;
 import org.glowroot.wire.api.model.Proto;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.xyzzy.engine.bytecode.api.BytecodeServiceHolder;
+import org.glowroot.xyzzy.engine.bytecode.api.ThreadContextPlus;
+import org.glowroot.xyzzy.engine.bytecode.api.ThreadContextThreadLocal;
+import org.glowroot.xyzzy.engine.impl.NopTransactionService;
+import org.glowroot.xyzzy.instrumentation.api.AsyncQuerySpan;
+import org.glowroot.xyzzy.instrumentation.api.Getter;
+import org.glowroot.xyzzy.instrumentation.api.MessageSupplier;
+import org.glowroot.xyzzy.instrumentation.api.QueryMessageSupplier;
+import org.glowroot.xyzzy.instrumentation.api.Setter;
+import org.glowroot.xyzzy.instrumentation.api.ThreadContext;
+import org.glowroot.xyzzy.instrumentation.api.Timer;
+import org.glowroot.xyzzy.instrumentation.api.internal.ReadableMessage;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 // this supports updating by a single thread and reading by multiple threads
-class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
+class TraceEntryImpl extends QueryEntryBase implements AsyncQuerySpan, Timer {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceEntryImpl.class);
     private static final Ticker ticker = Tickers.getTicker();
@@ -165,20 +166,22 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
         } else if (messageSupplier instanceof QueryMessageSupplier) {
             String queryText = checkNotNull(getQueryText());
             int sharedQueryTextIndex = sharedQueryTextCollection.getSharedQueryTextIndex(queryText);
-            ReadableQueryMessage readableQueryMessage =
-                    (ReadableQueryMessage) ((QueryMessageSupplier) messageSupplier).get();
+            ReadableMessage readableMessage =
+                    (ReadableMessage) ((QueryMessageSupplier) messageSupplier).get();
             Trace.QueryEntryMessage.Builder queryMessage = Trace.QueryEntryMessage.newBuilder()
-                    .setSharedQueryTextIndex(sharedQueryTextIndex)
-                    .setPrefix(readableQueryMessage.getPrefix());
-            String rowCountSuffix = getRowCountSuffix();
-            if (rowCountSuffix.isEmpty()) {
-                // optimization to avoid creating new string when concatenating empty string
-                queryMessage.setSuffix(readableQueryMessage.getSuffix());
-            } else {
-                queryMessage.setSuffix(readableQueryMessage.getSuffix() + rowCountSuffix);
-            }
+                    .setSharedQueryTextIndex(sharedQueryTextIndex);
+            // FIXME xyzzy update
+            // .setPrefix(readableMessage.getPrefix());
+            // FIXME xyzzy update
+            // String rowCountSuffix = getRowCountSuffix();
+            // if (rowCountSuffix.isEmpty()) {
+            // // optimization to avoid creating new string when concatenating empty string
+            // queryMessage.setSuffix(readableMessage.getSuffix());
+            // } else {
+            // queryMessage.setSuffix(readableMessage.getSuffix() + rowCountSuffix);
+            // }
             builder.setQueryEntryMessage(queryMessage);
-            builder.addAllDetailEntry(DetailMapWriter.toProto(readableQueryMessage.getDetail()));
+            builder.addAllDetailEntry(DetailMapWriter.toProto(readableMessage.getDetail()));
         }
 
         ErrorMessage errorMessage = this.errorMessage;
@@ -238,33 +241,6 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
     }
 
     @Override
-    public void endWithError(@Nullable String message) {
-        if (initialComplete) {
-            // this guards against end*() being called multiple times on async trace entries
-            return;
-        }
-        endWithErrorInternal(message, null);
-    }
-
-    @Override
-    public void endWithError(@Nullable String message, Throwable t) {
-        if (initialComplete) {
-            // this guards against end*() being called multiple times on async trace entries
-            return;
-        }
-        endWithErrorInternal(message, t);
-    }
-
-    @Override
-    public void endWithInfo(Throwable t) {
-        if (initialComplete) {
-            // this guards against end*() being called multiple times on async trace entries
-            return;
-        }
-        endWithErrorInternal(null, t);
-    }
-
-    @Override
     public Timer extend() {
         if (selfNestingLevel++ == 0) {
             if (isAsync()) {
@@ -275,13 +251,21 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
                     // thread context has ended, cannot extend sync timer
                     // (this is ok, see https://github.com/glowroot/glowroot/issues/418)
                     selfNestingLevel--;
-                    return NopTimer.INSTANCE;
+                    return NopTransactionService.TIMER;
                 }
                 extendSync(ticker.read(), currentTimer);
             }
         }
         return this;
     }
+
+    @Override
+    @Deprecated
+    public <R> void propagateToResponse(R response, Setter<R> setter) {}
+
+    @Override
+    @Deprecated
+    public <R> void extractFromResponse(R response, Getter<R> getter) {}
 
     @Override
     public void rowNavigationAttempted() {
@@ -312,8 +296,8 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
 
     private void extendSync(long currTick, TimerImpl currentTimer) {
         // syncTimer is only null for trace entries added using addEntryEntry(), and these trace
-        // entries are not returned from plugin api so no way for extend() to be called when
-        // syncTimer is null
+        // entries are not returned from instrumentation api so no way for extend() to be called
+        // when syncTimer is null
         checkNotNull(syncTimer);
         long priorDurationNanos = endTick - revisedStartTick;
         revisedStartTick = currTick - priorDurationNanos;
@@ -361,7 +345,7 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
         if (locationStackTrace == null && locationStackTraceThreshold != 0
                 && endTick - revisedStartTick >= locationStackTraceThreshold) {
             StackTraceElement[] locationStackTrace = Thread.currentThread().getStackTrace();
-            // strip up through this method, plus 1 additional method (the plugin advice method)
+            // strip up through this method, plus 1 (the instrumentation advice method)
             int index =
                     ThreadContextImpl.getNormalizedStartIndex(locationStackTrace, "stop", 1);
             setLocationStackTrace(ImmutableList.copyOf(locationStackTrace).subList(index,
@@ -438,8 +422,8 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
         if (endTick - startTick >= thresholdNanos) {
             StackTraceElement[] locationStackTrace = Thread.currentThread().getStackTrace();
             // strip up through this method, plus 2 additional methods:
-            // TraceEntryImpl.endWithLocationStackTrace/endWithStackTrace() and the plugin advice
-            // method
+            // TraceEntryImpl.endWithLocationStackTrace/endWithStackTrace() and the instrumentation
+            // advice method
             int index = ThreadContextImpl.getNormalizedStartIndex(locationStackTrace,
                     "endWithLocationStackTraceInternal", 2);
             setLocationStackTrace(ImmutableList.copyOf(locationStackTrace).subList(index,
@@ -458,8 +442,8 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
     }
 
     private void endInternal(long endTick, @Nullable ErrorMessage errorMessage) {
-        // syncTimer is only null for trace entries added using addEntryEntry(), and these trace
-        // entries are not returned from plugin api so no way for end...() to be called
+        // syncTimer is only null for trace entries added using addEntryEntry(), and they are not
+        // returned from instrumentation api so no way for end...() to be called
         checkNotNull(syncTimer);
         if (isAsync()) {
             asyncTimer.end(endTick);
@@ -493,8 +477,8 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
 
     @Override
     public void stopSyncTimer() {
-        // syncTimer is only null for trace entries added using addEntryEntry(), and these trace
-        // entries are not returned from plugin api so no way for stopSyncTimer() to be called
+        // syncTimer is only null for trace entries added using addEntryEntry(), and they are not
+        // returned from instrumentation api so no way for stopSyncTimer() to be called
         checkNotNull(syncTimer);
         syncTimer.stop();
         selfNestingLevel--;
@@ -502,15 +486,18 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
     }
 
     @Override
-    public Timer extendSyncTimer(ThreadContext currThreadContext) {
+    public Timer extendSyncTimer() {
+        // FIXME xyzzy conversion revisit decision not to pass in ThreadContext to this method
+        ThreadContext currThreadContext = threadContext.getTransaction().getTransactionRegistry()
+                .getCurrentThreadContextHolder().get();
         if (currThreadContext != threadContext) {
-            return NopTimer.INSTANCE;
+            return NopTransactionService.TIMER;
         }
-        // syncTimer is only null for trace entries added using addEntryEntry(), and these trace
-        // entries are not returned from plugin api so no way for extendSyncTimer() to be called
+        // syncTimer is only null for trace entries added using addEntryEntry(), and they are not
+        // returned from instrumentation api so no way for extendSyncTimer() to be called
         checkNotNull(syncTimer);
-        // thread context was passed in from plugin, so it is still active, and so current timer
-        // must be non-null
+        // thread context was passed in from instrumentation, so it is still active, and so current
+        // timer must be non-null
         return syncTimer.extend(checkNotNull(threadContext.getCurrentTimer()));
     }
 
@@ -521,10 +508,12 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
         if (messageSupplier instanceof MessageSupplier) {
             return ((ReadableMessage) ((MessageSupplier) messageSupplier).get()).getText();
         } else if (messageSupplier instanceof QueryMessageSupplier) {
-            ReadableQueryMessage readableQueryMessage =
-                    (ReadableQueryMessage) ((QueryMessageSupplier) messageSupplier).get();
-            return readableQueryMessage.getPrefix() + checkNotNull(getQueryText())
-                    + readableQueryMessage.getSuffix();
+            ReadableMessage readableMessage =
+                    (ReadableMessage) ((QueryMessageSupplier) messageSupplier).get();
+            // FIXME xyzzy update
+            // return readableMessage.getPrefix() + checkNotNull(getQueryText())
+            // + readableMessage.getSuffix();
+            return checkNotNull(getQueryText());
         }
         if (errorMessage != null) {
             return errorMessage.message();

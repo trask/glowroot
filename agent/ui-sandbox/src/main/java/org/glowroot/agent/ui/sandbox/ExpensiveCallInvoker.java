@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 the original author or authors.
+ * Copyright 2014-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,9 @@ package org.glowroot.agent.ui.sandbox;
 
 import java.lang.reflect.Method;
 
-import org.glowroot.agent.plugin.api.ClassInfo;
-import org.glowroot.agent.plugin.api.Logger;
-import org.glowroot.agent.plugin.api.util.Reflection;
+import org.glowroot.xyzzy.instrumentation.api.ClassInfo;
+import org.glowroot.xyzzy.instrumentation.api.Logger;
+import org.glowroot.xyzzy.instrumentation.api.util.Reflection;
 
 public class ExpensiveCallInvoker {
 

@@ -21,7 +21,7 @@ import static org.glowroot.testing.JavaVersion.JAVA8;
 
 public class JDBC {
 
-    private static final String MODULE_PATH = "agent/plugins/jdbc-plugin";
+    private static final String MODULE_PATH = "instrumentation/jdbc";
 
     public static void main(String[] args) throws Exception {
         hsqldb();

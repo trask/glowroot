@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,17 +19,26 @@ import com.google.common.base.Ticker;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
-import org.glowroot.agent.impl.NopTransactionService.NopTimer;
-import org.glowroot.agent.model.TimerNameImpl;
-import org.glowroot.agent.plugin.api.MessageSupplier;
-import org.glowroot.agent.plugin.api.QueryMessageSupplier;
+import org.glowroot.xyzzy.engine.bytecode.api.ThreadContextThreadLocal;
+import org.glowroot.xyzzy.engine.impl.NopTransactionService;
+import org.glowroot.xyzzy.engine.impl.TimerNameImpl;
+import org.glowroot.xyzzy.instrumentation.api.Getter;
+import org.glowroot.xyzzy.instrumentation.api.MessageSupplier;
+import org.glowroot.xyzzy.instrumentation.api.OptionalThreadContext.AlreadyInTransactionBehavior;
+import org.glowroot.xyzzy.instrumentation.api.QueryMessageSupplier;
+import org.glowroot.xyzzy.instrumentation.api.Setter;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 public class ThreadContextImplTest {
+
+    private static final Getter<Object> GETTER = new GetterImpl();
+
+    private static final Setter<Object> SETTER = new SetterImpl();
+
+    private static final Object CARRIER = new Object();
 
     private ThreadContextImpl threadContext;
 
@@ -52,119 +61,110 @@ public class ThreadContextImplTest {
 
     @Test
     public void testStartTransaction() {
-        assertThat(threadContext.startTransaction(null, "text", messageSupplier, timerName))
-                .isEqualTo(NopTransactionService.TRACE_ENTRY);
-        assertThat(threadContext.startTransaction("type", null, messageSupplier, timerName))
-                .isEqualTo(NopTransactionService.TRACE_ENTRY);
-        assertThat(threadContext.startTransaction("type", "text", null, timerName))
-                .isEqualTo(NopTransactionService.TRACE_ENTRY);
-        assertThat(threadContext.startTransaction("type", "text", messageSupplier, null))
-                .isEqualTo(NopTransactionService.TRACE_ENTRY);
+        assertThat(threadContext.startIncomingSpan(null, "text", GETTER, CARRIER, messageSupplier,
+                timerName, AlreadyInTransactionBehavior.CAPTURE_LOCAL_SPAN))
+                        .isEqualTo(NopTransactionService.LOCAL_SPAN);
+        assertThat(threadContext.startIncomingSpan("type", null, GETTER, CARRIER, messageSupplier,
+                timerName, AlreadyInTransactionBehavior.CAPTURE_LOCAL_SPAN))
+                        .isEqualTo(NopTransactionService.LOCAL_SPAN);
+        assertThat(threadContext.startIncomingSpan("type", "text", GETTER, CARRIER, null, timerName,
+                AlreadyInTransactionBehavior.CAPTURE_LOCAL_SPAN))
+                        .isEqualTo(NopTransactionService.LOCAL_SPAN);
+        assertThat(threadContext.startIncomingSpan("type", "text", GETTER, CARRIER, messageSupplier,
+                null, AlreadyInTransactionBehavior.CAPTURE_LOCAL_SPAN))
+                        .isEqualTo(NopTransactionService.LOCAL_SPAN);
     }
 
     @Test
     public void testStartTraceEntry() {
-        assertThat(threadContext.startTraceEntry(null, timerName))
-                .isEqualTo(NopTransactionService.TRACE_ENTRY);
-        assertThat(threadContext.startTraceEntry(messageSupplier, null))
-                .isEqualTo(NopTransactionService.TRACE_ENTRY);
-        assertThat(threadContext.startTraceEntry(messageSupplier, timerName)
-                .getClass().getName()).endsWith("$DummyTraceEntryOrQuery");
-    }
-
-    @Test
-    public void testStartAsyncTraceEntry() {
-        assertThat(threadContext.startAsyncTraceEntry(null, timerName))
-                .isEqualTo(NopTransactionService.ASYNC_TRACE_ENTRY);
-        assertThat(threadContext.startAsyncTraceEntry(messageSupplier, null))
-                .isEqualTo(NopTransactionService.ASYNC_TRACE_ENTRY);
-        assertThat(threadContext.startAsyncTraceEntry(messageSupplier, timerName)
+        assertThat(threadContext.startLocalSpan(null, timerName))
+                .isEqualTo(NopTransactionService.LOCAL_SPAN);
+        assertThat(threadContext.startLocalSpan(messageSupplier, null))
+                .isEqualTo(NopTransactionService.LOCAL_SPAN);
+        assertThat(threadContext.startLocalSpan(messageSupplier, timerName)
                 .getClass().getName()).endsWith("$DummyTraceEntryOrQuery");
     }
 
     @Test
     public void testStartQueryEntry() {
-        assertThat(threadContext.startQueryEntry(null, "text", queryMessageSupplier, timerName))
-                .isEqualTo(NopTransactionService.QUERY_ENTRY);
-        assertThat(threadContext.startQueryEntry("type", null, queryMessageSupplier, timerName))
-                .isEqualTo(NopTransactionService.QUERY_ENTRY);
-        assertThat(threadContext.startQueryEntry("type", "text", null, timerName))
-                .isEqualTo(NopTransactionService.QUERY_ENTRY);
-        assertThat(threadContext.startQueryEntry("type", "text", queryMessageSupplier, null))
-                .isEqualTo(NopTransactionService.QUERY_ENTRY);
-        assertThat(threadContext.startQueryEntry("type", "text", queryMessageSupplier, timerName)
+        assertThat(threadContext.startQuerySpan(null, "text", queryMessageSupplier, timerName))
+                .isEqualTo(NopTransactionService.QUERY_SPAN);
+        assertThat(threadContext.startQuerySpan("type", null, queryMessageSupplier, timerName))
+                .isEqualTo(NopTransactionService.QUERY_SPAN);
+        assertThat(threadContext.startQuerySpan("type", "text", null, timerName))
+                .isEqualTo(NopTransactionService.QUERY_SPAN);
+        assertThat(threadContext.startQuerySpan("type", "text", queryMessageSupplier, null))
+                .isEqualTo(NopTransactionService.QUERY_SPAN);
+        assertThat(threadContext.startQuerySpan("type", "text", queryMessageSupplier, timerName)
                 .getClass().getName()).endsWith("$DummyTraceEntryOrQuery");
     }
 
     @Test
     public void testStartQueryEntryWithExecutionCount() {
-        assertThat(threadContext.startQueryEntry(null, "text", 1, queryMessageSupplier, timerName))
-                .isEqualTo(NopTransactionService.QUERY_ENTRY);
-        assertThat(threadContext.startQueryEntry("type", null, 1, queryMessageSupplier, timerName))
-                .isEqualTo(NopTransactionService.QUERY_ENTRY);
-        assertThat(threadContext.startQueryEntry("type", "text", 1, null, timerName))
-                .isEqualTo(NopTransactionService.QUERY_ENTRY);
-        assertThat(threadContext.startQueryEntry("type", "text", 1, queryMessageSupplier, null))
-                .isEqualTo(NopTransactionService.QUERY_ENTRY);
-        assertThat(threadContext.startQueryEntry("type", "text", 1, queryMessageSupplier, timerName)
+        assertThat(threadContext.startQuerySpan(null, "text", 1, queryMessageSupplier, timerName))
+                .isEqualTo(NopTransactionService.QUERY_SPAN);
+        assertThat(threadContext.startQuerySpan("type", null, 1, queryMessageSupplier, timerName))
+                .isEqualTo(NopTransactionService.QUERY_SPAN);
+        assertThat(threadContext.startQuerySpan("type", "text", 1, null, timerName))
+                .isEqualTo(NopTransactionService.QUERY_SPAN);
+        assertThat(threadContext.startQuerySpan("type", "text", 1, queryMessageSupplier, null))
+                .isEqualTo(NopTransactionService.QUERY_SPAN);
+        assertThat(threadContext.startQuerySpan("type", "text", 1, queryMessageSupplier, timerName)
                 .getClass().getName()).endsWith("$DummyTraceEntryOrQuery");
     }
 
     @Test
     public void testStartAsyncQueryEntry() {
+        assertThat(threadContext.startAsyncQuerySpan(null, "text", queryMessageSupplier, timerName))
+                .isEqualTo(NopTransactionService.ASYNC_QUERY_SPAN);
+        assertThat(threadContext.startAsyncQuerySpan("type", null, queryMessageSupplier, timerName))
+                .isEqualTo(NopTransactionService.ASYNC_QUERY_SPAN);
+        assertThat(threadContext.startAsyncQuerySpan("type", "text", null, timerName))
+                .isEqualTo(NopTransactionService.ASYNC_QUERY_SPAN);
+        assertThat(threadContext.startAsyncQuerySpan("type", "text", queryMessageSupplier, null))
+                .isEqualTo(NopTransactionService.ASYNC_QUERY_SPAN);
         assertThat(
-                threadContext.startAsyncQueryEntry(null, "text", queryMessageSupplier, timerName))
-                        .isEqualTo(NopTransactionService.ASYNC_QUERY_ENTRY);
-        assertThat(
-                threadContext.startAsyncQueryEntry("type", null, queryMessageSupplier, timerName))
-                        .isEqualTo(NopTransactionService.ASYNC_QUERY_ENTRY);
-        assertThat(threadContext.startAsyncQueryEntry("type", "text", null, timerName))
-                .isEqualTo(NopTransactionService.ASYNC_QUERY_ENTRY);
-        assertThat(threadContext.startAsyncQueryEntry("type", "text", queryMessageSupplier, null))
-                .isEqualTo(NopTransactionService.ASYNC_QUERY_ENTRY);
-        assertThat(
-                threadContext.startAsyncQueryEntry("type", "text", queryMessageSupplier, timerName)
+                threadContext.startAsyncQuerySpan("type", "text", queryMessageSupplier, timerName)
                         .getClass().getName()).endsWith("$DummyTraceEntryOrQuery");
     }
 
     @Test
     public void testStartServiceCallEntry() {
+        assertThat(threadContext.startOutgoingSpan(null, "text", SETTER, CARRIER, messageSupplier,
+                timerName)).isEqualTo(NopTransactionService.LOCAL_SPAN);
+        assertThat(threadContext.startOutgoingSpan("type", null, SETTER, CARRIER, messageSupplier,
+                timerName)).isEqualTo(NopTransactionService.LOCAL_SPAN);
         assertThat(
-                threadContext.startServiceCallEntry(null, "text", messageSupplier, timerName))
-                        .isEqualTo(NopTransactionService.TRACE_ENTRY);
-        assertThat(
-                threadContext.startServiceCallEntry("type", null, messageSupplier, timerName))
-                        .isEqualTo(NopTransactionService.TRACE_ENTRY);
-        assertThat(threadContext.startServiceCallEntry("type", "text", null, timerName))
-                .isEqualTo(NopTransactionService.TRACE_ENTRY);
-        assertThat(threadContext.startServiceCallEntry("type", "text", messageSupplier, null))
-                .isEqualTo(NopTransactionService.TRACE_ENTRY);
-        assertThat(
-                threadContext.startServiceCallEntry("type", "text", messageSupplier, timerName)
-                        .getClass().getName()).endsWith("$DummyTraceEntryOrQuery");
+                threadContext.startOutgoingSpan("type", "text", SETTER, CARRIER, null, timerName))
+                        .isEqualTo(NopTransactionService.LOCAL_SPAN);
+        assertThat(threadContext.startOutgoingSpan("type", "text", SETTER, CARRIER, messageSupplier,
+                null)).isEqualTo(NopTransactionService.LOCAL_SPAN);
+        assertThat(threadContext
+                .startOutgoingSpan("type", "text", SETTER, CARRIER, messageSupplier, timerName)
+                .getClass().getName()).endsWith("$DummyTraceEntryOrQuery");
     }
 
     @Test
     public void testStartAsyncServiceCallEntry() {
-        assertThat(threadContext.startAsyncServiceCallEntry(null, "text", messageSupplier,
-                timerName)).isEqualTo(NopTransactionService.ASYNC_TRACE_ENTRY);
-        assertThat(threadContext.startAsyncServiceCallEntry("type", null, messageSupplier,
-                timerName)).isEqualTo(NopTransactionService.ASYNC_TRACE_ENTRY);
-        assertThat(threadContext.startAsyncServiceCallEntry("type", "text", null, timerName))
-                .isEqualTo(NopTransactionService.ASYNC_TRACE_ENTRY);
-        assertThat(threadContext.startAsyncServiceCallEntry("type", "text", messageSupplier,
-                null)).isEqualTo(NopTransactionService.ASYNC_TRACE_ENTRY);
+        assertThat(threadContext.startAsyncOutgoingSpan(null, "text", SETTER, CARRIER,
+                messageSupplier, timerName)).isEqualTo(NopTransactionService.ASYNC_SPAN);
+        assertThat(threadContext.startAsyncOutgoingSpan("type", null, SETTER, CARRIER,
+                messageSupplier, timerName)).isEqualTo(NopTransactionService.ASYNC_SPAN);
+        assertThat(threadContext.startAsyncOutgoingSpan("type", "text", SETTER, CARRIER, null,
+                timerName)).isEqualTo(NopTransactionService.ASYNC_SPAN);
+        assertThat(threadContext.startAsyncOutgoingSpan("type", "text", SETTER, CARRIER,
+                messageSupplier, null)).isEqualTo(NopTransactionService.ASYNC_SPAN);
         assertThat(threadContext
-                .startAsyncServiceCallEntry("type", "text", messageSupplier, timerName)
+                .startAsyncOutgoingSpan("type", "text", SETTER, CARRIER, messageSupplier, timerName)
                 .getClass().getName()).endsWith("$DummyTraceEntryOrQuery");
     }
 
     @Test
     public void testStartTimer() {
-        assertThat(threadContext.startTimer(null)).isEqualTo(NopTimer.INSTANCE);
+        assertThat(threadContext.startTimer(null)).isEqualTo(NopTransactionService.TIMER);
 
         threadContext.setCurrentTimer(null);
-        assertThat(threadContext.startTimer(timerName)).isEqualTo(NopTimer.INSTANCE);
+        assertThat(threadContext.startTimer(timerName)).isEqualTo(NopTransactionService.TIMER);
     }
 
     @Test
@@ -176,5 +176,19 @@ public class ThreadContextImplTest {
         threadContext.setTransactionSlowThreshold(-1, MILLISECONDS, 0);
         threadContext.setTransactionSlowThreshold(0, null, 0);
         threadContext.setTransactionError((String) null);
+    }
+
+    private static class GetterImpl implements Getter<Object> {
+
+        @Override
+        public String get(Object carrier, String key) {
+            return null;
+        }
+    }
+
+    private static class SetterImpl implements Setter<Object> {
+
+        @Override
+        public void put(Object carrier, String key, String value) {}
     }
 }

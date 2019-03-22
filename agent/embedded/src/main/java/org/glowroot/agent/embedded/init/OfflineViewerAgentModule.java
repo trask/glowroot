@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,18 +21,16 @@ import java.util.List;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.config.ConfigService;
-import org.glowroot.agent.config.PluginCache;
+import org.glowroot.agent.config.InstrumentationDescriptorBuilder;
 
 class OfflineViewerAgentModule {
 
-    private final PluginCache pluginCache;
     private final ConfigService configService;
 
-    OfflineViewerAgentModule(@Nullable File pluginsDir, List<File> confDirs, boolean configReadOnly)
-            throws Exception {
-        pluginCache = PluginCache.create(pluginsDir, true);
-        configService =
-                ConfigService.create(confDirs, configReadOnly, pluginCache.pluginDescriptors());
+    OfflineViewerAgentModule(@Nullable File instrumentationDir, List<File> confDirs,
+            boolean configReadOnly) throws Exception {
+        configService = ConfigService.create(confDirs, configReadOnly,
+                InstrumentationDescriptorBuilder.create(instrumentationDir, true));
     }
 
     ConfigService getConfigService() {

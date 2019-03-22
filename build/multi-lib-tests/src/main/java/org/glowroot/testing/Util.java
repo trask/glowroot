@@ -105,8 +105,8 @@ class Util {
         List<String> command = Lists.newArrayList();
         command.add(MVN);
         command.add("-P");
-        // don't recompile plugin classes since in some cases they won't recompile with older
-        // versions of libraries
+        // don't recompile instrumentation classes since in some cases they won't recompile with
+        // older versions of libraries
         // need to recompile tests in some cases to align bytecode with test version
         // also need to recompile tests in some cases where default test compilation target is 1.7
         // but there is alternate 1.6 profile triggered above by -Dglowroot.test.java6
@@ -135,7 +135,7 @@ class Util {
         if (javaVersion == JavaVersion.JAVA6) {
             command.add("-Dglowroot.test.java6");
         }
-        // cassandra plugin tests need java7.home when running under java 6 in order to run
+        // cassandra instrumentation tests need java7.home when running under java 6 in order to run
         // cassandra itself
         command.add("-Djava7.home=" + JAVA7.getJavaHome());
         if (test != null) {

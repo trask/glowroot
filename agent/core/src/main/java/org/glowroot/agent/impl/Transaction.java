@@ -50,7 +50,6 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.model.AggregatedTimer;
 import org.glowroot.agent.model.AsyncQueryData;
@@ -63,12 +62,6 @@ import org.glowroot.agent.model.SharedQueryTextCollection;
 import org.glowroot.agent.model.ThreadProfile;
 import org.glowroot.agent.model.ThreadStats;
 import org.glowroot.agent.model.TransactionTimer;
-import org.glowroot.agent.plugin.api.Message;
-import org.glowroot.agent.plugin.api.MessageSupplier;
-import org.glowroot.agent.plugin.api.ThreadContext.ServletRequestInfo;
-import org.glowroot.agent.plugin.api.TimerName;
-import org.glowroot.agent.plugin.api.internal.ReadableMessage;
-import org.glowroot.agent.util.IterableWithSelfRemovableEntries.SelfRemovableEntry;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.common.config.AdvancedConfig;
 import org.glowroot.common.util.Cancellable;
@@ -77,6 +70,15 @@ import org.glowroot.common.util.Traverser;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.xyzzy.engine.bytecode.api.ThreadContextThreadLocal;
+import org.glowroot.xyzzy.engine.util.IterableWithSelfRemovableEntries.SelfRemovableEntry;
+import org.glowroot.xyzzy.instrumentation.api.Getter;
+import org.glowroot.xyzzy.instrumentation.api.Message;
+import org.glowroot.xyzzy.instrumentation.api.MessageSupplier;
+import org.glowroot.xyzzy.instrumentation.api.Span;
+import org.glowroot.xyzzy.instrumentation.api.ThreadContext.ServletRequestInfo;
+import org.glowroot.xyzzy.instrumentation.api.TimerName;
+import org.glowroot.xyzzy.instrumentation.api.internal.ReadableMessage;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.agent.util.Checkers.castInitialized;
@@ -113,7 +115,6 @@ public class Transaction {
     private final long startTick;
 
     private volatile boolean async;
-    private volatile boolean outer;
 
     private volatile String transactionType;
     private volatile int transactionTypePriority = Integer.MIN_VALUE;
@@ -138,7 +139,6 @@ public class Transaction {
     private final int maxProfileSamples;
 
     private final TransactionRegistry transactionRegistry;
-    private final TransactionService transactionService;
     private final ConfigService configService;
 
     // stack trace data constructed from profiling
@@ -218,9 +218,9 @@ public class Transaction {
             int maxTraceEntries, int maxQueryAggregates, int maxServiceCallAggregates,
             int maxProfileSamples, @Nullable ThreadAllocatedBytes threadAllocatedBytes,
             CompletionCallback completionCallback, Ticker ticker,
-            TransactionRegistry transactionRegistry, TransactionService transactionService,
-            ConfigService configService, ThreadContextThreadLocal.Holder threadContextHolder,
-            int rootNestingGroupId, int rootSuppressionKeyId) {
+            TransactionRegistry transactionRegistry, ConfigService configService,
+            ThreadContextThreadLocal.Holder threadContextHolder, int rootNestingGroupId,
+            int rootSuppressionKeyId) {
         this.startTime = startTime;
         this.startTick = startTick;
         this.transactionType = transactionType;
@@ -232,7 +232,6 @@ public class Transaction {
         this.completionCallback = completionCallback;
         this.ticker = ticker;
         this.transactionRegistry = transactionRegistry;
-        this.transactionService = transactionService;
         this.configService = configService;
         mainThreadContext = new ThreadContextImpl(castInitialized(this), null, null,
                 messageSupplier, timerName, startTick, captureThreadStats, maxQueryAggregates,
@@ -334,10 +333,6 @@ public class Transaction {
 
     boolean isAsync() {
         return async;
-    }
-
-    boolean isOuter() {
-        return outer;
     }
 
     TimerImpl getMainThreadRootTimer() {
@@ -614,10 +609,6 @@ public class Transaction {
         async = true;
     }
 
-    void setOuter() {
-        outer = true;
-    }
-
     void setTransactionType(String transactionType, int priority) {
         if (priority > transactionTypePriority && !transactionType.isEmpty()) {
             this.transactionType = transactionType;
@@ -764,12 +755,12 @@ public class Transaction {
                 serviceCallText, bypassLimit);
     }
 
-    TraceEntryImpl startInnerTransaction(String transactionType, String transactionName,
-            MessageSupplier messageSupplier, TimerName timerName,
+    <C> Span startInnerTransaction(String transactionType, String transactionName, Getter<C> getter,
+            C carrier, MessageSupplier messageSupplier, TimerName timerName,
             ThreadContextThreadLocal.Holder threadContextHolder, int rootNestingGroupId,
             int rootSuppressionKeyId) {
-        return transactionService.startTransaction(transactionType, transactionName,
-                messageSupplier, timerName, threadContextHolder, rootNestingGroupId,
+        return transactionRegistry.startIncomingSpan(transactionType, transactionName, getter,
+                carrier, messageSupplier, timerName, threadContextHolder, rootNestingGroupId,
                 rootSuppressionKeyId);
     }
 
@@ -838,9 +829,9 @@ public class Transaction {
         }
         synchronized (mainThreadContext) {
             if (completed) {
-                // protect against plugin calling setTransactionAsyncComplete() multiple times,
-                // potentially from different threads (e.g. netty plugin ending transaction by
-                // sending LastHttpContent at the same time client disconnects)
+                // protect against instrumentation calling setTransactionAsyncComplete() multiple
+                // times, potentially from different threads (e.g. netty instrumentation ending
+                // transaction by sending LastHttpContent at the same time client disconnects)
                 return;
             }
             // set endTick first before completed, to avoid race condition in getDurationNanos()
@@ -891,10 +882,6 @@ public class Transaction {
 
     TransactionRegistry getTransactionRegistry() {
         return transactionRegistry;
-    }
-
-    TransactionService getTransactionService() {
-        return transactionService;
     }
 
     ConfigService getConfigService() {

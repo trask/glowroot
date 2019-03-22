@@ -16,7 +16,6 @@
 package org.glowroot.agent;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,14 +26,12 @@ import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.jar.JarFile;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.base.Strings;
@@ -46,19 +43,15 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.bytecode.api.BytecodeServiceHolder;
 import org.glowroot.agent.collector.Collector;
-import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.GlowrootAgentInit;
 import org.glowroot.agent.init.GlowrootAgentInitFactory;
 import org.glowroot.agent.init.NonEmbeddedGlowrootAgentInit;
-import org.glowroot.agent.init.PreCheckLoadedClasses.PreCheckClassFileTransformer;
-import org.glowroot.agent.util.JavaVersion;
-import org.glowroot.agent.weaving.Java9;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.Version;
+import org.glowroot.xyzzy.engine.init.MainEntryPointUtil;
+import org.glowroot.xyzzy.engine.init.PreCheckLoadedClasses.PreCheckClassFileTransformer;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -79,14 +72,14 @@ public class MainEntryPoint {
 
     private MainEntryPoint() {}
 
-    public static void premain(Instrumentation instrumentation, Class<?>[] allPriorLoadedClasses,
+    public static void premain(Instrumentation instrumentation, Class<?>[] allPreCheckLoadedClasses,
             @Nullable File glowrootJarFile) {
         if (startupLogger != null) {
             // glowroot is already running, probably due to multiple glowroot -javaagent JVM args
             return;
         }
         // DO NOT USE ANY GUAVA CLASSES before initLogging() because they trigger loading of jul
-        // (and thus org.glowroot.agent.jul.Logger and thus glowroot's shaded slf4j)
+        // (and thus org.glowroot.xyzzy.engine.jul.Logger and thus glowroot's shaded slf4j)
         PreCheckClassFileTransformer preCheckClassFileTransformer = null;
         Directories directories;
         try {
@@ -103,10 +96,12 @@ public class MainEntryPoint {
             }
             directories = new Directories(glowrootJarFile);
             // init logger as early as possible
-            initLogging(directories.getConfDirs(), directories.getLogDir(),
-                    directories.getLoggingLogstashJarFile(), instrumentation);
-            PreCheckClassFileTransformer.initLogger();
-            DebuggingClassFileTransformer.initLogger();
+            File loggingLogstashJarFile = directories.getLoggingLogstashJarFile();
+            if (loggingLogstashJarFile != null) {
+                instrumentation
+                        .appendToBootstrapClassLoaderSearch(new JarFile(loggingLogstashJarFile));
+            }
+            initLogging(directories.getConfDirs(), directories.getLogDir(), instrumentation);
             if (directories.logStartupErrorMultiDirWithMissingAgentId()) {
                 startupLogger
                         .error("Glowroot failed to start: multi.dir is true, but missing agent.id");
@@ -121,60 +116,19 @@ public class MainEntryPoint {
             }
         } catch (Throwable t) {
             // log error but don't re-throw which would prevent monitored app from starting
-            // also, don't use logger since not initialized yet
+            // also, don't use logger since it failed to initialize
             System.err.println("Glowroot failed to start: " + t.getMessage());
             t.printStackTrace();
             return;
         }
-        if (PRE_CHECK_LOADED_CLASSES) {
-            if (AgentModule.logAnyImportantClassLoadedPriorToWeavingInit(allPriorLoadedClasses,
-                    glowrootJarFile, true)) {
-                List<String> classNames = Lists.newArrayList();
-                for (Class<?> clazz : allPriorLoadedClasses) {
-                    String className = clazz.getName();
-                    if (!className.startsWith("[")) {
-                        classNames.add(className);
-                    }
-                }
-                Collections.sort(classNames);
-                startupLogger.warn("PRE-CHECK: full list of classes already loaded: {}",
-                        Joiner.on(", ").join(classNames));
-            } else {
-                startupLogger.info("PRE-CHECK: successful");
-            }
-        }
         try {
-            instrumentation.addTransformer(new ManagementFactoryHackClassFileTransformer());
-            // need to load ThreadMXBean before it's possible to start any transactions since
-            // starting transactions depends on ThreadMXBean and so can lead to problems
-            // (e.g. see FileInstrumentationPresentAtStartupIT)
-            ManagementFactory.getThreadMXBean();
-            // don't remove transformer in case the class is retransformed later
-            if (JavaVersion.isGreaterThanOrEqualToJava9()) {
-                Object baseModule = Java9.getModule(ClassLoader.class);
-                Java9.grantAccessToGlowroot(instrumentation, baseModule);
-                Java9.grantAccess(instrumentation, "org.glowroot.agent.weaving.ClassLoaders",
-                        "java.lang.ClassLoader", false);
-                Java9.grantAccess(instrumentation, "io.netty.util.internal.ReflectionUtil",
-                        "java.nio.DirectByteBuffer", false);
-                Java9.grantAccess(instrumentation, "io.netty.util.internal.ReflectionUtil",
-                        "sun.nio.ch.SelectorImpl", false);
-                instrumentation.addTransformer(new Java9HackClassFileTransformer());
-                Class.forName("org.glowroot.agent.weaving.WeavingClassFileTransformer");
-                // don't remove transformer in case the class is retransformed later
-            }
-            if (JavaVersion.isJ9Jvm() && JavaVersion.isJava6()) {
-                instrumentation.addTransformer(new IbmJ9Java6HackClassFileTransformer());
-                Class.forName("com.google.protobuf.UnsafeUtil");
-                // don't remove transformer in case the class is retransformed later
-            }
             ImmutableMap<String, String> properties =
                     getGlowrootProperties(directories.getConfDirs());
-            start(directories, properties, instrumentation, preCheckClassFileTransformer);
+            start(directories, properties, instrumentation, preCheckClassFileTransformer,
+                    allPreCheckLoadedClasses);
         } catch (Throwable t) {
             // log error but don't re-throw which would prevent monitored app from starting
             startupLogger.error("Glowroot failed to start: {}", t.getMessage(), t);
-            BytecodeServiceHolder.setGlowrootFailedToStart();
         }
     }
 
@@ -189,9 +143,10 @@ public class MainEntryPoint {
             ImmutableMap<String, String> properties =
                     getGlowrootProperties(directories.getConfDirs());
             glowrootAgentInitFactory.newGlowrootAgentInit(directories.getDataDir(), true, null)
-                    .init(directories.getPluginsDir(), directories.getConfDirs(),
+                    .init(directories.getInstrumentationDir(), directories.getConfDirs(),
                             directories.getLogDir(), directories.getTmpDir(),
-                            directories.getGlowrootJarFile(), properties, null, null, version,
+                            directories.getGlowrootJarFile(), properties, null, null,
+                            new Class<?>[0], version,
                             checkNotNull(directories.getAgentDirLockCloseable()));
         } catch (Throwable t) {
             startupLogger.error("Glowroot cannot start: {}", t.getMessage(), t);
@@ -201,16 +156,7 @@ public class MainEntryPoint {
 
     @EnsuresNonNull("startupLogger")
     public static void initLogging(List<File> confDirs, File logDir,
-            @Nullable File loggingLogstashJarFile, @Nullable Instrumentation instrumentation)
-            throws IOException {
-        if (loggingLogstashJarFile != null && instrumentation != null) {
-            instrumentation
-                    .appendToBootstrapClassLoaderSearch(new JarFile(loggingLogstashJarFile));
-        }
-        if (JavaVersion.isJava6() && "IBM J9 VM".equals(System.getProperty("java.vm.name"))
-                && instrumentation != null) {
-            instrumentation.addTransformer(new IbmJ9Java6HackClassFileTransformer2());
-        }
+            @Nullable Instrumentation instrumentation) throws IOException {
         for (File confDir : confDirs) {
             File logbackXmlOverride = new File(confDir, "glowroot.logback.xml");
             if (logbackXmlOverride.exists()) {
@@ -221,34 +167,16 @@ public class MainEntryPoint {
         }
         String priorProperty = System.getProperty("glowroot.log.dir");
         System.setProperty("glowroot.log.dir", logDir.getPath());
-        ClassLoader priorLoader = Thread.currentThread().getContextClassLoader();
-        // setting the context class loader to only load from bootstrap class loader (by specifying
-        // null parent class loader), otherwise logback will pick up and use a SAX parser on the
-        // system classpath because SAXParserFactory.newInstance() checks the thread context class
-        // loader for resource named META-INF/services/javax.xml.parsers.SAXParserFactory
-        // (see the xerces dependency in glowroot-agent-integration-tests for testing this)
-        Thread.currentThread().setContextClassLoader(new ClassLoader(null) {
-            // overriding getResourceAsStream() is needed for JDK 6 since it still manages to
-            // fallback and find the resource on the system class path otherwise
-            @Override
-            public @Nullable InputStream getResourceAsStream(String name) {
-                if (name.equals("META-INF/services/javax.xml.parsers.SAXParserFactory")) {
-                    return new ByteArrayInputStream(new byte[0]);
-                }
-                return null;
-            }
-        });
         try {
-            startupLogger = LoggerFactory.getLogger("org.glowroot");
+            startupLogger = MainEntryPointUtil.initLogging("org.glowroot", instrumentation);
+            DebuggingClassFileTransformer.initLogger();
         } finally {
-            Thread.currentThread().setContextClassLoader(priorLoader);
             if (priorProperty == null) {
                 System.clearProperty("glowroot.log.dir");
             } else {
                 System.setProperty("glowroot.log.dir", priorProperty);
             }
             System.clearProperty("glowroot.logback.configurationFile");
-            // don't remove transformer in case the class is retransformed later
         }
         // TODO report checker framework issue that occurs without checkNotNull
         checkNotNull(startupLogger);
@@ -257,16 +185,17 @@ public class MainEntryPoint {
     @RequiresNonNull("startupLogger")
     private static void start(Directories directories, Map<String, String> properties,
             @Nullable Instrumentation instrumentation,
-            @Nullable PreCheckClassFileTransformer preCheckClassFileTransformer) throws Exception {
+            @Nullable PreCheckClassFileTransformer preCheckClassFileTransformer,
+            Class<?>[] allPreCheckLoadedClasses) throws Exception {
         String version = Version.getVersion(MainEntryPoint.class);
         startupLogger.info("Glowroot version: {}", version);
         startupLogger.info("Java version: {}", getJavaVersion());
         startupLogger.info("Java args: {}", getJvmArgs());
         glowrootAgentInit = createGlowrootAgentInit(directories, properties, instrumentation);
-        glowrootAgentInit.init(directories.getPluginsDir(), directories.getConfDirs(),
+        glowrootAgentInit.init(directories.getInstrumentationDir(), directories.getConfDirs(),
                 directories.getLogDir(), directories.getTmpDir(), directories.getGlowrootJarFile(),
-                properties, instrumentation, preCheckClassFileTransformer, version,
-                checkNotNull(directories.getAgentDirLockCloseable()));
+                properties, instrumentation, preCheckClassFileTransformer, allPreCheckLoadedClasses,
+                version, checkNotNull(directories.getAgentDirLockCloseable()));
     }
 
     @RequiresNonNull("startupLogger")
@@ -523,9 +452,9 @@ public class MainEntryPoint {
         String testDirPath = checkNotNull(properties.get("glowroot.test.dir"));
         File testDir = new File(testDirPath);
         // init logger as early as possible
-        initLogging(Arrays.asList(testDir), testDir, null, null);
+        initLogging(Arrays.asList(testDir), testDir, null);
         Directories directories = new Directories(testDir, false);
-        start(directories, properties, null, null);
+        start(directories, properties, null, null, new Class<?>[0]);
     }
 
     @OnlyUsedByTests

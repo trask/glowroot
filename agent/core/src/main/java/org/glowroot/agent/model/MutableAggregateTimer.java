@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 the original author or authors.
+ * Copyright 2014-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import java.util.List;
 
 import com.google.common.collect.Lists;
 
-import org.glowroot.agent.impl.TimerNameCache;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 
 public class MutableAggregateTimer implements AggregatedTimer {
@@ -32,7 +31,7 @@ public class MutableAggregateTimer implements AggregatedTimer {
     private final List<MutableAggregateTimer> childTimers;
 
     public static MutableAggregateTimer createAuxThreadRootTimer() {
-        return new MutableAggregateTimer(TimerNameCache.AUXILIARY_THREAD_ROOT_TIMER_NAME, false);
+        return new MutableAggregateTimer(MergedThreadTimer.AUXILIARY_THREAD_ROOT_TIMER_NAME, false);
     }
 
     public MutableAggregateTimer(String name, boolean extended) {

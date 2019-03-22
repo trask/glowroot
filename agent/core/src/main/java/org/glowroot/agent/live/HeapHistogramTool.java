@@ -34,9 +34,9 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.objectweb.asm.Type;
 
 import org.glowroot.agent.live.JvmTool.InputStreamProcessor;
-import org.glowroot.agent.util.JavaVersion;
-import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapHistogram;
+import org.glowroot.xyzzy.engine.util.JavaVersion;
+import org.glowroot.xyzzy.engine.util.LazyPlatformMBeanServer;
 
 class HeapHistogramTool {
 

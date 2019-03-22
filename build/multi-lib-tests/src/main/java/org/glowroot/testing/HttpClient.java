@@ -23,7 +23,7 @@ import static org.glowroot.testing.JavaVersion.JAVA8;
 
 public class HttpClient {
 
-    private static final String MODULE_PATH = "agent/plugins/http-client-plugin";
+    private static final String MODULE_PATH = "instrumentation/http-client";
 
     public static void main(String[] args) throws Exception {
         apacheHttpClient();
@@ -39,7 +39,7 @@ public class HttpClient {
     }
 
     private static void apacheHttpClient() throws Exception {
-        final String test = "ApacheHttpClientPluginIT";
+        final String test = "ApacheHttpClientIT";
         updateLibVersion("apache.httpclient.version", "4.0");
         updateLibVersion("apache.httpcore.version", "4.0.1");
         run(test, "apache-httpclient-pre-4.2");
@@ -103,7 +103,7 @@ public class HttpClient {
     }
 
     private static void apacheHttpAsyncClient() throws Exception {
-        final String test = "ApacheHttpAsyncClientPluginIT";
+        final String test = "ApacheHttpAsyncClientIT";
         updateLibVersion("apache.httpasyncclient.version", "4.0");
         updateLibVersion("apache.httpcore.version", "4.3");
         updateLibVersion("apache.httpclient.version", "4.3.1");
@@ -135,7 +135,7 @@ public class HttpClient {
     }
 
     private static void apacheHttpClient3x() throws Exception {
-        final String test = "ApacheHttpClient3xPluginIT";
+        final String test = "ApacheHttpClient3xIT";
         updateLibVersion("apache.httpclient3x.version", "3.0");
         run(test);
         updateLibVersion("apache.httpclient3x.version", "3.0.1");
@@ -227,7 +227,7 @@ public class HttpClient {
     }
 
     private static void cxfClient() throws Exception {
-        final String test = "CxfClientPluginIT";
+        final String test = "CxfClientIT";
         for (int i = 1; i <= 10; i++) {
             updateLibVersion("cxf.version", "2.1." + i);
             run(test, "cxf-2.x");
@@ -272,12 +272,12 @@ public class HttpClient {
 
     private static void httpUrlConnection() throws Exception {
         final String test = "HttpURLConnectionIT";
-        Util.log("http client plugin (HttpURLConnection)");
+        Util.log("http client instrumentation (HttpURLConnection)");
         Util.runTest(MODULE_PATH, test, JAVA8, JAVA7, JAVA6);
     }
 
     private static void okHttpClient() throws Exception {
-        final String test = "OkHttpClientPluginIT";
+        final String test = "OkHttpClientIT";
         updateLibVersion("okhttpclient.version", "3.0.1");
         runJava7(test);
         updateLibVersion("okhttpclient.version", "3.1.0");
@@ -323,7 +323,7 @@ public class HttpClient {
     }
 
     private static void okHttpClient2x() throws Exception {
-        final String test = "OkHttpClient2xPluginIT";
+        final String test = "OkHttpClient2xIT";
         updateLibVersion("okhttpclient2x.version", "2.0.0");
         runJava7(test);
         updateLibVersion("okhttpclient2x.version", "2.1.0");
@@ -345,7 +345,7 @@ public class HttpClient {
     }
 
     private static void springWebClient() throws Exception {
-        final String test = "RestTemplatePluginIT";
+        final String test = "RestTemplateIT";
         for (int i = 0; i <= 7; i++) {
             updateLibVersion("spring.version", "3.0." + i + ".RELEASE");
             run(test);
@@ -381,7 +381,7 @@ public class HttpClient {
     }
 
     private static void axisClient() throws Exception {
-        final String test = "AxisClientPluginIT";
+        final String test = "AxisClientIT";
         updateLibVersion("cxf.version", "3.0.15"); // need a Java 6 compatible CXF version
         updateLibVersion("axis.version", "1.0");
         run(test);
@@ -398,7 +398,7 @@ public class HttpClient {
     }
 
     private static void runAsyncHttpClient1x(String asyncHttpClientVersion) throws Exception {
-        final String test = "AsyncHttpClientPluginIT";
+        final String test = "AsyncHttpClientIT";
         updateLibVersion("asynchttpclient1x.version", asyncHttpClientVersion);
         if (asyncHttpClientVersion.startsWith("1.9")) {
             runJava7(test, "async-http-client-1.x");
@@ -408,7 +408,7 @@ public class HttpClient {
     }
 
     private static void runAsyncHttpClient2x(String asyncHttpClientVersion) throws Exception {
-        final String test = "AsyncHttpClientPluginIT";
+        final String test = "AsyncHttpClientIT";
         updateLibVersion("asynchttpclient2x.version", asyncHttpClientVersion);
         runJava8(test, "async-http-client-2.x");
     }

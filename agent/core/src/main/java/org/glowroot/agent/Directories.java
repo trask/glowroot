@@ -38,12 +38,12 @@ import org.glowroot.common.util.OnlyUsedByTests;
 public class Directories {
 
     // windows filename reserved characters
-    // cannot use guava CharMatcher as that triggers loading of jul (org.glowroot.agent.jul.Logger)
+    // cannot use guava CharMatcher as that triggers loading of jul (org.glowroot.xyzzy.engine.jul.Logger)
     private static final String RESERVED_CHARACTERS = "<>:\"/\\|?*";
 
     private final @Nullable File glowrootJarFile;
     private final File glowrootDir;
-    private final @Nullable File pluginsDir;
+    private final @Nullable File instrumentationDir;
     private final List<File> confDirs;
 
     private final @Nullable Closeable agentDirLockCloseable;
@@ -61,8 +61,8 @@ public class Directories {
         this.glowrootJarFile = glowrootJarFile;
         glowrootDir = getGlowrootDir(glowrootJarFile);
 
-        File pluginsDir = new File(glowrootDir, "plugins");
-        this.pluginsDir = pluginsDir.exists() ? pluginsDir : null;
+        File instrumentationDir = new File(glowrootDir, "instrumentation");
+        this.instrumentationDir = instrumentationDir.exists() ? instrumentationDir : null;
 
         confDirs = new ArrayList<File>();
         confDirs.add(glowrootDir);
@@ -153,7 +153,7 @@ public class Directories {
     Directories(File testDir, @SuppressWarnings("unused") boolean dummy) throws Exception {
         glowrootJarFile = null;
         glowrootDir = testDir;
-        pluginsDir = null;
+        instrumentationDir = null;
         confDirs = Arrays.asList(testDir);
         rootProperties = new Properties();
         multiDir = false;
@@ -177,8 +177,8 @@ public class Directories {
     }
 
     @Nullable
-    File getPluginsDir() {
-        return pluginsDir;
+    File getInstrumentationDir() {
+        return instrumentationDir;
     }
 
     public List<File> getConfDirs() {
@@ -412,7 +412,7 @@ public class Directories {
 
         private File getGlowrootSubDir(String name) throws IOException {
             // "agent-" prefix is needed to ensure uniqueness
-            // (and to be visibly different from tmp and plugins directories)
+            // (and to be visibly different from tmp and instrumentation directories)
             return safelyNamedDir(glowrootDir, "agent-" + name);
         }
     }

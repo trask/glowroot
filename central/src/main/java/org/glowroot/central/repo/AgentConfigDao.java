@@ -39,8 +39,8 @@ import org.glowroot.central.util.Session;
 import org.glowroot.common2.repo.ConfigRepository.OptimisticLockException;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationProperty;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -232,26 +232,31 @@ public class AgentConfigDao {
                     .setGeneralConfig(existingAgentConfig.getGeneralConfig())
                     .build();
         }
-        // absorb new plugin properties/labels/etc from agent into existing agent config
-        Map<String, PluginConfig> existingPluginConfigs = new HashMap<>();
-        for (PluginConfig existingPluginConfig : existingAgentConfig.getPluginConfigList()) {
-            existingPluginConfigs.put(existingPluginConfig.getId(), existingPluginConfig);
+        // absorb new instrumentation properties/labels/etc from agent into existing agent config
+        Map<String, InstrumentationConfig> existingInstrumentationConfigs = new HashMap<>();
+        for (InstrumentationConfig existingInstrumentationConfig : existingAgentConfig
+                .getInstrumentationConfigList()) {
+            existingInstrumentationConfigs.put(existingInstrumentationConfig.getId(),
+                    existingInstrumentationConfig);
         }
-        List<PluginConfig> pluginConfigs = new ArrayList<>();
-        for (PluginConfig agentPluginConfig : agentConfig.getPluginConfigList()) {
-            PluginConfig existingPluginConfig =
-                    existingPluginConfigs.get(agentPluginConfig.getId());
-            if (existingPluginConfig == null) {
-                pluginConfigs.add(agentPluginConfig);
+        List<InstrumentationConfig> InstrumentationConfigs = new ArrayList<>();
+        for (InstrumentationConfig agentInstrumentationConfig : agentConfig
+                .getInstrumentationConfigList()) {
+            InstrumentationConfig existingInstrumentationConfig =
+                    existingInstrumentationConfigs.get(agentInstrumentationConfig.getId());
+            if (existingInstrumentationConfig == null) {
+                InstrumentationConfigs.add(agentInstrumentationConfig);
                 continue;
             }
-            Map<String, PluginProperty> existingProperties = new HashMap<>();
-            for (PluginProperty existingProperty : existingPluginConfig.getPropertyList()) {
+            Map<String, InstrumentationProperty> existingProperties = new HashMap<>();
+            for (InstrumentationProperty existingProperty : existingInstrumentationConfig
+                    .getPropertyList()) {
                 existingProperties.put(existingProperty.getName(), existingProperty);
             }
-            List<PluginProperty> properties = new ArrayList<>();
-            for (PluginProperty agentProperty : agentPluginConfig.getPropertyList()) {
-                PluginProperty existingProperty =
+            List<InstrumentationProperty> properties = new ArrayList<>();
+            for (InstrumentationProperty agentProperty : agentInstrumentationConfig
+                    .getPropertyList()) {
+                InstrumentationProperty existingProperty =
                         existingProperties.get(agentProperty.getName());
                 if (existingProperty == null) {
                     properties.add(agentProperty);
@@ -269,15 +274,15 @@ public class AgentConfigDao {
                         .setValue(existingProperty.getValue())
                         .build());
             }
-            pluginConfigs.add(PluginConfig.newBuilder()
-                    .setId(agentPluginConfig.getId())
-                    .setName(agentPluginConfig.getName())
+            InstrumentationConfigs.add(InstrumentationConfig.newBuilder()
+                    .setId(agentInstrumentationConfig.getId())
+                    .setName(agentInstrumentationConfig.getName())
                     .addAllProperty(properties)
                     .build());
         }
         return existingAgentConfig.toBuilder()
-                .clearPluginConfig()
-                .addAllPluginConfig(pluginConfigs)
+                .clearInstrumentationConfig()
+                .addAllInstrumentationConfig(InstrumentationConfigs)
                 .build();
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import org.glowroot.agent.live.ClasspathCache.UiAnalyzedMethod;
 import org.glowroot.agent.live.LiveWeavingServiceImpl.UiAnalyzedMethodOrdering;
-import org.glowroot.agent.weaving.AnalyzedWorld;
+import org.glowroot.xyzzy.engine.weaving.AnalyzedWorld;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;

@@ -1,0 +1,189 @@
+{
+  "name": "Integration Tests",
+  "id": "glowroot-integration-tests",
+  "properties": [
+    {
+      "name": "starredHeadline",
+      "type": "boolean",
+      "label": "Starred headline",
+      "checkboxLabel": "Add asterisk to end of headline"
+    },
+    {
+      "name": "alternateHeadline",
+      "type": "string",
+      "label": "Alternate headline"
+    },
+    {
+      "name": "hasDefaultVal",
+      "type": "string",
+      "default": "one",
+      "label": "Has default val"
+    },
+    {
+      "name": "captureTraceEntryStackTraces",
+      "type": "boolean",
+      "label": "Stack trace",
+      "checkboxLabel": "Capture stack trace at pauseOneMillisecond() trace entry"
+    },
+    {
+      "name": "levelFiveEnabled",
+      "type": "boolean",
+      "label": "LevelFive",
+      "checkboxLabel": "Capture timers for LevelFive.call()"
+    },
+    {
+      "name": "levelFiveEntryEnabled",
+      "type": "boolean",
+      "label": "LevelFive trace entries",
+      "checkboxLabel": "Capture trace entries for LevelFive.call()",
+      "description": "LevelFive property above must be enabled also in order to capture trace entries."
+    },
+    {
+      "name": "anumber",
+      "type": "double",
+      "label": "A number"
+    },
+    {
+      "name": "anumberWithDefaultValue",
+      "type": "double",
+      "default": 22,
+      "label": "A number with default value"
+    },
+    {
+      "name": "anumberWithExplicitNullDefaultValue",
+      "type": "double",
+      "default": null,
+      "label": "A number with explicit null default value"
+    }
+  ],
+  "advice": [
+    {
+      "className": "org.glowroot.agent.tests.app.LevelFour",
+      "methodName": "call",
+      "methodParameterTypes": [
+        "java.lang.String",
+        "java.lang.String"
+      ],
+      "captureKind": "transaction",
+      "transactionType": "THIS SHOULD NEVER HAPPEN IN TESTS SINCE DO NOTHING",
+      "transactionNameTemplate": "THIS SHOULD NEVER HAPPEN IN TESTS SINCE DO NOTHING",
+      "alreadyInTransactionBehavior": "do-nothing",
+      "traceEntryMessageTemplate": "THIS SHOULD NEVER HAPPEN IN TESTS SINCE DO NOTHING",
+      "timerName": "THIS SHOULD NEVER HAPPEN IN TESTS SINCE DO NOTHING"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.LevelFour",
+      "methodName": "call",
+      "methodParameterTypes": [
+        "java.lang.String",
+        "java.lang.String"
+      ],
+      "captureKind": "transaction",
+      "transactionType": "THIS SHOULD NEVER HAPPEN IN TESTS SINCE DO NOTHING",
+      "transactionNameTemplate": "THIS SHOULD NEVER HAPPEN IN TESTS SINCE DO NOTHING",
+      "alreadyInTransactionBehavior": "do-nothing",
+      "traceEntryMessageTemplate": "THIS SHOULD NEVER HAPPEN IN TESTS SINCE DO NOTHING",
+      "timerName": "THIS SHOULD NEVER HAPPEN IN TESTS SINCE DO NOTHING",
+      "enabledProperty": "DUMMY"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.LevelFour",
+      "methodName": "call",
+      "methodParameterTypes": [
+        "java.lang.String",
+        "java.lang.String"
+      ],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "Level Four: {{0}}, {{1}}",
+      "timerName": "level four"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.LevelFive",
+      "methodName": "call",
+      "methodParameterTypes": [
+        "java.lang.String",
+        "java.lang.String"
+      ],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "Level Five: {{0}}, {{1}}",
+      "timerName": "level five",
+      "enabledProperty": "levelFiveEnabled",
+      "traceEntryEnabledProperty": "levelFiveEntryEnabled"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.ExceptionalClass",
+      "methodName": "aMethodThatThrowsAnException",
+      "methodParameterTypes": [
+      ],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "Exceptional entry",
+      "timerName": "exceptional"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.AAA",
+      "methodName": "execute",
+      "methodParameterTypes": [
+        "java.lang.String",
+        ".."
+      ],
+      "captureKind": "other",
+      "transactionNameTemplate": "{{0}} {{1.nested.name}}",
+      "transactionUserTemplate": "u{{1.nested.name}}",
+      "transactionAttributeTemplates": {
+        "View": "v{{0}}",
+        "Z": "z{{0}}"
+      }
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.CoverAllTypes",
+      "methodName": "get*",
+      "methodParameterTypes": [],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "Coverage get: {{_}}",
+      "timerName": "coverage"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.CoverAllTypes",
+      "methodName": "put*",
+      "methodParameterTypes": [
+        "*"
+      ],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "Coverage put: {{0}}",
+      "timerName": "coverage"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.StackOverflowTester",
+      "methodName": "recurse5",
+      "methodParameterTypes": [
+      ],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "Recurse",
+      "traceEntryCaptureSelfNested": true,
+      "timerName": "recurse"
+    },
+    {
+      "className": "org.glowroot.agent.tests.javaagent.LambdaWeavingIT$Lambda",
+      "methodName": "execute",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "lambda: {{0}} => {{_}}",
+      "timerName": "lambda"
+    }
+  ],
+  "classes": [
+    "org.glowroot.agent.tests.instrumentation.LevelOneInstrumentation",
+    "org.glowroot.agent.tests.instrumentation.LevelTwoInstrumentation",
+    "org.glowroot.agent.tests.instrumentation.LevelThreeInstrumentation",
+    "org.glowroot.agent.tests.instrumentation.LogErrorInstrumentation",
+    "org.glowroot.agent.tests.instrumentation.LogCauseInstrumentation",
+    "org.glowroot.agent.tests.instrumentation.PauseInstrumentation",
+    "org.glowroot.agent.tests.instrumentation.TraceGeneratorInstrumentation",
+    "org.glowroot.agent.tests.instrumentation.MixinInstrumentation",
+    "org.glowroot.agent.tests.instrumentation.BeanDescriptorInstrumentation",
+    "org.glowroot.agent.tests.instrumentation.SimpleInstrumentation",
+    "org.glowroot.agent.tests.instrumentation.AlreadyInTransactionBehaviorInstrumentation"
+  ]
+}

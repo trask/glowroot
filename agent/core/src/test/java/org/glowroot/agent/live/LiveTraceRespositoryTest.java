@@ -19,8 +19,8 @@ import com.google.common.base.Ticker;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.glowroot.agent.impl.Transaction;
 import org.glowroot.agent.impl.TraceCollector;
+import org.glowroot.agent.impl.Transaction;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.common.util.Clock;
 

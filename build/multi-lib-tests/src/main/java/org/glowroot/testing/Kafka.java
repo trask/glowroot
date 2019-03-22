@@ -20,7 +20,7 @@ import static org.glowroot.testing.JavaVersion.JAVA8;
 
 public class Kafka {
 
-    private static final String MODULE_PATH = "agent/plugins/kafka-plugin";
+    private static final String MODULE_PATH = "instrumentation/kafka";
 
     public static void main(String[] args) throws Exception {
         runJava7("0.9.0.0");

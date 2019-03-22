@@ -33,8 +33,8 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TempDirs;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.CustomInstrumentationConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.CustomInstrumentationConfig.CaptureKind;
 
 import static com.google.common.base.Charsets.UTF_8;
 
@@ -74,22 +74,22 @@ public class AnalyzedClassPlanBeeWithBadPreloadCacheIT {
     @Test
     public void shouldNotLogWarningInAnalyzedWorldPlanBWithBadPreloadCache() throws Exception {
         // given
-        updateInstrumentationConfigs();
+        updateCustomInstrumentationConfigs();
         // when
         container.executeNoExpectedTrace(ShouldNotLogWarningInAnalyzedWorldPlanB.class);
         // then
         // container close will validate that there were no unexpected warnings or errors
     }
 
-    private static void updateInstrumentationConfigs() throws Exception {
-        InstrumentationConfig config = InstrumentationConfig.newBuilder()
+    private static void updateCustomInstrumentationConfigs() throws Exception {
+        CustomInstrumentationConfig config = CustomInstrumentationConfig.newBuilder()
                 .setClassName(AnalyzedClassPlanBeeWithBadPreloadCacheIT.class.getName() + "$Y")
                 .setMethodName("y")
                 .setMethodReturnType("")
                 .setCaptureKind(CaptureKind.TIMER)
                 .setTimerName("y")
                 .build();
-        container.getConfigService().updateInstrumentationConfigs(ImmutableList.of(config));
+        container.getConfigService().updateCustomInstrumentationConfigs(ImmutableList.of(config));
     }
 
     public static class ShouldNotLogWarningInAnalyzedWorldPlanB implements AppUnderTest {

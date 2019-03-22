@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 the original author or authors.
+ * Copyright 2014-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ class JavaagentMain {
     public static void main(String[] args) throws Exception {
 
         // this is needed on Java 9+ now that sun.boot.class.path no longer exists, so that
-        // instrumentation config auto complete can find this class in InstrumentationConfigIT
+        // instrumentation config auto complete can find this class in CustomInstrumentationConfigIT
         Reflection.initialize(Container.class);
 
         int port = Integer.parseInt(args[0]);

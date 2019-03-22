@@ -17,10 +17,10 @@ package org.glowroot.agent.init;
 
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.util.internal.PlatformDependent;
+
+import org.glowroot.xyzzy.engine.util.JavaVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.glowroot.agent.util.JavaVersion;
 
 public class NettyInit {
 

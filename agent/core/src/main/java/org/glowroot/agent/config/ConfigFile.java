@@ -17,12 +17,14 @@ package org.glowroot.agent.config;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -41,7 +43,7 @@ class ConfigFile {
 
     private static final List<String> keyOrder =
             ImmutableList.of("transactions", "jvm", "uiDefaults", "advanced", "gauges",
-                    "syntheticMonitors", "alerts", "plugins", "instrumentation");
+                    "syntheticMonitors", "alerts", "instrumentation", "customInstrumentation");
 
     private final File file;
     private final ObjectNode rootObjectNode;
@@ -112,6 +114,8 @@ class ConfigFile {
         upgradePluginPropertiesIfNeeded(rootObjectNode);
         upgradeSlowThresholdOverrideIfNeeded(rootObjectNode);
         removeUserRecordingIfNeeded(rootObjectNode);
+        upgradeInstrumentationToCustomInstrumentation(rootObjectNode);
+        upgradePluginToInstrumentation(rootObjectNode);
         return rootObjectNode;
     }
 
@@ -276,6 +280,28 @@ class ConfigFile {
 
     private static void removeUserRecordingIfNeeded(ObjectNode rootObjectNode) {
         rootObjectNode.remove("userRecording");
+    }
+
+    private static void upgradeInstrumentationToCustomInstrumentation(ObjectNode rootObjectNode) {
+        JsonNode instrumentationNode = rootObjectNode.get("instrumentation");
+        if (instrumentationNode != null && instrumentationNode.isArray()) {
+            ArrayNode instrumentationArrayNode = (ArrayNode) instrumentationNode;
+            Iterator<JsonNode> i = instrumentationArrayNode.iterator();
+            if (i.hasNext()) {
+                JsonNode firstInstrumentation = i.next();
+                if (firstInstrumentation.has("captureKind")) {
+                    rootObjectNode.set("customInstrumentation",
+                            rootObjectNode.remove("instrumentation"));
+                }
+            }
+        }
+    }
+
+    private static void upgradePluginToInstrumentation(ObjectNode rootObjectNode) {
+        JsonNode pluginsNode = rootObjectNode.remove("plugins");
+        if (pluginsNode != null) {
+            rootObjectNode.set("instrumentation", pluginsNode);
+        }
     }
 
     private static void upgradeJdbcPluginPropertiesIfNeeded(ObjectNode propertiesObjectNode) {
