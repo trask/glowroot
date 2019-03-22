@@ -71,9 +71,6 @@ import org.immutables.value.Value;
 import org.openqa.selenium.WebDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.glowroot.agent.api.Instrumentation;
-import org.glowroot.agent.api.Instrumentation.AlreadyInTransactionBehavior;
 import org.glowroot.central.RollupService.AgentRollupConsumer;
 import org.glowroot.central.repo.ActiveAgentDao;
 import org.glowroot.central.repo.AlertingDisabledDao;
@@ -100,6 +97,8 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.SyntheticMonitorCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig.SyntheticMonitorKind;
+import org.glowroot.xyzzy.annotation.api.Instrumentation;
+import org.glowroot.xyzzy.annotation.api.Instrumentation.AlreadyInTransactionBehavior;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.DAYS;

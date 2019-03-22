@@ -33,30 +33,28 @@ public class AgentPremain {
 
     private AgentPremain() {}
 
-    // javaagent entry point
     public static void premain(@SuppressWarnings("unused") String agentArgs,
             Instrumentation instrumentation) {
         try {
-            Class<?>[] allPriorLoadedClasses;
+            Class<?>[] allPreCheckLoadedClasses;
             if (PRE_CHECK_LOADED_CLASSES) {
-                allPriorLoadedClasses = instrumentation.getAllLoadedClasses();
+                allPreCheckLoadedClasses = instrumentation.getAllLoadedClasses();
             } else {
-                allPriorLoadedClasses = new Class<?>[0];
+                allPreCheckLoadedClasses = new Class<?>[0];
             }
             CodeSource codeSource = AgentPremain.class.getProtectionDomain().getCodeSource();
             // suppress warnings is used instead of annotating this method with @Nullable
             // just to avoid dependencies on other classes (in this case the @Nullable annotation)
             @SuppressWarnings("argument.type.incompatible")
             File glowrootJarFile = getGlowrootJarFile(codeSource);
-            Class<?> mainEntryPointClass;
             if (glowrootJarFile != null) {
                 instrumentation.appendToBootstrapClassLoaderSearch(new JarFile(glowrootJarFile));
             }
-            mainEntryPointClass = Class.forName("org.glowroot.agent.MainEntryPoint", true,
+            Class<?> mainEntryPointClass = Class.forName("org.glowroot.agent.MainEntryPoint", true,
                     AgentPremain.class.getClassLoader());
             Method premainMethod = mainEntryPointClass.getMethod("premain", Instrumentation.class,
                     Class[].class, File.class);
-            premainMethod.invoke(null, instrumentation, allPriorLoadedClasses, glowrootJarFile);
+            premainMethod.invoke(null, instrumentation, allPreCheckLoadedClasses, glowrootJarFile);
         } catch (Throwable t) {
             // log error but don't re-throw which would prevent monitored app from starting
             System.err.println("Glowroot failed to start: " + t.getMessage());

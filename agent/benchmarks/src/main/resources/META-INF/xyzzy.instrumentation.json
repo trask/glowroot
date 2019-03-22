@@ -1,0 +1,42 @@
+{
+  "name": "Microbenchmarks",
+  "id": "glowroot-microbenchmarks",
+  "capturePoints": [
+    {
+      "className": "org.glowroot.microbenchmarks.core.support.TransactionWorthy",
+      "methodName": "doSomethingTransactionWorthy2",
+      "methodParameterTypes": [ ],
+      "captureKind": "transaction",
+      "transactionNameTemplate": "transaction worthy",
+      "alreadyInTransactionBehavior": "capture-trace-entry",
+      "timerName": "transaction worthy"
+    },
+    {
+      "className": "org.glowroot.microbenchmarks.core.support.TraceEntryWorthy",
+      "methodName": "doSomethingTraceEntryWorthy2",
+      "methodParameterTypes": [ ],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "trace entry worthy: {{this.name}}",
+      "timerName": "trace entry worthy"
+    },
+    {
+      "className": "org.glowroot.microbenchmarks.core.support.TimerWorthy",
+      "methodName": "doSomethingTimerWorthy2",
+      "methodParameterTypes": [ ],
+      "captureKind": "timer",
+      "timerName": "timer worthy"
+    },
+    {
+      "className": "org.glowroot.microbenchmarks.core.support.TimerWorthy",
+      "methodName": "doSomethingTimerWorthy2B",
+      "methodParameterTypes": [ ],
+      "captureKind": "timer",
+      "timerName": "timer worthy B"
+    }
+  ],
+  "classes": [
+    "org.glowroot.microbenchmarks.core.support.TransactionWorthyInstrumentation",
+    "org.glowroot.microbenchmarks.core.support.TraceEntryWorthyInstrumentation",
+    "org.glowroot.microbenchmarks.core.support.TimerWorthyInstrumentation"
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "name": "JSP",
+  "id": "jsp",
+  "classes": [
+    "org.glowroot.xyzzy.instrumentation.jsp.JspInstrumentation"
+  ]
+}

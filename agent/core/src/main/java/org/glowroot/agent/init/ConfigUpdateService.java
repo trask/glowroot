@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,23 +16,25 @@
 package org.glowroot.agent.init;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.glowroot.agent.collector.Collector.AgentConfigUpdater;
 import org.glowroot.agent.config.AllConfig;
 import org.glowroot.agent.config.ConfigService;
-import org.glowroot.agent.config.PluginCache;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+import org.glowroot.xyzzy.engine.config.InstrumentationDescriptor;
 
 class ConfigUpdateService implements AgentConfigUpdater {
 
     private final ConfigService configService;
-    private final PluginCache pluginCache;
+    private final List<InstrumentationDescriptor> instrumentationDescriptors;
 
     private final Object lock = new Object();
 
-    ConfigUpdateService(ConfigService configService, PluginCache pluginCache) {
+    ConfigUpdateService(ConfigService configService,
+            List<InstrumentationDescriptor> instrumentationDescriptors) {
         this.configService = configService;
-        this.pluginCache = pluginCache;
+        this.instrumentationDescriptors = instrumentationDescriptors;
     }
 
     // ui config, synthetic monitor configs and alert configs are not used by agent, but updated
@@ -40,8 +42,8 @@ class ConfigUpdateService implements AgentConfigUpdater {
     @Override
     public void update(AgentConfig agentConfig) throws IOException {
         synchronized (lock) {
-            configService.updateAllConfig(
-                    AllConfig.create(agentConfig, pluginCache.pluginDescriptors()));
+            configService
+                    .updateAllConfig(AllConfig.create(agentConfig, instrumentationDescriptors));
         }
     }
 }

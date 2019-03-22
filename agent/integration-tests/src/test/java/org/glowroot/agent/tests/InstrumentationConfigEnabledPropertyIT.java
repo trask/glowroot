@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,8 +30,6 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// InstrumentationConfig's enabledProperty and traceEntryEnabledProperty can only be used by plugins
-// and must be configured in glowroot.plugin.json
 public class InstrumentationConfigEnabledPropertyIT {
 
     private static Container container;
@@ -54,7 +52,7 @@ public class InstrumentationConfigEnabledPropertyIT {
     @Test
     public void shouldReadTracesWithEnabledFifthTimer() throws Exception {
         // given
-        container.getConfigService().setPluginProperty("glowroot-integration-tests",
+        container.getConfigService().setInstrumentationProperty("glowroot-integration-tests",
                 "levelFiveEnabled", true);
 
         // when
@@ -97,9 +95,9 @@ public class InstrumentationConfigEnabledPropertyIT {
     @Test
     public void shouldReadTracesWithEnabledFifthEntry() throws Exception {
         // given
-        container.getConfigService().setPluginProperty("glowroot-integration-tests",
+        container.getConfigService().setInstrumentationProperty("glowroot-integration-tests",
                 "levelFiveEnabled", true);
-        container.getConfigService().setPluginProperty("glowroot-integration-tests",
+        container.getConfigService().setInstrumentationProperty("glowroot-integration-tests",
                 "levelFiveEntryEnabled", true);
 
         // when

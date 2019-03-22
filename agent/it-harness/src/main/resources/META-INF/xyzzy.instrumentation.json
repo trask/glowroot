@@ -1,0 +1,24 @@
+{
+  "name": "IT Harness",
+  "id": "glowroot-it-harness",
+  "advice": [
+    {
+      "className": "org.glowroot.agent.it.harness.TransactionMarker",
+      "methodName": "transactionMarker",
+      "methodParameterTypes": [ ],
+      "captureKind": "transaction",
+      "transactionType": "Test harness",
+      "transactionNameTemplate": "trace marker / {{this.class.simpleName}}",
+      "alreadyInTransactionBehavior": "capture-trace-entry",
+      "timerName": "mock trace marker"
+    },
+    {
+      "className": "org.glowroot.agent.it.harness.TraceEntryMarker",
+      "methodName": "traceEntryMarker",
+      "methodParameterTypes": [ ],
+      "captureKind": "trace-entry",
+      "timerName": "mock trace entry marker",
+      "traceEntryMessageTemplate": "trace entry marker / {{this.class.simpleName}}"
+    }
+  ]
+}

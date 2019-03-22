@@ -26,8 +26,8 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TempDirs;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.CustomInstrumentationConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.CustomInstrumentationConfig.CaptureKind;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
 
 public class FileInstrumentationPresentAtStartupIT {
@@ -39,8 +39,8 @@ public class FileInstrumentationPresentAtStartupIT {
     public static void setUp() throws Exception {
         testDir = TempDirs.createTempDir("glowroot-test-dir");
         container = Containers.create(testDir);
-        container.getConfigService().updateInstrumentationConfigs(ImmutableList.of(
-                InstrumentationConfig.newBuilder()
+        container.getConfigService().updateCustomInstrumentationConfigs(ImmutableList.of(
+                CustomInstrumentationConfig.newBuilder()
                         .setClassName("java.io.File")
                         .setMethodName("getPath")
                         .setMethodReturnType("")

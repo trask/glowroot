@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,7 @@
 package org.glowroot.agent.model;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
-
-import org.glowroot.agent.plugin.api.QueryEntry;
+import org.glowroot.xyzzy.instrumentation.api.QueryEntry;
 
 // ideally this would be a component of it's subclasses instead of a parent class, but for
 // micro-optimization purposes it is not (in order to prevent extra object instances/memory

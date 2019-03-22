@@ -21,7 +21,7 @@ import static org.glowroot.testing.JavaVersion.JAVA8;
 
 public class JSF {
 
-    private static final String MODULE_PATH = "agent/plugins/jsf-plugin";
+    private static final String MODULE_PATH = "instrumentation/jsf";
 
     public static void main(String[] args) throws Exception {
         for (int i = 7; i <= 11; i++) {

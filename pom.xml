@@ -31,17 +31,13 @@
   </developers>
 
   <modules>
-    <module>build/license-bundle</module>
-    <module>build/checker-jdk6</module>
-    <module>build/error-prone-jdk6</module>
-    <module>build/multi-lib-tests</module>
-    <module>common</module>
-    <module>common2</module>
-    <module>wire-api</module>
-    <module>ui</module>
-    <module>agent/api</module>
-    <module>agent/plugin-api</module>
-    <module>agent/bytecode-api</module>
+    <module>annotation-api</module>
+    <module>instrumentation-api</module>
+    <module>engine</module>
+    <module>shared/common</module>
+    <module>shared/common2</module>
+    <module>shared/wire-api</module>
+    <module>shared/ui</module>
     <module>agent/core</module>
     <module>agent/embedded</module>
     <module>agent/it-harness</module>
@@ -54,32 +50,34 @@
     <module>agent/shaded/central-https-osx</module>
     <module>agent/shaded/logging-logstash</module>
     <module>agent/integration-tests</module>
-    <module>agent/plugins/camel-plugin</module>
-    <module>agent/plugins/cassandra-plugin</module>
-    <module>agent/plugins/ejb-plugin</module>
-    <module>agent/plugins/elasticsearch-plugin</module>
-    <module>agent/plugins/executor-plugin</module>
-    <module>agent/plugins/grails-plugin</module>
-    <module>agent/plugins/hibernate-plugin</module>
-    <module>agent/plugins/http-client-plugin</module>
-    <module>agent/plugins/java-http-server-plugin</module>
-    <module>agent/plugins/jaxrs-plugin</module>
-    <module>agent/plugins/jaxws-plugin</module>
-    <module>agent/plugins/jdbc-plugin</module>
-    <module>agent/plugins/jms-plugin</module>
-    <module>agent/plugins/jsf-plugin</module>
-    <module>agent/plugins/jsp-plugin</module>
-    <module>agent/plugins/kafka-plugin</module>
-    <module>agent/plugins/logger-plugin</module>
-    <module>agent/plugins/mail-plugin</module>
-    <module>agent/plugins/mongodb-plugin</module>
-    <module>agent/plugins/netty-plugin</module>
-    <module>agent/plugins/play-plugin</module>
-    <module>agent/plugins/quartz-plugin</module>
-    <module>agent/plugins/redis-plugin</module>
-    <module>agent/plugins/servlet-plugin</module>
-    <module>agent/plugins/spring-plugin</module>
-    <module>agent/plugins/struts-plugin</module>
+    <module>instrumentation/camel</module>
+    <module>instrumentation/cassandra</module>
+    <module>instrumentation/ejb</module>
+    <module>instrumentation/elasticsearch</module>
+    <module>instrumentation/executor</module>
+    <module>instrumentation/grails</module>
+    <module>instrumentation/hibernate</module>
+    <module>instrumentation/http-client</module>
+    <module>instrumentation/java-http-server</module>
+    <module>instrumentation/jaxrs</module>
+    <module>instrumentation/jaxws</module>
+    <module>instrumentation/jdbc</module>
+    <module>instrumentation/jms</module>
+    <module>instrumentation/jsf</module>
+    <module>instrumentation/jsp</module>
+    <module>instrumentation/kafka</module>
+    <module>instrumentation/logger</module>
+    <module>instrumentation/mail</module>
+    <module>instrumentation/mongodb</module>
+    <module>instrumentation/netty</module>
+    <module>instrumentation/play</module>
+    <module>instrumentation/quartz</module>
+    <module>instrumentation/redis</module>
+    <module>instrumentation/servlet</module>
+    <module>instrumentation/spring</module>
+    <module>instrumentation/struts</module>
+    <module>instrumentation/_all</module>
+    <module>build/multi-lib-tests</module>
     <module>agent/benchmarks</module>
     <module>agent/ui-sandbox</module>
     <module>agent/dist-maven-plugin</module>
@@ -123,6 +121,11 @@
       <dependency>
         <groupId>org.immutables</groupId>
         <artifactId>builder</artifactId>
+        <version>${immutables.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.immutables</groupId>
+        <artifactId>gson</artifactId>
         <version>${immutables.version}</version>
       </dependency>
       <dependency>
@@ -617,7 +620,7 @@
       <modules>
         <module>central</module>
         <!-- selenium 3.0.0+ requires Java 8+ -->
-        <module>webdriver-tests</module>
+        <module>shared/webdriver-tests</module>
       </modules>
     </profile>
     <profile>
@@ -710,7 +713,7 @@
                 <configuration>
                   <resourceBundles>
                     <resourceBundle>
-                      org.glowroot.build:glowroot-build-license-bundle:${project.version}
+                      com.github.trask:apache-license-bundle:1.0.0
                     </resourceBundle>
                   </resourceBundles>
                 </configuration>
@@ -718,9 +721,9 @@
             </executions>
             <dependencies>
               <dependency>
-                <groupId>org.glowroot.build</groupId>
-                <artifactId>glowroot-build-license-bundle</artifactId>
-                <version>${project.version}</version>
+                <groupId>com.github.trask</groupId>
+                <artifactId>apache-license-bundle</artifactId>
+                <version>1.0.0</version>
               </dependency>
             </dependencies>
           </plugin>

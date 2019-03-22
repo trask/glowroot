@@ -36,13 +36,14 @@ import org.glowroot.agent.central.CentralCollector;
 import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.collector.Collector.AgentConfigUpdater;
 import org.glowroot.agent.config.ConfigService;
-import org.glowroot.agent.config.PluginCache;
-import org.glowroot.agent.impl.BytecodeServiceImpl.OnEnteringMain;
-import org.glowroot.agent.init.PreCheckLoadedClasses.PreCheckClassFileTransformer;
+import org.glowroot.agent.config.InstrumentationDescriptorBuilder;
 import org.glowroot.agent.util.ThreadFactories;
 import org.glowroot.agent.util.Tickers;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
+import org.glowroot.xyzzy.engine.config.InstrumentationDescriptor;
+import org.glowroot.xyzzy.engine.init.PreCheckLoadedClasses.PreCheckClassFileTransformer;
+import org.glowroot.xyzzy.engine.weaving.BytecodeServiceImpl.OnEnteringMain;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -76,11 +77,12 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
     }
 
     @Override
-    public void init(@Nullable File pluginsDir, final List<File> confDirs, File logDir, File tmpDir,
-            final @Nullable File glowrootJarFile, final Map<String, String> properties,
+    public void init(@Nullable File instrumentationDir, final List<File> confDirs, File logDir,
+            File tmpDir, final @Nullable File glowrootJarFile, final Map<String, String> properties,
             final @Nullable Instrumentation instrumentation,
             @Nullable PreCheckClassFileTransformer preCheckClassFileTransformer,
-            final String glowrootVersion, Closeable agentDirLockCloseable) throws Exception {
+            Class<?>[] allPreCheckLoadedClasses, final String glowrootVersion,
+            Closeable agentDirLockCloseable) throws Exception {
 
         this.agentDirLockCloseable = agentDirLockCloseable;
         Ticker ticker = Tickers.getTicker();
@@ -90,9 +92,10 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
         JRebelWorkaround.perform();
         final boolean configReadOnly =
                 Boolean.parseBoolean(properties.get("glowroot.config.readOnly"));
-        final PluginCache pluginCache = PluginCache.create(pluginsDir, false);
+        final List<InstrumentationDescriptor> instrumentationDescriptors =
+                InstrumentationDescriptorBuilder.create(instrumentationDir, false);
         final ConfigService configService =
-                ConfigService.create(confDirs, configReadOnly, pluginCache.pluginDescriptors());
+                ConfigService.create(confDirs, configReadOnly, instrumentationDescriptors);
 
         final CollectorProxy collectorProxy = new CollectorProxy();
 
@@ -102,8 +105,9 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
         collectorLogbackAppender.start();
         attachAppender(collectorLogbackAppender);
 
-        agentModule = new AgentModule(clock, ticker, pluginCache, configService, instrumentation,
-                glowrootJarFile, tmpDir, preCheckClassFileTransformer);
+        agentModule = new AgentModule(clock, ticker, instrumentationDescriptors, configService,
+                instrumentation, glowrootJarFile, tmpDir, preCheckClassFileTransformer,
+                allPreCheckLoadedClasses);
         OnEnteringMain onEnteringMain = new OnEnteringMain() {
             @Override
             public void run(@Nullable String mainClass) throws Exception {
@@ -114,7 +118,7 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
                 agentModule.onEnteringMain(backgroundExecutor, collectorProxy, instrumentation,
                         glowrootJarFile, mainClass);
                 AgentConfigUpdater agentConfigUpdater =
-                        new ConfigUpdateService(configService, pluginCache);
+                        new ConfigUpdateService(configService, instrumentationDescriptors);
                 NettyInit.run();
                 Collector collector;
                 Constructor<? extends Collector> collectorProxyConstructor = null;

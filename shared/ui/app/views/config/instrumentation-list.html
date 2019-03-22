@@ -1,0 +1,37 @@
+<!--
+  Copyright 2012-2019 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<div class="card">
+  <div class="card-header">
+    <h2>Instrumentation</h2>
+  </div>
+  <div class="card-body">
+    <div ng-hide="hideMainContent()">
+      <div ng-include src="'template/gt-loading-overlay.html'"></div>
+      <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+      <div style="margin: 15px;">
+        <div ng-repeat="instrumentation in instrumentationWithConfig"
+             class="gt-second-line-indent"
+             style="padding-bottom: 8px;">
+          <a ng-href="config/instrumentation{{queryString(instrumentation)}}">{{instrumentation.name}}</a>
+        </div>
+        <div style="padding-top: 25px; font-style: italic; color: #666;"
+             ng-if="instrumentationWithNoConfig">
+          Instrumentation with no configurable properties: {{instrumentationWithNoConfig}}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

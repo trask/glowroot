@@ -17,6 +17,6 @@ package org.glowroot.agent.tests.app;
 
 class LevelFive {
 
-    // this method corresponds to pointcut defined in glowroot.plugin.json
+    // this method corresponds to pointcut defined in xyzzy.instrumentation.json
     void call(@SuppressWarnings("unused") String arg1, @SuppressWarnings("unused") String arg2) {}
 }

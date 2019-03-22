@@ -1,0 +1,9 @@
+{
+  "name": "Netty",
+  "id": "netty",
+  "classes": [
+    "org.glowroot.xyzzy.instrumentation.netty.Netty3xInstrumentation",
+    "org.glowroot.xyzzy.instrumentation.netty.NettyInstrumentation"
+  ],
+  "collocate": true
+}

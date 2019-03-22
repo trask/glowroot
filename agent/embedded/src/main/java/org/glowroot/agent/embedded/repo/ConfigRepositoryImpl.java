@@ -30,15 +30,13 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.config.AllConfig;
 import org.glowroot.agent.config.ConfigService;
-import org.glowroot.agent.config.PluginCache;
-import org.glowroot.agent.config.PluginConfig;
-import org.glowroot.agent.config.PluginDescriptor;
+import org.glowroot.agent.config.InstrumentationConfig;
 import org.glowroot.agent.embedded.config.AdminConfigService;
 import org.glowroot.common.config.AdvancedConfig;
 import org.glowroot.common.config.AlertConfig;
+import org.glowroot.common.config.CustomInstrumentationConfig;
 import org.glowroot.common.config.GaugeConfig;
 import org.glowroot.common.config.ImmutableAlertConfig;
-import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.common.config.JvmConfig;
 import org.glowroot.common.config.TransactionConfig;
 import org.glowroot.common.config.UiDefaultsConfig;
@@ -71,6 +69,7 @@ import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.ConfigValidation;
 import org.glowroot.common2.repo.util.LazySecretKey;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+import org.glowroot.xyzzy.engine.config.InstrumentationDescriptor;
 
 import static com.google.common.base.Preconditions.checkState;
 
@@ -78,7 +77,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     private final ConfigService configService;
     private final AdminConfigService adminConfigService;
-    private final PluginCache pluginCache;
+    private final List<InstrumentationDescriptor> instrumentationDescriptors;
     private final boolean configReadOnly;
 
     private final ImmutableList<RollupConfig> rollupConfigs;
@@ -89,11 +88,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     public ConfigRepositoryImpl(List<File> confDirs, boolean configReadOnly,
             @Nullable Integer webPortOverride, ConfigService configService,
-            PluginCache pluginCache) {
+            List<InstrumentationDescriptor> instrumentationDescriptors) {
         this.configService = configService;
         this.adminConfigService =
                 AdminConfigService.create(confDirs, configReadOnly, webPortOverride);
-        this.pluginCache = pluginCache;
+        this.instrumentationDescriptors = instrumentationDescriptors;
         this.configReadOnly = configReadOnly;
         rollupConfigs = ImmutableList.copyOf(RollupConfig.buildRollupConfigs());
         lazySecretKey = new LazySecretKeyImpl(confDirs);
@@ -178,25 +177,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public List<AgentConfig.PluginConfig> getPluginConfigs(String agentId) {
-        List<AgentConfig.PluginConfig> configs = Lists.newArrayList();
-        for (PluginConfig config : configService.getPluginConfigs()) {
-            configs.add(config.toProto());
-        }
-        return configs;
-    }
-
-    @Override
-    public AgentConfig. /*@Nullable*/ PluginConfig getPluginConfig(String agentId,
-            String pluginId) {
-        PluginConfig pluginConfig = configService.getPluginConfig(pluginId);
-        if (pluginConfig == null) {
-            return null;
-        }
-        return pluginConfig.toProto();
-    }
-
-    @Override
     public List<AgentConfig.InstrumentationConfig> getInstrumentationConfigs(String agentId) {
         List<AgentConfig.InstrumentationConfig> configs = Lists.newArrayList();
         for (InstrumentationConfig config : configService.getInstrumentationConfigs()) {
@@ -207,9 +187,29 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public AgentConfig. /*@Nullable*/ InstrumentationConfig getInstrumentationConfig(String agentId,
-            String version) {
-        for (InstrumentationConfig config : configService.getInstrumentationConfigs()) {
-            AgentConfig.InstrumentationConfig protoConfig = config.toProto();
+            String instrumentationId) {
+        InstrumentationConfig config = configService.getInstrumentationConfig(instrumentationId);
+        if (config == null) {
+            return null;
+        }
+        return config.toProto();
+    }
+
+    @Override
+    public List<AgentConfig.CustomInstrumentationConfig> getCustomInstrumentationConfig(
+            String agentId) {
+        List<AgentConfig.CustomInstrumentationConfig> configs = Lists.newArrayList();
+        for (CustomInstrumentationConfig config : configService.getCustomInstrumentationConfigs()) {
+            configs.add(config.toProto());
+        }
+        return configs;
+    }
+
+    @Override
+    public AgentConfig. /*@Nullable*/ CustomInstrumentationConfig getCustomInstrumentationConfig(
+            String agentId, String version) {
+        for (CustomInstrumentationConfig config : configService.getCustomInstrumentationConfigs()) {
+            AgentConfig.CustomInstrumentationConfig protoConfig = config.toProto();
             if (Versions.getVersion(protoConfig).equals(version)) {
                 return protoConfig;
             }
@@ -542,53 +542,57 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updatePluginConfig(String agentId, AgentConfig.PluginConfig protoConfig,
-            String priorVersion) throws Exception {
-        PluginDescriptor pluginDescriptor = getPluginDescriptor(protoConfig.getId());
-        PluginConfig config = PluginConfig.create(pluginDescriptor, protoConfig.getPropertyList());
-        synchronized (writeLock) {
-            List<PluginConfig> configs = Lists.newArrayList(configService.getPluginConfigs());
-            boolean found = false;
-            for (ListIterator<PluginConfig> i = configs.listIterator(); i.hasNext();) {
-                PluginConfig loopPluginConfig = i.next();
-                if (protoConfig.getId().equals(loopPluginConfig.id())) {
-                    String loopVersion = Versions.getVersion(loopPluginConfig.toProto());
-                    checkVersionsEqual(loopVersion, priorVersion);
-                    i.set(config);
-                    found = true;
-                    break;
-                }
-            }
-            checkState(found, "Plugin config not found: %s", protoConfig.getId());
-            configService.updatePluginConfigs(configs);
-        }
-    }
-
-    @Override
-    public void insertInstrumentationConfig(String agentId,
-            AgentConfig.InstrumentationConfig protoConfig) throws Exception {
-        InstrumentationConfig config = InstrumentationConfig.create(protoConfig);
-        synchronized (writeLock) {
-            List<InstrumentationConfig> configs =
-                    Lists.newArrayList(configService.getInstrumentationConfigs());
-            if (configs.contains(config)) {
-                throw new IllegalStateException("This exact instrumentation already exists");
-            }
-            configs.add(config);
-            configService.updateInstrumentationConfigs(configs);
-        }
-    }
-
-    @Override
     public void updateInstrumentationConfig(String agentId,
             AgentConfig.InstrumentationConfig protoConfig, String priorVersion) throws Exception {
-        InstrumentationConfig config = InstrumentationConfig.create(protoConfig);
+        InstrumentationDescriptor descriptor = getInstrumentationDescriptor(protoConfig.getId());
+        InstrumentationConfig config =
+                InstrumentationConfig.create(descriptor, protoConfig.getPropertyList());
         synchronized (writeLock) {
             List<InstrumentationConfig> configs =
                     Lists.newArrayList(configService.getInstrumentationConfigs());
             boolean found = false;
             for (ListIterator<InstrumentationConfig> i = configs.listIterator(); i.hasNext();) {
                 InstrumentationConfig loopConfig = i.next();
+                if (protoConfig.getId().equals(loopConfig.id())) {
+                    String loopVersion = Versions.getVersion(loopConfig.toProto());
+                    checkVersionsEqual(loopVersion, priorVersion);
+                    i.set(config);
+                    found = true;
+                    break;
+                }
+            }
+            checkState(found, "Instrumentation config not found: %s", protoConfig.getId());
+            configService.updateInstrumentationConfigs(configs);
+        }
+    }
+
+    @Override
+    public void insertCustomInstrumentationConfig(String agentId,
+            AgentConfig.CustomInstrumentationConfig protoConfig) throws Exception {
+        CustomInstrumentationConfig config = CustomInstrumentationConfig.create(protoConfig);
+        synchronized (writeLock) {
+            List<CustomInstrumentationConfig> configs =
+                    Lists.newArrayList(configService.getCustomInstrumentationConfigs());
+            if (configs.contains(config)) {
+                throw new IllegalStateException("This exact instrumentation already exists");
+            }
+            configs.add(config);
+            configService.updateCustomInstrumentationConfigs(configs);
+        }
+    }
+
+    @Override
+    public void updateCustomInstrumentationConfig(String agentId,
+            AgentConfig.CustomInstrumentationConfig protoConfig, String priorVersion)
+            throws Exception {
+        CustomInstrumentationConfig config = CustomInstrumentationConfig.create(protoConfig);
+        synchronized (writeLock) {
+            List<CustomInstrumentationConfig> configs =
+                    Lists.newArrayList(configService.getCustomInstrumentationConfigs());
+            boolean found = false;
+            for (ListIterator<CustomInstrumentationConfig> i = configs.listIterator(); i
+                    .hasNext();) {
+                CustomInstrumentationConfig loopConfig = i.next();
                 String loopVersion = Versions.getVersion(loopConfig.toProto());
                 if (loopVersion.equals(priorVersion)) {
                     i.set(config);
@@ -600,19 +604,20 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             if (!found) {
                 throw new OptimisticLockException();
             }
-            configService.updateInstrumentationConfigs(configs);
+            configService.updateCustomInstrumentationConfigs(configs);
         }
     }
 
     @Override
-    public void deleteInstrumentationConfigs(String agentId, List<String> versions)
+    public void deleteCustomInstrumentationConfigs(String agentId, List<String> versions)
             throws Exception {
         synchronized (writeLock) {
-            List<InstrumentationConfig> configs =
-                    Lists.newArrayList(configService.getInstrumentationConfigs());
+            List<CustomInstrumentationConfig> configs =
+                    Lists.newArrayList(configService.getCustomInstrumentationConfigs());
             List<String> remainingVersions = Lists.newArrayList(versions);
-            for (ListIterator<InstrumentationConfig> i = configs.listIterator(); i.hasNext();) {
-                InstrumentationConfig loopConfig = i.next();
+            for (ListIterator<CustomInstrumentationConfig> i = configs.listIterator(); i
+                    .hasNext();) {
+                CustomInstrumentationConfig loopConfig = i.next();
                 String loopVersion = Versions.getVersion(loopConfig.toProto());
                 if (remainingVersions.contains(loopVersion)) {
                     i.remove();
@@ -622,28 +627,28 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             if (!remainingVersions.isEmpty()) {
                 throw new OptimisticLockException();
             }
-            configService.updateInstrumentationConfigs(configs);
+            configService.updateCustomInstrumentationConfigs(configs);
         }
     }
 
     // ignores any instrumentation configs that are duplicates of existing instrumentation configs
     @Override
-    public void insertInstrumentationConfigs(String agentId,
-            List<AgentConfig.InstrumentationConfig> protoConfigs) throws Exception {
-        List<InstrumentationConfig> configs = Lists.newArrayList();
-        for (AgentConfig.InstrumentationConfig instrumentationConfig : protoConfigs) {
-            InstrumentationConfig config = InstrumentationConfig.create(instrumentationConfig);
+    public void insertCustomInstrumentationConfigs(String agentId,
+            List<AgentConfig.CustomInstrumentationConfig> protoConfigs) throws Exception {
+        List<CustomInstrumentationConfig> configs = Lists.newArrayList();
+        for (AgentConfig.CustomInstrumentationConfig protoConfig : protoConfigs) {
+            CustomInstrumentationConfig config = CustomInstrumentationConfig.create(protoConfig);
             configs.add(config);
         }
         synchronized (writeLock) {
-            List<InstrumentationConfig> existingConfigs =
-                    Lists.newArrayList(configService.getInstrumentationConfigs());
-            for (InstrumentationConfig config : configs) {
+            List<CustomInstrumentationConfig> existingConfigs =
+                    Lists.newArrayList(configService.getCustomInstrumentationConfigs());
+            for (CustomInstrumentationConfig config : configs) {
                 if (!existingConfigs.contains(config)) {
                     existingConfigs.add(config);
                 }
             }
-            configService.updateInstrumentationConfigs(existingConfigs);
+            configService.updateCustomInstrumentationConfigs(existingConfigs);
         }
     }
 
@@ -662,19 +667,18 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     public void updateAllConfig(String agentId, AgentConfig config, @Nullable String priorVersion)
             throws Exception {
         ConfigValidation.validatePartOne(config);
-        Set<String> validPluginIds = Sets.newHashSet();
-        for (PluginDescriptor pluginDescriptor : pluginCache.pluginDescriptors()) {
-            validPluginIds.add(pluginDescriptor.id());
+        Set<String> validInstrumentationIds = Sets.newHashSet();
+        for (InstrumentationDescriptor descriptor : instrumentationDescriptors) {
+            validInstrumentationIds.add(descriptor.id());
         }
-        ConfigValidation.validatePartTwo(config, validPluginIds);
+        ConfigValidation.validatePartTwo(config, validInstrumentationIds);
         synchronized (writeLock) {
             AgentConfig existingAgentConfig = configService.getAgentConfig();
             if (priorVersion != null
                     && !priorVersion.equals(Versions.getVersion(existingAgentConfig))) {
                 throw new OptimisticLockException();
             }
-            configService
-                    .updateAllConfig(AllConfig.create(config, pluginCache.pluginDescriptors()));
+            configService.updateAllConfig(AllConfig.create(config, instrumentationDescriptors));
         }
     }
 
@@ -991,13 +995,14 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         return lazySecretKey;
     }
 
-    private PluginDescriptor getPluginDescriptor(String pluginId) {
-        for (PluginDescriptor pluginDescriptor : pluginCache.pluginDescriptors()) {
-            if (pluginDescriptor.id().equals(pluginId)) {
-                return pluginDescriptor;
+    private InstrumentationDescriptor getInstrumentationDescriptor(String instrumentationId) {
+        for (InstrumentationDescriptor descriptor : instrumentationDescriptors) {
+            if (descriptor.id().equals(instrumentationId)) {
+                return descriptor;
             }
         }
-        throw new IllegalStateException("Could not find plugin descriptor: " + pluginId);
+        throw new IllegalStateException(
+                "Could not find instrumentation descriptor: " + instrumentationId);
     }
 
     @OnlyUsedByTests

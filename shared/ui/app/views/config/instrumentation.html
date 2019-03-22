@@ -1,0 +1,119 @@
+<!--
+  Copyright 2013-2019 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<!-- clearfix is needed for smaller screens where gt-config-return-link is floated  -->
+<div class="clearfix">
+  <a class="gt-config-return-link"
+     href="config/instrumentation-list{{agentQueryString()}}">
+    Return to list
+  </a>
+</div>
+<div class="card">
+  <div class="card-header">
+    <h2 ng-class="{'gt-lighten-font': !loaded && !httpError}">
+      Instrumentation
+      <span class="d-inline-block gt-separator">
+        |
+      </span>
+      <span style="font-size: 24px;">{{config.name}}</span>
+    </h2>
+  </div>
+  <div class="card-body">
+    <div ng-include src="'template/gt-loading-overlay.html'"></div>
+    <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+    <form gt-form-autofocus-on-first-input
+          ng-if="loaded"
+          name="formCtrl"
+          style="padding-top: 15px;"
+          novalidate>
+      <div ng-repeat="property in config.properties">
+        <div ng-switch on="property.type">
+          <div ng-switch-when="string">
+            <div gt-form-group
+                 gt-label="{{property.label}}"
+                 gt-model="property.value"
+                 gt-disabled="!agentRollup.permissions.config.edit.instrumentation"
+                 gt-width="30em">
+              <div class="help-block"
+                   ng-if="property.description">
+                {{property.description}}
+              </div>
+            </div>
+          </div>
+          <div ng-switch-when="boolean">
+            <div gt-form-group
+                 gt-type="checkbox"
+                 gt-label="{{property.label}}"
+                 gt-checkbox-label="{{property.checkboxLabel}}"
+                 gt-model="property.value"
+                 gt-disabled="!agentRollup.permissions.config.edit.instrumentation">
+              <div class="help-block"
+                   ng-if="property.description">
+                {{property.description}}
+              </div>
+            </div>
+          </div>
+          <div ng-switch-when="double">
+            <div gt-form-group
+                 gt-label="{{property.label}}"
+                 gt-model="property.value"
+                 gt-disabled="!agentRollup.permissions.config.edit.instrumentation"
+                 gt-number="true"
+                 gt-pattern="pattern.double"
+                 gt-width="7em">
+              <div class="help-block"
+                   ng-if="property.description">
+                {{property.description}}
+              </div>
+            </div>
+          </div>
+          <div ng-switch-when="list">
+            <div class="form-group row">
+              <label class="col-xl-3 gt-form-label-xl"
+                     for="{{property.name}}">
+                {{property.label}}
+              </label>
+              <div class="col-xl-9">
+                <input class="form-control"
+                       ng-class="{'mt-1': !$first}"
+                       ng-repeat="unused in property.value track by $index"
+                       ng-model="property.value[$index]"
+                       ng-disabled="!agentRollup.permissions.config.edit.plugins"
+                       ng-attr-id="{{$first ? property.name : undefined}}"
+                       style="max-width: 30em;">
+                <div class="help-block"
+                     ng-if="property.description">
+                  {{property.description}}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group row"
+           ng-if="agentRollup.permissions.config.edit.instrumentation">
+        <div class="offset-xl-3 col-xl-9">
+          <div gt-button
+               gt-label="Save changes"
+               gt-click="save(deferred)"
+               gt-validate-form="formCtrl">
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+<!-- each page with confirmation dialog needs its own confirmation dom so that it is deleted on $destroy -->
+<div ng-include="'template/gt-confirmation.html'"></div>

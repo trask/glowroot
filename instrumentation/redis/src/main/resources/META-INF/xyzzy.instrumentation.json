@@ -1,0 +1,18 @@
+{
+  "name": "Redis",
+  "id": "redis",
+  "advice": [
+    {
+      "className": "redis.clients.jedis.Connection",
+      "methodName": "sendCommand",
+      "methodParameterTypes": [
+        "*",
+        ".."
+      ],
+      "nestingGroup": "redis",
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "redis {{this.host}}:{{this.port}} {{0}}",
+      "timerName": "redis"
+    }
+  ]
+}

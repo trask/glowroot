@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ public class Threads {
     public static void preShutdownCheck(Collection<Thread> preExistingThreads)
             throws InterruptedException {
         // give the test 5 seconds to shutdown any threads they may have created, e.g. give tomcat
-        // time to shutdown when testing tomcat plugin
+        // time to shutdown when testing servlet instrumentation
         Stopwatch stopwatch = Stopwatch.createStarted();
         List<Thread> nonPreExistingThreads;
         List<Thread> rogueThreads;

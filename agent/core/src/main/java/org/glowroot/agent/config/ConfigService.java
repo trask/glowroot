@@ -32,29 +32,36 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.plugin.api.config.ConfigListener;
-import org.glowroot.agent.util.JavaVersion;
 import org.glowroot.common.config.AdvancedConfig;
 import org.glowroot.common.config.AlertConfig;
+import org.glowroot.common.config.CustomInstrumentationConfig;
+import org.glowroot.common.config.CustomInstrumentationConfig.AlreadyInTransactionBehavior;
+import org.glowroot.common.config.CustomInstrumentationConfig.CaptureKind;
+import org.glowroot.common.config.CustomInstrumentationConfig.MethodModifier;
 import org.glowroot.common.config.GaugeConfig;
 import org.glowroot.common.config.ImmutableAdvancedConfig;
 import org.glowroot.common.config.ImmutableAlertConfig;
+import org.glowroot.common.config.ImmutableCustomInstrumentationConfig;
 import org.glowroot.common.config.ImmutableGaugeConfig;
-import org.glowroot.common.config.ImmutableInstrumentationConfig;
 import org.glowroot.common.config.ImmutableJvmConfig;
 import org.glowroot.common.config.ImmutableMBeanAttribute;
 import org.glowroot.common.config.ImmutableSyntheticMonitorConfig;
 import org.glowroot.common.config.ImmutableTransactionConfig;
 import org.glowroot.common.config.ImmutableUiDefaultsConfig;
-import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.common.config.JvmConfig;
 import org.glowroot.common.config.PropertyValue;
-import org.glowroot.common.config.PropertyValue.PropertyType;
 import org.glowroot.common.config.SyntheticMonitorConfig;
 import org.glowroot.common.config.TransactionConfig;
 import org.glowroot.common.config.UiDefaultsConfig;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+import org.glowroot.xyzzy.engine.config.AdviceConfig;
+import org.glowroot.xyzzy.engine.config.ImmutableAdviceConfig;
+import org.glowroot.xyzzy.engine.config.InstrumentationDescriptor;
+import org.glowroot.xyzzy.engine.config.PropertyDescriptor;
+import org.glowroot.xyzzy.engine.config.DefaultValue.PropertyType;
+import org.glowroot.xyzzy.engine.util.JavaVersion;
+import org.glowroot.xyzzy.instrumentation.api.config.ConfigListener;
 
 public class ConfigService {
 
@@ -65,10 +72,11 @@ public class ConfigService {
 
     private final ConfigFile configFile;
 
-    private final ImmutableList<PluginDescriptor> pluginDescriptors;
+    private final ImmutableList<InstrumentationDescriptor> instrumentationDescriptors;
 
     private final Set<ConfigListener> configListeners = Sets.newCopyOnWriteArraySet();
-    private final Set<ConfigListener> pluginConfigListeners = Sets.newCopyOnWriteArraySet();
+    private final Set<ConfigListener> instrumentationConfigListeners =
+            Sets.newCopyOnWriteArraySet();
 
     private volatile TransactionConfig transactionConfig;
     private volatile JvmConfig jvmConfig;
@@ -77,16 +85,16 @@ public class ConfigService {
     private volatile ImmutableList<GaugeConfig> gaugeConfigs;
     private volatile ImmutableList<SyntheticMonitorConfig> syntheticMonitorConfigs;
     private volatile ImmutableList<AlertConfig> alertConfigs;
-    private volatile ImmutableList<PluginConfig> pluginConfigs;
     private volatile ImmutableList<InstrumentationConfig> instrumentationConfigs;
+    private volatile ImmutableList<CustomInstrumentationConfig> customInstrumentationConfigs;
 
     // memory barrier is used to ensure memory visibility of config values
     private volatile boolean memoryBarrier;
 
     public static ConfigService create(List<File> confDirs, boolean configReadOnly,
-            List<PluginDescriptor> pluginDescriptors) {
+            List<InstrumentationDescriptor> instrumentationDescriptors) {
         ConfigService configService =
-                new ConfigService(confDirs, configReadOnly, pluginDescriptors);
+                new ConfigService(confDirs, configReadOnly, instrumentationDescriptors);
         // it's nice to update config.json on startup if it is missing some/all config properties so
         // that the file contents can be reviewed/updated/copied if desired
         try {
@@ -98,9 +106,9 @@ public class ConfigService {
     }
 
     private ConfigService(List<File> confDirs, boolean configReadOnly,
-            List<PluginDescriptor> pluginDescriptors) {
+            List<InstrumentationDescriptor> instrumentationDescriptors) {
         configFile = new ConfigFile(confDirs, configReadOnly);
-        this.pluginDescriptors = ImmutableList.copyOf(pluginDescriptors);
+        this.instrumentationDescriptors = ImmutableList.copyOf(instrumentationDescriptors);
         TransactionConfig transactionConfig =
                 configFile.getConfig("transactions", ImmutableTransactionConfig.class);
         if (transactionConfig == null) {
@@ -150,21 +158,23 @@ public class ConfigService {
         } else {
             this.alertConfigs = ImmutableList.<AlertConfig>copyOf(alertConfigs);
         }
-        List<ImmutablePluginConfigTemp> pluginConfigs = configFile.getConfig("plugins",
-                new TypeReference<List<ImmutablePluginConfigTemp>>() {});
-        this.pluginConfigs = fixPluginConfigs(pluginConfigs, pluginDescriptors);
+        List<ImmutableInstrumentationConfigTemp> instrumentationConfigs =
+                configFile.getConfig("instrumentation",
+                        new TypeReference<List<ImmutableInstrumentationConfigTemp>>() {});
+        this.instrumentationConfigs =
+                fixInstrumentationConfigs(instrumentationConfigs, instrumentationDescriptors);
 
-        List<ImmutableInstrumentationConfig> instrumentationConfigs = configFile.getConfig(
-                "instrumentation", new TypeReference<List<ImmutableInstrumentationConfig>>() {});
-        if (instrumentationConfigs == null) {
-            this.instrumentationConfigs = ImmutableList.of();
+        List<ImmutableCustomInstrumentationConfig> customInstrumentationConfigs =
+                configFile.getConfig("customInstrumentation",
+                        new TypeReference<List<ImmutableCustomInstrumentationConfig>>() {});
+        if (customInstrumentationConfigs == null) {
+            this.customInstrumentationConfigs = ImmutableList.of();
         } else {
-            this.instrumentationConfigs =
-                    ImmutableList.<InstrumentationConfig>copyOf(instrumentationConfigs);
+            this.customInstrumentationConfigs =
+                    ImmutableList.<CustomInstrumentationConfig>copyOf(customInstrumentationConfigs);
         }
-
-        for (InstrumentationConfig instrumentationConfig : this.instrumentationConfigs) {
-            instrumentationConfig.logValidationErrorsIfAny();
+        for (CustomInstrumentationConfig config : this.customInstrumentationConfigs) {
+            config.logValidationErrorsIfAny();
         }
     }
 
@@ -192,21 +202,29 @@ public class ConfigService {
         return alertConfigs;
     }
 
-    public ImmutableList<PluginConfig> getPluginConfigs() {
-        return pluginConfigs;
+    public ImmutableList<InstrumentationConfig> getInstrumentationConfigs() {
+        return instrumentationConfigs;
     }
 
-    public @Nullable PluginConfig getPluginConfig(String pluginId) {
-        for (PluginConfig pluginConfig : pluginConfigs) {
-            if (pluginId.equals(pluginConfig.id())) {
-                return pluginConfig;
+    public @Nullable InstrumentationConfig getInstrumentationConfig(String instrumentationId) {
+        for (InstrumentationConfig config : instrumentationConfigs) {
+            if (instrumentationId.equals(config.id())) {
+                return config;
             }
         }
         return null;
     }
 
-    public List<InstrumentationConfig> getInstrumentationConfigs() {
-        return instrumentationConfigs;
+    public List<CustomInstrumentationConfig> getCustomInstrumentationConfigs() {
+        return customInstrumentationConfigs;
+    }
+
+    public List<AdviceConfig> getAdviceConfigs() {
+        List<AdviceConfig> adviceConfigs = Lists.newArrayList();
+        for (CustomInstrumentationConfig config : customInstrumentationConfigs) {
+            adviceConfigs.add(toAdviceConfig(config));
+        }
+        return adviceConfigs;
     }
 
     public long getGaugeCollectionIntervalMillis() {
@@ -216,22 +234,22 @@ public class ConfigService {
     public AgentConfig getAgentConfig() {
         AgentConfig.Builder builder = AgentConfig.newBuilder()
                 .setTransactionConfig(transactionConfig.toProto());
-        for (GaugeConfig gaugeConfig : gaugeConfigs) {
-            builder.addGaugeConfig(gaugeConfig.toProto());
+        for (GaugeConfig config : gaugeConfigs) {
+            builder.addGaugeConfig(config.toProto());
         }
         builder.setJvmConfig(jvmConfig.toProto());
-        for (SyntheticMonitorConfig syntheticMonitorConfig : syntheticMonitorConfigs) {
-            builder.addSyntheticMonitorConfig(syntheticMonitorConfig.toProto());
+        for (SyntheticMonitorConfig config : syntheticMonitorConfigs) {
+            builder.addSyntheticMonitorConfig(config.toProto());
         }
-        for (AlertConfig alertConfig : alertConfigs) {
-            builder.addAlertConfig(alertConfig.toProto());
+        for (AlertConfig config : alertConfigs) {
+            builder.addAlertConfig(config.toProto());
         }
         builder.setUiDefaultsConfig(uiDefaultsConfig.toProto());
-        for (PluginConfig pluginConfig : pluginConfigs) {
-            builder.addPluginConfig(pluginConfig.toProto());
+        for (InstrumentationConfig config : instrumentationConfigs) {
+            builder.addInstrumentationConfig(config.toProto());
         }
-        for (InstrumentationConfig instrumentationConfig : instrumentationConfigs) {
-            builder.addInstrumentationConfig(instrumentationConfig.toProto());
+        for (CustomInstrumentationConfig config : customInstrumentationConfigs) {
+            builder.addCustomInstrumentationConfig(config.toProto());
         }
         builder.setAdvancedConfig(advancedConfig.toProto());
         return builder.build();
@@ -242,8 +260,8 @@ public class ConfigService {
         listener.onChange();
     }
 
-    public void addPluginConfigListener(ConfigListener listener) {
-        pluginConfigListeners.add(listener);
+    public void addInstrumentationConfigListener(ConfigListener listener) {
+        instrumentationConfigListeners.add(listener);
     }
 
     public void updateTransactionConfig(TransactionConfig config) throws IOException {
@@ -283,17 +301,18 @@ public class ConfigService {
         notifyConfigListeners();
     }
 
-    public void updatePluginConfigs(List<PluginConfig> configs) throws IOException {
-        // configs passed in are already sorted
-        configFile.writeConfig("plugins", stripEmptyPluginConfigs(configs));
-        pluginConfigs = ImmutableList.copyOf(configs);
-        notifyAllPluginConfigListeners();
-    }
-
     public void updateInstrumentationConfigs(List<InstrumentationConfig> configs)
             throws IOException {
-        configFile.writeConfig("instrumentation", configs);
+        // configs passed in are already sorted
+        configFile.writeConfig("instrumentation", stripEmptyInstrumentationConfigs(configs));
         instrumentationConfigs = ImmutableList.copyOf(configs);
+        notifyAllInstrumentationConfigListeners();
+    }
+
+    public void updateCustomInstrumentationConfigs(List<CustomInstrumentationConfig> configs)
+            throws IOException {
+        configFile.writeConfig("instrumentation", configs);
+        customInstrumentationConfigs = ImmutableList.copyOf(configs);
         notifyConfigListeners();
     }
 
@@ -312,8 +331,8 @@ public class ConfigService {
         configs.put("gauges", config.gauges());
         configs.put("syntheticMonitors", config.syntheticMonitors());
         configs.put("alerts", config.alerts());
-        configs.put("plugins", stripEmptyPluginConfigs(config.plugins()));
-        configs.put("instrumentation", config.instrumentation());
+        configs.put("instrumentation", stripEmptyInstrumentationConfigs(config.instrumentation()));
+        configs.put("customInstrumentation", config.customInstrumentation());
         configFile.writeAllConfigs(configs);
         this.transactionConfig = config.transaction();
         this.jvmConfig = config.jvm();
@@ -322,10 +341,10 @@ public class ConfigService {
         this.gaugeConfigs = ImmutableList.copyOf(config.gauges());
         this.syntheticMonitorConfigs = ImmutableList.copyOf(config.syntheticMonitors());
         this.alertConfigs = ImmutableList.copyOf(config.alerts());
-        this.pluginConfigs = ImmutableList.copyOf(config.plugins());
         this.instrumentationConfigs = ImmutableList.copyOf(config.instrumentation());
+        this.customInstrumentationConfigs = ImmutableList.copyOf(config.customInstrumentation());
         notifyConfigListeners();
-        notifyAllPluginConfigListeners();
+        notifyAllInstrumentationConfigListeners();
     }
 
     public boolean readMemoryBarrier() {
@@ -346,8 +365,8 @@ public class ConfigService {
         }
     }
 
-    private void notifyAllPluginConfigListeners() {
-        for (ConfigListener listener : pluginConfigListeners) {
+    private void notifyAllInstrumentationConfigListeners() {
+        for (ConfigListener listener : instrumentationConfigListeners) {
             listener.onChange();
         }
         writeMemoryBarrier();
@@ -372,12 +391,13 @@ public class ConfigService {
         gaugeConfigs = getDefaultGaugeConfigs();
         syntheticMonitorConfigs = ImmutableList.of();
         alertConfigs = ImmutableList.of();
-        pluginConfigs =
-                fixPluginConfigs(ImmutableList.<ImmutablePluginConfigTemp>of(), pluginDescriptors);
-        instrumentationConfigs = ImmutableList.of();
+        instrumentationConfigs =
+                fixInstrumentationConfigs(ImmutableList.<ImmutableInstrumentationConfigTemp>of(),
+                        instrumentationDescriptors);
+        customInstrumentationConfigs = ImmutableList.of();
         writeAll();
         notifyConfigListeners();
-        notifyAllPluginConfigListeners();
+        notifyAllInstrumentationConfigListeners();
     }
 
     private void writeAll() throws IOException {
@@ -389,14 +409,15 @@ public class ConfigService {
         configs.put("gauges", gaugeConfigs);
         configs.put("syntheticMonitors", syntheticMonitorConfigs);
         configs.put("alerts", alertConfigs);
-        configs.put("plugins", stripEmptyPluginConfigs(pluginConfigs));
-        configs.put("instrumentation", instrumentationConfigs);
+        configs.put("instrumentation", stripEmptyInstrumentationConfigs(instrumentationConfigs));
+        configs.put("customInstrumentation", customInstrumentationConfigs);
         configFile.writeAllConfigsOnStartup(configs);
     }
 
-    private static List<PluginConfig> stripEmptyPluginConfigs(List<PluginConfig> configs) {
-        List<PluginConfig> nonEmptyConfigs = Lists.newArrayList();
-        for (PluginConfig config : configs) {
+    private static List<InstrumentationConfig> stripEmptyInstrumentationConfigs(
+            List<InstrumentationConfig> configs) {
+        List<InstrumentationConfig> nonEmptyConfigs = Lists.newArrayList();
+        for (InstrumentationConfig config : configs) {
             if (!config.properties().isEmpty()) {
                 nonEmptyConfigs.add(config);
             }
@@ -433,40 +454,42 @@ public class ConfigService {
         return ImmutableList.copyOf(defaultGaugeConfigs);
     }
 
-    public static ImmutableList<PluginConfig> fixPluginConfigs(
-            @Nullable List<ImmutablePluginConfigTemp> filePluginConfigs,
-            List<PluginDescriptor> pluginDescriptors) {
+    public static ImmutableList<InstrumentationConfig> fixInstrumentationConfigs(
+            @Nullable List<ImmutableInstrumentationConfigTemp> fileConfigs,
+            List<InstrumentationDescriptor> descriptors) {
 
-        Map<String, PluginConfigTemp> filePluginConfigMap = Maps.newHashMap();
-        if (filePluginConfigs != null) {
-            for (ImmutablePluginConfigTemp pluginConfig : filePluginConfigs) {
-                filePluginConfigMap.put(pluginConfig.id(), pluginConfig);
+        Map<String, InstrumentationConfigTemp> fileConfigMap = Maps.newHashMap();
+        if (fileConfigs != null) {
+            for (InstrumentationConfigTemp configTemp : fileConfigs) {
+                fileConfigMap.put(configTemp.id(), configTemp);
             }
         }
-
-        List<PluginConfig> accuratePluginConfigs = Lists.newArrayList();
-        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
-            PluginConfigTemp filePluginConfig = filePluginConfigMap.get(pluginDescriptor.id());
-            ImmutablePluginConfig.Builder builder = ImmutablePluginConfig.builder()
-                    .pluginDescriptor(pluginDescriptor);
-            for (PropertyDescriptor propertyDescriptor : pluginDescriptor.properties()) {
+        List<InstrumentationConfig> fixedInstrumentationConfigs = Lists.newArrayList();
+        for (InstrumentationDescriptor descriptor : descriptors) {
+            InstrumentationConfigTemp fileConfig = fileConfigMap.get(descriptor.id());
+            ImmutableInstrumentationConfig.Builder builder =
+                    ImmutableInstrumentationConfig.builder()
+                            .descriptor(descriptor);
+            for (PropertyDescriptor propertyDescriptor : descriptor.properties()) {
                 builder.putProperties(propertyDescriptor.name(),
-                        getPropertyValue(filePluginConfig, propertyDescriptor));
+                        getPropertyValue(fileConfig, propertyDescriptor));
             }
-            accuratePluginConfigs.add(builder.build());
+            fixedInstrumentationConfigs.add(builder.build());
         }
-        return ImmutableList.copyOf(accuratePluginConfigs);
+        return ImmutableList.copyOf(fixedInstrumentationConfigs);
     }
 
-    private static PropertyValue getPropertyValue(@Nullable PluginConfigTemp pluginConfig,
+    private static PropertyValue getPropertyValue(@Nullable InstrumentationConfigTemp configTemp,
             PropertyDescriptor propertyDescriptor) {
-        if (pluginConfig == null) {
-            return propertyDescriptor.getValidatedNonNullDefaultValue();
+        if (configTemp == null) {
+            return InstrumentationConfig
+                    .toPropertyValue(propertyDescriptor.getValidatedNonNullDefaultValue());
         }
-        PropertyValue propertyValue = getValidatedPropertyValue(pluginConfig.properties(),
+        PropertyValue propertyValue = getValidatedPropertyValue(configTemp.properties(),
                 propertyDescriptor.name(), propertyDescriptor.type());
         if (propertyValue == null) {
-            return propertyDescriptor.getValidatedNonNullDefaultValue();
+            return InstrumentationConfig
+                    .toPropertyValue(propertyDescriptor.getValidatedNonNullDefaultValue());
         }
         return propertyValue;
     }
@@ -479,7 +502,8 @@ public class ConfigService {
         }
         Object value = propertyValue.value();
         if (value == null) {
-            return PropertyDescriptor.getDefaultValue(propertyType);
+            return InstrumentationConfig
+                    .toPropertyValue(PropertyDescriptor.getDefaultValue(propertyType));
         }
         if (PropertyDescriptor.isValidType(value, propertyType)) {
             return propertyValue;
@@ -488,13 +512,64 @@ public class ConfigService {
             return new PropertyValue(
                     Splitter.on(',').trimResults().omitEmptyStrings().splitToList((String) value));
         } else {
-            logger.warn("invalid value for plugin property: {}", propertyName);
-            return PropertyDescriptor.getDefaultValue(propertyType);
+            logger.warn("invalid value for instrumentation property: {}", propertyName);
+            return InstrumentationConfig
+                    .toPropertyValue(PropertyDescriptor.getDefaultValue(propertyType));
+        }
+    }
+
+    private static AdviceConfig toAdviceConfig(CustomInstrumentationConfig config) {
+        @SuppressWarnings("deprecation")
+        ImmutableAdviceConfig.Builder builder = ImmutableAdviceConfig.builder()
+                .className(config.className())
+                .classAnnotation(config.classAnnotation())
+                .subTypeRestriction(config.subTypeRestriction())
+                .superTypeRestriction(config.superTypeRestriction())
+                .methodDeclaringClassName(config.methodDeclaringClassName())
+                .methodName(config.methodName())
+                .methodAnnotation(config.methodAnnotation())
+                .addAllMethodParameterTypes(config.methodParameterTypes())
+                .methodReturnType(config.methodReturnType());
+        for (MethodModifier methodModifier : config.methodModifiers()) {
+            builder.addMethodModifiers(toAdviceConfig(methodModifier));
+        }
+        return builder.nestingGroup(config.nestingGroup())
+                .order(config.order())
+                .captureKind(toAdviceConfig(config.captureKind()))
+                .transactionType(config.transactionType())
+                .transactionNameTemplate(config.transactionNameTemplate())
+                .transactionUserTemplate(config.transactionUserTemplate())
+                .putAllTransactionAttributeTemplates(config.transactionAttributeTemplates())
+                .transactionSlowThresholdMillis(config.transactionSlowThresholdMillis())
+                .alreadyInTransactionBehavior(toAdviceConfig(config.alreadyInTransactionBehavior()))
+                .transactionOuter(config.transactionOuter())
+                .traceEntryMessageTemplate(config.traceEntryMessageTemplate())
+                .traceEntryStackThresholdMillis(config.traceEntryStackThresholdMillis())
+                .traceEntryCaptureSelfNested(config.traceEntryCaptureSelfNested())
+                .timerName(config.timerName())
+                .build();
+    }
+
+    private static AdviceConfig.MethodModifier toAdviceConfig(MethodModifier methodModifier) {
+        return AdviceConfig.MethodModifier.valueOf(methodModifier.name());
+    }
+
+    private static AdviceConfig.CaptureKind toAdviceConfig(CaptureKind captureKind) {
+        return AdviceConfig.CaptureKind.valueOf(captureKind.name());
+    }
+
+    private static AdviceConfig. /*@Nullable*/ AlreadyInTransactionBehavior toAdviceConfig(
+            @Nullable AlreadyInTransactionBehavior alreadyInTransactionBehavior) {
+        if (alreadyInTransactionBehavior == null) {
+            return null;
+        } else {
+            return AdviceConfig.AlreadyInTransactionBehavior
+                    .valueOf(alreadyInTransactionBehavior.name());
         }
     }
 
     @Value.Immutable
-    interface PluginConfigTemp {
+    interface InstrumentationConfigTemp {
         String id();
         Map<String, PropertyValue> properties();
     }

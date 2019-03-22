@@ -49,12 +49,8 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.config.ConfigService;
-import org.glowroot.agent.util.JavaVersion;
-import org.glowroot.agent.util.LazyPlatformMBeanServer;
-import org.glowroot.agent.util.LazyPlatformMBeanServer.InitListener;
 import org.glowroot.agent.util.RateLimitedLogger;
 import org.glowroot.agent.util.ThreadFactories;
-import org.glowroot.agent.weaving.Java9;
 import org.glowroot.common.config.GaugeConfig;
 import org.glowroot.common.config.GaugeConfig.MBeanAttribute;
 import org.glowroot.common.config.ImmutableMBeanAttribute;
@@ -62,6 +58,10 @@ import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ScheduledRunnable;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.GaugeValue;
+import org.glowroot.xyzzy.engine.util.JavaVersion;
+import org.glowroot.xyzzy.engine.util.LazyPlatformMBeanServer;
+import org.glowroot.xyzzy.engine.util.LazyPlatformMBeanServer.InitListener;
+import org.glowroot.xyzzy.engine.weaving.Java9;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 

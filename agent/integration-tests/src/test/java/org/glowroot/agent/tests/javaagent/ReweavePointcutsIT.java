@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2018 the original author or authors.
+ * Copyright 2013-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,10 +25,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.agent.tests.ConfiguredInstrumentationIT;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
+import org.glowroot.agent.tests.CustomInstrumentationIT;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.CustomInstrumentationConfig;
 
-public class ReweavePointcutsIT extends ConfiguredInstrumentationIT {
+public class ReweavePointcutsIT extends CustomInstrumentationIT {
 
     @BeforeClass
     public static void setUp() throws Exception {
@@ -46,12 +46,12 @@ public class ReweavePointcutsIT extends ConfiguredInstrumentationIT {
 
     @Before
     public void beforeEachTest() throws Exception {
-        List<InstrumentationConfig> instrumentationConfigs = Lists.newArrayList();
-        instrumentationConfigs.add(buildInstrumentationForExecute1());
-        instrumentationConfigs.add(buildInstrumentationForExecute1TimerOnly());
-        instrumentationConfigs.add(buildInstrumentationForExecuteWithReturn());
-        instrumentationConfigs.add(buildInstrumentationForExecuteWithArgs());
-        container.getConfigService().updateInstrumentationConfigs(instrumentationConfigs);
+        List<CustomInstrumentationConfig> configs = Lists.newArrayList();
+        configs.add(buildInstrumentationForExecute1());
+        configs.add(buildInstrumentationForExecute1TimerOnly());
+        configs.add(buildInstrumentationForExecuteWithReturn());
+        configs.add(buildCustomInstrumentationForExecuteWithArgs());
+        container.getConfigService().updateCustomInstrumentationConfigs(configs);
     }
 
     @Override

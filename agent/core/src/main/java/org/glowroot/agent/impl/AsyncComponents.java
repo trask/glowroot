@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 the original author or authors.
+ * Copyright 2018-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,10 +32,10 @@ import org.glowroot.agent.model.AsyncTimer;
 import org.glowroot.agent.model.ImmutableTransactionTimerSnapshot;
 import org.glowroot.agent.model.QueryCollector;
 import org.glowroot.agent.model.ServiceCallCollector;
-import org.glowroot.agent.model.TimerNameImpl;
 import org.glowroot.agent.model.TransactionTimer;
-import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.common.config.AdvancedConfig;
+import org.glowroot.xyzzy.engine.impl.TimerNameImpl;
+import org.glowroot.xyzzy.instrumentation.api.TimerName;
 
 class AsyncComponents {
 

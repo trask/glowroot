@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ public class LevelOne {
         this.exception = e;
     }
 
-    // this method corresponds to LevelOneAspect
+    // this method corresponds to LevelOneInstrumentation
     public void call(Object arg1, Object arg2) {
         new LevelTwo(exception).call(arg1 + "x", arg2 + "x");
         new Simple().run();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,8 @@ import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.glowroot.agent.plugin.api.util.Optional;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.xyzzy.instrumentation.api.util.Optional;
 
 public class DetailMapWriter {
 
@@ -133,7 +132,7 @@ public class DetailMapWriter {
         return value;
     }
 
-    // unexpected keys and values are not truncated in org.glowroot.agent.plugin.api.MessageImpl, so
+    // unexpected keys and values are not truncated in org.glowroot.xyzzy.instrumentation.api.MessageImpl, so
     // need to be truncated here after converting them to strings
     private static String convertToStringAndTruncate(Object obj) {
         String str = obj.toString();

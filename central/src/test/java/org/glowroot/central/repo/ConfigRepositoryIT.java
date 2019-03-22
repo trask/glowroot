@@ -54,10 +54,10 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification.EmailNotification;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.CustomInstrumentationConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.CustomInstrumentationConfig.CaptureKind;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.CustomInstrumentationConfig.MethodModifier;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.MethodModifier;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.JvmConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.MBeanAttribute;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
@@ -207,7 +207,7 @@ public class ConfigRepositoryIT {
         // given
         String agentId = UUID.randomUUID().toString();
         agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
-        GaugeConfig gaugeConfig = GaugeConfig.newBuilder()
+        GaugeConfig config = GaugeConfig.newBuilder()
                 .setMbeanObjectName("x")
                 .addMbeanAttribute(MBeanAttribute.newBuilder()
                         .setName("y")
@@ -215,39 +215,38 @@ public class ConfigRepositoryIT {
                 .build();
 
         // when
-        configRepository.insertGaugeConfig(agentId, gaugeConfig);
-        List<GaugeConfig> gaugeConfigs = configRepository.getGaugeConfigs(agentId);
+        configRepository.insertGaugeConfig(agentId, config);
+        List<GaugeConfig> configs = configRepository.getGaugeConfigs(agentId);
 
         // then
-        assertThat(gaugeConfigs).hasSize(1);
-        assertThat(gaugeConfigs.get(0)).isEqualTo(gaugeConfig);
+        assertThat(configs).hasSize(1);
+        assertThat(configs.get(0)).isEqualTo(config);
 
         // and further
 
         // given
-        GaugeConfig updatedGaugeConfig = GaugeConfig.newBuilder()
+        GaugeConfig updatedConfig = GaugeConfig.newBuilder()
                 .setMbeanObjectName("x2")
                 .addMbeanAttribute(MBeanAttribute.newBuilder()
                         .setName("y2"))
                 .build();
 
         // when
-        configRepository.updateGaugeConfig(agentId, updatedGaugeConfig,
-                Versions.getVersion(gaugeConfig));
-        gaugeConfigs = configRepository.getGaugeConfigs(agentId);
+        configRepository.updateGaugeConfig(agentId, updatedConfig, Versions.getVersion(config));
+        configs = configRepository.getGaugeConfigs(agentId);
 
         // then
-        assertThat(gaugeConfigs).hasSize(1);
-        assertThat(gaugeConfigs.get(0)).isEqualTo(updatedGaugeConfig);
+        assertThat(configs).hasSize(1);
+        assertThat(configs.get(0)).isEqualTo(updatedConfig);
 
         // and further
 
         // when
-        configRepository.deleteGaugeConfig(agentId, Versions.getVersion(updatedGaugeConfig));
-        gaugeConfigs = configRepository.getGaugeConfigs(agentId);
+        configRepository.deleteGaugeConfig(agentId, Versions.getVersion(updatedConfig));
+        configs = configRepository.getGaugeConfigs(agentId);
 
         // then
-        assertThat(gaugeConfigs).isEmpty();
+        assertThat(configs).isEmpty();
     }
 
     @Test
@@ -255,7 +254,7 @@ public class ConfigRepositoryIT {
         // given
         String agentId = UUID.randomUUID().toString();
         agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
-        AlertConfig alertConfig = AlertConfig.newBuilder()
+        AlertConfig config = AlertConfig.newBuilder()
                 .setCondition(AlertCondition.newBuilder()
                         .setMetricCondition(MetricCondition.newBuilder()
                                 .setMetric("gauge:abc")
@@ -268,17 +267,17 @@ public class ConfigRepositoryIT {
                 .build();
 
         // when
-        configRepository.insertAlertConfig(agentId, alertConfig);
-        List<AlertConfig> alertConfigs = configRepository.getAlertConfigs(agentId);
+        configRepository.insertAlertConfig(agentId, config);
+        List<AlertConfig> configs = configRepository.getAlertConfigs(agentId);
 
         // then
-        assertThat(alertConfigs).hasSize(1);
-        assertThat(alertConfigs.get(0)).isEqualTo(alertConfig);
+        assertThat(configs).hasSize(1);
+        assertThat(configs.get(0)).isEqualTo(config);
 
         // and further
 
         // given
-        AlertConfig updatedAlertConfig = AlertConfig.newBuilder()
+        AlertConfig updatedConfig = AlertConfig.newBuilder()
                 .setCondition(AlertCondition.newBuilder()
                         .setMetricCondition(MetricCondition.newBuilder()
                                 .setMetric("gauge:abc2")
@@ -291,30 +290,29 @@ public class ConfigRepositoryIT {
                 .build();
 
         // when
-        configRepository.updateAlertConfig(agentId, updatedAlertConfig,
-                Versions.getVersion(alertConfig));
-        alertConfigs = configRepository.getAlertConfigs(agentId);
+        configRepository.updateAlertConfig(agentId, updatedConfig, Versions.getVersion(config));
+        configs = configRepository.getAlertConfigs(agentId);
 
         // then
-        assertThat(alertConfigs).hasSize(1);
-        assertThat(alertConfigs.get(0)).isEqualTo(updatedAlertConfig);
+        assertThat(configs).hasSize(1);
+        assertThat(configs.get(0)).isEqualTo(updatedConfig);
 
         // and further
 
         // when
-        configRepository.deleteAlertConfig(agentId, Versions.getVersion(updatedAlertConfig));
-        alertConfigs = configRepository.getAlertConfigs(agentId);
+        configRepository.deleteAlertConfig(agentId, Versions.getVersion(updatedConfig));
+        configs = configRepository.getAlertConfigs(agentId);
 
         // then
-        assertThat(alertConfigs).isEmpty();
+        assertThat(configs).isEmpty();
     }
 
     @Test
-    public void shouldCrudInstrumentationConfig() throws Exception {
+    public void shouldCrudCustomInstrumentationConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
         agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
-        InstrumentationConfig instrumentationConfig = InstrumentationConfig.newBuilder()
+        CustomInstrumentationConfig config = CustomInstrumentationConfig.newBuilder()
                 .setClassName("a")
                 .setMethodName("b")
                 .setMethodReturnType("c")
@@ -329,18 +327,18 @@ public class ConfigRepositoryIT {
                 .build();
 
         // when
-        configRepository.insertInstrumentationConfig(agentId, instrumentationConfig);
-        List<InstrumentationConfig> instrumentationConfigs =
-                configRepository.getInstrumentationConfigs(agentId);
+        configRepository.insertCustomInstrumentationConfig(agentId, config);
+        List<CustomInstrumentationConfig> configs =
+                configRepository.getCustomInstrumentationConfig(agentId);
 
         // then
-        assertThat(instrumentationConfigs).hasSize(1);
-        assertThat(instrumentationConfigs.get(0)).isEqualTo(instrumentationConfig);
+        assertThat(configs).hasSize(1);
+        assertThat(configs.get(0)).isEqualTo(config);
 
         // and further
 
         // given
-        InstrumentationConfig updatedInstrumentationConfig = InstrumentationConfig.newBuilder()
+        CustomInstrumentationConfig updatedConfig = CustomInstrumentationConfig.newBuilder()
                 .setClassName("a2")
                 .setMethodName("b2")
                 .setMethodReturnType("c2")
@@ -355,40 +353,40 @@ public class ConfigRepositoryIT {
                 .build();
 
         // when
-        configRepository.updateInstrumentationConfig(agentId, updatedInstrumentationConfig,
-                Versions.getVersion(instrumentationConfig));
-        instrumentationConfigs = configRepository.getInstrumentationConfigs(agentId);
+        configRepository.updateCustomInstrumentationConfig(agentId, updatedConfig,
+                Versions.getVersion(config));
+        configs = configRepository.getCustomInstrumentationConfig(agentId);
 
         // then
-        assertThat(instrumentationConfigs).hasSize(1);
-        assertThat(instrumentationConfigs.get(0)).isEqualTo(updatedInstrumentationConfig);
+        assertThat(configs).hasSize(1);
+        assertThat(configs.get(0)).isEqualTo(updatedConfig);
 
         // and further
 
         // when
-        configRepository.deleteInstrumentationConfigs(agentId,
-                ImmutableList.of(Versions.getVersion(updatedInstrumentationConfig)));
-        instrumentationConfigs = configRepository.getInstrumentationConfigs(agentId);
+        configRepository.deleteCustomInstrumentationConfigs(agentId,
+                ImmutableList.of(Versions.getVersion(updatedConfig)));
+        configs = configRepository.getCustomInstrumentationConfig(agentId);
 
         // then
-        assertThat(instrumentationConfigs).isEmpty();
+        assertThat(configs).isEmpty();
     }
 
     @Test
     public void shouldCrudUserConfig() throws Exception {
         // given
-        UserConfig userConfig = ImmutableUserConfig.builder()
+        UserConfig config = ImmutableUserConfig.builder()
                 .username("auser")
                 .addRoles("brole")
                 .build();
 
         // when
-        configRepository.insertUserConfig(userConfig);
-        List<UserConfig> userConfigs = configRepository.getUserConfigs();
+        configRepository.insertUserConfig(config);
+        List<UserConfig> configs = configRepository.getUserConfigs();
 
         // then
-        assertThat(userConfigs).hasSize(2);
-        assertThat(userConfigs.get(1)).isEqualTo(userConfig);
+        assertThat(configs).hasSize(2);
+        assertThat(configs.get(1)).isEqualTo(config);
 
         // and further
 
@@ -396,42 +394,42 @@ public class ConfigRepositoryIT {
         String username = "auser";
 
         // when
-        UserConfig readUserConfig = configRepository.getUserConfig(username);
+        UserConfig readConfig = configRepository.getUserConfig(username);
 
         // then
-        assertThat(readUserConfig).isNotNull();
+        assertThat(readConfig).isNotNull();
 
         // and further
 
         // given
-        UserConfig updatedUserConfig = ImmutableUserConfig.builder()
+        UserConfig updatedConfig = ImmutableUserConfig.builder()
                 .username("auser")
                 .addRoles("brole2")
                 .build();
 
         // when
-        configRepository.updateUserConfig(updatedUserConfig, userConfig.version());
-        userConfigs = configRepository.getUserConfigs();
+        configRepository.updateUserConfig(updatedConfig, config.version());
+        configs = configRepository.getUserConfigs();
 
         // then
-        assertThat(userConfigs).hasSize(2);
-        assertThat(userConfigs.get(1)).isEqualTo(updatedUserConfig);
+        assertThat(configs).hasSize(2);
+        assertThat(configs.get(1)).isEqualTo(updatedConfig);
 
         // and further
 
         // when
-        configRepository.deleteUserConfig(updatedUserConfig.username());
-        userConfigs = configRepository.getUserConfigs();
+        configRepository.deleteUserConfig(updatedConfig.username());
+        configs = configRepository.getUserConfigs();
 
         // then
-        assertThat(userConfigs).hasSize(1);
-        assertThat(userConfigs.get(0).username()).isEqualTo("anonymous");
+        assertThat(configs).hasSize(1);
+        assertThat(configs.get(0).username()).isEqualTo("anonymous");
     }
 
     @Test
     public void shouldCrudRoleConfig() throws Exception {
         // given
-        RoleConfig roleConfig = ImmutableRoleConfig.builder()
+        RoleConfig config = ImmutableRoleConfig.builder()
                 .central(true)
                 .name("brole")
                 .addPermissions("p1")
@@ -439,17 +437,17 @@ public class ConfigRepositoryIT {
                 .build();
 
         // when
-        configRepository.insertRoleConfig(roleConfig);
-        List<RoleConfig> roleConfigs = configRepository.getRoleConfigs();
+        configRepository.insertRoleConfig(config);
+        List<RoleConfig> configs = configRepository.getRoleConfigs();
 
         // then
-        assertThat(roleConfigs).hasSize(2);
-        assertThat(roleConfigs.get(1)).isEqualTo(roleConfig);
+        assertThat(configs).hasSize(2);
+        assertThat(configs.get(1)).isEqualTo(config);
 
         // and further
 
         // given
-        RoleConfig updatedRoleConfig = ImmutableRoleConfig.builder()
+        RoleConfig updatedConfig = ImmutableRoleConfig.builder()
                 .central(true)
                 .name("brole")
                 .addPermissions("p5")
@@ -458,22 +456,22 @@ public class ConfigRepositoryIT {
                 .build();
 
         // when
-        configRepository.updateRoleConfig(updatedRoleConfig, roleConfig.version());
-        roleConfigs = configRepository.getRoleConfigs();
+        configRepository.updateRoleConfig(updatedConfig, config.version());
+        configs = configRepository.getRoleConfigs();
 
         // then
-        assertThat(roleConfigs).hasSize(2);
-        assertThat(roleConfigs.get(1)).isEqualTo(updatedRoleConfig);
+        assertThat(configs).hasSize(2);
+        assertThat(configs.get(1)).isEqualTo(updatedConfig);
 
         // and further
 
         // when
-        configRepository.deleteRoleConfig(updatedRoleConfig.name());
-        roleConfigs = configRepository.getRoleConfigs();
+        configRepository.deleteRoleConfig(updatedConfig.name());
+        configs = configRepository.getRoleConfigs();
 
         // then
-        assertThat(roleConfigs).hasSize(1);
-        assertThat(roleConfigs.get(0).name()).isEqualTo("Administrator");
+        assertThat(configs).hasSize(1);
+        assertThat(configs.get(0).name()).isEqualTo("Administrator");
     }
 
     @Test

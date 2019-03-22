@@ -1,0 +1,21 @@
+{
+  "name": "Kafka",
+  "id": "kafka",
+  "advice": [
+    {
+      "className": "org.apache.kafka.clients.consumer.KafkaConsumer",
+      "methodName": "poll",
+      "methodParameterTypes": [
+        "long"
+      ],
+      "nestingGroup": "kafka-poll",
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "kafka poll => {{_.count}}",
+      "timerName": "kafka poll"
+    }
+  ],
+  "classes": [
+    "org.glowroot.xyzzy.instrumentation.kafka.ProducerInstrumentation"
+  ],
+  "collocate": true
+}

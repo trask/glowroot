@@ -1,5 +1,5 @@
 /**
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,11 @@ import static org.glowroot.testing.JavaVersion.JAVA8;
 
 public class JSP {
 
-    private static final String MODULE_PATH = "agent/plugins/jsp-plugin";
+    private static final String MODULE_PATH = "instrumentation/jsp";
 
     public static void main(String[] args) throws Exception {
         // TODO run tests against different versions of tomcat
-        Util.log("jsp plugin");
+        Util.log("jsp instrumentation");
         Util.runTests(MODULE_PATH, JAVA8, JAVA7, JAVA6);
     }
 }

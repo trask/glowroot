@@ -25,14 +25,15 @@ import org.immutables.value.Value;
 
 import org.glowroot.common.config.AdvancedConfig;
 import org.glowroot.common.config.AlertConfig;
+import org.glowroot.common.config.CustomInstrumentationConfig;
 import org.glowroot.common.config.GaugeConfig;
-import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.common.config.JvmConfig;
 import org.glowroot.common.config.SyntheticMonitorConfig;
 import org.glowroot.common.config.TransactionConfig;
 import org.glowroot.common.config.UiDefaultsConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationProperty;
+import org.glowroot.xyzzy.engine.config.InstrumentationDescriptor;
 
 @Value.Immutable
 public abstract class AllConfig {
@@ -44,42 +45,44 @@ public abstract class AllConfig {
     abstract List<GaugeConfig> gauges();
     abstract List<SyntheticMonitorConfig> syntheticMonitors();
     abstract List<AlertConfig> alerts();
-    abstract List<PluginConfig> plugins();
     abstract List<InstrumentationConfig> instrumentation();
+    abstract List<CustomInstrumentationConfig> customInstrumentation();
 
-    public static AllConfig create(AgentConfig config, List<PluginDescriptor> pluginDescriptors) {
+    public static AllConfig create(AgentConfig agentConfig,
+            List<InstrumentationDescriptor> instrumentationDescriptors) {
         ImmutableAllConfig.Builder builder = ImmutableAllConfig.builder()
-                .transaction(TransactionConfig.create(config.getTransactionConfig()))
-                .jvm(JvmConfig.create(config.getJvmConfig()))
-                .uiDefaults(UiDefaultsConfig.create(config.getUiDefaultsConfig()))
-                .advanced(AdvancedConfig.create(config.getAdvancedConfig()));
-        for (AgentConfig.GaugeConfig gaugeConfig : config.getGaugeConfigList()) {
-            builder.addGauges(GaugeConfig.create(gaugeConfig));
+                .transaction(TransactionConfig.create(agentConfig.getTransactionConfig()))
+                .jvm(JvmConfig.create(agentConfig.getJvmConfig()))
+                .uiDefaults(UiDefaultsConfig.create(agentConfig.getUiDefaultsConfig()))
+                .advanced(AdvancedConfig.create(agentConfig.getAdvancedConfig()));
+        for (AgentConfig.GaugeConfig config : agentConfig.getGaugeConfigList()) {
+            builder.addGauges(GaugeConfig.create(config));
         }
-        for (AgentConfig.SyntheticMonitorConfig syntheticMonitorConfig : config
+        for (AgentConfig.SyntheticMonitorConfig config : agentConfig
                 .getSyntheticMonitorConfigList()) {
-            builder.addSyntheticMonitors(SyntheticMonitorConfig.create(syntheticMonitorConfig));
+            builder.addSyntheticMonitors(SyntheticMonitorConfig.create(config));
         }
-        for (AgentConfig.AlertConfig alertConfig : config.getAlertConfigList()) {
-            builder.addAlerts(AlertConfig.create(alertConfig));
+        for (AgentConfig.AlertConfig config : agentConfig.getAlertConfigList()) {
+            builder.addAlerts(AlertConfig.create(config));
         }
-        Map<String, AgentConfig.PluginConfig> newPluginConfigs = Maps.newHashMap();
-        for (AgentConfig.PluginConfig newPluginConfig : config.getPluginConfigList()) {
-            newPluginConfigs.put(newPluginConfig.getId(), newPluginConfig);
+        Map<String, AgentConfig.InstrumentationConfig> newConfigs = Maps.newHashMap();
+        for (AgentConfig.InstrumentationConfig config : agentConfig
+                .getInstrumentationConfigList()) {
+            newConfigs.put(config.getId(), config);
         }
-        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
-            AgentConfig.PluginConfig pluginConfig = newPluginConfigs.get(pluginDescriptor.id());
-            List<PluginProperty> properties = Lists.newArrayList();
-            if (pluginConfig == null) {
+        for (InstrumentationDescriptor descriptor : instrumentationDescriptors) {
+            AgentConfig.InstrumentationConfig config = newConfigs.get(descriptor.id());
+            List<InstrumentationProperty> properties = Lists.newArrayList();
+            if (config == null) {
                 properties = ImmutableList.of();
             } else {
-                properties = pluginConfig.getPropertyList();
+                properties = config.getPropertyList();
             }
-            builder.addPlugins(PluginConfig.create(pluginDescriptor, properties));
+            builder.addInstrumentation(InstrumentationConfig.create(descriptor, properties));
         }
-        for (AgentConfig.InstrumentationConfig instrumentationConfig : config
-                .getInstrumentationConfigList()) {
-            builder.addInstrumentation(InstrumentationConfig.create(instrumentationConfig));
+        for (AgentConfig.CustomInstrumentationConfig config : agentConfig
+                .getCustomInstrumentationConfigList()) {
+            builder.addCustomInstrumentation(CustomInstrumentationConfig.create(config));
         }
         return builder.build();
     }

@@ -64,9 +64,9 @@
       </activation>
       <dependencies>
         <dependency>
-          <groupId>org.glowroot.build</groupId>
-          <artifactId>glowroot-build-checker-jdk6</artifactId>
-          <version>${project.version}</version>
+          <groupId>com.github.trask</groupId>
+          <artifactId>checker-framework-annotations-for-jdk6</artifactId>
+          <version>1.0.0</version>
           <!-- don't need this dependency at runtime since only annotations -->
           <optional>true</optional>
         </dependency>

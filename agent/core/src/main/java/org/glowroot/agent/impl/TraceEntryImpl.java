@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,10 +27,6 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.bytecode.api.BytecodeServiceHolder;
-import org.glowroot.agent.bytecode.api.ThreadContextPlus;
-import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
-import org.glowroot.agent.impl.NopTransactionService.NopTimer;
 import org.glowroot.agent.impl.Transaction.TraceEntryVisitor;
 import org.glowroot.agent.model.AsyncTimer;
 import org.glowroot.agent.model.DetailMapWriter;
@@ -38,16 +34,20 @@ import org.glowroot.agent.model.ErrorMessage;
 import org.glowroot.agent.model.QueryData;
 import org.glowroot.agent.model.QueryEntryBase;
 import org.glowroot.agent.model.SharedQueryTextCollection;
-import org.glowroot.agent.plugin.api.AsyncQueryEntry;
-import org.glowroot.agent.plugin.api.MessageSupplier;
-import org.glowroot.agent.plugin.api.QueryMessageSupplier;
-import org.glowroot.agent.plugin.api.ThreadContext;
-import org.glowroot.agent.plugin.api.Timer;
-import org.glowroot.agent.plugin.api.internal.ReadableMessage;
-import org.glowroot.agent.plugin.api.internal.ReadableQueryMessage;
 import org.glowroot.agent.util.Tickers;
 import org.glowroot.wire.api.model.Proto;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.xyzzy.engine.bytecode.api.BytecodeServiceHolder;
+import org.glowroot.xyzzy.engine.bytecode.api.ThreadContextPlus;
+import org.glowroot.xyzzy.engine.bytecode.api.ThreadContextThreadLocal;
+import org.glowroot.xyzzy.engine.impl.NopTransactionService;
+import org.glowroot.xyzzy.instrumentation.api.AsyncQueryEntry;
+import org.glowroot.xyzzy.instrumentation.api.MessageSupplier;
+import org.glowroot.xyzzy.instrumentation.api.QueryMessageSupplier;
+import org.glowroot.xyzzy.instrumentation.api.ThreadContext;
+import org.glowroot.xyzzy.instrumentation.api.Timer;
+import org.glowroot.xyzzy.instrumentation.api.internal.ReadableMessage;
+import org.glowroot.xyzzy.instrumentation.api.internal.ReadableQueryMessage;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -275,7 +275,7 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
                     // thread context has ended, cannot extend sync timer
                     // (this is ok, see https://github.com/glowroot/glowroot/issues/418)
                     selfNestingLevel--;
-                    return NopTimer.INSTANCE;
+                    return NopTransactionService.TIMER;
                 }
                 extendSync(ticker.read(), currentTimer);
             }
@@ -312,8 +312,8 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
 
     private void extendSync(long currTick, TimerImpl currentTimer) {
         // syncTimer is only null for trace entries added using addEntryEntry(), and these trace
-        // entries are not returned from plugin api so no way for extend() to be called when
-        // syncTimer is null
+        // entries are not returned from instrumentation api so no way for extend() to be called
+        // when syncTimer is null
         checkNotNull(syncTimer);
         long priorDurationNanos = endTick - revisedStartTick;
         revisedStartTick = currTick - priorDurationNanos;
@@ -361,7 +361,7 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
         if (locationStackTrace == null && locationStackTraceThreshold != 0
                 && endTick - revisedStartTick >= locationStackTraceThreshold) {
             StackTraceElement[] locationStackTrace = Thread.currentThread().getStackTrace();
-            // strip up through this method, plus 1 additional method (the plugin advice method)
+            // strip up through this method, plus 1 (the instrumentation advice method)
             int index =
                     ThreadContextImpl.getNormalizedStartIndex(locationStackTrace, "stop", 1);
             setLocationStackTrace(ImmutableList.copyOf(locationStackTrace).subList(index,
@@ -438,8 +438,8 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
         if (endTick - startTick >= thresholdNanos) {
             StackTraceElement[] locationStackTrace = Thread.currentThread().getStackTrace();
             // strip up through this method, plus 2 additional methods:
-            // TraceEntryImpl.endWithLocationStackTrace/endWithStackTrace() and the plugin advice
-            // method
+            // TraceEntryImpl.endWithLocationStackTrace/endWithStackTrace() and the instrumentation
+            // advice method
             int index = ThreadContextImpl.getNormalizedStartIndex(locationStackTrace,
                     "endWithLocationStackTraceInternal", 2);
             setLocationStackTrace(ImmutableList.copyOf(locationStackTrace).subList(index,
@@ -458,8 +458,8 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
     }
 
     private void endInternal(long endTick, @Nullable ErrorMessage errorMessage) {
-        // syncTimer is only null for trace entries added using addEntryEntry(), and these trace
-        // entries are not returned from plugin api so no way for end...() to be called
+        // syncTimer is only null for trace entries added using addEntryEntry(), and they are not
+        // returned from instrumentation api so no way for end...() to be called
         checkNotNull(syncTimer);
         if (isAsync()) {
             asyncTimer.end(endTick);
@@ -493,8 +493,8 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
 
     @Override
     public void stopSyncTimer() {
-        // syncTimer is only null for trace entries added using addEntryEntry(), and these trace
-        // entries are not returned from plugin api so no way for stopSyncTimer() to be called
+        // syncTimer is only null for trace entries added using addEntryEntry(), and they are not
+        // returned from instrumentation api so no way for stopSyncTimer() to be called
         checkNotNull(syncTimer);
         syncTimer.stop();
         selfNestingLevel--;
@@ -504,13 +504,13 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
     @Override
     public Timer extendSyncTimer(ThreadContext currThreadContext) {
         if (currThreadContext != threadContext) {
-            return NopTimer.INSTANCE;
+            return NopTransactionService.TIMER;
         }
-        // syncTimer is only null for trace entries added using addEntryEntry(), and these trace
-        // entries are not returned from plugin api so no way for extendSyncTimer() to be called
+        // syncTimer is only null for trace entries added using addEntryEntry(), and they are not
+        // returned from instrumentation api so no way for extendSyncTimer() to be called
         checkNotNull(syncTimer);
-        // thread context was passed in from plugin, so it is still active, and so current timer
-        // must be non-null
+        // thread context was passed in from instrumentation, so it is still active, and so current
+        // timer must be non-null
         return syncTimer.extend(checkNotNull(threadContext.getCurrentTimer()));
     }
 

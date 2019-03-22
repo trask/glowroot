@@ -18,8 +18,8 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-plugin-api</artifactId>
+      <groupId>org.glowroot.xyzzy</groupId>
+      <artifactId>xyzzy-instrumentation-api</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>

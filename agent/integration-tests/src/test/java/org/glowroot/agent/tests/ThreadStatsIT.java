@@ -27,7 +27,6 @@ import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.agent.tests.app.LevelOne;
-import org.glowroot.agent.util.JavaVersion;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
@@ -62,7 +61,7 @@ public class ThreadStatsIT {
         assertThat(trace.getHeader().getMainThreadStats().getCpuNanos()).isNotEqualTo(-1);
         assertThat(trace.getHeader().getMainThreadStats().getBlockedNanos()).isNotEqualTo(-1);
         assertThat(trace.getHeader().getMainThreadStats().getWaitedNanos()).isNotEqualTo(-1);
-        if (!JavaVersion.isJ9Jvm()) {
+        if (!isJ9Jvm()) {
             assertThat(trace.getHeader().getMainThreadStats().getAllocatedBytes())
                     .isNotEqualTo(-1);
         }
@@ -90,7 +89,7 @@ public class ThreadStatsIT {
         assertThat(trace.getHeader().getMainThreadStats().getCpuNanos()).isEqualTo(-1);
         assertThat(trace.getHeader().getMainThreadStats().getBlockedNanos()).isNotEqualTo(-1);
         assertThat(trace.getHeader().getMainThreadStats().getWaitedNanos()).isNotEqualTo(-1);
-        if (!JavaVersion.isJ9Jvm()) {
+        if (!isJ9Jvm()) {
             assertThat(trace.getHeader().getMainThreadStats().getAllocatedBytes())
                     .isNotEqualTo(-1);
         }
@@ -105,7 +104,7 @@ public class ThreadStatsIT {
         assertThat(trace.getHeader().getMainThreadStats().getCpuNanos()).isEqualTo(-1);
         assertThat(trace.getHeader().getMainThreadStats().getBlockedNanos()).isNotEqualTo(-1);
         assertThat(trace.getHeader().getMainThreadStats().getWaitedNanos()).isNotEqualTo(-1);
-        if (!JavaVersion.isJ9Jvm()) {
+        if (!isJ9Jvm()) {
             assertThat(trace.getHeader().getMainThreadStats().getAllocatedBytes())
                     .isNotEqualTo(-1);
         }
@@ -120,7 +119,7 @@ public class ThreadStatsIT {
         assertThat(trace.getHeader().getMainThreadStats().getCpuNanos()).isEqualTo(-1);
         assertThat(trace.getHeader().getMainThreadStats().getBlockedNanos()).isNotEqualTo(-1);
         assertThat(trace.getHeader().getMainThreadStats().getWaitedNanos()).isNotEqualTo(-1);
-        if (!JavaVersion.isJ9Jvm()) {
+        if (!isJ9Jvm()) {
             assertThat(trace.getHeader().getMainThreadStats().getAllocatedBytes())
                     .isNotEqualTo(-1);
         }
@@ -135,7 +134,7 @@ public class ThreadStatsIT {
         assertThat(trace.getHeader().getMainThreadStats().getCpuNanos()).isNotEqualTo(-1);
         assertThat(trace.getHeader().getMainThreadStats().getBlockedNanos()).isEqualTo(-1);
         assertThat(trace.getHeader().getMainThreadStats().getWaitedNanos()).isEqualTo(-1);
-        if (!JavaVersion.isJ9Jvm()) {
+        if (!isJ9Jvm()) {
             assertThat(trace.getHeader().getMainThreadStats().getAllocatedBytes())
                     .isNotEqualTo(-1);
         }
@@ -150,7 +149,7 @@ public class ThreadStatsIT {
         assertThat(trace.getHeader().getMainThreadStats().getCpuNanos()).isNotEqualTo(-1);
         assertThat(trace.getHeader().getMainThreadStats().getBlockedNanos()).isEqualTo(-1);
         assertThat(trace.getHeader().getMainThreadStats().getWaitedNanos()).isEqualTo(-1);
-        if (!JavaVersion.isJ9Jvm()) {
+        if (!isJ9Jvm()) {
             assertThat(trace.getHeader().getMainThreadStats().getAllocatedBytes())
                     .isNotEqualTo(-1);
         }
@@ -165,7 +164,7 @@ public class ThreadStatsIT {
         assertThat(trace.getHeader().getMainThreadStats().getCpuNanos()).isNotEqualTo(-1);
         assertThat(trace.getHeader().getMainThreadStats().getBlockedNanos()).isEqualTo(-1);
         assertThat(trace.getHeader().getMainThreadStats().getWaitedNanos()).isEqualTo(-1);
-        if (!JavaVersion.isJ9Jvm()) {
+        if (!isJ9Jvm()) {
             assertThat(trace.getHeader().getMainThreadStats().getAllocatedBytes())
                     .isNotEqualTo(-1);
         }
@@ -191,6 +190,11 @@ public class ThreadStatsIT {
                         .setProfilingIntervalMillis(OptionalInt32.newBuilder().setValue(1000))
                         .setCaptureThreadStats(false)
                         .build());
+    }
+
+    private static boolean isJ9Jvm() {
+        String javaVmName = System.getProperty("java.vm.name");
+        return "IBM J9 VM".equals(javaVmName) || "Eclipse OpenJ9 VM".equals(javaVmName);
     }
 
     public static class Normal implements AppUnderTest {

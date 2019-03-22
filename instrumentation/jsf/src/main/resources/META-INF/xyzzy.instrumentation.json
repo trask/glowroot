@@ -1,0 +1,39 @@
+{
+  "name": "JSF",
+  "id": "jsf",
+  "advice": [
+    {
+      "className": "com.sun.faces.lifecycle.ApplyRequestValuesPhase",
+      "methodName": "execute",
+      "methodParameterTypes": [
+        "javax.faces.context.FacesContext"
+      ],
+      "nestingGroup": "jsf",
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "jsf apply request: {{0.viewRoot.viewId}}",
+      "timerName": "jsf apply request"
+    },
+    {
+      "className": "com.sun.faces.application.ActionListenerImpl",
+      "methodName": "processAction",
+      "methodParameterTypes": [
+        "javax.faces.event.ActionEvent"
+      ],
+      "nestingGroup": "jsf",
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "jsf invoke: {{0.component.action.expressionString}}",
+      "timerName": "jsf invoke"
+    },
+    {
+      "className": "com.sun.faces.lifecycle.RenderResponsePhase",
+      "methodName": "execute",
+      "methodParameterTypes": [
+        "javax.faces.context.FacesContext"
+      ],
+      "nestingGroup": "jsf",
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "jsf render: {{0.viewRoot.viewId}}",
+      "timerName": "jsf render"
+    }
+  ]
+}

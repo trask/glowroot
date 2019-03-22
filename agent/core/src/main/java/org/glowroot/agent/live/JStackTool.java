@@ -26,7 +26,7 @@ import com.google.common.io.ByteStreams;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.live.JvmTool.InputStreamProcessor;
-import org.glowroot.agent.util.LazyPlatformMBeanServer;
+import org.glowroot.xyzzy.engine.util.LazyPlatformMBeanServer;
 
 class JStackTool {
 

@@ -76,13 +76,13 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.CustomInstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GeneralConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationProperty;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationProperty.Value.ValCase;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.JvmConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty.Value.ValCase;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiDefaultsConfig;
@@ -250,25 +250,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public List<PluginConfig> getPluginConfigs(String agentId) throws Exception {
-        AgentConfig agentConfig = agentConfigDao.read(agentId);
-        if (agentConfig == null) {
-            throw new AgentConfigNotFoundException(agentId);
-        }
-        return agentConfig.getPluginConfigList();
-    }
-
-    @Override
-    public PluginConfig getPluginConfig(String agentId, String pluginId) throws Exception {
-        for (PluginConfig config : getPluginConfigs(agentId)) {
-            if (config.getId().equals(pluginId)) {
-                return config;
-            }
-        }
-        throw new IllegalStateException("Plugin config not found: " + pluginId);
-    }
-
-    @Override
     public List<InstrumentationConfig> getInstrumentationConfigs(String agentId) throws Exception {
         AgentConfig agentConfig = agentConfigDao.read(agentId);
         if (agentConfig == null) {
@@ -278,9 +259,31 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public InstrumentationConfig getInstrumentationConfig(String agentId, String configVersion)
+    public InstrumentationConfig getInstrumentationConfig(String agentId, String instrumentationId)
             throws Exception {
         for (InstrumentationConfig config : getInstrumentationConfigs(agentId)) {
+            if (config.getId().equals(instrumentationId)) {
+                return config;
+            }
+        }
+        throw new IllegalStateException("Instrumentation config not found: " + instrumentationId);
+    }
+
+    @Override
+    public List<CustomInstrumentationConfig> getCustomInstrumentationConfig(String agentId)
+            throws Exception {
+        AgentConfig agentConfig = agentConfigDao.read(agentId);
+        if (agentConfig == null) {
+            throw new AgentConfigNotFoundException(agentId);
+        }
+        return agentConfig.getCustomInstrumentationConfigList();
+    }
+
+    @Override
+    public CustomInstrumentationConfig getCustomInstrumentationConfig(String agentId,
+            String configVersion)
+            throws Exception {
+        for (CustomInstrumentationConfig config : getCustomInstrumentationConfig(agentId)) {
             if (Versions.getVersion(config).equals(configVersion)) {
                 return config;
             }
@@ -806,16 +809,17 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updatePluginConfig(String agentId, PluginConfig config, String priorVersion)
+    public void updateInstrumentationConfig(String agentId, InstrumentationConfig config,
+            String priorVersion)
             throws Exception {
         agentConfigDao.update(agentId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
-                List<PluginConfig> pluginConfigs =
-                        buildPluginConfigs(config, priorVersion, agentConfig);
+                List<InstrumentationConfig> InstrumentationConfigs =
+                        buildInstrumentationConfigs(config, priorVersion, agentConfig);
                 return agentConfig.toBuilder()
-                        .clearPluginConfig()
-                        .addAllPluginConfig(pluginConfigs)
+                        .clearInstrumentationConfig()
+                        .addAllInstrumentationConfig(InstrumentationConfigs)
                         .build();
             }
         });
@@ -823,16 +827,17 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void insertInstrumentationConfig(String agentId, InstrumentationConfig config)
-            throws Exception {
+    public void insertCustomInstrumentationConfig(String agentId,
+            CustomInstrumentationConfig config) throws Exception {
         agentConfigDao.update(agentId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
-                if (agentConfig.getInstrumentationConfigList().contains(config)) {
-                    throw new IllegalStateException("This exact instrumentation already exists");
+                if (agentConfig.getCustomInstrumentationConfigList().contains(config)) {
+                    throw new IllegalStateException(
+                            "This exact custom instrumentation already exists");
                 }
                 return agentConfig.toBuilder()
-                        .addInstrumentationConfig(config)
+                        .addCustomInstrumentationConfig(config)
                         .build();
             }
         });
@@ -840,15 +845,15 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateInstrumentationConfig(String agentId, InstrumentationConfig config,
-            String priorVersion) throws Exception {
+    public void updateCustomInstrumentationConfig(String agentId,
+            CustomInstrumentationConfig config, String priorVersion) throws Exception {
         agentConfigDao.update(agentId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
                 String newVersion = Versions.getVersion(config);
-                List<InstrumentationConfig> existingConfigs =
-                        Lists.newArrayList(agentConfig.getInstrumentationConfigList());
-                ListIterator<InstrumentationConfig> i = existingConfigs.listIterator();
+                List<CustomInstrumentationConfig> existingConfigs =
+                        Lists.newArrayList(agentConfig.getCustomInstrumentationConfigList());
+                ListIterator<CustomInstrumentationConfig> i = existingConfigs.listIterator();
                 boolean found = false;
                 while (i.hasNext()) {
                     String loopVersion = Versions.getVersion(i.next());
@@ -857,15 +862,15 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                         found = true;
                     } else if (loopVersion.equals(newVersion)) {
                         throw new IllegalStateException(
-                                "This exact instrumentation already exists");
+                                "This exact custom instrumentation already exists");
                     }
                 }
                 if (!found) {
                     throw new OptimisticLockException();
                 }
                 return agentConfig.toBuilder()
-                        .clearInstrumentationConfig()
-                        .addAllInstrumentationConfig(existingConfigs)
+                        .clearCustomInstrumentationConfig()
+                        .addAllCustomInstrumentationConfig(existingConfigs)
                         .build();
             }
         });
@@ -873,14 +878,14 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void deleteInstrumentationConfigs(String agentId, List<String> versions)
+    public void deleteCustomInstrumentationConfigs(String agentId, List<String> versions)
             throws Exception {
         agentConfigDao.update(agentId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
-                List<InstrumentationConfig> existingConfigs =
-                        Lists.newArrayList(agentConfig.getInstrumentationConfigList());
-                ListIterator<InstrumentationConfig> i = existingConfigs.listIterator();
+                List<CustomInstrumentationConfig> existingConfigs =
+                        Lists.newArrayList(agentConfig.getCustomInstrumentationConfigList());
+                ListIterator<CustomInstrumentationConfig> i = existingConfigs.listIterator();
                 List<String> remainingVersions = Lists.newArrayList(versions);
                 while (i.hasNext()) {
                     String currVersion = Versions.getVersion(i.next());
@@ -893,8 +898,8 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     throw new OptimisticLockException();
                 }
                 return agentConfig.toBuilder()
-                        .clearInstrumentationConfig()
-                        .addAllInstrumentationConfig(existingConfigs)
+                        .clearCustomInstrumentationConfig()
+                        .addAllCustomInstrumentationConfig(existingConfigs)
                         .build();
             }
         });
@@ -903,21 +908,21 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     // ignores any instrumentation configs that are duplicates of existing instrumentation configs
     @Override
-    public void insertInstrumentationConfigs(String agentId, List<InstrumentationConfig> configs)
-            throws Exception {
+    public void insertCustomInstrumentationConfigs(String agentId,
+            List<CustomInstrumentationConfig> configs) throws Exception {
         agentConfigDao.update(agentId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
                 AgentConfig.Builder builder = agentConfig.toBuilder();
-                List<InstrumentationConfig> existingConfigs =
-                        Lists.newArrayList(agentConfig.getInstrumentationConfigList());
-                for (InstrumentationConfig config : configs) {
+                List<CustomInstrumentationConfig> existingConfigs =
+                        Lists.newArrayList(agentConfig.getCustomInstrumentationConfigList());
+                for (CustomInstrumentationConfig config : configs) {
                     if (!existingConfigs.contains(config)) {
                         existingConfigs.add(config);
                     }
                 }
-                return builder.clearInstrumentationConfig()
-                        .addAllInstrumentationConfig(existingConfigs)
+                return builder.clearCustomInstrumentationConfig()
+                        .addAllCustomInstrumentationConfig(existingConfigs)
                         .build();
             }
         });
@@ -956,15 +961,16 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                         throw new OptimisticLockException();
                     }
                 }
-                Set<String> validPluginIds = Sets.newHashSet();
-                for (PluginConfig pluginConfig : agentConfig.getPluginConfigList()) {
-                    validPluginIds.add(pluginConfig.getId());
+                Set<String> validInstrumentationIds = Sets.newHashSet();
+                for (InstrumentationConfig config : agentConfig.getInstrumentationConfigList()) {
+                    validInstrumentationIds.add(config.getId());
                 }
-                ConfigValidation.validatePartTwo(config, validPluginIds);
+                ConfigValidation.validatePartTwo(config, validInstrumentationIds);
                 return config.toBuilder()
-                        .clearPluginConfig()
-                        .addAllPluginConfig(
-                                buildPluginConfigs(config.getPluginConfigList(), agentConfig))
+                        .clearInstrumentationConfig()
+                        .addAllInstrumentationConfig(
+                                buildInstrumentationConfigs(config.getInstrumentationConfigList(),
+                                        agentConfig))
                         .build();
             }
         });
@@ -1238,68 +1244,71 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         }
     }
 
-    private static List<PluginConfig> buildPluginConfigs(PluginConfig updatedConfig,
+    private static List<InstrumentationConfig> buildInstrumentationConfigs(
+            InstrumentationConfig updatedConfig,
             String priorVersion, AgentConfig agentConfig) throws OptimisticLockException {
-        List<PluginConfig> pluginConfigs =
-                Lists.newArrayList(agentConfig.getPluginConfigList());
-        ListIterator<PluginConfig> i = pluginConfigs.listIterator();
+        List<InstrumentationConfig> configs =
+                Lists.newArrayList(agentConfig.getInstrumentationConfigList());
+        ListIterator<InstrumentationConfig> i = configs.listIterator();
         boolean found = false;
         while (i.hasNext()) {
-            PluginConfig pluginConfig = i.next();
-            if (pluginConfig.getId().equals(updatedConfig.getId())) {
-                String existingVersion = Versions.getVersion(pluginConfig);
+            InstrumentationConfig config = i.next();
+            if (config.getId().equals(updatedConfig.getId())) {
+                String existingVersion = Versions.getVersion(config);
                 if (!priorVersion.equals(existingVersion)) {
                     throw new OptimisticLockException();
                 }
-                i.set(buildPluginConfig(pluginConfig, updatedConfig.getPropertyList(), true));
+                i.set(buildInstrumentationConfig(config, updatedConfig.getPropertyList(), true));
                 found = true;
                 break;
             }
         }
         if (found) {
-            return pluginConfigs;
+            return configs;
         } else {
-            throw new IllegalStateException("Plugin config not found: " + updatedConfig.getId());
+            throw new IllegalStateException(
+                    "Instrumentation config not found: " + updatedConfig.getId());
         }
     }
 
-    private static List<PluginConfig> buildPluginConfigs(List<PluginConfig> newConfigs,
-            AgentConfig agentConfig) {
-        List<PluginConfig> pluginConfigs = new ArrayList<>();
-        Map<String, PluginConfig> remainingNewConfigs = new HashMap<>();
-        for (PluginConfig newConfig : newConfigs) {
+    private static List<InstrumentationConfig> buildInstrumentationConfigs(
+            List<InstrumentationConfig> newConfigs, AgentConfig agentConfig) {
+        List<InstrumentationConfig> InstrumentationConfigs = new ArrayList<>();
+        Map<String, InstrumentationConfig> remainingNewConfigs = new HashMap<>();
+        for (InstrumentationConfig newConfig : newConfigs) {
             remainingNewConfigs.put(newConfig.getId(), newConfig);
         }
-        for (PluginConfig pluginConfig : agentConfig.getPluginConfigList()) {
-            PluginConfig newConfig = remainingNewConfigs.remove(pluginConfig.getId());
-            List<PluginProperty> newProperties;
+        for (InstrumentationConfig config : agentConfig.getInstrumentationConfigList()) {
+            InstrumentationConfig newConfig = remainingNewConfigs.remove(config.getId());
+            List<InstrumentationProperty> newProperties;
             if (newConfig == null) {
                 newProperties = new ArrayList<>();
             } else {
                 newProperties = newConfig.getPropertyList();
             }
-            pluginConfigs.add(buildPluginConfig(pluginConfig, newProperties, false));
+            InstrumentationConfigs.add(buildInstrumentationConfig(config, newProperties, false));
         }
         if (remainingNewConfigs.isEmpty()) {
-            return pluginConfigs;
+            return InstrumentationConfigs;
         } else {
-            throw new IllegalStateException("Plugin config(s) not found: "
+            throw new IllegalStateException("Instrumentation config(s) not found: "
                     + Joiner.on(", ").join(remainingNewConfigs.keySet()));
         }
     }
 
-    private static PluginConfig buildPluginConfig(PluginConfig existingConfig,
-            List<PluginProperty> newProperties, boolean errorOnMissingProperty) {
-        Map<String, PluginProperty> newProps = buildMutablePropertiesMap(newProperties);
-        PluginConfig.Builder builder = PluginConfig.newBuilder()
+    private static InstrumentationConfig buildInstrumentationConfig(
+            InstrumentationConfig existingConfig,
+            List<InstrumentationProperty> newProperties, boolean errorOnMissingProperty) {
+        Map<String, InstrumentationProperty> newProps = buildMutablePropertiesMap(newProperties);
+        InstrumentationConfig.Builder builder = InstrumentationConfig.newBuilder()
                 .setId(existingConfig.getId())
                 .setName(existingConfig.getName());
-        for (PluginProperty existingProperty : existingConfig.getPropertyList()) {
-            PluginProperty prop = newProps.remove(existingProperty.getName());
+        for (InstrumentationProperty existingProperty : existingConfig.getPropertyList()) {
+            InstrumentationProperty prop = newProps.remove(existingProperty.getName());
             if (prop == null) {
                 if (errorOnMissingProperty) {
                     throw new IllegalStateException(
-                            "Missing plugin property name: " + existingProperty.getName());
+                            "Missing instrumentation property name: " + existingProperty.getName());
                 } else {
                     builder.addProperty(existingProperty.toBuilder()
                             .setValue(existingProperty.getDefault()));
@@ -1307,7 +1316,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                 }
             }
             if (!isSameType(prop.getValue(), existingProperty.getValue())) {
-                throw new IllegalStateException("Plugin property " + prop.getName()
+                throw new IllegalStateException("Instrumentation property " + prop.getName()
                         + " has incorrect type: " + prop.getValue().getValCase());
             }
             builder.addProperty(existingProperty.toBuilder()
@@ -1320,12 +1329,13 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         return builder.build();
     }
 
-    private static Map<String, PluginProperty> buildMutablePropertiesMap(
-            List<PluginProperty> properties) {
-        return Maps.newHashMap(Maps.uniqueIndex(properties, PluginProperty::getName));
+    private static Map<String, InstrumentationProperty> buildMutablePropertiesMap(
+            List<InstrumentationProperty> properties) {
+        return Maps.newHashMap(Maps.uniqueIndex(properties, InstrumentationProperty::getName));
     }
 
-    private static boolean isSameType(PluginProperty.Value left, PluginProperty.Value right) {
+    private static boolean isSameType(InstrumentationProperty.Value left,
+            InstrumentationProperty.Value right) {
         if (left.getValCase() == ValCase.DVAL && right.getValCase() == ValCase.DVAL_NULL) {
             return true;
         }

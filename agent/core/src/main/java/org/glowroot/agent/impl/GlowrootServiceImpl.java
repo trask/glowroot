@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,10 +22,10 @@ import com.google.common.primitives.Ints;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.glowroot.xyzzy.engine.annotation.spi.GlowrootServiceSPI;
+import org.glowroot.xyzzy.instrumentation.api.ThreadContext.Priority;
 
-import org.glowroot.agent.plugin.api.ThreadContext.Priority;
-
-public class GlowrootServiceImpl {
+public class GlowrootServiceImpl implements GlowrootServiceSPI {
 
     private static final Logger logger = LoggerFactory.getLogger(GlowrootServiceImpl.class);
 
@@ -35,6 +35,7 @@ public class GlowrootServiceImpl {
         this.transactionRegistry = transactionRegistry;
     }
 
+    @Override
     public void setTransactionType(@Nullable String transactionType) {
         if (Strings.isNullOrEmpty(transactionType)) {
             return;
@@ -45,6 +46,7 @@ public class GlowrootServiceImpl {
         }
     }
 
+    @Override
     public void setTransactionName(@Nullable String transactionName) {
         if (Strings.isNullOrEmpty(transactionName)) {
             return;
@@ -55,6 +57,7 @@ public class GlowrootServiceImpl {
         }
     }
 
+    @Override
     public void setTransactionUser(@Nullable String user) {
         if (Strings.isNullOrEmpty(user)) {
             return;
@@ -65,6 +68,7 @@ public class GlowrootServiceImpl {
         }
     }
 
+    @Override
     public void addTransactionAttribute(String name, @Nullable String value) {
         if (name == null) {
             logger.error("addTransactionAttribute(): argument 'name' must be non-null");
@@ -76,6 +80,7 @@ public class GlowrootServiceImpl {
         }
     }
 
+    @Override
     public void setTransactionSlowThreshold(long threshold, TimeUnit unit) {
         if (threshold < 0) {
             logger.error(
@@ -93,6 +98,7 @@ public class GlowrootServiceImpl {
         }
     }
 
+    @Override
     public void setTransactionOuter() {
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction != null) {
