@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.plugin.play;
+package org.glowroot.agent.plugin.play._;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
 
 import org.glowroot.agent.plugin.api.checker.Nullable;
 
-class Routes {
+public class Routes {
 
     private static final Pattern routePattern = Pattern.compile("\\$[^<]+<([^>]+)>");
 
@@ -32,7 +32,7 @@ class Routes {
     private Routes() {}
 
     // visible for testing
-    static String simplifiedRoute(String route) {
+    public static String simplifiedRoute(String route) {
         String simplifiedRoute = simplifiedRoutes.get(route);
         if (simplifiedRoute == null) {
             Matcher matcher = routePattern.matcher(route);

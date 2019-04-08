@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,10 @@ import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.plugin.api.weaving.Shim;
+import org.glowroot.agent.plugin.play._.PlayInvoker;
+import org.glowroot.agent.plugin.play._.Routes;
+
+import scala.Option;
 
 public class Play2xAspect {
 
@@ -42,27 +46,19 @@ public class Play2xAspect {
     // "play.core.routing.TaggingInvoker" is for play 2.4.x and later
     // "play.core.Router$Routes$TaggingInvoker" is for play 2.3.x
     @Shim({"play.core.routing.TaggingInvoker", "play.core.Router$Routes$TaggingInvoker"})
-    public interface TaggingInvoker {
+    public interface TaggingInvokerShim {
 
         @Shim("scala.collection.immutable.Map cachedHandlerTags()")
         @Nullable
-        ScalaMap glowroot$cachedHandlerTags();
+        ScalaMapShim glowroot$cachedHandlerTags();
     }
 
     @Shim("scala.collection.immutable.Map")
-    public interface ScalaMap {
+    public interface ScalaMapShim {
 
         @Shim("scala.Option get(java.lang.Object)")
         @Nullable
-        ScalaOption glowroot$get(Object key);
-    }
-
-    @Shim("scala.Option")
-    public interface ScalaOption {
-
-        boolean isDefined();
-
-        Object get();
+        Object glowroot$get(Object key);
     }
 
     @Pointcut(className = "play.core.routing.TaggingInvoker|play.core.Router$Routes$TaggingInvoker",
@@ -70,14 +66,14 @@ public class Play2xAspect {
     public static class HandlerInvokerAdvice {
         @OnBefore
         public static void onBefore(ThreadContext context,
-                @BindReceiver TaggingInvoker taggingInvoker) {
-            ScalaMap tags = taggingInvoker.glowroot$cachedHandlerTags();
+                @BindReceiver TaggingInvokerShim taggingInvoker) {
+            ScalaMapShim tags = taggingInvoker.glowroot$cachedHandlerTags();
             if (tags == null) {
                 return;
             }
             if (useAltTransactionNaming.value()) {
-                ScalaOption controllerOption = tags.glowroot$get("ROUTE_CONTROLLER");
-                ScalaOption methodOption = tags.glowroot$get("ROUTE_ACTION_METHOD");
+                Option<?> controllerOption = (Option<?>) tags.glowroot$get("ROUTE_CONTROLLER");
+                Option<?> methodOption = (Option<?>) tags.glowroot$get("ROUTE_ACTION_METHOD");
                 if (controllerOption != null && controllerOption.isDefined() && methodOption != null
                         && methodOption.isDefined()) {
                     String controller = toString(controllerOption.get());
@@ -86,7 +82,7 @@ public class Play2xAspect {
                     context.setTransactionName(transactionName, Priority.CORE_PLUGIN);
                 }
             } else {
-                ScalaOption option = tags.glowroot$get("ROUTE_PATTERN");
+                Option<?> option = (Option<?>) tags.glowroot$get("ROUTE_PATTERN");
                 if (option != null && option.isDefined()) {
                     String route = toString(option.get());
                     route = Routes.simplifiedRoute(route);
@@ -139,7 +135,7 @@ public class Play2xAspect {
     // ========== play 2.0.x - 2.2.x ==========
 
     @Shim("play.core.Router$HandlerDef")
-    public interface HandlerDef {
+    public interface HandlerDefShim {
 
         @Nullable
         String controller();
@@ -154,7 +150,7 @@ public class Play2xAspect {
         @OnBefore
         public static void onBefore(ThreadContext context,
                 @SuppressWarnings("unused") @BindParameter Object action,
-                @BindParameter HandlerDef handlerDef, @BindClassMeta PlayInvoker invoker) {
+                @BindParameter HandlerDefShim handlerDef, @BindClassMeta PlayInvoker invoker) {
             String controller = handlerDef.controller();
             String method = handlerDef.method();
             // path() method doesn't exist in play 2.0.x so need to use reflection instead of shim

@@ -16,11 +16,22 @@
   <name>Glowroot Agent Play Plugin</name>
   <description>Glowroot Agent Play Plugin</description>
 
+  <properties>
+    <scala.major.version>2.11</scala.major.version>
+    <scala.version>2.11.11</scala.version>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.glowroot</groupId>
       <artifactId>glowroot-agent-plugin-api</artifactId>
       <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+      <version>${scala.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -177,13 +188,6 @@
           <version>1.11</version>
           <scope>test</scope>
         </dependency>
-        <dependency>
-          <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
-          <groupId>org.scala-lang</groupId>
-          <artifactId>scala-library</artifactId>
-          <version>${scala.version}</version>
-          <scope>test</scope>
-        </dependency>
       </dependencies>
       <repositories>
         <repository>
@@ -259,8 +263,6 @@
       <id>play-2.4.x</id>
       <properties>
         <play.version>2.5.10</play.version>
-        <scala.major.version>2.11</scala.major.version>
-        <scala.version>2.11.8</scala.version>
         <jackson.version>2.7.8</jackson.version>
         <test.app.version>2.5.x</test.app.version>
         <test.app.language>scala</test.app.language>
@@ -302,8 +304,6 @@
       <id>play-2.2.x</id>
       <properties>
         <play.version>2.3.10</play.version>
-        <scala.major.version>2.11</scala.major.version>
-        <scala.version>2.11.8</scala.version>
         <jackson.version>2.3.2</jackson.version>
         <test.app.version>2.3.x</test.app.version>
         <test.app.language>scala</test.app.language>
@@ -327,8 +327,6 @@
       <id>play-2.1.x</id>
       <properties>
         <play.version>2.1.5</play.version>
-        <scala.major.version>2.10</scala.major.version>
-        <scala.version>2.10.3</scala.version>
         <jackson.version>2.2.2</jackson.version>
         <test.app.version>2.1.x</test.app.version>
         <test.app.language>scala</test.app.language>
@@ -352,8 +350,6 @@
       <id>play-2.0.x</id>
       <properties>
         <play.version>2.0.8</play.version>
-        <scala.major.version>2.9</scala.major.version>
-        <scala.version>2.9.3</scala.version>
         <jackson.version>2.2.2</jackson.version>
         <test.app.version>2.0.x</test.app.version>
         <test.app.language>scala</test.app.language>

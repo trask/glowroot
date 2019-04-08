@@ -26,5 +26,6 @@
   "aspects": [
     "org.glowroot.agent.plugin.play.Play1xAspect",
     "org.glowroot.agent.plugin.play.Play2xAspect"
-  ]
+  ],
+  "collocate": true
 }
