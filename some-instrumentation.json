@@ -1,0 +1,58 @@
+[
+  {
+    "className": "net.jpountz.lz4.LZ4JNIFastDecompressor",
+    "methodName": "decompress",
+    "methodParameterTypes": [
+      ".."
+    ],
+    "captureKind": "trace-entry",
+    "traceEntryMessageTemplate": "decompress",
+    "timerName": "decompress"
+  },
+  {
+    "className": "org.apache.cassandra.cache.ChunkCache",
+    "methodName": "load",
+    "methodParameterTypes": [
+      ".."
+    ],
+    "captureKind": "transaction",
+    "transactionType": "ChunkCache",
+    "transactionNameTemplate": "{{0.path}}",
+    "alreadyInTransactionBehavior": "capture-trace-entry",
+    "traceEntryMessageTemplate": "{{0.path}}",
+    "timerName": "load"
+  },
+  {
+    "className": "org.apache.cassandra.db.ReadCommand",
+    "methodName": "executeLocally",
+    "methodParameterTypes": [
+      ".."
+    ],
+    "captureKind": "transaction",
+    "transactionType": "ReadCommand",
+    "transactionNameTemplate": "ReadCommand",
+    "alreadyInTransactionBehavior": "capture-trace-entry",
+    "traceEntryMessageTemplate": "ReadCommand",
+    "timerName": "ReadCommand"
+  },
+  {
+    "className": "org.apache.cassandra.db.SinglePartitionReadCommand",
+    "methodName": "shouldInclude",
+    "methodParameterTypes": [
+      ".."
+    ],
+    "captureKind": "trace-entry",
+    "traceEntryMessageTemplate": "shouldInclude: {{_}}, minTimestamp={{0.minTimestamp}}, filename={{0.filename}}",
+    "timerName": "should include"
+  },
+  {
+    "className": "org.apache.cassandra.tracing.Tracing",
+    "methodName": "trace",
+    "methodParameterTypes": [
+      ".."
+    ],
+    "captureKind": "trace-entry",
+    "traceEntryMessageTemplate": "trace: {{0}} {{1}}",
+    "timerName": "trace"
+  }
+]
