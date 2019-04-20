@@ -1,0 +1,664 @@
+From 608e0592ad13c50b0876e45700ffbe99e9f33997 Mon Sep 17 00:00:00 2001
+From: Trask Stalnaker <trask.stalnaker@gmail.com>
+Date: Wed, 30 Nov 2016 12:02:42 -0800
+Subject: [PATCH] GC-LOG-CAPTURE-VIEW
+
+---
+ .../agent/central/DownstreamServiceObserver.java   | 66 ++++++++++++++++------
+ .../glowroot/agent/live/LiveJvmServiceImpl.java    | 32 ++++++++---
+ .../glowroot/central/DownstreamServiceImpl.java    | 53 ++++++++++++-----
+ .../org/glowroot/central/LiveJvmServiceImpl.java   | 15 +++--
+ .../org/glowroot/common/live/LiveJvmService.java   |  9 ++-
+ ui/app/index.html                                  |  3 +-
+ ui/app/scripts/controllers/jvm/gc-log.js           | 57 +++++++++++++++++++
+ ui/app/scripts/routes.js                           | 15 +++--
+ ui/app/views/jvm.html                              |  6 ++
+ ui/app/views/jvm/gc-log.html                       | 38 +++++++++++++
+ .../main/java/org/glowroot/ui/JvmJsonService.java  | 30 ++++++----
+ wire-api/src/main/proto/DownstreamService.proto    | 26 ++++++---
+ 12 files changed, 277 insertions(+), 73 deletions(-)
+ create mode 100644 ui/app/scripts/controllers/jvm/gc-log.js
+ create mode 100644 ui/app/views/jvm/gc-log.html
+
+diff --git a/agent/core/src/main/java/org/glowroot/agent/central/DownstreamServiceObserver.java b/agent/core/src/main/java/org/glowroot/agent/central/DownstreamServiceObserver.java
+index 622ef71..6077e64 100644
+--- a/agent/core/src/main/java/org/glowroot/agent/central/DownstreamServiceObserver.java
++++ b/agent/core/src/main/java/org/glowroot/agent/central/DownstreamServiceObserver.java
+@@ -32,6 +32,7 @@ import org.glowroot.agent.live.LiveJvmServiceImpl;
+ import org.glowroot.agent.live.LiveTraceRepositoryImpl;
+ import org.glowroot.agent.live.LiveWeavingServiceImpl;
+ import org.glowroot.common.live.LiveJvmService.DirectoryDoesNotExistException;
++import org.glowroot.common.live.LiveJvmService.UnavailableDueToNoXloggcJvmArgException;
+ import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
+ import org.glowroot.common.live.LiveTraceRepository.Entries;
+ import org.glowroot.common.util.OnlyUsedByTests;
+@@ -48,6 +49,7 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.CentralRequest.Me
+ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.EntriesResponse;
+ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ExceptionResponse;
+ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.FullTraceResponse;
++import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GcLogResponse;
+ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GcResponse;
+ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMeta;
+ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMetaResponse;
+@@ -226,6 +228,12 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
+             case JSTACK_REQUEST:
+                 jstackAndRespond(request, responseObserver);
+                 return;
++            case GC_LOG_REQUEST:
++                gcLogAndRespond(request, responseObserver);
++                return;
++            case GC_REQUEST:
++                gcAndRespond(request, responseObserver);
++                return;
+             case AVAILABLE_DISK_SPACE_REQUEST:
+                 availableDiskSpaceAndRespond(request, responseObserver);
+                 return;
+@@ -235,9 +243,6 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
+             case HEAP_HISTOGRAM_REQUEST:
+                 heapHistogramAndRespond(request, responseObserver);
+                 return;
+-            case GC_REQUEST:
+-                gcAndRespond(request, responseObserver);
+-                return;
+             case MBEAN_DUMP_REQUEST:
+                 mbeanDumpAndRespond(request, responseObserver);
+                 return;
+@@ -352,6 +357,46 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
+                 .build());
+     }
+ 
++    private void gcLogAndRespond(CentralRequest request,
++            StreamObserver<AgentResponse> responseObserver) {
++        String gcLog;
++        try {
++            gcLog = liveJvmService.getGcLog("");
++        } catch (UnavailableDueToNoXloggcJvmArgException e) {
++            logger.debug(e.getMessage(), e);
++            responseObserver.onNext(AgentResponse.newBuilder()
++                    .setRequestId(request.getRequestId())
++                    .setGcLogResponse(GcLogResponse.newBuilder()
++                            .setUnavailableDueToNoXloggcJvmArg(true))
++                    .build());
++            return;
++        } catch (Exception e) {
++            logger.error(e.getMessage(), e);
++            sendExceptionResponse(request, responseObserver);
++            return;
++        }
++        responseObserver.onNext(AgentResponse.newBuilder()
++                .setRequestId(request.getRequestId())
++                .setGcLogResponse(GcLogResponse.newBuilder()
++                        .setGcLog(gcLog))
++                .build());
++    }
++
++    private void gcAndRespond(CentralRequest request,
++            StreamObserver<AgentResponse> responseObserver) {
++        try {
++            liveJvmService.gc("");
++        } catch (Exception e) {
++            logger.error(e.getMessage(), e);
++            sendExceptionResponse(request, responseObserver);
++            return;
++        }
++        responseObserver.onNext(AgentResponse.newBuilder()
++                .setRequestId(request.getRequestId())
++                .setGcResponse(GcResponse.getDefaultInstance())
++                .build());
++    }
++
+     private void availableDiskSpaceAndRespond(CentralRequest request,
+             StreamObserver<AgentResponse> responseObserver) {
+         long availableDiskSpaceBytes;
+@@ -429,21 +474,6 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
+                 .build());
+     }
+ 
+-    private void gcAndRespond(CentralRequest request,
+-            StreamObserver<AgentResponse> responseObserver) {
+-        try {
+-            liveJvmService.gc("");
+-        } catch (Exception e) {
+-            logger.error(e.getMessage(), e);
+-            sendExceptionResponse(request, responseObserver);
+-            return;
+-        }
+-        responseObserver.onNext(AgentResponse.newBuilder()
+-                .setRequestId(request.getRequestId())
+-                .setGcResponse(GcResponse.getDefaultInstance())
+-                .build());
+-    }
+-
+     private void mbeanDumpAndRespond(CentralRequest request,
+             StreamObserver<AgentResponse> responseObserver) {
+         MBeanDumpRequest req = request.getMbeanDumpRequest();
+diff --git a/agent/core/src/main/java/org/glowroot/agent/live/LiveJvmServiceImpl.java b/agent/core/src/main/java/org/glowroot/agent/live/LiveJvmServiceImpl.java
+index a4917f7..ab0fd39 100644
+--- a/agent/core/src/main/java/org/glowroot/agent/live/LiveJvmServiceImpl.java
++++ b/agent/core/src/main/java/org/glowroot/agent/live/LiveJvmServiceImpl.java
+@@ -24,6 +24,7 @@ import java.lang.management.ManagementFactory;
+ import java.lang.management.ThreadMXBean;
+ import java.lang.reflect.Array;
+ import java.lang.reflect.Method;
++import java.nio.charset.Charset;
+ import java.text.SimpleDateFormat;
+ import java.util.Date;
+ import java.util.Iterator;
+@@ -56,6 +57,7 @@ import com.google.common.collect.Ordering;
+ import com.google.common.collect.Sets;
+ import com.google.common.io.CharStreams;
+ import com.google.common.io.Closer;
++import com.google.common.io.Files;
+ import com.google.common.primitives.Longs;
+ import org.objectweb.asm.Type;
+ import org.slf4j.Logger;
+@@ -150,6 +152,29 @@ public class LiveJvmServiceImpl implements LiveJvmService {
+     }
+ 
+     @Override
++    public String getGcLog(String agentId) throws Exception {
++        String xloggcFileName = null;
++        for (String jvmArg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
++            if (jvmArg.startsWith("-Xloggc:")) {
++                xloggcFileName = jvmArg.substring("-Xloggc:".length());
++                break;
++            }
++        }
++        if (xloggcFileName == null) {
++            throw new UnavailableDueToNoXloggcJvmArgException();
++        }
++        // guessing that gc log is written using default charset
++        return Files.toString(new File(xloggcFileName), Charset.defaultCharset());
++    }
++
++    @Override
++    public void gc(String agentId) {
++        // using MemoryMXBean.gc() instead of System.gc() in hope that it will someday bypass
++        // -XX:+DisableExplicitGC (see https://bugs.openjdk.java.net/browse/JDK-6396411)
++        ManagementFactory.getMemoryMXBean().gc();
++    }
++
++    @Override
+     public long getAvailableDiskSpace(String agentId, String directory)
+             throws DirectoryDoesNotExistException {
+         File dir = new File(directory);
+@@ -218,13 +243,6 @@ public class LiveJvmServiceImpl implements LiveJvmService {
+     }
+ 
+     @Override
+-    public void gc(String agentId) {
+-        // using MemoryMXBean.gc() instead of System.gc() in hope that it will someday bypass
+-        // -XX:+DisableExplicitGC (see https://bugs.openjdk.java.net/browse/JDK-6396411)
+-        ManagementFactory.getMemoryMXBean().gc();
+-    }
+-
+-    @Override
+     public MBeanDump getMBeanDump(String agentId, MBeanDumpKind mbeanDumpKind,
+             List<String> objectNames) throws Exception {
+         switch (mbeanDumpKind) {
+diff --git a/central/src/main/java/org/glowroot/central/DownstreamServiceImpl.java b/central/src/main/java/org/glowroot/central/DownstreamServiceImpl.java
+index bab651a..ec5a9b1 100644
+--- a/central/src/main/java/org/glowroot/central/DownstreamServiceImpl.java
++++ b/central/src/main/java/org/glowroot/central/DownstreamServiceImpl.java
+@@ -37,6 +37,7 @@ import org.glowroot.common.live.ImmutableEntries;
+ import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
+ import org.glowroot.common.live.LiveJvmService.AgentUnsupportedOperationException;
+ import org.glowroot.common.live.LiveJvmService.DirectoryDoesNotExistException;
++import org.glowroot.common.live.LiveJvmService.UnavailableDueToNoXloggcJvmArgException;
+ import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
+ import org.glowroot.common.live.LiveTraceRepository.Entries;
+ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+@@ -55,6 +56,8 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.EntriesRequest;
+ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.EntriesResponse;
+ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.FullTraceRequest;
+ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.FullTraceResponse;
++import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GcLogRequest;
++import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GcLogResponse;
+ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GcRequest;
+ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMeta;
+ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMetaRequest;
+@@ -142,36 +145,44 @@ public class DownstreamServiceImpl extends DownstreamServiceImplBase {
+         return connectedAgent.jstack();
+     }
+ 
+-    long availableDiskSpaceBytes(String agentId, String directory) throws Exception {
++    String gcLog(String agentId) throws Exception {
+         ConnectedAgent connectedAgent = connectedAgents.get(agentId);
+         if (connectedAgent == null) {
+             throw new AgentNotConnectedException();
+         }
+-        return connectedAgent.availableDiskSpaceBytes(directory);
++        return connectedAgent.gcLog();
+     }
+ 
+-    HeapDumpFileInfo heapDump(String agentId, String directory) throws Exception {
++    void gc(String agentId) throws Exception {
+         ConnectedAgent connectedAgent = connectedAgents.get(agentId);
+         if (connectedAgent == null) {
+             throw new AgentNotConnectedException();
+         }
+-        return connectedAgent.heapDump(directory);
++        connectedAgent.gc();
+     }
+ 
+-    HeapHistogram heapHistogram(String agentId) throws Exception {
++    long availableDiskSpaceBytes(String agentId, String directory) throws Exception {
+         ConnectedAgent connectedAgent = connectedAgents.get(agentId);
+         if (connectedAgent == null) {
+             throw new AgentNotConnectedException();
+         }
+-        return connectedAgent.heapHistogram();
++        return connectedAgent.availableDiskSpaceBytes(directory);
+     }
+ 
+-    void gc(String agentId) throws Exception {
++    HeapDumpFileInfo heapDump(String agentId, String directory) throws Exception {
+         ConnectedAgent connectedAgent = connectedAgents.get(agentId);
+         if (connectedAgent == null) {
+             throw new AgentNotConnectedException();
+         }
+-        connectedAgent.gc();
++        return connectedAgent.heapDump(directory);
++    }
++
++    HeapHistogram heapHistogram(String agentId) throws Exception {
++        ConnectedAgent connectedAgent = connectedAgents.get(agentId);
++        if (connectedAgent == null) {
++            throw new AgentNotConnectedException();
++        }
++        return connectedAgent.heapHistogram();
+     }
+ 
+     MBeanDump mbeanDump(String agentId, MBeanDumpKind mbeanDumpKind, List<String> objectNames)
+@@ -408,6 +419,25 @@ public class DownstreamServiceImpl extends DownstreamServiceImplBase {
+             return response.getJstack();
+         }
+ 
++        private String gcLog() throws Exception {
++            AgentResponse responseWrapper = sendRequest(CentralRequest.newBuilder()
++                    .setRequestId(nextRequestId.getAndIncrement())
++                    .setGcLogRequest(GcLogRequest.getDefaultInstance())
++                    .build());
++            GcLogResponse response = responseWrapper.getGcLogResponse();
++            if (response.getUnavailableDueToNoXloggcJvmArg()) {
++                throw new UnavailableDueToNoXloggcJvmArgException();
++            }
++            return response.getGcLog();
++        }
++
++        private void gc() throws Exception {
++            sendRequest(CentralRequest.newBuilder()
++                    .setRequestId(nextRequestId.getAndIncrement())
++                    .setGcRequest(GcRequest.getDefaultInstance())
++                    .build());
++        }
++
+         private long availableDiskSpaceBytes(String directory) throws Exception {
+             AgentResponse responseWrapper = sendRequest(CentralRequest.newBuilder()
+                     .setRequestId(nextRequestId.getAndIncrement())
+@@ -446,13 +476,6 @@ public class DownstreamServiceImpl extends DownstreamServiceImplBase {
+             return response.getHeapHistogram();
+         }
+ 
+-        private void gc() throws Exception {
+-            sendRequest(CentralRequest.newBuilder()
+-                    .setRequestId(nextRequestId.getAndIncrement())
+-                    .setGcRequest(GcRequest.getDefaultInstance())
+-                    .build());
+-        }
+-
+         private MBeanDump mbeanDump(MBeanDumpKind mbeanDumpKind, List<String> objectNames)
+                 throws Exception {
+             AgentResponse responseWrapper = sendRequest(CentralRequest.newBuilder()
+diff --git a/central/src/main/java/org/glowroot/central/LiveJvmServiceImpl.java b/central/src/main/java/org/glowroot/central/LiveJvmServiceImpl.java
+index 75d04f6..8d27d86 100644
+--- a/central/src/main/java/org/glowroot/central/LiveJvmServiceImpl.java
++++ b/central/src/main/java/org/glowroot/central/LiveJvmServiceImpl.java
+@@ -51,6 +51,16 @@ class LiveJvmServiceImpl implements LiveJvmService {
+     }
+ 
+     @Override
++    public String getGcLog(String agentId) throws Exception {
++        return downstreamService.gcLog(agentId);
++    }
++
++    @Override
++    public void gc(String agentId) throws Exception {
++        downstreamService.gc(agentId);
++    }
++
++    @Override
+     public long getAvailableDiskSpace(String agentId, String directory) throws Exception {
+         return downstreamService.availableDiskSpaceBytes(agentId, directory);
+     }
+@@ -66,11 +76,6 @@ class LiveJvmServiceImpl implements LiveJvmService {
+     }
+ 
+     @Override
+-    public void gc(String agentId) throws Exception {
+-        downstreamService.gc(agentId);
+-    }
+-
+-    @Override
+     public MBeanDump getMBeanDump(String agentId, MBeanDumpKind mbeanDumpKind,
+             List<String> objectNames) throws Exception {
+         return downstreamService.mbeanDump(agentId, mbeanDumpKind, objectNames);
+diff --git a/common/src/main/java/org/glowroot/common/live/LiveJvmService.java b/common/src/main/java/org/glowroot/common/live/LiveJvmService.java
+index d1cc938..2925851 100644
+--- a/common/src/main/java/org/glowroot/common/live/LiveJvmService.java
++++ b/common/src/main/java/org/glowroot/common/live/LiveJvmService.java
+@@ -34,14 +34,16 @@ public interface LiveJvmService {
+ 
+     String getJstack(String agentId) throws Exception;
+ 
++    String getGcLog(String agentId) throws Exception;
++
++    void gc(String agentId) throws Exception;
++
+     long getAvailableDiskSpace(String agentId, String directory) throws Exception;
+ 
+     HeapDumpFileInfo heapDump(String agentId, String directory) throws Exception;
+ 
+     HeapHistogram heapHistogram(String agentId) throws Exception;
+ 
+-    void gc(String agentId) throws Exception;
+-
+     MBeanDump getMBeanDump(String agentId, MBeanDumpKind mbeanDumpKind, List<String> objectNames)
+             throws Exception;
+ 
+@@ -64,5 +66,8 @@ public interface LiveJvmService {
+     public class UnavailableDueToRunningInJreException extends Exception {}
+ 
+     @SuppressWarnings("serial")
++    public class UnavailableDueToNoXloggcJvmArgException extends Exception {}
++
++    @SuppressWarnings("serial")
+     public class DirectoryDoesNotExistException extends Exception {}
+ }
+diff --git a/ui/app/index.html b/ui/app/index.html
+index 5643df1..333f5dd 100644
+--- a/ui/app/index.html
++++ b/ui/app/index.html
+@@ -272,8 +272,9 @@
+ <script src="scripts/controllers/jvm/gauge-values.js"></script>
+ <script src="scripts/controllers/jvm/thread-dump.js"></script>
+ <script src="scripts/controllers/jvm/jstack.js"></script>
+-<script src="scripts/controllers/jvm/heap-dump.js"></script>
+ <script src="scripts/controllers/jvm/gc.js"></script>
++<script src="scripts/controllers/jvm/gc-log.js"></script>
++<script src="scripts/controllers/jvm/heap-dump.js"></script>
+ <script src="scripts/controllers/jvm/heap-histogram.js"></script>
+ <script src="scripts/controllers/jvm/mbean-tree.js"></script>
+ <script src="scripts/controllers/jvm/system-properties.js"></script>
+diff --git a/ui/app/scripts/controllers/jvm/gc-log.js b/ui/app/scripts/controllers/jvm/gc-log.js
+new file mode 100644
+index 0000000..b2a8d6c
+--- /dev/null
++++ b/ui/app/scripts/controllers/jvm/gc-log.js
+@@ -0,0 +1,57 @@
++/*
++ * Copyright 2016 the original author or authors.
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++/* global glowroot */
++
++glowroot.controller('JvmGcLogCtrl', [
++  '$scope',
++  '$http',
++  'httpErrors',
++  function ($scope, $http, httpErrors) {
++
++    $scope.$parent.heading = 'GC Log';
++
++    if ($scope.hideMainContent()) {
++      return;
++    }
++
++    var gcLog;
++
++    $scope.exportAsText = function () {
++      var textWindow = window.open();
++      $(textWindow.document.body).html(gcLog);
++    };
++
++    $scope.refresh = function (deferred) {
++      $http.get('backend/jvm/gc-log?agent-id=' + encodeURIComponent($scope.agentId))
++          .success(function (data) {
++            $scope.loaded = true;
++            $scope.agentNotConnected = data.agentNotConnected;
++            if ($scope.agentNotConnected) {
++              return;
++            }
++            gcLog = data;
++            $('#gcLog').html('<br>' + gcLog);
++            if (deferred) {
++              deferred.resolve('Refreshed');
++            }
++          })
++          .error(httpErrors.handler($scope, deferred));
++    };
++
++    $scope.refresh();
++  }
++]);
+diff --git a/ui/app/scripts/routes.js b/ui/app/scripts/routes.js
+index 05b624d..2a9c35f 100644
+--- a/ui/app/scripts/routes.js
++++ b/ui/app/scripts/routes.js
+@@ -342,6 +342,16 @@ glowroot.config([
+       templateUrl: 'views/jvm/jstack.html',
+       controller: 'JvmJstackCtrl'
+     });
++    $stateProvider.state('jvm.gc', {
++      url: '/gc?agent-id&agent-rollup-id',
++      templateUrl: 'views/jvm/gc.html',
++      controller: 'JvmGcCtrl'
++    });
++    $stateProvider.state('jvm.gcLog', {
++      url: '/gc-log?agent-id&agent-rollup-id',
++      templateUrl: 'views/jvm/gc-log.html',
++      controller: 'JvmGcLogCtrl'
++    });
+     $stateProvider.state('jvm.heapDump', {
+       url: '/heap-dump?agent-id&agent-rollup-id',
+       templateUrl: 'views/jvm/heap-dump.html',
+@@ -352,11 +362,6 @@ glowroot.config([
+       templateUrl: 'views/jvm/heap-histogram.html',
+       controller: 'JvmHeapHistogramCtrl'
+     });
+-    $stateProvider.state('jvm.gc', {
+-      url: '/gc?agent-id&agent-rollup-id',
+-      templateUrl: 'views/jvm/gc.html',
+-      controller: 'JvmGcCtrl'
+-    });
+     $stateProvider.state('jvm.mbeanTree', {
+       url: '/mbean-tree?agent-id&agent-rollup-id',
+       templateUrl: 'views/jvm/mbean-tree.html',
+diff --git a/ui/app/views/jvm.html b/ui/app/views/jvm.html
+index 0e892cf..a5a0817 100644
+--- a/ui/app/views/jvm.html
++++ b/ui/app/views/jvm.html
+@@ -67,6 +67,12 @@
+            ng-if="agentPermissions.jvm.threadDump && !layout.offlineViewer">
+       </div>
+       <div gt-sidebar-item
++           gt-display="GC log"
++           gt-url="jvm/gc-log{{agentQueryString()}}"
++           gt-active="currentUrl() === 'jvm/gc-log' || currentUrl() === 'jvm/gc-log'"
++           ng-if="agentPermissions.jvm.gcLog && !layout.offlineViewer">
++      </div>
++      <div gt-sidebar-item
+            gt-display="Heap dump"
+            gt-url="jvm/heap-dump{{agentQueryString()}}"
+            gt-active="currentUrl() === 'jvm/heap-dump'"
+diff --git a/ui/app/views/jvm/gc-log.html b/ui/app/views/jvm/gc-log.html
+new file mode 100644
+index 0000000..d5b7bba
+--- /dev/null
++++ b/ui/app/views/jvm/gc-log.html
+@@ -0,0 +1,38 @@
++<!--
++  Copyright 2016 the original author or authors.
++
++  Licensed under the Apache License, Version 2.0 (the "License");
++  you may not use this file except in compliance with the License.
++  You may obtain a copy of the License at
++
++  http://www.apache.org/licenses/LICENSE-2.0
++
++  Unless required by applicable law or agreed to in writing, software
++  distributed under the License is distributed on an "AS IS" BASIS,
++  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++  See the License for the specific language governing permissions and
++  limitations under the License.
++-->
++<div ng-include src="'template/gt-loading-overlay.html'"></div>
++<div ng-include src="'template/gt-http-error-overlay.html'"></div>
++<div ng-if="agentNotConnected" class="alert alert-danger">
++  This feature is only available when the agent is running and connected
++</div>
++<!-- ng-show explicitly needed here instead of ng-if because gc-log.js binds directly to #gcLog -->
++<div ng-show="loaded && !agentNotConnected">
++  <div class="clearfix"
++       style="float: right;">
++    <button class="btn btn-default"
++            ng-click="exportAsText()">
++      Export as text
++    </button>
++  </div>
++  <div gt-button
++       gt-label="Refresh"
++       gt-click="refresh(deferred)"
++       style="margin-bottom: 20px;">
++  </div>
++  <div class="gt-thread-dump-flat-pre"
++       id="gcLog">
++  </div>
++</div>
+diff --git a/ui/src/main/java/org/glowroot/ui/JvmJsonService.java b/ui/src/main/java/org/glowroot/ui/JvmJsonService.java
+index cc0a4cd..9ec0d2b 100644
+--- a/ui/src/main/java/org/glowroot/ui/JvmJsonService.java
++++ b/ui/src/main/java/org/glowroot/ui/JvmJsonService.java
+@@ -197,6 +197,24 @@ class JvmJsonService {
+         return sw.toString();
+     }
+ 
++    @GET(path = "/backend/jvm/gc-check-agent-connected", permission = "agent:jvm:gc")
++    String checkAgentConnected(@BindAgentId String agentId) throws Exception {
++        checkNotNull(liveJvmService);
++        return Boolean.toString(liveJvmService.isAvailable(agentId));
++    }
++
++    @POST(path = "/backend/jvm/gc", permission = "agent:jvm:gc")
++    void performGC(@BindAgentId String agentId) throws Exception {
++        checkNotNull(liveJvmService);
++        liveJvmService.gc(agentId);
++    }
++
++    @GET(path = "/backend/jvm/gc-log", permission = "agent:jvm:gcLog")
++    String gcLog(@BindAgentId String agentId) throws Exception {
++        checkNotNull(liveJvmService);
++        return Boolean.toString(liveJvmService.isAvailable(agentId));
++    }
++
+     @GET(path = "/backend/jvm/heap-dump-default-dir", permission = "agent:jvm:heapDump")
+     String getHeapDumpDefaultDir(@BindAgentId String agentId) throws Exception {
+         checkNotNull(liveJvmService);
+@@ -288,18 +306,6 @@ class JvmJsonService {
+         return sw.toString();
+     }
+ 
+-    @POST(path = "/backend/jvm/gc", permission = "agent:jvm:gc")
+-    void performGC(@BindAgentId String agentId) throws Exception {
+-        checkNotNull(liveJvmService);
+-        liveJvmService.gc(agentId);
+-    }
+-
+-    @GET(path = "/backend/jvm/gc-check-agent-connected", permission = "agent:jvm:gc")
+-    String checkAgentConnected(@BindAgentId String agentId) throws Exception {
+-        checkNotNull(liveJvmService);
+-        return Boolean.toString(liveJvmService.isAvailable(agentId));
+-    }
+-
+     @GET(path = "/backend/jvm/mbean-tree", permission = "agent:jvm:mbeanTree")
+     String getMBeanTree(@BindAgentId String agentId, @BindRequest MBeanTreeRequest request)
+             throws Exception {
+diff --git a/wire-api/src/main/proto/DownstreamService.proto b/wire-api/src/main/proto/DownstreamService.proto
+index e07870c..dfd96b5 100644
+--- a/wire-api/src/main/proto/DownstreamService.proto
++++ b/wire-api/src/main/proto/DownstreamService.proto
+@@ -22,10 +22,11 @@ message CentralRequest {
+     // LiveJvmService
+     ThreadDumpRequest thread_dump_request = 300;
+     JstackRequest jstack_request = 308;
++    GcRequest gc_request = 303;
++    GcLogRequest gc_log_request = 311;
+     AvailableDiskSpaceRequest available_disk_space_request = 301;
+     HeapDumpRequest heap_dump_request = 302;
+     HeapHistogramRequest heap_histogram_request = 309;
+-    GcRequest gc_request = 303;
+     MBeanDumpRequest mbean_dump_request = 304;
+     MatchingMBeanObjectNamesRequest matching_mbean_object_names_request = 305;
+     MBeanMetaRequest mbean_meta_request = 306;
+@@ -58,10 +59,11 @@ message AgentResponse {
+     // LiveJvmService
+     ThreadDumpResponse thread_dump_response = 300;
+     JstackResponse jstack_response = 308;
++    GcResponse gc_response = 303;
++    GcLogResponse gc_log_response = 311;
+     AvailableDiskSpaceResponse available_disk_space_response = 301;
+     HeapDumpResponse heap_dump_response = 302;
+     HeapHistogramResponse heap_histogram_response = 309;
+-    GcResponse gc_response = 303;
+     MBeanDumpResponse mbean_dump_response = 304;
+     MatchingMBeanObjectNamesResponse matching_mbean_object_names_response = 305;
+     MBeanMetaResponse mbean_meta_response = 306;
+@@ -117,6 +119,20 @@ message JstackResponse {
+   bool unavailable_due_to_running_in_jre = 2;
+ }
+ 
++message GcRequest {
++}
++
++message GcResponse {
++}
++
++message GcLogRequest {
++}
++
++message GcLogResponse {
++  string gc_log = 1;
++  bool unavailable_due_to_no_xloggc_jvm_arg = 2;
++}
++
+ message AvailableDiskSpaceRequest {
+   string directory = 1;
+ }
+@@ -143,12 +159,6 @@ message HeapHistogramResponse {
+   bool unavailable_due_to_running_in_jre = 2;
+ }
+ 
+-message GcRequest {
+-}
+-
+-message GcResponse {
+-}
+-
+ message MBeanDumpRequest {
+   MBeanDumpKind kind = 1;
+   repeated string object_name = 2; // not relevant for ALL_MBEANS_WITH_ATTRS
+-- 
+2.6.4.windows.1
+

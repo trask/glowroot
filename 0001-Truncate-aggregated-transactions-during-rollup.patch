@@ -1,0 +1,279 @@
+From 09585b6a75f9d55383c1ca3e54b085c8d3e08c89 Mon Sep 17 00:00:00 2001
+From: Trask Stalnaker <trask.stalnaker@gmail.com>
+Date: Wed, 14 Jun 2017 23:09:32 -0700
+Subject: [PATCH] Truncate aggregated transactions during rollup
+
+---
+ .../org/glowroot/central/repo/AggregateDao.java    | 121 ++++++++++++++++-----
+ 1 file changed, 95 insertions(+), 26 deletions(-)
+
+diff --git a/central/src/main/java/org/glowroot/central/repo/AggregateDao.java b/central/src/main/java/org/glowroot/central/repo/AggregateDao.java
+index cdce52b87..21781f3ca 100644
+--- a/central/src/main/java/org/glowroot/central/repo/AggregateDao.java
++++ b/central/src/main/java/org/glowroot/central/repo/AggregateDao.java
+@@ -18,6 +18,7 @@ package org.glowroot.central.repo;
+ import java.io.IOException;
+ import java.nio.ByteBuffer;
+ import java.util.Collection;
++import java.util.Comparator;
+ import java.util.Date;
+ import java.util.List;
+ import java.util.Map;
+@@ -109,6 +110,8 @@ public class AggregateDao implements AggregateRepository {
+ 
+     private static final String LCS = "compaction = { 'class' : 'LeveledCompactionStrategy' }";
+ 
++    private static final String LIMIT_EXCEEDED_BUCKET = "LIMIT EXCEEDED BUCKET";
++
+     @SuppressWarnings("deprecation")
+     private static final HashFunction SHA_1 = Hashing.sha1();
+ 
+@@ -922,8 +925,9 @@ public class AggregateDao implements AggregateRepository {
+         futures.addAll(rollupErrorSummaryFromChildren(rollup, query, childAgentRollups));
+ 
+         List<String> transactionNames = Lists.newArrayList();
++        List<String> exceededTransactionNames = Lists.newArrayList();
+         futures.addAll(rollupTransactionSummaryFromChildren(rollup, query, childAgentRollups,
+-                transactionNames));
++                transactionNames, exceededTransactionNames));
+         futures.addAll(rollupTransactionErrorSummaryFromChildren(rollup, query, childAgentRollups));
+ 
+         ScratchBuffer scratchBuffer = new ScratchBuffer();
+@@ -934,6 +938,9 @@ public class AggregateDao implements AggregateRepository {
+             futures.addAll(rollupOtherPartsFromChildren(rollup,
+                     query.withTransactionName(transactionName), childAgentRollups, scratchBuffer));
+         }
++        for (String exceededTransactionName : exceededTransactionNames) {
++            // FIXME rollup exceededTransactionName "other parts" to LIMIT_EXCEEDED_BUCKET
++        }
+         return futures;
+     }
+ 
+@@ -952,7 +959,9 @@ public class AggregateDao implements AggregateRepository {
+         futures.addAll(rollupErrorSummary(rollup, query));
+ 
+         List<String> transactionNames = Lists.newArrayList();
+-        futures.addAll(rollupTransactionSummary(rollup, query, transactionNames));
++        List<String> exceededTransactionNames = Lists.newArrayList();
++        futures.addAll(rollupTransactionSummary(rollup, query, transactionNames,
++                exceededTransactionNames));
+         futures.addAll(rollupTransactionErrorSummary(rollup, query));
+ 
+         ScratchBuffer scratchBuffer = new ScratchBuffer();
+@@ -962,6 +971,9 @@ public class AggregateDao implements AggregateRepository {
+             futures.addAll(rollupOtherParts(rollup, query.withTransactionName(transactionName),
+                     scratchBuffer));
+         }
++        for (String exceededTransactionName : exceededTransactionNames) {
++            // FIXME rollup exceededTransactionName "other parts" to LIMIT_EXCEEDED_BUCKET
++        }
+         return futures;
+     }
+ 
+@@ -1080,7 +1092,8 @@ public class AggregateDao implements AggregateRepository {
+ 
+     // transactionNames is passed in empty, and populated by method
+     private List<ResultSetFuture> rollupTransactionSummary(RollupParams rollup,
+-            TransactionQuery query, List<String> transactionNames) throws Exception {
++            TransactionQuery query, List<String> transactionNames,
++            List<String> exceededTransactionNames) throws Exception {
+         BoundStatement boundStatement = checkNotNull(readTransactionForRollupPS.get(summaryTable))
+                 .get(query.rollupLevel()).bind();
+         bindQuery(boundStatement, rollup.agentRollupId(), query);
+@@ -1091,13 +1104,14 @@ public class AggregateDao implements AggregateRepository {
+                     rollup.agentRollupId(), query);
+             return ImmutableList.of();
+         }
+-        return rollupTransactionSummaryFromRows(rollup, query, results, transactionNames);
++        return rollupTransactionSummaryFromRows(rollup, query, results, transactionNames,
++                exceededTransactionNames);
+     }
+ 
+     // transactionNames is passed in empty, and populated by method
+     private List<ResultSetFuture> rollupTransactionSummaryFromChildren(RollupParams rollup,
+             TransactionQuery query, Collection<String> childAgentRollups,
+-            List<String> transactionNames) throws Exception {
++            List<String> transactionNames, List<String> exceededTransactionNames) throws Exception {
+         List<Row> rows =
+                 getRowsForSummaryRollupFromChildren(query, childAgentRollups, summaryTable);
+         if (rows.isEmpty()) {
+@@ -1106,42 +1120,65 @@ public class AggregateDao implements AggregateRepository {
+                     rollup.agentRollupId(), query);
+             return ImmutableList.of();
+         }
+-        return rollupTransactionSummaryFromRows(rollup, query, rows, transactionNames);
++        return rollupTransactionSummaryFromRows(rollup, query, rows, transactionNames,
++                exceededTransactionNames);
+     }
+ 
+     // transactionNames is passed in empty, and populated by method
+     private List<ResultSetFuture> rollupTransactionSummaryFromRows(RollupParams rollup,
+-            TransactionQuery query, Iterable<Row> rows, List<String> transactionNames) {
+-        BoundStatement boundStatement;
+-        Map<String, MutableSummary> summaries = Maps.newHashMap();
++            TransactionQuery query, Iterable<Row> rows, List<String> transactionNames,
++            List<String> exceededTransactionNames) {
++        Map<String, MutableSummary> summariesMap = Maps.newHashMap();
+         for (Row row : rows) {
+             int i = 0;
+             String transactionName = checkNotNull(row.getString(i++));
+-            MutableSummary summary = summaries.get(transactionName);
++            MutableSummary summary = summariesMap.get(transactionName);
+             if (summary == null) {
+-                summary = new MutableSummary();
+-                summaries.put(transactionName, summary);
++                summary = new MutableSummary(transactionName);
++                summariesMap.put(transactionName, summary);
+             }
+             summary.totalDurationNanos += row.getDouble(i++);
+             summary.transactionCount += row.getLong(i++);
+         }
++        Collection<MutableSummary> summaries;
++        if (summariesMap.size() > rollup.maxAggregateTransactionsPerType()) {
++            summaries = Lists.newArrayList(summariesMap.values());
++            List<MutableSummary> allSummaries = summariesMap.values().stream()
++                    .sorted(Comparator.comparingDouble(MutableSummary::getTotalDurationNanos)
++                            .reversed())
++                    .collect(Collectors.<MutableSummary>toList());
++            summaries = allSummaries.subList(0, rollup.maxAggregateTransactionsPerType());
++            for (MutableSummary summary : summaries) {
++                transactionNames.add(summary.transactionName);
++            }
++            MutableSummary limitExceededBucket = new MutableSummary(LIMIT_EXCEEDED_BUCKET);
++            for (int i = rollup.maxAggregateTransactionsPerType(); i < allSummaries.size(); i++) {
++                MutableSummary summary = allSummaries.get(i);
++                exceededTransactionNames.add(summary.transactionName);
++                limitExceededBucket.totalDurationNanos += summary.totalDurationNanos;
++                limitExceededBucket.transactionCount += summary.transactionCount;
++            }
++            summaries.add(limitExceededBucket);
++        } else {
++            summaries = summariesMap.values();
++            transactionNames.addAll(summariesMap.keySet());
++        }
+         List<ResultSetFuture> futures = Lists.newArrayList();
+         PreparedStatement preparedStatement =
+                 getInsertTransactionPS(summaryTable, rollup.rollupLevel());
+-        for (Entry<String, MutableSummary> entry : summaries.entrySet()) {
+-            MutableSummary summary = entry.getValue();
+-            boundStatement = preparedStatement.bind();
++        for (MutableSummary summary : summaries) {
++            BoundStatement boundStatement = preparedStatement.bind();
+             int i = 0;
+             boundStatement.setString(i++, rollup.agentRollupId());
+             boundStatement.setString(i++, query.transactionType());
+             boundStatement.setTimestamp(i++, new Date(query.to()));
+-            boundStatement.setString(i++, entry.getKey());
++            boundStatement.setString(i++, summary.transactionName);
+             boundStatement.setDouble(i++, summary.totalDurationNanos);
+             boundStatement.setLong(i++, summary.transactionCount);
+             boundStatement.setInt(i++, rollup.adjustedTTL());
+             futures.add(session.executeAsync(boundStatement));
++            transactionNames.add(summary.transactionName);
+         }
+-        transactionNames.addAll(summaries.keySet());
+         return futures;
+     }
+ 
+@@ -1171,30 +1208,36 @@ public class AggregateDao implements AggregateRepository {
+ 
+     private List<ResultSetFuture> rollupTransactionErrorSummaryFromRows(RollupParams rollup,
+             TransactionQuery query, Iterable<Row> rows) {
+-        BoundStatement boundStatement;
+-        Map<String, MutableErrorSummary> summaries = Maps.newHashMap();
++        Map<String, MutableErrorSummary> summariesMap = Maps.newHashMap();
+         for (Row row : rows) {
+             int i = 0;
+             String transactionName = checkNotNull(row.getString(i++));
+-            MutableErrorSummary summary = summaries.get(transactionName);
++            MutableErrorSummary summary = summariesMap.get(transactionName);
+             if (summary == null) {
+-                summary = new MutableErrorSummary();
+-                summaries.put(transactionName, summary);
++                summary = new MutableErrorSummary(transactionName);
++                summariesMap.put(transactionName, summary);
+             }
+             summary.errorCount += row.getLong(i++);
+             summary.transactionCount += row.getLong(i++);
+         }
++        Collection<MutableErrorSummary> summaries;
++        if (summariesMap.size() > rollup.maxAggregateTransactionsPerType()) {
++            summaries = Lists.newArrayList(summariesMap.values());
++            // FIXME truncate summaries and aggregate remaining into LIMIT_EXCEEDED_BUCKET
++            Object val;
++        } else {
++            summaries = summariesMap.values();
++        }
+         PreparedStatement preparedStatement =
+                 getInsertTransactionPS(errorSummaryTable, rollup.rollupLevel());
+         List<ResultSetFuture> futures = Lists.newArrayList();
+-        for (Entry<String, MutableErrorSummary> entry : summaries.entrySet()) {
+-            MutableErrorSummary summary = entry.getValue();
+-            boundStatement = preparedStatement.bind();
++        for (MutableErrorSummary summary : summaries) {
++            BoundStatement boundStatement = preparedStatement.bind();
+             int i = 0;
+             boundStatement.setString(i++, rollup.agentRollupId());
+             boundStatement.setString(i++, query.transactionType());
+             boundStatement.setTimestamp(i++, new Date(query.to()));
+-            boundStatement.setString(i++, entry.getKey());
++            boundStatement.setString(i++, summary.transactionName);
+             boundStatement.setLong(i++, summary.errorCount);
+             boundStatement.setLong(i++, summary.transactionCount);
+             boundStatement.setInt(i++, rollup.adjustedTTL());
+@@ -2024,6 +2067,13 @@ public class AggregateDao implements AggregateRepository {
+                 .rollupLevel(rollupLevel)
+                 .adjustedTTL(adjustedTTL);
+         AdvancedConfig advancedConfig = configRepository.getAdvancedConfig(agentRollupId);
++        if (advancedConfig.hasMaxAggregateTransactionsPerType()) {
++            rollupInfo.maxAggregateTransactionsPerType(
++                    advancedConfig.getMaxAggregateTransactionsPerType().getValue());
++        } else {
++            rollupInfo.maxAggregateTransactionsPerType(
++                    ConfigDefaults.MAX_AGGREGATE_TRANSACTIONS_PER_TYPE);
++        }
+         if (advancedConfig.hasMaxAggregateQueriesPerType()) {
+             rollupInfo.maxAggregateQueriesPerType(
+                     advancedConfig.getMaxAggregateQueriesPerType().getValue());
+@@ -2462,6 +2512,7 @@ public class AggregateDao implements AggregateRepository {
+         String agentRollupId();
+         int rollupLevel();
+         int adjustedTTL();
++        int maxAggregateTransactionsPerType();
+         int maxAggregateQueriesPerType();
+         int maxAggregateServiceCallsPerType();
+     }
+@@ -2515,12 +2566,30 @@ public class AggregateDao implements AggregateRepository {
+     }
+ 
+     private static class MutableSummary {
++
++        private final String transactionName;
++
+         private double totalDurationNanos;
+         private long transactionCount;
++
++        private MutableSummary(String transactionName) {
++            this.transactionName = transactionName;
++        }
++
++        private double getTotalDurationNanos() {
++            return totalDurationNanos;
++        }
+     }
+ 
+     private static class MutableErrorSummary {
++
++        private final String transactionName;
++
+         private long errorCount;
+         private long transactionCount;
++
++        private MutableErrorSummary(String transactionName) {
++            this.transactionName = transactionName;
++        }
+     }
+ }
+-- 
+2.13.0.windows.1
+

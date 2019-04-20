@@ -1,0 +1,669 @@
+From fc3c3b28b7bb1c4fb1ffa96aa200d0c55992abf0 Mon Sep 17 00:00:00 2001
+From: Trask Stalnaker <trask.stalnaker@gmail.com>
+Date: Mon, 11 Sep 2017 15:20:41 -0700
+Subject: [PATCH] Display only trace attributes with data in window
+
+---
+ .../agent/embedded/repo/SchemaUpgrade.java         |  20 +++-
+ .../agent/embedded/repo/TraceAttributeNameDao.java | 112 +++++++++---------
+ .../org/glowroot/agent/embedded/repo/TraceDao.java |   4 +-
+ .../glowroot/central/repo/CentralRepoModule.java   |   3 +-
+ .../org/glowroot/central/repo/SchemaUpgrade.java   |  85 +++++++++++++-
+ .../central/repo/TraceAttributeNameDao.java        | 125 ++++++++-------------
+ .../org/glowroot/central/repo/TraceDaoImpl.java    |   5 +-
+ .../common/repo/TraceAttributeNameRepository.java  |   8 +-
+ .../main/java/org/glowroot/ui/LayoutService.java   |  12 +-
+ 9 files changed, 230 insertions(+), 144 deletions(-)
+
+diff --git a/agent/core/src/main/java/org/glowroot/agent/embedded/repo/SchemaUpgrade.java b/agent/core/src/main/java/org/glowroot/agent/embedded/repo/SchemaUpgrade.java
+index 30b41c8d4..76c8bc016 100644
+--- a/agent/core/src/main/java/org/glowroot/agent/embedded/repo/SchemaUpgrade.java
++++ b/agent/core/src/main/java/org/glowroot/agent/embedded/repo/SchemaUpgrade.java
+@@ -37,7 +37,7 @@ class SchemaUpgrade {
+     // log startup messages using logger name "org.glowroot"
+     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
+ 
+-    private static final int CURR_SCHEMA_VERSION = 6;
++    private static final int CURR_SCHEMA_VERSION = 7;
+ 
+     private static final ImmutableList<Column> columns =
+             ImmutableList.<Column>of(ImmutableColumn.of("schema_version", ColumnType.BIGINT));
+@@ -92,6 +92,10 @@ class SchemaUpgrade {
+             populateTransactionTypeTable();
+             updateSchemaVersion(6);
+         }
++        if (initialSchemaVersion < 7) {
++            populateTraceAttributeNameTable();
++            updateSchemaVersion(7);
++        }
+ 
+         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
+         startupLogger.info("upgraded glowroot schema from version {} to version {}",
+@@ -153,6 +157,20 @@ class SchemaUpgrade {
+         startupLogger.info("populating new transaction type history table - complete");
+     }
+ 
++    private void populateTraceAttributeNameTable() throws SQLException {
++        startupLogger.info("populating new trace attribute name history table - this could take a"
++                + " few seconds on large data sets ...");
++        long fixedIntervalMillis = DAYS.toMillis(1);
++        // need ".0" to force double result
++        String captureTimeSql = castUntainted("ceil(trace.capture_time / " + fixedIntervalMillis
++                + ".0) * " + fixedIntervalMillis);
++        dataSource.update("insert into trace_attribute_name (transaction_type, capture_time,"
++                + " trace_attribute_name) select distinct transaction_type, " + captureTimeSql
++                + ", trace_attribute.name from trace, trace_attribute where trace.id"
++                + " = trace_attribute.trace_id");
++        startupLogger.info("populating new trace attribute name history table - complete");
++    }
++
+     private static @Nullable Integer getSchemaVersion(DataSource dataSource) throws SQLException {
+         Long schemaVersion =
+                 dataSource.queryForOptionalLong("select schema_version from schema_version");
+diff --git a/agent/core/src/main/java/org/glowroot/agent/embedded/repo/TraceAttributeNameDao.java b/agent/core/src/main/java/org/glowroot/agent/embedded/repo/TraceAttributeNameDao.java
+index ca71b6a39..393cb9864 100644
+--- a/agent/core/src/main/java/org/glowroot/agent/embedded/repo/TraceAttributeNameDao.java
++++ b/agent/core/src/main/java/org/glowroot/agent/embedded/repo/TraceAttributeNameDao.java
+@@ -17,17 +17,14 @@ package org.glowroot.agent.embedded.repo;
+ 
+ import java.sql.PreparedStatement;
+ import java.sql.ResultSet;
+-import java.util.List;
+-import java.util.Map;
++import java.sql.SQLException;
++import java.util.Set;
+ 
+ import com.google.common.cache.Cache;
+ import com.google.common.cache.CacheBuilder;
+-import com.google.common.collect.ArrayListMultimap;
+ import com.google.common.collect.ImmutableList;
+-import com.google.common.collect.ImmutableMap;
+-import com.google.common.collect.ListMultimap;
+-import com.google.common.collect.Maps;
+-import com.google.common.collect.Multimaps;
++import com.google.common.collect.ImmutableSet;
++import com.google.common.collect.Sets;
+ import org.checkerframework.checker.tainting.qual.Untainted;
+ import org.immutables.value.Value;
+ 
+@@ -39,26 +36,25 @@ import org.glowroot.agent.embedded.util.Schemas.Column;
+ import org.glowroot.agent.embedded.util.Schemas.ColumnType;
+ import org.glowroot.agent.embedded.util.Schemas.Index;
+ import org.glowroot.common.repo.TraceAttributeNameRepository;
++import org.glowroot.common.repo.Utils;
+ import org.glowroot.common.util.Styles;
+ 
+ import static java.util.concurrent.TimeUnit.DAYS;
+ 
+ class TraceAttributeNameDao implements TraceAttributeNameRepository {
+ 
+-    private static final String AGENT_ID = "";
+-
+     private static final ImmutableList<Column> columns = ImmutableList.<Column>of(
+             ImmutableColumn.of("transaction_type", ColumnType.VARCHAR),
+-            ImmutableColumn.of("trace_attribute_name", ColumnType.VARCHAR),
+-            ImmutableColumn.of("last_capture_time", ColumnType.BIGINT));
++            ImmutableColumn.of("capture_time", ColumnType.BIGINT),
++            ImmutableColumn.of("trace_attribute_name", ColumnType.VARCHAR));
+ 
+     private static final ImmutableList<Index> indexes = ImmutableList.<Index>of(
+             ImmutableIndex.of("trace_attribute_name_idx",
+-                    ImmutableList.of("transaction_type", "trace_attribute_name")));
++                    ImmutableList.of("transaction_type", "capture_time", "trace_attribute_name")));
+ 
+     private final DataSource dataSource;
+ 
+-    private final Cache<TraceAttributeNameKey, Boolean> lastCaptureTimeUpdatedInThePastDay =
++    private final Cache<TraceAttributeNameRow, Boolean> rowInsertedInThePastDay =
+             CacheBuilder.newBuilder()
+                     .expireAfterWrite(1, DAYS)
+                     .maximumSize(10000)
+@@ -73,73 +69,85 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
+     }
+ 
+     @Override
+-    public Map<String, Map<String, List<String>>> read() throws Exception {
+-        Map<String, Map<String, List<String>>> traceAttributesNames = Maps.newHashMap();
+-        traceAttributesNames.put(AGENT_ID, dataSource.query(new TraceAttributeQuery()));
+-        return traceAttributesNames;
++    public Set<String> read(String agentRollupId, String transactionType, long from, long to)
++            throws Exception {
++        return dataSource.query(new TraceAttributeNameQuery(transactionType, from, to));
+     }
+ 
+-    void updateLastCaptureTime(String transactionType, String traceAttributeName, long captureTime)
+-            throws Exception {
+-        TraceAttributeNameKey key =
+-                ImmutableTraceAttributeNameKey.of(transactionType, traceAttributeName);
+-        if (lastCaptureTimeUpdatedInThePastDay.getIfPresent(key) != null) {
++    void insert(String transactionType, long captureTime, String traceAttributeName)
++            throws SQLException {
++        long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, DAYS.toMillis(1));
++        TraceAttributeNameRow key = ImmutableTraceAttributeNameRow.of(transactionType,
++                rollupCaptureTime, traceAttributeName);
++        if (rowInsertedInThePastDay.getIfPresent(key) != null) {
+             return;
+         }
+         synchronized (lock) {
+-            int updateCount = dataSource.update(
+-                    "update trace_attribute_name set last_capture_time = ?"
+-                            + " where transaction_type = ? and trace_attribute_name = ?",
+-                    captureTime, transactionType, traceAttributeName);
+-            if (updateCount == 0) {
+-                dataSource.update(
+-                        "insert into trace_attribute_name (transaction_type, trace_attribute_name,"
+-                                + " last_capture_time) values (?, ?, ?)",
+-                        transactionType, traceAttributeName, captureTime);
+-            }
++            dataSource.update("merge into trace_attribute_name (transaction_type, capture_time,"
++                    + " trace_attribute_name) key (transaction_type, capture_time,"
++                    + " trace_attribute_name) values (?, ?, ?)", transactionType, rollupCaptureTime,
++                    traceAttributeName);
+         }
+-        lastCaptureTimeUpdatedInThePastDay.put(key, true);
++        rowInsertedInThePastDay.put(key, true);
+     }
+ 
+     void deleteBefore(long captureTime) throws Exception {
+-        // subtracting 1 day to account for rate limiting of updates
+-        dataSource.deleteBeforeUsingLock("trace_attribute_name", "last_capture_time",
++        dataSource.deleteBeforeUsingLock("trace_attribute_name", "capture_time",
+                 captureTime - DAYS.toMillis(1), lock);
+     }
+ 
+     void invalidateCache() {
+-        lastCaptureTimeUpdatedInThePastDay.invalidateAll();
++        rowInsertedInThePastDay.invalidateAll();
++    }
++
++    @Value.Immutable
++    @Styles.AllParameters
++    interface TraceAttributeNameRow {
++        String transactionType();
++        long captureTime();
++        String traceAttributeName();
+     }
+ 
+-    private static class TraceAttributeQuery implements JdbcQuery<Map<String, List<String>>> {
++    private static class TraceAttributeNameQuery implements JdbcQuery<Set<String>> {
++
++        private final String transactionType;
++        private final long from;
++        private final long to;
++
++        private TraceAttributeNameQuery(String transactionType, long from, long to) {
++            this.transactionType = transactionType;
++            this.from = from;
++            this.to = to;
++        }
+ 
+         @Override
+         public @Untainted String getSql() {
+-            return "select transaction_type, trace_attribute_name from trace_attribute_name";
++            return "select trace_attribute_name from trace_attribute_name where"
++                    + " transaction_type = ? and capture_time >= ? and capture_time <= ?";
+         }
+ 
+         @Override
+-        public void bind(PreparedStatement preparedStatement) {}
++        public void bind(PreparedStatement preparedStatement) throws SQLException {
++            long rolledUpFrom = Utils.getRollupCaptureTime(from, DAYS.toMillis(1));
++            long rolledUpTo = Utils.getRollupCaptureTime(to, DAYS.toMillis(1));
++            int i = 1;
++            preparedStatement.setString(i++, transactionType);
++            preparedStatement.setLong(i++, rolledUpFrom);
++            preparedStatement.setLong(i++, rolledUpTo);
++        }
+ 
+         @Override
+-        public Map<String, List<String>> processResultSet(ResultSet resultSet) throws Exception {
+-            ListMultimap<String, String> multimap = ArrayListMultimap.create();
++        public Set<String> processResultSet(ResultSet resultSet) throws Exception {
++            Set<String> traceAttributeNames = Sets.newHashSet();
+             while (resultSet.next()) {
+-                multimap.put(resultSet.getString(1), resultSet.getString(2));
++                traceAttributeNames.add(resultSet.getString(1));
+             }
+-            return Multimaps.asMap(multimap);
++            return traceAttributeNames;
+         }
+ 
+         @Override
+-        public Map<String, List<String>> valueIfDataSourceClosed() {
+-            return ImmutableMap.of();
++        public Set<String> valueIfDataSourceClosed() {
++            return ImmutableSet.of();
+         }
+     }
+-
+-    @Value.Immutable
+-    @Styles.AllParameters
+-    interface TraceAttributeNameKey {
+-        String transactionType();
+-        String traceAttributeName();
+-    }
+ }
+diff --git a/agent/core/src/main/java/org/glowroot/agent/embedded/repo/TraceDao.java b/agent/core/src/main/java/org/glowroot/agent/embedded/repo/TraceDao.java
+index 5309c7130..17fd0a33c 100644
+--- a/agent/core/src/main/java/org/glowroot/agent/embedded/repo/TraceDao.java
++++ b/agent/core/src/main/java/org/glowroot/agent/embedded/repo/TraceDao.java
+@@ -176,8 +176,8 @@ public class TraceDao implements TraceRepository {
+             }
+             dataSource.batchUpdate(new TraceAttributeInsert(trace));
+             for (Trace.Attribute attribute : header.getAttributeList()) {
+-                traceAttributeNameDao.updateLastCaptureTime(header.getTransactionType(),
+-                        attribute.getName(), header.getCaptureTime());
++                traceAttributeNameDao.insert(header.getTransactionType(), header.getCaptureTime(),
++                        attribute.getName());
+             }
+         }
+         transactionTypeDao.insert(header.getCaptureTime(), header.getTransactionType());
+diff --git a/central/src/main/java/org/glowroot/central/repo/CentralRepoModule.java b/central/src/main/java/org/glowroot/central/repo/CentralRepoModule.java
+index 41db6108a..cbbe22769 100644
+--- a/central/src/main/java/org/glowroot/central/repo/CentralRepoModule.java
++++ b/central/src/main/java/org/glowroot/central/repo/CentralRepoModule.java
+@@ -72,8 +72,7 @@ public class CentralRepoModule {
+         heartbeatDao = new HeartbeatDao(session, clock);
+         incidentDao = new IncidentDao(session, clock);
+         transactionTypeDao = new TransactionTypeDao(session, configRepository, clock);
+-        traceAttributeNameDao =
+-                new TraceAttributeNameDao(session, configRepository, clusterManager);
++        traceAttributeNameDao = new TraceAttributeNameDao(session, configRepository, clock);
+ 
+         Set<String> agentRollupIdsWithV09Data;
+         long v09LastCaptureTime;
+diff --git a/central/src/main/java/org/glowroot/central/repo/SchemaUpgrade.java b/central/src/main/java/org/glowroot/central/repo/SchemaUpgrade.java
+index 61df73c42..9a1642fce 100644
+--- a/central/src/main/java/org/glowroot/central/repo/SchemaUpgrade.java
++++ b/central/src/main/java/org/glowroot/central/repo/SchemaUpgrade.java
+@@ -60,6 +60,7 @@ import org.immutables.value.Value;
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
+ 
++import org.glowroot.central.util.Messages;
+ import org.glowroot.central.util.MoreFutures;
+ import org.glowroot.central.util.Session;
+ import org.glowroot.common.config.CentralStorageConfig;
+@@ -84,6 +85,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GeneralConf
+ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.OldAlertConfig;
+ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiConfig;
+ import org.glowroot.wire.api.model.Proto.OptionalInt32;
++import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+ 
+ import static com.google.common.base.Preconditions.checkNotNull;
+ import static java.util.concurrent.TimeUnit.DAYS;
+@@ -99,7 +101,7 @@ public class SchemaUpgrade {
+ 
+     private static final ObjectMapper mapper = ObjectMappers.create();
+ 
+-    private static final int CURR_SCHEMA_VERSION = 59;
++    private static final int CURR_SCHEMA_VERSION = 60;
+ 
+     private static final String WITH_LCS =
+             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
+@@ -398,6 +400,10 @@ public class SchemaUpgrade {
+             populateTransactionTypeTable();
+             updateSchemaVersion(59);
+         }
++        if (initialSchemaVersion < 60) {
++            populateTraceAttributeNameTable();
++            updateSchemaVersion(60);
++        }
+ 
+         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
+         startupLogger.info("upgraded glowroot central schema from version {} to version {}",
+@@ -1965,6 +1971,74 @@ public class SchemaUpgrade {
+         logger.info("populating new transaction type history table - complete");
+     }
+ 
++    private void populateTraceAttributeNameTable() throws Exception {
++        logger.info("populating new trace attribute name history table - this could take a few"
++                + " minutes on large data sets ...");
++
++        dropTableIfExists("trace_attribute_name");
++
++        int traceTTL = getCentralStorageConfig(session).getTraceTTL();
++        session.createTableWithTWCS("create table if not exists trace_attribute_name"
++                + " (agent_rollup_id varchar, transaction_type varchar, capture_time timestamp,"
++                + " trace_attribute_name varchar, primary key ((agent_rollup_id, transaction_type),"
++                + " capture_time, trace_attribute_name))", traceTTL);
++
++        PreparedStatement insertPS = session.prepare("insert into trace_attribute_name"
++                + " (agent_rollup_id, transaction_type, capture_time, trace_attribute_name) values"
++                + " (?, ?, ?, ?) using ttl ?");
++
++        Multimap<Long, AgentRollupIdTransactionTypeTraceAttributeNameTriple> rowsPerCaptureTime =
++                HashMultimap.create();
++        processTraceAttributeNameResults(rowsPerCaptureTime, false);
++        processTraceAttributeNameResults(rowsPerCaptureTime, true);
++
++        List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
++        List<Long> sortedCaptureTimes =
++                Ordering.natural().sortedCopy(rowsPerCaptureTime.keySet());
++        for (long captureTime : sortedCaptureTimes) {
++            int adjustedTTL = Common.getAdjustedTTL(traceTTL, captureTime, clock);
++            for (AgentRollupIdTransactionTypeTraceAttributeNameTriple row : rowsPerCaptureTime
++                    .get(captureTime)) {
++                BoundStatement boundStatement = insertPS.bind();
++                int i = 0;
++                boundStatement.setString(i++, row.agentRollupId());
++                boundStatement.setString(i++, row.transactionType());
++                boundStatement.setTimestamp(i++, new Date(captureTime));
++                boundStatement.setString(i++, row.traceAttributeName());
++                boundStatement.setInt(i++, adjustedTTL);
++                futures.add(session.executeAsync(boundStatement));
++            }
++        }
++        MoreFutures.waitForAll(futures);
++        logger.info("populating new trace attribute name history table - complete");
++    }
++
++    private void processTraceAttributeNameResults(
++            Multimap<Long, AgentRollupIdTransactionTypeTraceAttributeNameTriple> rowsPerCaptureTime,
++            boolean error) throws Exception {
++        PreparedStatement readPS = session.prepare("select agent_rollup, transaction_type,"
++                + " capture_time, attributes from trace_tt_" + (error ? "error" : "slow")
++                + "_point");
++        BoundStatement boundStatement = readPS.bind();
++        ResultSet results = session.execute(boundStatement);
++        for (Row row : results) {
++            int i = 0;
++            String agentRollupId = checkNotNull(row.getString(i++));
++            String transactionType = checkNotNull(row.getString(i++));
++            long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
++            ByteBuffer attributeBytes = row.getBytes(i++);
++            long millisPerDay = DAYS.toMillis(1);
++            long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, millisPerDay);
++            List<Trace.Attribute> attrs =
++                    Messages.parseDelimitedFrom(attributeBytes, Trace.Attribute.parser());
++            for (Trace.Attribute attr : attrs) {
++                rowsPerCaptureTime.put(rollupCaptureTime,
++                        ImmutableAgentRollupIdTransactionTypeTraceAttributeNameTriple
++                                .of(agentRollupId, transactionType, attr.getName()));
++            }
++        }
++    }
++
+     private void addColumnIfNotExists(String tableName, String columnName, String cqlType)
+             throws Exception {
+         if (!columnExists(tableName, columnName)) {
+@@ -2073,6 +2147,7 @@ public class SchemaUpgrade {
+     private static int getExpirationHoursForTable(String tableName,
+             CentralStorageConfig storageConfig) {
+         if (tableName.startsWith("trace_")) {
++            // this includes trace_attribute_name
+             return storageConfig.traceExpirationHours();
+         } else if (tableName.startsWith("gauge_value_rollup_")) {
+             int rollupLevel = Integer.parseInt(tableName.substring(tableName.lastIndexOf('_') + 1));
+@@ -2330,4 +2405,12 @@ public class SchemaUpgrade {
+         String agentRollupId();
+         String transactionType();
+     }
++
++    @Value.Immutable
++    @Styles.AllParameters
++    interface AgentRollupIdTransactionTypeTraceAttributeNameTriple {
++        String agentRollupId();
++        String transactionType();
++        String traceAttributeName();
++    }
+ }
+diff --git a/central/src/main/java/org/glowroot/central/repo/TraceAttributeNameDao.java b/central/src/main/java/org/glowroot/central/repo/TraceAttributeNameDao.java
+index e84852e8d..f5f601ede 100644
+--- a/central/src/main/java/org/glowroot/central/repo/TraceAttributeNameDao.java
++++ b/central/src/main/java/org/glowroot/central/repo/TraceAttributeNameDao.java
+@@ -15,29 +15,24 @@
+  */
+ package org.glowroot.central.repo;
+ 
+-import java.util.ArrayList;
+-import java.util.HashMap;
++import java.util.Date;
+ import java.util.List;
+-import java.util.Map;
+-import java.util.concurrent.CompletableFuture;
++import java.util.Set;
+ import java.util.concurrent.Future;
+ 
+ import com.datastax.driver.core.BoundStatement;
+ import com.datastax.driver.core.PreparedStatement;
+ import com.datastax.driver.core.ResultSet;
+ import com.datastax.driver.core.Row;
+-import com.google.common.collect.Maps;
+-import com.google.common.primitives.Ints;
+-import com.google.common.util.concurrent.ListenableFuture;
++import com.google.common.collect.ImmutableList;
++import com.google.common.collect.Sets;
+ import org.immutables.value.Value;
+ 
+-import org.glowroot.central.util.Cache;
+-import org.glowroot.central.util.Cache.CacheLoader;
+-import org.glowroot.central.util.ClusterManager;
+-import org.glowroot.central.util.MoreFutures;
+ import org.glowroot.central.util.RateLimiter;
+ import org.glowroot.central.util.Session;
+ import org.glowroot.common.repo.TraceAttributeNameRepository;
++import org.glowroot.common.repo.Utils;
++import org.glowroot.common.util.Clock;
+ import org.glowroot.common.util.Styles;
+ 
+ import static com.google.common.base.Preconditions.checkNotNull;
+@@ -45,73 +40,71 @@ import static java.util.concurrent.TimeUnit.DAYS;
+ 
+ class TraceAttributeNameDao implements TraceAttributeNameRepository {
+ 
+-    private static final String WITH_LCS =
+-            "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
+-
+-    private static final String SINGLE_CACHE_KEY = "x";
+-
+     private final Session session;
+     private final ConfigRepositoryImpl configRepository;
++    private final Clock clock;
+ 
+     private final PreparedStatement insertPS;
+     private final PreparedStatement readPS;
+ 
+     private final RateLimiter<TraceAttributeNameKey> rateLimiter = new RateLimiter<>();
+ 
+-    private final Cache<String, Map<String, Map<String, List<String>>>> traceAttributeNamesCache;
+-
+-    TraceAttributeNameDao(Session session, ConfigRepositoryImpl configRepository,
+-            ClusterManager clusterManager) throws Exception {
++    TraceAttributeNameDao(Session session, ConfigRepositoryImpl configRepository, Clock clock)
++            throws Exception {
+         this.session = session;
+         this.configRepository = configRepository;
+-
+-        session.execute("create table if not exists trace_attribute_name"
+-                + " (agent_rollup varchar, transaction_type varchar, trace_attribute_name varchar,"
+-                + " primary key ((agent_rollup, transaction_type), trace_attribute_name)) "
+-                + WITH_LCS);
+-
+-        insertPS = session.prepare("insert into trace_attribute_name (agent_rollup,"
+-                + " transaction_type, trace_attribute_name) values (?, ?, ?) using ttl ?");
+-        readPS = session.prepare("select agent_rollup, transaction_type, trace_attribute_name"
+-                + " from trace_attribute_name");
+-
+-        traceAttributeNamesCache = clusterManager.createCache("traceAttributeNamesCache",
+-                new TraceAttributeNameCacheLoader());
++        this.clock = clock;
++
++        int traceTTL = configRepository.getCentralStorageConfig().getTraceTTL();
++        session.createTableWithTWCS("create table if not exists trace_attribute_name"
++                + " (agent_rollup_id varchar, transaction_type varchar, capture_time timestamp,"
++                + " trace_attribute_name varchar, primary key ((agent_rollup_id, transaction_type),"
++                + " capture_time, trace_attribute_name))", traceTTL);
++
++        insertPS = session.prepare("insert into trace_attribute_name (agent_rollup_id,"
++                + " transaction_type, capture_time, trace_attribute_name) values (?, ?, ?, ?)"
++                + " using ttl ?");
++        readPS = session.prepare("select trace_attribute_name from trace_attribute_name where"
++                + " agent_rollup_id = ? and transaction_type = ? and capture_time >= ? and"
++                + " capture_time <= ?");
+     }
+ 
+     @Override
+-    public Map<String, Map<String, List<String>>> read() throws Exception {
+-        return traceAttributeNamesCache.get(SINGLE_CACHE_KEY);
++    public Set<String> read(String agentRollupId, String transactionType, long from, long to)
++            throws Exception {
++        long rolledUpFrom = Utils.getRollupCaptureTime(from, DAYS.toMillis(1));
++        long rolledUpTo = Utils.getRollupCaptureTime(to, DAYS.toMillis(1));
++        BoundStatement boundStatement = readPS.bind();
++        int i = 0;
++        boundStatement.setString(i++, agentRollupId);
++        boundStatement.setString(i++, transactionType);
++        boundStatement.setTimestamp(i++, new Date(rolledUpFrom));
++        boundStatement.setTimestamp(i++, new Date(rolledUpTo));
++        ResultSet results = session.execute(boundStatement);
++        Set<String> traceAttributeNames = Sets.newHashSet();
++        for (Row row : results) {
++            traceAttributeNames.add(checkNotNull(row.getString(0)));
++        }
++        return traceAttributeNames;
+     }
+ 
+-    void store(String agentRollupId, String transactionType, String traceAttributeName,
+-            List<Future<?>> futures) throws Exception {
++    List<Future<?>> insert(String agentRollupId, String transactionType, long captureTime,
++            String traceAttributeName) throws Exception {
++        long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, DAYS.toMillis(1));
+         TraceAttributeNameKey rateLimiterKey = ImmutableTraceAttributeNameKey.of(agentRollupId,
+-                transactionType, traceAttributeName);
++                transactionType, rollupCaptureTime, traceAttributeName);
+         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
+-            return;
++            return ImmutableList.of();
+         }
+         BoundStatement boundStatement = insertPS.bind();
+         int i = 0;
+         boundStatement.setString(i++, agentRollupId);
+         boundStatement.setString(i++, transactionType);
++        boundStatement.setTimestamp(i++, new Date(rollupCaptureTime));
+         boundStatement.setString(i++, traceAttributeName);
+-        boundStatement.setInt(i++, getTraceTTL());
+-        ListenableFuture<ResultSet> future = session.executeAsync(boundStatement);
+-        CompletableFuture<?> chainedFuture =
+-                MoreFutures.onFailure(future, () -> rateLimiter.invalidate(rateLimiterKey));
+-        chainedFuture = chainedFuture
+-                .whenComplete((result, t) -> traceAttributeNamesCache.invalidate(SINGLE_CACHE_KEY));
+-        futures.add(chainedFuture);
+-    }
+-
+-    private int getTraceTTL() throws Exception {
+-        int ttl = configRepository.getCentralStorageConfig().getTraceTTL();
+-        if (ttl == 0) {
+-            return 0;
+-        }
+-        // adding 1 day to account for rateLimiter
+-        return Ints.saturatedCast(ttl + DAYS.toSeconds(1));
++        int traceTTL = configRepository.getCentralStorageConfig().getTraceTTL();
++        boundStatement.setInt(i++, Common.getAdjustedTTL(traceTTL, rollupCaptureTime, clock));
++        return ImmutableList.of(session.executeAsync(boundStatement));
+     }
+ 
+     @Value.Immutable
+@@ -119,27 +112,7 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
+     interface TraceAttributeNameKey {
+         String agentRollupId();
+         String transactionType();
++        long captureTime();
+         String traceAttributeName();
+     }
+-
+-    private class TraceAttributeNameCacheLoader
+-            implements CacheLoader<String, Map<String, Map<String, List<String>>>> {
+-        @Override
+-        public Map<String, Map<String, List<String>>> load(String key) throws Exception {
+-            BoundStatement boundStatement = readPS.bind();
+-            ResultSet results = session.execute(boundStatement);
+-            Map<String, Map<String, List<String>>> traceAttributeNames = Maps.newHashMap();
+-            for (Row row : results) {
+-                int i = 0;
+-                String agentRollup = checkNotNull(row.getString(i++));
+-                String transactionType = checkNotNull(row.getString(i++));
+-                String traceAttributeName = checkNotNull(row.getString(i++));
+-                Map<String, List<String>> innerMap =
+-                        traceAttributeNames.computeIfAbsent(agentRollup, k -> new HashMap<>());
+-                innerMap.computeIfAbsent(transactionType, k -> new ArrayList<>())
+-                        .add(traceAttributeName);
+-            }
+-            return traceAttributeNames;
+-        }
+-    }
+ }
+diff --git a/central/src/main/java/org/glowroot/central/repo/TraceDaoImpl.java b/central/src/main/java/org/glowroot/central/repo/TraceDaoImpl.java
+index 9e465048b..e65b603bf 100644
+--- a/central/src/main/java/org/glowroot/central/repo/TraceDaoImpl.java
++++ b/central/src/main/java/org/glowroot/central/repo/TraceDaoImpl.java
+@@ -502,8 +502,9 @@ public class TraceDaoImpl implements TraceDao {
+         }
+         for (String agentRollupIdForMeta : agentRollupIdsForMeta) {
+             for (Trace.Attribute attributeName : header.getAttributeList()) {
+-                traceAttributeNameDao.store(agentRollupIdForMeta,
+-                        header.getTransactionType(), attributeName.getName(), futures);
++                futures.addAll(traceAttributeNameDao.insert(agentRollupIdForMeta,
++                        header.getTransactionType(), header.getCaptureTime(),
++                        attributeName.getName()));
+             }
+         }
+ 
+diff --git a/common/src/main/java/org/glowroot/common/repo/TraceAttributeNameRepository.java b/common/src/main/java/org/glowroot/common/repo/TraceAttributeNameRepository.java
+index dd519395d..c64721c31 100644
+--- a/common/src/main/java/org/glowroot/common/repo/TraceAttributeNameRepository.java
++++ b/common/src/main/java/org/glowroot/common/repo/TraceAttributeNameRepository.java
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright 2016 the original author or authors.
++ * Copyright 2016-2017 the original author or authors.
+  *
+  * Licensed under the Apache License, Version 2.0 (the "License");
+  * you may not use this file except in compliance with the License.
+@@ -15,10 +15,10 @@
+  */
+ package org.glowroot.common.repo;
+ 
+-import java.util.List;
+-import java.util.Map;
++import java.util.Set;
+ 
+ public interface TraceAttributeNameRepository {
+ 
+-    Map<String, Map<String, List<String>>> read() throws Exception;
++    Set<String> read(String agentRollupId, String transactionType, long from, long to)
++            throws Exception;
+ }
+diff --git a/ui/src/main/java/org/glowroot/ui/LayoutService.java b/ui/src/main/java/org/glowroot/ui/LayoutService.java
+index 55ec466eb..e5df6cdf4 100644
+--- a/ui/src/main/java/org/glowroot/ui/LayoutService.java
++++ b/ui/src/main/java/org/glowroot/ui/LayoutService.java
+@@ -28,6 +28,7 @@ import com.google.common.base.Strings;
+ import com.google.common.collect.ImmutableList;
+ import com.google.common.collect.ImmutableMap;
+ import com.google.common.collect.Lists;
++import com.google.common.collect.Maps;
+ import com.google.common.collect.Sets;
+ import org.immutables.value.Value;
+ 
+@@ -192,10 +193,13 @@ class LayoutService {
+         }
+         transactionTypes.add(defaultTransactionType);
+ 
+-        Map<String, List<String>> traceAttributeNames =
+-                traceAttributeNameRepository.read().get(AGENT_ID);
+-        if (traceAttributeNames == null) {
+-            traceAttributeNames = ImmutableMap.of();
++        // FIXME need trace attribute names for selected time period!!
++        now = clock.currentTimeMillis();
++        Map<String, List<String>> traceAttributeNames = Maps.newHashMap();
++        for (String transactionType : transactionTypes) {
++            traceAttributeNames.put(transactionType,
++                    ImmutableList.copyOf(traceAttributeNameRepository.read(AGENT_ID,
++                            transactionType, now - DAYS.toMillis(30), now)));
+         }
+ 
+         AgentRollupLayout embeddedAgentRollup = ImmutableAgentRollupLayout.builder()
+-- 
+2.13.0.windows.1
+

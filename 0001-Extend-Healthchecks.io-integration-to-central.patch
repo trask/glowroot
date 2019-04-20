@@ -1,0 +1,277 @@
+From f22a06b3ef76bafc07a25b4b4298ba9be44d5808 Mon Sep 17 00:00:00 2001
+From: Trask Stalnaker <trask.stalnaker@gmail.com>
+Date: Wed, 8 Nov 2017 18:57:18 -0600
+Subject: [PATCH] Extend Healthchecks.io integration to central
+
+---
+ .../java/org/glowroot/central/CentralModule.java   |  9 +++
+ .../glowroot/central/HealthchecksIoService.java    | 93 ++++++++++++++++++++++
+ .../central/repo/ConfigRepositoryImpl.java         | 16 ++--
+ .../org/glowroot/common/repo/ConfigRepository.java |  3 +-
+ .../admin/integration/healthchecks-io.js           | 16 ++--
+ .../views/admin/integration/healthchecks-io.html   |  4 -
+ 6 files changed, 121 insertions(+), 20 deletions(-)
+ create mode 100644 central/src/main/java/org/glowroot/central/HealthchecksIoService.java
+
+diff --git a/central/src/main/java/org/glowroot/central/CentralModule.java b/central/src/main/java/org/glowroot/central/CentralModule.java
+index e2860686d..edf974842 100644
+--- a/central/src/main/java/org/glowroot/central/CentralModule.java
++++ b/central/src/main/java/org/glowroot/central/CentralModule.java
+@@ -91,6 +91,7 @@ public class CentralModule {
+     private final UpdateAgentConfigIfNeededService updateAgentConfigIfNeededService;
+     private final RollupService rollupService;
+     private final SyntheticMonitorService syntheticMonitorService;
++    private final HealthchecksIoService healthchecksIoService;
+     private final UiModule uiModule;
+ 
+     public static CentralModule create() throws Exception {
+@@ -111,6 +112,7 @@ public class CentralModule {
+         UpdateAgentConfigIfNeededService updateAgentConfigIfNeededService = null;
+         RollupService rollupService = null;
+         SyntheticMonitorService syntheticMonitorService = null;
++        HealthchecksIoService healthchecksIoService = null;
+         UiModule uiModule = null;
+         try {
+             // init logger as early as possible
+@@ -191,6 +193,8 @@ public class CentralModule {
+             syntheticMonitorService = new SyntheticMonitorService(repos.getAgentRollupDao(),
+                     repos.getConfigRepository(), repos.getIncidentDao(), alertingService,
+                     repos.getSyntheticResultDao(), ticker, clock);
++            healthchecksIoService =
++                    new HealthchecksIoService(httpClient, repos.getConfigRepository(), clock);
+ 
+             ClusterManager clusterManagerEffectivelyFinal = clusterManager;
+             uiModule = new CreateUiModuleBuilder()
+@@ -244,6 +248,9 @@ public class CentralModule {
+             if (uiModule != null) {
+                 uiModule.close();
+             }
++            if (healthchecksIoService != null) {
++                healthchecksIoService.close();
++            }
+             if (syntheticMonitorService != null) {
+                 syntheticMonitorService.close();
+             }
+@@ -282,6 +289,7 @@ public class CentralModule {
+         this.updateAgentConfigIfNeededService = updateAgentConfigIfNeededService;
+         this.rollupService = rollupService;
+         this.syntheticMonitorService = syntheticMonitorService;
++        this.healthchecksIoService = healthchecksIoService;
+         this.uiModule = uiModule;
+     }
+ 
+@@ -296,6 +304,7 @@ public class CentralModule {
+         try {
+             // close down external inputs first (ui and grpc)
+             uiModule.close();
++            healthchecksIoService.close();
+             syntheticMonitorService.close();
+             rollupService.close();
+             // updateAgentConfigIfNeededService depends on grpc downstream, so must be shutdown
+diff --git a/central/src/main/java/org/glowroot/central/HealthchecksIoService.java b/central/src/main/java/org/glowroot/central/HealthchecksIoService.java
+new file mode 100644
+index 000000000..6d781c7f7
+--- /dev/null
++++ b/central/src/main/java/org/glowroot/central/HealthchecksIoService.java
+@@ -0,0 +1,93 @@
++/*
++ * Copyright 2017 the original author or authors.
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++package org.glowroot.central;
++
++import java.util.concurrent.ExecutorService;
++import java.util.concurrent.Executors;
++
++import com.google.common.annotations.VisibleForTesting;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
++
++import org.glowroot.central.repo.ConfigRepositoryImpl;
++import org.glowroot.common.config.HealthchecksIoConfig;
++import org.glowroot.common.repo.util.HttpClient;
++import org.glowroot.common.util.Clock;
++
++import static java.util.concurrent.TimeUnit.SECONDS;
++
++class HealthchecksIoService implements Runnable {
++
++    private static final Logger logger = LoggerFactory.getLogger(HealthchecksIoService.class);
++
++    private final HttpClient httpClient;
++    private final ConfigRepositoryImpl configRepository;
++    private final Clock clock;
++
++    private final ExecutorService executor;
++
++    private volatile boolean closed;
++
++    HealthchecksIoService(HttpClient httpClient, ConfigRepositoryImpl configRepository,
++            Clock clock) {
++        this.httpClient = httpClient;
++        this.configRepository = configRepository;
++        this.clock = clock;
++        executor = Executors.newSingleThreadExecutor();
++        executor.execute(castInitialized(this));
++    }
++
++    @Override
++    public void run() {
++        while (!closed) {
++            try {
++                Thread.sleep(millisUntilNextRollup(clock.currentTimeMillis()));
++                HealthchecksIoConfig healthchecksIoConfig =
++                        configRepository.getHealthchecksIoConfig();
++                String healthchecksIoPingUrl = healthchecksIoConfig.pingUrl();
++                if (!healthchecksIoPingUrl.isEmpty()) {
++                    httpClient.get(healthchecksIoPingUrl);
++                }
++            } catch (InterruptedException e) {
++                // probably shutdown requested (see close method below)
++                logger.debug(e.getMessage(), e);
++                continue;
++            } catch (Throwable t) {
++                logger.error(t.getMessage(), t);
++            }
++        }
++    }
++
++    void close() throws InterruptedException {
++        closed = true;
++        // shutdownNow() is needed here to send interrupt to HealthchecksIoService thread
++        executor.shutdownNow();
++        if (!executor.awaitTermination(10, SECONDS)) {
++            throw new IllegalStateException(
++                    "Timed out waiting for healthchecks.io thread to terminate");
++        }
++    }
++
++    @VisibleForTesting
++    static long millisUntilNextRollup(long currentTimeMillis) {
++        return 60000 - (currentTimeMillis - 10000) % 60000;
++    }
++
++    @SuppressWarnings("return.type.incompatible")
++    private static <T> /*@Initialized*/ T castInitialized(/*@UnderInitialization*/ T obj) {
++        return obj;
++    }
++}
+diff --git a/central/src/main/java/org/glowroot/central/repo/ConfigRepositoryImpl.java b/central/src/main/java/org/glowroot/central/repo/ConfigRepositoryImpl.java
+index f06842c44..2cbadb21f 100644
+--- a/central/src/main/java/org/glowroot/central/repo/ConfigRepositoryImpl.java
++++ b/central/src/main/java/org/glowroot/central/repo/ConfigRepositoryImpl.java
+@@ -44,6 +44,7 @@ import org.glowroot.common.config.HttpProxyConfig;
+ import org.glowroot.common.config.ImmutableCentralStorageConfig;
+ import org.glowroot.common.config.ImmutableCentralWebConfig;
+ import org.glowroot.common.config.ImmutableEmbeddedStorageConfig;
++import org.glowroot.common.config.ImmutableHealthchecksIoConfig;
+ import org.glowroot.common.config.ImmutableHttpProxyConfig;
+ import org.glowroot.common.config.ImmutableLdapConfig;
+ import org.glowroot.common.config.ImmutablePagerDutyConfig;
+@@ -390,8 +391,13 @@ public class ConfigRepositoryImpl implements ConfigRepository {
+     }
+ 
+     @Override
+-    public HealthchecksIoConfig getHealthchecksIoConfig() {
+-        throw new UnsupportedOperationException();
++    public HealthchecksIoConfig getHealthchecksIoConfig() throws Exception {
++        HealthchecksIoConfig config =
++                (HealthchecksIoConfig) centralConfigDao.read(HEALTHCHECKS_IO_KEY);
++        if (config == null) {
++            return ImmutableHealthchecksIoConfig.builder().build();
++        }
++        return config;
+     }
+ 
+     @Override
+@@ -1021,9 +1027,9 @@ public class ConfigRepositoryImpl implements ConfigRepository {
+     }
+ 
+     @Override
+-    public void updateHealthchecksIoConfig(HealthchecksIoConfig healthchecksIoConfig,
+-            String priorVersion) throws Exception {
+-        throw new UnsupportedOperationException();
++    public void updateHealthchecksIoConfig(HealthchecksIoConfig config, String priorVersion)
++            throws Exception {
++        centralConfigDao.write(HEALTHCHECKS_IO_KEY, config, priorVersion);
+     }
+ 
+     @Override
+diff --git a/common/src/main/java/org/glowroot/common/repo/ConfigRepository.java b/common/src/main/java/org/glowroot/common/repo/ConfigRepository.java
+index 43c2455b3..d9af38aea 100644
+--- a/common/src/main/java/org/glowroot/common/repo/ConfigRepository.java
++++ b/common/src/main/java/org/glowroot/common/repo/ConfigRepository.java
+@@ -64,6 +64,7 @@ public interface ConfigRepository {
+     String HTTP_PROXY_KEY = "httpProxy";
+     String LDAP_KEY = "ldap";
+     String PAGER_DUTY_KEY = "pagerDuty";
++    String HEALTHCHECKS_IO_KEY = "healthchecksIo";
+ 
+     long ROLLUP_0_INTERVAL_MILLIS =
+             Long.getLong("glowroot.internal.rollup.0.intervalMillis", MINUTES.toMillis(1));
+@@ -152,7 +153,7 @@ public interface ConfigRepository {
+ 
+     PagerDutyConfig getPagerDutyConfig() throws Exception;
+ 
+-    HealthchecksIoConfig getHealthchecksIoConfig();
++    HealthchecksIoConfig getHealthchecksIoConfig() throws Exception;
+ 
+     void updateTransactionConfig(String agentId, TransactionConfig config, String priorVersion)
+             throws Exception;
+diff --git a/ui/app/scripts/controllers/admin/integration/healthchecks-io.js b/ui/app/scripts/controllers/admin/integration/healthchecks-io.js
+index 586a95ada..d9d3a18eb 100644
+--- a/ui/app/scripts/controllers/admin/integration/healthchecks-io.js
++++ b/ui/app/scripts/controllers/admin/integration/healthchecks-io.js
+@@ -44,15 +44,11 @@ glowroot.controller('AdminHealthchecksIoCtrl', [
+           });
+     };
+ 
+-    if ($scope.layout.central) {
+-      $scope.loaded = true;
+-    } else {
+-      $http.get('backend/admin/healthchecks-io')
+-          .then(function (response) {
+-            onNewData(response.data);
+-          }, function (response) {
+-            httpErrors.handle(response, $scope);
+-          });
+-    }
++    $http.get('backend/admin/healthchecks-io')
++        .then(function (response) {
++          onNewData(response.data);
++        }, function (response) {
++          httpErrors.handle(response, $scope);
++        });
+   }
+ ]);
+diff --git a/ui/app/views/admin/integration/healthchecks-io.html b/ui/app/views/admin/integration/healthchecks-io.html
+index 11e647e8a..d7e56b514 100644
+--- a/ui/app/views/admin/integration/healthchecks-io.html
++++ b/ui/app/views/admin/integration/healthchecks-io.html
+@@ -27,12 +27,8 @@
+   <div class="panel-body">
+     <div ng-include src="'template/gt-loading-overlay.html'"></div>
+     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+-    <div ng-if="layout.central" class="alert alert-danger">
+-      Use glowroot agent (with embedded database and UI, not pointing to central) to monitor glowroot central itself.
+-    </div>
+     <div ng-form
+          gt-form-autofocus-on-first-input
+-         ng-if="!layout.central"
+          class="form-horizontal"
+          name="formCtrl"
+          style="padding-top: 15px;">
+-- 
+2.13.0.windows.1
+

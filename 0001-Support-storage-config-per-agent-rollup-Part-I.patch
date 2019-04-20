@@ -1,0 +1,3356 @@
+From 60c69935616aaabeddbef2ac1decd3bd8e2c4b61 Mon Sep 17 00:00:00 2001
+From: Trask Stalnaker <trask.stalnaker@gmail.com>
+Date: Mon, 17 Jul 2017 07:35:32 -0700
+Subject: [PATCH] Support storage config per agent rollup, Part I
+
+---
+ .../agent/embedded/init/CollectorImpl.java         |   5 +-
+ .../agent/embedded/init/ConfigRepositoryImpl.java  |  32 +++-
+ .../agent/embedded/init/EmbeddedAgentModule.java   |   7 +-
+ .../glowroot/agent/embedded/repo/AggregateDao.java |   6 +-
+ .../agent/embedded/repo/ReaperRunnable.java        |  11 +-
+ .../agent/embedded/repo/RepoAdminImpl.java         |   6 +-
+ .../agent/embedded/repo/SimpleRepoModule.java      |   8 +-
+ .../agent/embedded/repo/AggregateDaoTest.java      |   4 +-
+ build/checker-stubs/guava.astub                    |   7 +
+ .../java/org/glowroot/central/CentralModule.java   |   2 +-
+ .../central/repo/AdditionalStorageConfigDao.java   | 150 +++++++++++++++++
+ .../org/glowroot/central/repo/AgentRollupDao.java  |   5 +-
+ .../org/glowroot/central/repo/AggregateDao.java    | 168 +++++++++----------
+ .../glowroot/central/repo/CentralRepoModule.java   |   6 +-
+ .../central/repo/ConfigRepositoryImpl.java         |  70 ++++----
+ .../glowroot/central/repo/FullQueryTextDao.java    | 182 ++++++++++++++++-----
+ .../org/glowroot/central/repo/GaugeNameDao.java    |  29 ++--
+ .../org/glowroot/central/repo/GaugeValueDao.java   |  34 ++--
+ .../glowroot/central/repo/SyntheticResultDao.java  |  15 +-
+ .../central/repo/TraceAttributeNameDao.java        |  30 ++--
+ .../java/org/glowroot/central/repo/TraceDao.java   |  38 +++--
+ .../glowroot/central/repo/TransactionTypeDao.java  |  49 +++---
+ .../org/glowroot/central/util/MoreFutures.java     |  47 ++++++
+ .../java/org/glowroot/central/util/Session.java    |  63 ++++---
+ .../org/glowroot/central/repo/AggregateDaoIT.java  |  15 +-
+ .../glowroot/central/repo/ConfigRepositoryIT.java  |  18 +-
+ .../org/glowroot/central/repo/GaugeValueDaoIT.java |  18 +-
+ .../central/repo/SyntheticResultDaoIT.java         |  18 +-
+ .../java/org/glowroot/central/repo/TraceDaoIT.java |  14 +-
+ .../common/config/CentralStorageConfig.java        |  14 +-
+ .../org/glowroot/common/repo/ConfigRepository.java |  18 +-
+ .../glowroot/common/repo/util/MetricService.java   |  12 +-
+ .../common/repo/util/RollupLevelService.java       |  14 +-
+ ui/app/scripts/services/charts.js                  |   7 +-
+ ui/app/views/admin/storage.html                    |  19 +++
+ .../java/org/glowroot/ui/AdminJsonService.java     |  10 +-
+ .../java/org/glowroot/ui/ErrorJsonService.java     |  22 +--
+ .../org/glowroot/ui/GaugeValueJsonService.java     |   4 +-
+ .../main/java/org/glowroot/ui/LayoutService.java   |  18 +-
+ .../glowroot/ui/SyntheticResultJsonService.java    |   3 +-
+ .../org/glowroot/ui/TracePointJsonService.java     |   5 +-
+ .../org/glowroot/ui/TransactionJsonService.java    |  73 +++++----
+ .../test/java/org/glowroot/tests/WebDriverIT.java  |   3 +-
+ wire-api/src/main/protobuf/AgentConfig.proto       |   5 +
+ 44 files changed, 842 insertions(+), 442 deletions(-)
+ create mode 100644 central/src/main/java/org/glowroot/central/repo/AdditionalStorageConfigDao.java
+
+diff --git a/agent/core/src/main/java/org/glowroot/agent/embedded/init/CollectorImpl.java b/agent/core/src/main/java/org/glowroot/agent/embedded/init/CollectorImpl.java
+index 2d4cee095..f93624346 100644
+--- a/agent/core/src/main/java/org/glowroot/agent/embedded/init/CollectorImpl.java
++++ b/agent/core/src/main/java/org/glowroot/agent/embedded/init/CollectorImpl.java
+@@ -29,7 +29,6 @@ import org.glowroot.agent.embedded.repo.EnvironmentDao;
+ import org.glowroot.agent.embedded.repo.GaugeValueDao;
+ import org.glowroot.agent.embedded.repo.TraceDao;
+ import org.glowroot.common.config.HealthchecksIoConfig;
+-import org.glowroot.common.repo.ConfigRepository;
+ import org.glowroot.common.repo.util.AlertingService;
+ import org.glowroot.common.repo.util.HttpClient;
+ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+@@ -50,13 +49,13 @@ class CollectorImpl implements Collector {
+     private final AggregateDao aggregateDao;
+     private final TraceDao traceDao;
+     private final GaugeValueDao gaugeValueDao;
+-    private final ConfigRepository configRepository;
++    private final ConfigRepositoryImpl configRepository;
+     private final AlertingService alertingService;
+     private final HttpClient httpClient;
+ 
+     CollectorImpl(EnvironmentDao environmentDao, AggregateDao aggregateRepository,
+             TraceDao traceRepository, GaugeValueDao gaugeValueRepository,
+-            ConfigRepository configRepository, AlertingService alertingService,
++            ConfigRepositoryImpl configRepository, AlertingService alertingService,
+             HttpClient httpClient) {
+         this.environmentDao = environmentDao;
+         this.aggregateDao = aggregateRepository;
+diff --git a/agent/core/src/main/java/org/glowroot/agent/embedded/init/ConfigRepositoryImpl.java b/agent/core/src/main/java/org/glowroot/agent/embedded/init/ConfigRepositoryImpl.java
+index 1a642f600..55df9bcd0 100644
+--- a/agent/core/src/main/java/org/glowroot/agent/embedded/init/ConfigRepositoryImpl.java
++++ b/agent/core/src/main/java/org/glowroot/agent/embedded/init/ConfigRepositoryImpl.java
+@@ -73,7 +73,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginPrope
+ 
+ import static com.google.common.base.Preconditions.checkState;
+ 
+-class ConfigRepositoryImpl implements ConfigRepository {
++public class ConfigRepositoryImpl implements ConfigRepository {
+ 
+     private static final String HEALTHCHECKS_IO_KEY = "healthchecksIo";
+ 
+@@ -96,7 +96,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
+     private volatile PagerDutyConfig pagerDutyConfig;
+     private volatile HealthchecksIoConfig healthchecksIoConfig;
+ 
+-    static ConfigRepository create(File confDir, ConfigService configService,
++    static ConfigRepositoryImpl create(File confDir, ConfigService configService,
+             PluginCache pluginCache) throws IOException {
+         ConfigRepositoryImpl configRepository =
+                 new ConfigRepositoryImpl(confDir, configService, pluginCache);
+@@ -374,7 +374,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
+     }
+ 
+     @Override
+-    public StorageConfig getStorageConfig() {
++    public StorageConfig getStorageConfig(String agentRollupId) {
+         return getEmbeddedStorageConfig();
+     }
+ 
+@@ -384,7 +384,12 @@ class ConfigRepositoryImpl implements ConfigRepository {
+     }
+ 
+     @Override
+-    public CentralStorageConfig getCentralStorageConfig() {
++    public CentralStorageConfig getDefaultCentralStorageConfig() throws Exception {
++        throw new UnsupportedOperationException();
++    }
++
++    @Override
++    public List<CentralStorageConfig> getAdditionalCentralStorageConfigs() {
+         throw new UnsupportedOperationException();
+     }
+ 
+@@ -874,7 +879,24 @@ class ConfigRepositoryImpl implements ConfigRepository {
+     }
+ 
+     @Override
+-    public void updateCentralStorageConfig(CentralStorageConfig config, String priorVersion) {
++    public void updateDefaultCentralStorageConfig(CentralStorageConfig config,
++            String priorVersion) {
++        throw new UnsupportedOperationException();
++    }
++
++    @Override
++    public void insertAdditionalCentralStorageConfig(CentralStorageConfig config) {
++        throw new UnsupportedOperationException();
++    }
++
++    @Override
++    public void updateAdditionalCentralStorageConfig(CentralStorageConfig config,
++            String priorVersion) {
++        throw new UnsupportedOperationException();
++    }
++
++    @Override
++    public void deleteAdditionalCentralStorageConfig(String id) {
+         throw new UnsupportedOperationException();
+     }
+ 
+diff --git a/agent/core/src/main/java/org/glowroot/agent/embedded/init/EmbeddedAgentModule.java b/agent/core/src/main/java/org/glowroot/agent/embedded/init/EmbeddedAgentModule.java
+index 5788d6a0e..92465848f 100644
+--- a/agent/core/src/main/java/org/glowroot/agent/embedded/init/EmbeddedAgentModule.java
++++ b/agent/core/src/main/java/org/glowroot/agent/embedded/init/EmbeddedAgentModule.java
+@@ -60,7 +60,6 @@ import org.glowroot.common.config.RoleConfig.SimplePermission;
+ import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
+ import org.glowroot.common.live.LiveTraceRepository.LiveTraceRepositoryNop;
+ import org.glowroot.common.repo.AgentRollupRepository;
+-import org.glowroot.common.repo.ConfigRepository;
+ import org.glowroot.common.repo.ImmutableAgentRollup;
+ import org.glowroot.common.util.Clock;
+ import org.glowroot.common.util.OnlyUsedByTests;
+@@ -117,7 +116,7 @@ class EmbeddedAgentModule {
+             viewerAgentModule = new ViewerAgentModule(pluginsDir, confDir);
+             backgroundExecutor = null;
+             agentModule = null;
+-            ConfigRepository configRepository = ConfigRepositoryImpl.create(confDir,
++            ConfigRepositoryImpl configRepository = ConfigRepositoryImpl.create(confDir,
+                     viewerAgentModule.getConfigService(), pluginCache);
+             DataSource dataSource = createDataSource(h2MemDb, dataDir);
+             simpleRepoModule = new SimpleRepoModule(dataSource, dataDir, clock, ticker,
+@@ -143,7 +142,7 @@ class EmbeddedAgentModule {
+             backgroundExecutor = backgroundExecutorSupplier.get();
+ 
+             PreInitializeStorageShutdownClasses.preInitializeClasses();
+-            final ConfigRepository configRepository = ConfigRepositoryImpl.create(confDir,
++            final ConfigRepositoryImpl configRepository = ConfigRepositoryImpl.create(confDir,
+                     agentModule.getConfigService(), pluginCache);
+             ExecutorService singleUseExecutor =
+                     Executors.newSingleThreadExecutor(ThreadFactories.create("Glowroot-Init-Repo"));
+@@ -362,7 +361,7 @@ class EmbeddedAgentModule {
+         return false;
+     }
+ 
+-    private static void addAlertPermission(ConfigRepository configRepository) throws Exception {
++    private static void addAlertPermission(ConfigRepositoryImpl configRepository) throws Exception {
+         for (RoleConfig config : configRepository.getRoleConfigs()) {
+             if (config.isPermitted(SimplePermission.create("agent:transaction:overview"))
+                     || config.isPermitted(SimplePermission.create("agent:error:overview"))
+diff --git a/agent/core/src/main/java/org/glowroot/agent/embedded/repo/AggregateDao.java b/agent/core/src/main/java/org/glowroot/agent/embedded/repo/AggregateDao.java
+index a78deb5f0..dd78f138d 100644
+--- a/agent/core/src/main/java/org/glowroot/agent/embedded/repo/AggregateDao.java
++++ b/agent/core/src/main/java/org/glowroot/agent/embedded/repo/AggregateDao.java
+@@ -34,6 +34,7 @@ import org.immutables.value.Value;
+ 
+ import org.glowroot.agent.collector.Collector.AggregateReader;
+ import org.glowroot.agent.collector.Collector.AggregateVisitor;
++import org.glowroot.agent.embedded.init.ConfigRepositoryImpl;
+ import org.glowroot.agent.embedded.repo.model.Stored;
+ import org.glowroot.agent.embedded.util.CappedDatabase;
+ import org.glowroot.agent.embedded.util.DataSource;
+@@ -66,7 +67,6 @@ import org.glowroot.common.model.TransactionErrorSummaryCollector.ErrorSummarySo
+ import org.glowroot.common.model.TransactionSummaryCollector;
+ import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
+ import org.glowroot.common.repo.AggregateRepository;
+-import org.glowroot.common.repo.ConfigRepository;
+ import org.glowroot.common.repo.ConfigRepository.RollupConfig;
+ import org.glowroot.common.repo.MutableAggregate;
+ import org.glowroot.common.repo.util.RollupLevelService;
+@@ -150,7 +150,7 @@ public class AggregateDao implements AggregateRepository {
+ 
+     private final DataSource dataSource;
+     private final List<CappedDatabase> rollupCappedDatabases;
+-    private final ConfigRepository configRepository;
++    private final ConfigRepositoryImpl configRepository;
+     private final TransactionTypeDao transactionTypeDao;
+     private final FullQueryTextDao fullQueryTextDao;
+ 
+@@ -159,7 +159,7 @@ public class AggregateDao implements AggregateRepository {
+     private final Object rollupLock = new Object();
+ 
+     AggregateDao(DataSource dataSource, List<CappedDatabase> rollupCappedDatabases,
+-            ConfigRepository configRepository, TransactionTypeDao transactionTypeDao,
++            ConfigRepositoryImpl configRepository, TransactionTypeDao transactionTypeDao,
+             FullQueryTextDao fullQueryTextDao) throws Exception {
+         this.dataSource = dataSource;
+         this.rollupCappedDatabases = rollupCappedDatabases;
+diff --git a/agent/core/src/main/java/org/glowroot/agent/embedded/repo/ReaperRunnable.java b/agent/core/src/main/java/org/glowroot/agent/embedded/repo/ReaperRunnable.java
+index 56ebd9192..ad729cd79 100644
+--- a/agent/core/src/main/java/org/glowroot/agent/embedded/repo/ReaperRunnable.java
++++ b/agent/core/src/main/java/org/glowroot/agent/embedded/repo/ReaperRunnable.java
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright 2012-2016 the original author or authors.
++ * Copyright 2012-2017 the original author or authors.
+  *
+  * Licensed under the Apache License, Version 2.0 (the "License");
+  * you may not use this file except in compliance with the License.
+@@ -15,8 +15,9 @@
+  */
+ package org.glowroot.agent.embedded.repo;
+ 
++import org.glowroot.agent.embedded.init.ConfigRepositoryImpl;
++import org.glowroot.common.config.EmbeddedStorageConfig;
+ import org.glowroot.common.config.StorageConfig;
+-import org.glowroot.common.repo.ConfigRepository;
+ import org.glowroot.common.util.Clock;
+ import org.glowroot.common.util.ScheduledRunnable;
+ 
+@@ -24,7 +25,7 @@ import static java.util.concurrent.TimeUnit.HOURS;
+ 
+ class ReaperRunnable extends ScheduledRunnable {
+ 
+-    private final ConfigRepository configRepository;
++    private final ConfigRepositoryImpl configRepository;
+     private final AggregateDao aggregateDao;
+     private final TraceDao traceDao;
+     private final GaugeValueDao gaugeValueDao;
+@@ -34,7 +35,7 @@ class ReaperRunnable extends ScheduledRunnable {
+     private final IncidentDao incidentDao;
+     private final Clock clock;
+ 
+-    ReaperRunnable(ConfigRepository configService, AggregateDao aggregateDao, TraceDao traceDao,
++    ReaperRunnable(ConfigRepositoryImpl configService, AggregateDao aggregateDao, TraceDao traceDao,
+             GaugeValueDao gaugeValueDao, GaugeNameDao gaugeNameDao,
+             TransactionTypeDao transactionTypeDao, FullQueryTextDao fullQueryTextDao,
+             IncidentDao incidentDao, Clock clock) {
+@@ -53,7 +54,7 @@ class ReaperRunnable extends ScheduledRunnable {
+     protected void runInternal() throws Exception {
+         long minCaptureTime = Long.MAX_VALUE;
+         long currentTime = clock.currentTimeMillis();
+-        StorageConfig storageConfig = configRepository.getStorageConfig();
++        EmbeddedStorageConfig storageConfig = configRepository.getEmbeddedStorageConfig();
+         for (int i = 0; i < storageConfig.rollupExpirationHours().size(); i++) {
+             int expirationHours = storageConfig.rollupExpirationHours().get(i);
+             if (expirationHours == 0) {
+diff --git a/agent/core/src/main/java/org/glowroot/agent/embedded/repo/RepoAdminImpl.java b/agent/core/src/main/java/org/glowroot/agent/embedded/repo/RepoAdminImpl.java
+index 43a50b2da..ec1c0c7a9 100644
+--- a/agent/core/src/main/java/org/glowroot/agent/embedded/repo/RepoAdminImpl.java
++++ b/agent/core/src/main/java/org/glowroot/agent/embedded/repo/RepoAdminImpl.java
+@@ -17,9 +17,9 @@ package org.glowroot.agent.embedded.repo;
+ 
+ import java.util.List;
+ 
++import org.glowroot.agent.embedded.init.ConfigRepositoryImpl;
+ import org.glowroot.agent.embedded.util.CappedDatabase;
+ import org.glowroot.agent.embedded.util.DataSource;
+-import org.glowroot.common.repo.ConfigRepository;
+ import org.glowroot.common.repo.RepoAdmin;
+ import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
+ 
+@@ -28,7 +28,7 @@ class RepoAdminImpl implements RepoAdmin {
+     private final DataSource dataSource;
+     private final List<CappedDatabase> rollupCappedDatabases;
+     private final CappedDatabase traceCappedDatabase;
+-    private final ConfigRepository configRepository;
++    private final ConfigRepositoryImpl configRepository;
+     private final EnvironmentDao agentDao;
+     private final GaugeValueDao gaugeValueDao;
+     private final GaugeNameDao gaugeNameDao;
+@@ -37,7 +37,7 @@ class RepoAdminImpl implements RepoAdmin {
+     private final TraceAttributeNameDao traceAttributeNameDao;
+ 
+     RepoAdminImpl(DataSource dataSource, List<CappedDatabase> rollupCappedDatabases,
+-            CappedDatabase traceCappedDatabase, ConfigRepository configRepository,
++            CappedDatabase traceCappedDatabase, ConfigRepositoryImpl configRepository,
+             EnvironmentDao agentDao, GaugeValueDao gaugeValueDao, GaugeNameDao gaugeNameDao,
+             TransactionTypeDao transactionTypeDao, FullQueryTextDao fullQueryTextDao,
+             TraceAttributeNameDao traceAttributeNameDao) {
+diff --git a/agent/core/src/main/java/org/glowroot/agent/embedded/repo/SimpleRepoModule.java b/agent/core/src/main/java/org/glowroot/agent/embedded/repo/SimpleRepoModule.java
+index 9f082aa74..2504558dd 100644
+--- a/agent/core/src/main/java/org/glowroot/agent/embedded/repo/SimpleRepoModule.java
++++ b/agent/core/src/main/java/org/glowroot/agent/embedded/repo/SimpleRepoModule.java
+@@ -26,11 +26,11 @@ import com.google.common.base.Ticker;
+ import com.google.common.collect.ImmutableList;
+ import com.google.common.collect.Lists;
+ 
++import org.glowroot.agent.embedded.init.ConfigRepositoryImpl;
+ import org.glowroot.agent.embedded.util.CappedDatabase;
+ import org.glowroot.agent.embedded.util.DataSource;
+ import org.glowroot.agent.embedded.util.H2DatabaseStats;
+ import org.glowroot.common.config.EmbeddedStorageConfig;
+-import org.glowroot.common.repo.ConfigRepository;
+ import org.glowroot.common.repo.RepoAdmin;
+ import org.glowroot.common.repo.TraceAttributeNameRepository;
+ import org.glowroot.common.repo.TransactionTypeRepository;
+@@ -59,7 +59,7 @@ public class SimpleRepoModule {
+     private final TraceDao traceDao;
+     private final GaugeValueDao gaugeValueDao;
+     private final IncidentDao incidentDao;
+-    private final ConfigRepository configRepository;
++    private final ConfigRepositoryImpl configRepository;
+     private final RepoAdmin repoAdmin;
+     private final RollupLevelService rollupLevelService;
+     private final AlertingService alertingService;
+@@ -67,7 +67,7 @@ public class SimpleRepoModule {
+     private final @Nullable ReaperRunnable reaperRunnable;
+ 
+     public SimpleRepoModule(DataSource dataSource, File dataDir, Clock clock, Ticker ticker,
+-            ConfigRepository configRepository,
++            ConfigRepositoryImpl configRepository,
+             @Nullable ScheduledExecutorService backgroundExecutor) throws Exception {
+         if (!dataDir.exists() && !dataDir.mkdir()) {
+             throw new IOException("Could not create directory: " + dataDir.getAbsolutePath());
+@@ -165,7 +165,7 @@ public class SimpleRepoModule {
+         return incidentDao;
+     }
+ 
+-    public ConfigRepository getConfigRepository() {
++    public ConfigRepositoryImpl getConfigRepository() {
+         return configRepository;
+     }
+ 
+diff --git a/agent/core/src/test/java/org/glowroot/agent/embedded/repo/AggregateDaoTest.java b/agent/core/src/test/java/org/glowroot/agent/embedded/repo/AggregateDaoTest.java
+index 2952019f9..22f066f22 100644
+--- a/agent/core/src/test/java/org/glowroot/agent/embedded/repo/AggregateDaoTest.java
++++ b/agent/core/src/test/java/org/glowroot/agent/embedded/repo/AggregateDaoTest.java
+@@ -27,6 +27,7 @@ import org.junit.Test;
+ 
+ import org.glowroot.agent.collector.Collector.AggregateReader;
+ import org.glowroot.agent.collector.Collector.AggregateVisitor;
++import org.glowroot.agent.embedded.init.ConfigRepositoryImpl;
+ import org.glowroot.agent.embedded.util.CappedDatabase;
+ import org.glowroot.agent.embedded.util.DataSource;
+ import org.glowroot.common.live.ImmutableOverallQuery;
+@@ -39,7 +40,6 @@ import org.glowroot.common.model.TransactionSummaryCollector;
+ import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
+ import org.glowroot.common.model.TransactionSummaryCollector.TransactionSummary;
+ import org.glowroot.common.repo.AggregateRepository;
+-import org.glowroot.common.repo.ConfigRepository;
+ import org.glowroot.common.repo.ConfigRepository.RollupConfig;
+ import org.glowroot.common.repo.ImmutableRollupConfig;
+ import org.glowroot.common.util.Styles;
+@@ -73,7 +73,7 @@ public class AggregateDaoTest {
+         }
+         cappedFile = File.createTempFile("glowroot-test-", ".capped.db");
+         cappedDatabase = new CappedDatabase(cappedFile, 1000000, Ticker.systemTicker());
+-        ConfigRepository configRepository = mock(ConfigRepository.class);
++        ConfigRepositoryImpl configRepository = mock(ConfigRepositoryImpl.class);
+         when(configRepository.getAdvancedConfig(AGENT_ID))
+                 .thenReturn(AdvancedConfig.getDefaultInstance());
+         ImmutableList<RollupConfig> rollupConfigs = ImmutableList.<RollupConfig>of(
+diff --git a/build/checker-stubs/guava.astub b/build/checker-stubs/guava.astub
+index 00752c761..c7c4464a8 100644
+--- a/build/checker-stubs/guava.astub
++++ b/build/checker-stubs/guava.astub
+@@ -63,3 +63,10 @@ public class Maps {
+     public static <C extends @Nullable Object, K extends C, V extends @Nullable Object>
+             TreeMap<K, V> newTreeMap(@Nullable Comparator<C> comparator);
+ }
++
++/* ========================================================================== */
++package com.google.common.util.concurrent;
++
++public interface FutureCallback<V> {
++  void onSuccess(V result);
++}
+diff --git a/central/src/main/java/org/glowroot/central/CentralModule.java b/central/src/main/java/org/glowroot/central/CentralModule.java
+index 291f08c2a..edd81ef5b 100644
+--- a/central/src/main/java/org/glowroot/central/CentralModule.java
++++ b/central/src/main/java/org/glowroot/central/CentralModule.java
+@@ -155,7 +155,7 @@ public class CentralModule {
+                 startupLogger.info("glowroot central schema created");
+             } else {
+                 schemaUpgrade.updateToMoreRecentCassandraOptions(
+-                        repos.getConfigRepository().getCentralStorageConfig());
++                        repos.getConfigRepository().getDefaultCentralStorageConfig());
+             }
+ 
+             RollupLevelService rollupLevelService =
+diff --git a/central/src/main/java/org/glowroot/central/repo/AdditionalStorageConfigDao.java b/central/src/main/java/org/glowroot/central/repo/AdditionalStorageConfigDao.java
+new file mode 100644
+index 000000000..e8a49f199
+--- /dev/null
++++ b/central/src/main/java/org/glowroot/central/repo/AdditionalStorageConfigDao.java
+@@ -0,0 +1,150 @@
++/*
++ * Copyright 2017 the original author or authors.
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++package org.glowroot.central.repo;
++
++import java.util.List;
++
++import javax.annotation.Nullable;
++
++import com.datastax.driver.core.BoundStatement;
++import com.datastax.driver.core.PreparedStatement;
++import com.datastax.driver.core.ResultSet;
++import com.datastax.driver.core.Row;
++import com.google.common.collect.Lists;
++
++import org.glowroot.central.util.Cache;
++import org.glowroot.central.util.Cache.CacheLoader;
++import org.glowroot.central.util.ClusterManager;
++import org.glowroot.central.util.Session;
++import org.glowroot.common.config.CentralStorageConfig;
++import org.glowroot.common.config.ImmutableCentralStorageConfig;
++import org.glowroot.common.repo.ConfigRepository.DuplicateUsernameException;
++
++import static com.google.common.base.Preconditions.checkNotNull;
++
++class AdditionalStorageConfigDao {
++
++    private static final String WITH_LCS =
++            "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
++
++    private static final String SINGLE_CACHE_KEY = "x";
++
++    private final Session session;
++
++    private final PreparedStatement readPS;
++    private final PreparedStatement insertIfNotExistsPS;
++    private final PreparedStatement insertPS;
++    private final PreparedStatement deletePS;
++
++    private final Cache<String, List<CentralStorageConfig>> cache;
++
++    AdditionalStorageConfigDao(Session session, ClusterManager clusterManager) throws Exception {
++        this.session = session;
++
++        session.execute("create table if not exists additional_storage_config (id varchar, display"
++                + " varchar, rollup_expiration_hours list<int>, trace_expiration_hours int,"
++                + " full_query_text_expiration_hours int, primary key (id)) " + WITH_LCS);
++
++        readPS = session.prepare("select id, display, rollup_expiration_hours,"
++                + " trace_expiration_hours, full_query_text_expiration_hours from"
++                + " additional_storage_config");
++        insertIfNotExistsPS = session.prepare("insert into additional_storage_config (id, display,"
++                + " rollup_expiration_hours, trace_expiration_hours,"
++                + " full_query_text_expiration_hours) values (?, ?, ?, ?, ?) if not exists");
++        insertPS = session.prepare("insert into additional_storage_config (id, display,"
++                + " rollup_expiration_hours, trace_expiration_hours,"
++                + " full_query_text_expiration_hours) values (?, ?, ?, ?, ?)");
++        deletePS = session.prepare("delete from additional_storage_config where id = ?");
++
++        cache = clusterManager.createCache("allAdditionalStorageConfigsCache",
++                new AllStorageConfigsCacheLoader());
++    }
++
++    List<CentralStorageConfig> read() throws Exception {
++        return cache.get(SINGLE_CACHE_KEY);
++    }
++
++    @Nullable
++    CentralStorageConfig read(String id) throws Exception {
++        for (CentralStorageConfig storageConfig : read()) {
++            if (storageConfig.id().equals(id)) {
++                return storageConfig;
++            }
++        }
++        return null;
++    }
++
++    void insert(CentralStorageConfig storageConfig) throws Exception {
++        BoundStatement boundStatement = insertPS.bind();
++        bindInsert(boundStatement, storageConfig);
++        session.execute(boundStatement);
++        cache.invalidate(SINGLE_CACHE_KEY);
++    }
++
++    void insertIfNotExists(CentralStorageConfig storageConfig) throws Exception {
++        BoundStatement boundStatement = insertIfNotExistsPS.bind();
++        bindInsert(boundStatement, storageConfig);
++        ResultSet results = session.execute(boundStatement);
++        Row row = checkNotNull(results.one());
++        boolean applied = row.getBool("[applied]");
++        if (applied) {
++            cache.invalidate(SINGLE_CACHE_KEY);
++        } else {
++            throw new DuplicateUsernameException();
++        }
++    }
++
++    void delete(String id) throws Exception {
++        BoundStatement boundStatement = deletePS.bind();
++        boundStatement.setString(0, id);
++        session.execute(boundStatement);
++        cache.invalidate(SINGLE_CACHE_KEY);
++    }
++
++    private static void bindInsert(BoundStatement boundStatement,
++            CentralStorageConfig storageConfig) {
++        int i = 0;
++        boundStatement.setString(i++, storageConfig.id());
++        boundStatement.setString(i++, storageConfig.display());
++        boundStatement.setList(i++, storageConfig.rollupExpirationHours());
++        boundStatement.setInt(i++, storageConfig.traceExpirationHours());
++        boundStatement.setInt(i++, storageConfig.fullQueryTextExpirationHours());
++    }
++
++    private static ImmutableCentralStorageConfig buildStorageConfig(Row row) {
++        int i = 0;
++        return ImmutableCentralStorageConfig.builder()
++                .id(checkNotNull(row.getString(i++)))
++                .display(row.getString(i++))
++                .rollupExpirationHours(checkNotNull(row.getList(i++, Integer.class)))
++                .traceExpirationHours(row.getInt(i++))
++                .fullQueryTextExpirationHours(row.getInt(i++))
++                .build();
++    }
++
++    private class AllStorageConfigsCacheLoader
++            implements CacheLoader<String, List<CentralStorageConfig>> {
++        @Override
++        public List<CentralStorageConfig> load(String dummy) throws Exception {
++            ResultSet results = session.execute(readPS.bind());
++            List<CentralStorageConfig> storageConfigs = Lists.newArrayList();
++            for (Row row : results) {
++                storageConfigs.add(buildStorageConfig(row));
++            }
++            return storageConfigs;
++        }
++    }
++}
+diff --git a/central/src/main/java/org/glowroot/central/repo/AgentRollupDao.java b/central/src/main/java/org/glowroot/central/repo/AgentRollupDao.java
+index 7d4e98405..420c6a3a6 100644
+--- a/central/src/main/java/org/glowroot/central/repo/AgentRollupDao.java
++++ b/central/src/main/java/org/glowroot/central/repo/AgentRollupDao.java
+@@ -28,7 +28,6 @@ import javax.annotation.Nullable;
+ import com.datastax.driver.core.BoundStatement;
+ import com.datastax.driver.core.PreparedStatement;
+ import com.datastax.driver.core.ResultSet;
+-import com.datastax.driver.core.ResultSetFuture;
+ import com.datastax.driver.core.Row;
+ import com.google.common.base.Optional;
+ import com.google.common.collect.ArrayListMultimap;
+@@ -36,6 +35,7 @@ import com.google.common.collect.ImmutableList;
+ import com.google.common.collect.Lists;
+ import com.google.common.collect.Multimap;
+ import com.google.common.collect.Sets;
++import com.google.common.util.concurrent.ListenableFuture;
+ import org.immutables.value.Value;
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
+@@ -198,7 +198,8 @@ public class AgentRollupDao implements AgentRollupRepository {
+         return agentRollupIds;
+     }
+ 
+-    ResultSetFuture updateLastCaptureTime(String agentId, long captureTime) throws Exception {
++    ListenableFuture<ResultSet> updateLastCaptureTime(String agentId, long captureTime)
++            throws Exception {
+         BoundStatement boundStatement = insertLastCaptureTimePS.bind();
+         int i = 0;
+         boundStatement.setString(i++, agentId);
+diff --git a/central/src/main/java/org/glowroot/central/repo/AggregateDao.java b/central/src/main/java/org/glowroot/central/repo/AggregateDao.java
+index a535249ed..3faedea8a 100644
+--- a/central/src/main/java/org/glowroot/central/repo/AggregateDao.java
++++ b/central/src/main/java/org/glowroot/central/repo/AggregateDao.java
+@@ -24,6 +24,7 @@ import java.util.Map;
+ import java.util.Map.Entry;
+ import java.util.Set;
+ import java.util.UUID;
++import java.util.concurrent.Future;
+ import java.util.stream.Collectors;
+ 
+ import javax.annotation.Nullable;
+@@ -31,7 +32,6 @@ import javax.annotation.Nullable;
+ import com.datastax.driver.core.BoundStatement;
+ import com.datastax.driver.core.PreparedStatement;
+ import com.datastax.driver.core.ResultSet;
+-import com.datastax.driver.core.ResultSetFuture;
+ import com.datastax.driver.core.Row;
+ import com.datastax.driver.core.utils.UUIDs;
+ import com.google.common.base.Charsets;
+@@ -80,7 +80,6 @@ import org.glowroot.common.model.TransactionErrorSummaryCollector.ErrorSummarySo
+ import org.glowroot.common.model.TransactionSummaryCollector;
+ import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
+ import org.glowroot.common.repo.AggregateRepository;
+-import org.glowroot.common.repo.ConfigRepository;
+ import org.glowroot.common.repo.ConfigRepository.RollupConfig;
+ import org.glowroot.common.repo.MutableAggregate;
+ import org.glowroot.common.repo.MutableThreadStats;
+@@ -209,7 +208,7 @@ public class AggregateDao implements AggregateRepository {
+     private final AgentRollupDao agentRollupDao;
+     private final TransactionTypeDao transactionTypeDao;
+     private final FullQueryTextDao fullQueryTextDao;
+-    private final ConfigRepository configRepository;
++    private final ConfigRepositoryImpl configRepository;
+     private final Clock clock;
+ 
+     // list index is rollupLevel
+@@ -239,7 +238,7 @@ public class AggregateDao implements AggregateRepository {
+ 
+     AggregateDao(Session session, AgentRollupDao agentRollupDao,
+             TransactionTypeDao transactionTypeDao, FullQueryTextDao fullQueryTextDao,
+-            ConfigRepository configRepository, Clock clock) throws Exception {
++            ConfigRepositoryImpl configRepository, Clock clock) throws Exception {
+         this.session = session;
+         this.agentRollupDao = agentRollupDao;
+         this.transactionTypeDao = transactionTypeDao;
+@@ -249,7 +248,7 @@ public class AggregateDao implements AggregateRepository {
+ 
+         int count = configRepository.getRollupConfigs().size();
+         List<Integer> rollupExpirationHours =
+-                configRepository.getStorageConfig().rollupExpirationHours();
++                configRepository.getDefaultCentralStorageConfig().rollupExpirationHours();
+ 
+         allTables = ImmutableList.of(summaryTable, errorSummaryTable, overviewTable,
+                 histogramTable, throughputTable, queryTable, serviceCallTable,
+@@ -404,8 +403,8 @@ public class AggregateDao implements AggregateRepository {
+             return;
+         }
+         List<String> agentRollupIds = agentRollupDao.readAgentRollupIds(agentId);
+-        int adjustedTTL = getAdjustedTTL(getTTLs().get(0), captureTime, clock);
+-        List<ResultSetFuture> futures = Lists.newArrayList();
++        int adjustedTTL = getAdjustedTTL(getTTLs(agentId).get(0), captureTime, clock);
++        List<Future<?>> futures = Lists.newArrayList();
+         List<Aggregate.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
+         for (Aggregate.SharedQueryText sharedQueryText : initialSharedQueryTexts) {
+             String fullTextSha1 = sharedQueryText.getFullTextSha1();
+@@ -802,7 +801,7 @@ public class AggregateDao implements AggregateRepository {
+             timer = "rollup aggregates")
+     public void rollup(String agentRollupId, @Nullable String parentAgentRollupId, boolean leaf)
+             throws Exception {
+-        List<Integer> ttls = getTTLs();
++        List<Integer> ttls = getTTLs(agentRollupId);
+         if (!leaf) {
+             rollupFromChildren(agentRollupId, parentAgentRollupId, ttls.get(0));
+         }
+@@ -826,7 +825,7 @@ public class AggregateDao implements AggregateRepository {
+             int adjustedTTL = getAdjustedTTL(ttl, captureTime, clock);
+             int needsRollupAdjustedTTL = getNeedsRollupAdjustedTTL(adjustedTTL, rollupConfigs);
+             RollupParams rollupParams = getRollupParams(agentRollupId, rollupLevel, adjustedTTL);
+-            List<ResultSetFuture> futures = Lists.newArrayList();
++            List<Future<?>> futures = Lists.newArrayList();
+             for (Entry<String, Collection<String>> entry : needsRollupFromChildren.getKeys().asMap()
+                     .entrySet()) {
+                 String transactionType = entry.getKey();
+@@ -874,7 +873,7 @@ public class AggregateDao implements AggregateRepository {
+             RollupParams rollupParams = getRollupParams(agentRollupId, rollupLevel, adjustedTTL);
+             long from = captureTime - rollupIntervalMillis;
+             Set<String> transactionTypes = needsRollup.getKeys();
+-            List<ResultSetFuture> futures = Lists.newArrayList();
++            List<Future<?>> futures = Lists.newArrayList();
+             for (String transactionType : transactionTypes) {
+                 futures.addAll(rollupOne(rollupParams, transactionType, from, captureTime));
+             }
+@@ -900,7 +899,7 @@ public class AggregateDao implements AggregateRepository {
+         }
+     }
+ 
+-    private List<ResultSetFuture> rollupOneFromChildren(RollupParams rollup, String transactionType,
++    private List<Future<?>> rollupOneFromChildren(RollupParams rollup, String transactionType,
+             Collection<String> childAgentRollups, long captureTime) throws Exception {
+ 
+         ImmutableTransactionQuery query = ImmutableTransactionQuery.builder()
+@@ -909,7 +908,7 @@ public class AggregateDao implements AggregateRepository {
+                 .to(captureTime)
+                 .rollupLevel(rollup.rollupLevel()) // rolling up from same level (which is always 0)
+                 .build();
+-        List<ResultSetFuture> futures = Lists.newArrayList();
++        List<Future<?>> futures = Lists.newArrayList();
+ 
+         futures.addAll(rollupOverallSummaryFromChildren(rollup, query, childAgentRollups));
+         futures.addAll(rollupErrorSummaryFromChildren(rollup, query, childAgentRollups));
+@@ -930,7 +929,7 @@ public class AggregateDao implements AggregateRepository {
+         return futures;
+     }
+ 
+-    private List<ResultSetFuture> rollupOne(RollupParams rollup, String transactionType, long from,
++    private List<Future<?>> rollupOne(RollupParams rollup, String transactionType, long from,
+             long to) throws Exception {
+ 
+         ImmutableTransactionQuery query = ImmutableTransactionQuery.builder()
+@@ -939,7 +938,7 @@ public class AggregateDao implements AggregateRepository {
+                 .to(to)
+                 .rollupLevel(rollup.rollupLevel() - 1)
+                 .build();
+-        List<ResultSetFuture> futures = Lists.newArrayList();
++        List<Future<?>> futures = Lists.newArrayList();
+ 
+         futures.addAll(rollupOverallSummary(rollup, query));
+         futures.addAll(rollupErrorSummary(rollup, query));
+@@ -958,9 +957,9 @@ public class AggregateDao implements AggregateRepository {
+         return futures;
+     }
+ 
+-    private List<ResultSetFuture> rollupOtherParts(RollupParams rollup, TransactionQuery query,
++    private List<Future<?>> rollupOtherParts(RollupParams rollup, TransactionQuery query,
+             ScratchBuffer scratchBuffer) throws Exception {
+-        List<ResultSetFuture> futures = Lists.newArrayList();
++        List<Future<?>> futures = Lists.newArrayList();
+         futures.addAll(rollupOverview(rollup, query));
+         futures.addAll(rollupHistogram(rollup, query, scratchBuffer));
+         futures.addAll(rollupThroughput(rollup, query));
+@@ -971,11 +970,11 @@ public class AggregateDao implements AggregateRepository {
+         return futures;
+     }
+ 
+-    private List<ResultSetFuture> rollupOtherPartsFromChildren(RollupParams rollup,
++    private List<Future<?>> rollupOtherPartsFromChildren(RollupParams rollup,
+             TransactionQuery query, Collection<String> childAgentRollups,
+             ScratchBuffer scratchBuffer)
+             throws Exception {
+-        List<ResultSetFuture> futures = Lists.newArrayList();
++        List<Future<?>> futures = Lists.newArrayList();
+         futures.addAll(rollupOverviewFromChildren(rollup, query, childAgentRollups));
+         futures.addAll(
+                 rollupHistogramFromChildren(rollup, query, childAgentRollups, scratchBuffer));
+@@ -989,8 +988,8 @@ public class AggregateDao implements AggregateRepository {
+         return futures;
+     }
+ 
+-    private List<ResultSetFuture> rollupOverallSummary(RollupParams rollup,
+-            TransactionQuery query) throws Exception {
++    private List<Future<?>> rollupOverallSummary(RollupParams rollup, TransactionQuery query)
++            throws Exception {
+         ResultSet results = executeQueryForRollup(rollup.agentRollupId(), query, summaryTable);
+         if (results.isExhausted()) {
+             // this is unexpected since TTL for "needs rollup" records is shorter than TTL for data
+@@ -1001,7 +1000,7 @@ public class AggregateDao implements AggregateRepository {
+         return rollupOverallSummaryFromRows(rollup, query, results);
+     }
+ 
+-    private List<ResultSetFuture> rollupOverallSummaryFromChildren(RollupParams rollup,
++    private List<Future<?>> rollupOverallSummaryFromChildren(RollupParams rollup,
+             TransactionQuery query, Collection<String> childAgentRollups) throws Exception {
+         List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, summaryTable);
+         if (rows.isEmpty()) {
+@@ -1013,7 +1012,7 @@ public class AggregateDao implements AggregateRepository {
+         return rollupOverallSummaryFromRows(rollup, query, rows);
+     }
+ 
+-    private List<ResultSetFuture> rollupOverallSummaryFromRows(RollupParams rollup,
++    private List<Future<?>> rollupOverallSummaryFromRows(RollupParams rollup,
+             TransactionQuery query, Iterable<Row> rows) throws Exception {
+         double totalDurationNanos = 0;
+         long transactionCount = 0;
+@@ -1033,7 +1032,7 @@ public class AggregateDao implements AggregateRepository {
+         return ImmutableList.of(session.executeAsync(boundStatement));
+     }
+ 
+-    private List<ResultSetFuture> rollupErrorSummary(RollupParams rollup, TransactionQuery query)
++    private List<Future<?>> rollupErrorSummary(RollupParams rollup, TransactionQuery query)
+             throws Exception {
+         ResultSet results = executeQueryForRollup(rollup.agentRollupId(), query, errorSummaryTable);
+         if (results.isExhausted()) {
+@@ -1042,7 +1041,7 @@ public class AggregateDao implements AggregateRepository {
+         return rollupErrorSummaryFromRows(rollup, query, results);
+     }
+ 
+-    private List<ResultSetFuture> rollupErrorSummaryFromChildren(RollupParams rollup,
++    private List<Future<?>> rollupErrorSummaryFromChildren(RollupParams rollup,
+             TransactionQuery query, Collection<String> childAgentRollups) throws Exception {
+         List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, errorSummaryTable);
+         if (rows.isEmpty()) {
+@@ -1051,8 +1050,8 @@ public class AggregateDao implements AggregateRepository {
+         return rollupErrorSummaryFromRows(rollup, query, rows);
+     }
+ 
+-    private List<ResultSetFuture> rollupErrorSummaryFromRows(RollupParams rollup,
+-            TransactionQuery query, Iterable<Row> rows) throws Exception {
++    private List<Future<?>> rollupErrorSummaryFromRows(RollupParams rollup, TransactionQuery query,
++            Iterable<Row> rows) throws Exception {
+         long errorCount = 0;
+         long transactionCount = 0;
+         for (Row row : rows) {
+@@ -1072,8 +1071,8 @@ public class AggregateDao implements AggregateRepository {
+     }
+ 
+     // transactionNames is passed in empty, and populated by method
+-    private List<ResultSetFuture> rollupTransactionSummary(RollupParams rollup,
+-            TransactionQuery query, List<String> transactionNames) throws Exception {
++    private List<Future<?>> rollupTransactionSummary(RollupParams rollup, TransactionQuery query,
++            List<String> transactionNames) throws Exception {
+         BoundStatement boundStatement = checkNotNull(readTransactionForRollupPS.get(summaryTable))
+                 .get(query.rollupLevel()).bind();
+         bindQuery(boundStatement, rollup.agentRollupId(), query);
+@@ -1088,7 +1087,7 @@ public class AggregateDao implements AggregateRepository {
+     }
+ 
+     // transactionNames is passed in empty, and populated by method
+-    private List<ResultSetFuture> rollupTransactionSummaryFromChildren(RollupParams rollup,
++    private List<Future<?>> rollupTransactionSummaryFromChildren(RollupParams rollup,
+             TransactionQuery query, Collection<String> childAgentRollups,
+             List<String> transactionNames) throws Exception {
+         List<Row> rows =
+@@ -1103,7 +1102,7 @@ public class AggregateDao implements AggregateRepository {
+     }
+ 
+     // transactionNames is passed in empty, and populated by method
+-    private List<ResultSetFuture> rollupTransactionSummaryFromRows(RollupParams rollup,
++    private List<Future<?>> rollupTransactionSummaryFromRows(RollupParams rollup,
+             TransactionQuery query, Iterable<Row> rows, List<String> transactionNames)
+             throws Exception {
+         BoundStatement boundStatement;
+@@ -1119,7 +1118,7 @@ public class AggregateDao implements AggregateRepository {
+             summary.totalDurationNanos += row.getDouble(i++);
+             summary.transactionCount += row.getLong(i++);
+         }
+-        List<ResultSetFuture> futures = Lists.newArrayList();
++        List<Future<?>> futures = Lists.newArrayList();
+         PreparedStatement preparedStatement =
+                 getInsertTransactionPS(summaryTable, rollup.rollupLevel());
+         for (Entry<String, MutableSummary> entry : summaries.entrySet()) {
+@@ -1139,7 +1138,7 @@ public class AggregateDao implements AggregateRepository {
+         return futures;
+     }
+ 
+-    private List<ResultSetFuture> rollupTransactionErrorSummary(RollupParams rollup,
++    private List<Future<?>> rollupTransactionErrorSummary(RollupParams rollup,
+             TransactionQuery query) throws Exception {
+         BoundStatement boundStatement =
+                 checkNotNull(readTransactionForRollupPS.get(errorSummaryTable))
+@@ -1153,7 +1152,7 @@ public class AggregateDao implements AggregateRepository {
+     }
+ 
+     // transactionNames is passed in empty, and populated by method
+-    private List<ResultSetFuture> rollupTransactionErrorSummaryFromChildren(RollupParams rollup,
++    private List<Future<?>> rollupTransactionErrorSummaryFromChildren(RollupParams rollup,
+             TransactionQuery query, Collection<String> childAgentRollups) throws Exception {
+         List<Row> rows =
+                 getRowsForSummaryRollupFromChildren(query, childAgentRollups, errorSummaryTable);
+@@ -1163,7 +1162,7 @@ public class AggregateDao implements AggregateRepository {
+         return rollupTransactionErrorSummaryFromRows(rollup, query, rows);
+     }
+ 
+-    private List<ResultSetFuture> rollupTransactionErrorSummaryFromRows(RollupParams rollup,
++    private List<Future<?>> rollupTransactionErrorSummaryFromRows(RollupParams rollup,
+             TransactionQuery query, Iterable<Row> rows) throws Exception {
+         BoundStatement boundStatement;
+         Map<String, MutableErrorSummary> summaries = Maps.newHashMap();
+@@ -1180,7 +1179,7 @@ public class AggregateDao implements AggregateRepository {
+         }
+         PreparedStatement preparedStatement =
+                 getInsertTransactionPS(errorSummaryTable, rollup.rollupLevel());
+-        List<ResultSetFuture> futures = Lists.newArrayList();
++        List<Future<?>> futures = Lists.newArrayList();
+         for (Entry<String, MutableErrorSummary> entry : summaries.entrySet()) {
+             MutableErrorSummary summary = entry.getValue();
+             boundStatement = preparedStatement.bind();
+@@ -1197,7 +1196,7 @@ public class AggregateDao implements AggregateRepository {
+         return futures;
+     }
+ 
+-    private List<ResultSetFuture> rollupOverview(RollupParams rollup, TransactionQuery query)
++    private List<Future<?>> rollupOverview(RollupParams rollup, TransactionQuery query)
+             throws Exception {
+         ResultSet results = executeQueryForRollup(rollup.agentRollupId(), query, overviewTable);
+         if (results.isExhausted()) {
+@@ -1209,8 +1208,8 @@ public class AggregateDao implements AggregateRepository {
+         return rollupOverviewFromRows(rollup, query, results);
+     }
+ 
+-    private List<ResultSetFuture> rollupOverviewFromChildren(RollupParams rollup,
+-            TransactionQuery query, Collection<String> childAgentRollups) throws Exception {
++    private List<Future<?>> rollupOverviewFromChildren(RollupParams rollup, TransactionQuery query,
++            Collection<String> childAgentRollups) throws Exception {
+         List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, overviewTable);
+         if (rows.isEmpty()) {
+             // this is unexpected since TTL for "needs rollup" records is shorter than TTL for data
+@@ -1221,8 +1220,8 @@ public class AggregateDao implements AggregateRepository {
+         return rollupOverviewFromRows(rollup, query, rows);
+     }
+ 
+-    private List<ResultSetFuture> rollupOverviewFromRows(RollupParams rollup,
+-            TransactionQuery query, Iterable<Row> rows) throws Exception {
++    private List<Future<?>> rollupOverviewFromRows(RollupParams rollup, TransactionQuery query,
++            Iterable<Row> rows) throws Exception {
+         double totalDurationNanos = 0;
+         long transactionCount = 0;
+         boolean asyncTransactions = false;
+@@ -1290,7 +1289,7 @@ public class AggregateDao implements AggregateRepository {
+         return ImmutableList.of(session.executeAsync(boundStatement));
+     }
+ 
+-    private List<ResultSetFuture> rollupHistogram(RollupParams rollup, TransactionQuery query,
++    private List<Future<?>> rollupHistogram(RollupParams rollup, TransactionQuery query,
+             ScratchBuffer scratchBuffer) throws Exception {
+         ResultSet results = executeQueryForRollup(rollup.agentRollupId(), query, histogramTable);
+         if (results.isExhausted()) {
+@@ -1302,10 +1301,8 @@ public class AggregateDao implements AggregateRepository {
+         return rollupHistogramFromRows(rollup, query, results, scratchBuffer);
+     }
+ 
+-    private List<ResultSetFuture> rollupHistogramFromChildren(RollupParams rollup,
+-            TransactionQuery query, Collection<String> childAgentRollups,
+-            ScratchBuffer scratchBuffer)
+-            throws Exception {
++    private List<Future<?>> rollupHistogramFromChildren(RollupParams rollup, TransactionQuery query,
++            Collection<String> childAgentRollups, ScratchBuffer scratchBuffer) throws Exception {
+         List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, histogramTable);
+         if (rows.isEmpty()) {
+             // this is unexpected since TTL for "needs rollup" records is shorter than TTL for data
+@@ -1316,9 +1313,8 @@ public class AggregateDao implements AggregateRepository {
+         return rollupHistogramFromRows(rollup, query, rows, scratchBuffer);
+     }
+ 
+-    private List<ResultSetFuture> rollupHistogramFromRows(RollupParams rollup,
+-            TransactionQuery query, Iterable<Row> rows, ScratchBuffer scratchBuffer)
+-            throws Exception {
++    private List<Future<?>> rollupHistogramFromRows(RollupParams rollup, TransactionQuery query,
++            Iterable<Row> rows, ScratchBuffer scratchBuffer) throws Exception {
+         double totalDurationNanos = 0;
+         long transactionCount = 0;
+         LazyHistogram durationNanosHistogram = new LazyHistogram();
+@@ -1349,7 +1345,7 @@ public class AggregateDao implements AggregateRepository {
+         return ImmutableList.of(session.executeAsync(boundStatement));
+     }
+ 
+-    private List<ResultSetFuture> rollupThroughput(RollupParams rollup, TransactionQuery query)
++    private List<Future<?>> rollupThroughput(RollupParams rollup, TransactionQuery query)
+             throws Exception {
+         ResultSet results = executeQueryForRollup(rollup.agentRollupId(), query, throughputTable);
+         if (results.isExhausted()) {
+@@ -1361,7 +1357,7 @@ public class AggregateDao implements AggregateRepository {
+         return rollupThroughputFromRows(rollup, query, results);
+     }
+ 
+-    private List<ResultSetFuture> rollupThroughputFromChildren(RollupParams rollup,
++    private List<Future<?>> rollupThroughputFromChildren(RollupParams rollup,
+             TransactionQuery query, Collection<String> childAgentRollups) throws Exception {
+         List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, throughputTable);
+         if (rows.isEmpty()) {
+@@ -1373,8 +1369,8 @@ public class AggregateDao implements AggregateRepository {
+         return rollupThroughputFromRows(rollup, query, rows);
+     }
+ 
+-    private List<ResultSetFuture> rollupThroughputFromRows(RollupParams rollup,
+-            TransactionQuery query, Iterable<Row> rows) throws Exception {
++    private List<Future<?>> rollupThroughputFromRows(RollupParams rollup, TransactionQuery query,
++            Iterable<Row> rows) throws Exception {
+         long transactionCount = 0;
+         // error_count is null for data inserted prior to glowroot central 0.9.18
+         // rolling up any interval with null error_count should result in null error_count
+@@ -1411,7 +1407,7 @@ public class AggregateDao implements AggregateRepository {
+         return ImmutableList.of(session.executeAsync(boundStatement));
+     }
+ 
+-    private List<ResultSetFuture> rollupQueries(RollupParams rollup, TransactionQuery query)
++    private List<Future<?>> rollupQueries(RollupParams rollup, TransactionQuery query)
+             throws Exception {
+         ResultSet results = executeQueryForRollup(rollup.agentRollupId(), query, queryTable);
+         if (results.isExhausted()) {
+@@ -1420,7 +1416,7 @@ public class AggregateDao implements AggregateRepository {
+         return rollupQueriesFromRows(rollup, query, results, false);
+     }
+ 
+-    private List<ResultSetFuture> rollupQueriesFromChildren(RollupParams rollup,
++    private List<Future<?>> rollupQueriesFromChildren(RollupParams rollup,
+             TransactionQuery query, Collection<String> childAgentRollups) throws Exception {
+         List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, queryTable);
+         if (rows.isEmpty()) {
+@@ -1429,7 +1425,7 @@ public class AggregateDao implements AggregateRepository {
+         return rollupQueriesFromRows(rollup, query, rows, true);
+     }
+ 
+-    private List<ResultSetFuture> rollupQueriesFromRows(RollupParams rollup, TransactionQuery query,
++    private List<Future<?>> rollupQueriesFromRows(RollupParams rollup, TransactionQuery query,
+             Iterable<Row> rows, boolean rollupFromChildren) throws Exception {
+         QueryCollector collector = new QueryCollector(rollup.maxAggregateQueriesPerType());
+         for (Row row : rows) {
+@@ -1450,7 +1446,7 @@ public class AggregateDao implements AggregateRepository {
+                 query.to(), rollup.adjustedTTL(), rollupFromChildren);
+     }
+ 
+-    private List<ResultSetFuture> rollupServiceCalls(RollupParams rollup, TransactionQuery query)
++    private List<Future<?>> rollupServiceCalls(RollupParams rollup, TransactionQuery query)
+             throws Exception {
+         ResultSet results = executeQueryForRollup(rollup.agentRollupId(), query, serviceCallTable);
+         if (results.isExhausted()) {
+@@ -1459,7 +1455,7 @@ public class AggregateDao implements AggregateRepository {
+         return rollupServiceCallsFromRows(rollup, query, results);
+     }
+ 
+-    private List<ResultSetFuture> rollupServiceCallsFromChildren(RollupParams rollup,
++    private List<Future<?>> rollupServiceCallsFromChildren(RollupParams rollup,
+             TransactionQuery query, Collection<String> childAgentRollups) throws Exception {
+         List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, serviceCallTable);
+         if (rows.isEmpty()) {
+@@ -1468,8 +1464,8 @@ public class AggregateDao implements AggregateRepository {
+         return rollupServiceCallsFromRows(rollup, query, rows);
+     }
+ 
+-    private List<ResultSetFuture> rollupServiceCallsFromRows(RollupParams rollup,
+-            TransactionQuery query, Iterable<Row> rows) throws Exception {
++    private List<Future<?>> rollupServiceCallsFromRows(RollupParams rollup, TransactionQuery query,
++            Iterable<Row> rows) throws Exception {
+         ServiceCallCollector collector =
+                 new ServiceCallCollector(rollup.maxAggregateServiceCallsPerType(), 0);
+         for (Row row : rows) {
+@@ -1485,7 +1481,7 @@ public class AggregateDao implements AggregateRepository {
+                 query.transactionType(), query.transactionName(), query.to(), rollup.adjustedTTL());
+     }
+ 
+-    private List<ResultSetFuture> rollupThreadProfile(RollupParams rollup, TransactionQuery query,
++    private List<Future<?>> rollupThreadProfile(RollupParams rollup, TransactionQuery query,
+             Table table) throws Exception {
+         ResultSet results = executeQueryForRollup(rollup.agentRollupId(), query, table);
+         if (results.isExhausted()) {
+@@ -1494,7 +1490,7 @@ public class AggregateDao implements AggregateRepository {
+         return rollupThreadProfileFromRows(rollup, query, results, table);
+     }
+ 
+-    private List<ResultSetFuture> rollupThreadProfileFromChildren(RollupParams rollup,
++    private List<Future<?>> rollupThreadProfileFromChildren(RollupParams rollup,
+             TransactionQuery query, Collection<String> childAgentRollups, Table table)
+             throws Exception {
+         List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, table);
+@@ -1504,9 +1500,8 @@ public class AggregateDao implements AggregateRepository {
+         return rollupThreadProfileFromRows(rollup, query, rows, table);
+     }
+ 
+-    private List<ResultSetFuture> rollupThreadProfileFromRows(RollupParams rollup,
+-            TransactionQuery query, Iterable<Row> rows, Table table)
+-            throws Exception {
++    private List<Future<?>> rollupThreadProfileFromRows(RollupParams rollup,
++            TransactionQuery query, Iterable<Row> rows, Table table) throws Exception {
+         MutableProfile profile = new MutableProfile();
+         for (Row row : rows) {
+             ByteBuffer bytes = checkNotNull(row.getBytes(0));
+@@ -1553,13 +1548,13 @@ public class AggregateDao implements AggregateRepository {
+         return rows;
+     }
+ 
+-    private List<ResultSetFuture> storeOverallAggregate(String agentRollupId,
+-            String transactionType, long captureTime, Aggregate aggregate,
+-            List<Aggregate.SharedQueryText> sharedQueryTexts, int adjustedTTL) throws Exception {
++    private List<Future<?>> storeOverallAggregate(String agentRollupId, String transactionType,
++            long captureTime, Aggregate aggregate, List<Aggregate.SharedQueryText> sharedQueryTexts,
++            int adjustedTTL) throws Exception {
+ 
+         final int rollupLevel = 0;
+ 
+-        List<ResultSetFuture> futures = Lists.newArrayList();
++        List<Future<?>> futures = Lists.newArrayList();
+         BoundStatement boundStatement = getInsertOverallPS(summaryTable, rollupLevel).bind();
+         int i = 0;
+         boundStatement.setString(i++, agentRollupId);
+@@ -1640,13 +1635,13 @@ public class AggregateDao implements AggregateRepository {
+         return futures;
+     }
+ 
+-    private List<ResultSetFuture> storeTransactionAggregate(String agentRollupId,
+-            String transactionType, String transactionName, long captureTime, Aggregate aggregate,
++    private List<Future<?>> storeTransactionAggregate(String agentRollupId, String transactionType,
++            String transactionName, long captureTime, Aggregate aggregate,
+             List<Aggregate.SharedQueryText> sharedQueryTexts, int adjustedTTL) throws Exception {
+ 
+         final int rollupLevel = 0;
+ 
+-        List<ResultSetFuture> futures = Lists.newArrayList();
++        List<Future<?>> futures = Lists.newArrayList();
+         BoundStatement boundStatement = getInsertTransactionPS(overviewTable, rollupLevel).bind();
+         int i = 0;
+         boundStatement.setString(i++, agentRollupId);
+@@ -1711,13 +1706,13 @@ public class AggregateDao implements AggregateRepository {
+         return futures;
+     }
+ 
+-    private List<ResultSetFuture> storeTransactionSummary(String agentRollupId,
+-            String transactionType, String transactionName, long captureTime, Aggregate aggregate,
+-            int adjustedTTL) throws Exception {
++    private List<Future<?>> storeTransactionSummary(String agentRollupId, String transactionType,
++            String transactionName, long captureTime, Aggregate aggregate, int adjustedTTL)
++            throws Exception {
+ 
+         final int rollupLevel = 0;
+ 
+-        List<ResultSetFuture> futures = Lists.newArrayList();
++        List<Future<?>> futures = Lists.newArrayList();
+         BoundStatement boundStatement = getInsertTransactionPS(summaryTable, rollupLevel).bind();
+         int i = 0;
+         boundStatement.setString(i++, agentRollupId);
+@@ -1744,11 +1739,11 @@ public class AggregateDao implements AggregateRepository {
+         return futures;
+     }
+ 
+-    private List<ResultSetFuture> insertQueries(List<Aggregate.QueriesByType> queriesByTypeList,
++    private List<Future<?>> insertQueries(List<Aggregate.QueriesByType> queriesByTypeList,
+             List<Aggregate.SharedQueryText> sharedQueryTexts, int rollupLevel, String agentRollupId,
+             String transactionType, @Nullable String transactionName, long captureTime,
+             int adjustedTTL) throws Exception {
+-        List<ResultSetFuture> futures = Lists.newArrayList();
++        List<Future<?>> futures = Lists.newArrayList();
+         for (Aggregate.QueriesByType queriesByType : queriesByTypeList) {
+             for (Aggregate.Query query : queriesByType.getQueryList()) {
+                 Aggregate.SharedQueryText sharedQueryText =
+@@ -1790,11 +1785,10 @@ public class AggregateDao implements AggregateRepository {
+         return futures;
+     }
+ 
+-    private List<ResultSetFuture> insertQueries(Map<String, List<MutableQuery>> map,
+-            int rollupLevel, String agentRollupId, String transactionType,
+-            @Nullable String transactionName, long captureTime, int adjustedTTL,
+-            boolean rollupFromChildren) throws Exception {
+-        List<ResultSetFuture> futures = Lists.newArrayList();
++    private List<Future<?>> insertQueries(Map<String, List<MutableQuery>> map, int rollupLevel,
++            String agentRollupId, String transactionType, @Nullable String transactionName,
++            long captureTime, int adjustedTTL, boolean rollupFromChildren) throws Exception {
++        List<Future<?>> futures = Lists.newArrayList();
+         for (Entry<String, List<MutableQuery>> entry : map.entrySet()) {
+             for (MutableQuery query : entry.getValue()) {
+                 BoundStatement boundStatement;
+@@ -1832,11 +1826,11 @@ public class AggregateDao implements AggregateRepository {
+         return futures;
+     }
+ 
+-    private List<ResultSetFuture> insertServiceCalls(
++    private List<Future<?>> insertServiceCalls(
+             List<Aggregate.ServiceCallsByType> serviceCallsByTypeList, int rollupLevel,
+             String agentRollupId, String transactionType, @Nullable String transactionName,
+             long captureTime, int adjustedTTL) throws Exception {
+-        List<ResultSetFuture> futures = Lists.newArrayList();
++        List<Future<?>> futures = Lists.newArrayList();
+         for (Aggregate.ServiceCallsByType serviceCallsByType : serviceCallsByTypeList) {
+             for (Aggregate.ServiceCall serviceCall : serviceCallsByType.getServiceCallList()) {
+                 BoundStatement boundStatement;
+@@ -2001,10 +1995,10 @@ public class AggregateDao implements AggregateRepository {
+         }
+     }
+ 
+-    private List<Integer> getTTLs() throws Exception {
++    private List<Integer> getTTLs(String agentRollupId) throws Exception {
+         List<Integer> ttls = Lists.newArrayList();
+         List<Integer> rollupExpirationHours =
+-                configRepository.getStorageConfig().rollupExpirationHours();
++                configRepository.getStorageConfig(agentRollupId).rollupExpirationHours();
+         for (long expirationHours : rollupExpirationHours) {
+             ttls.add(Ints.saturatedCast(HOURS.toSeconds(expirationHours)));
+         }
+@@ -2149,7 +2143,7 @@ public class AggregateDao implements AggregateRepository {
+             // intentionally not async, see method-level comment
+             session.execute(boundStatement);
+         }
+-        List<ResultSetFuture> futures = Lists.newArrayList();
++        List<Future<?>> futures = Lists.newArrayList();
+         for (UUID uniqueness : uniquenessKeysForDeletion) {
+             BoundStatement boundStatement = deleteNeedsRollup.bind();
+             int i = 0;
+diff --git a/central/src/main/java/org/glowroot/central/repo/CentralRepoModule.java b/central/src/main/java/org/glowroot/central/repo/CentralRepoModule.java
+index cd80de78a..4308cddb0 100644
+--- a/central/src/main/java/org/glowroot/central/repo/CentralRepoModule.java
++++ b/central/src/main/java/org/glowroot/central/repo/CentralRepoModule.java
+@@ -49,13 +49,15 @@ public class CentralRepoModule {
+     public CentralRepoModule(ClusterManager clusterManager, Session session,
+             KeyspaceMetadata keyspaceMetadata, String cassandraSymmetricEncryptionKey, Clock clock)
+             throws Exception {
++        AdditionalStorageConfigDao additionalStorageConfigDao =
++                new AdditionalStorageConfigDao(session, clusterManager);
+         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
+         agentConfigDao = new AgentConfigDao(session, clusterManager);
+         agentRollupDao = new AgentRollupDao(session, agentConfigDao, clusterManager);
+         userDao = new UserDao(session, keyspaceMetadata, clusterManager);
+         roleDao = new RoleDao(session, keyspaceMetadata, clusterManager);
+-        configRepository = new ConfigRepositoryImpl(centralConfigDao, agentConfigDao,
+-                agentRollupDao, userDao, roleDao, cassandraSymmetricEncryptionKey);
++        configRepository = new ConfigRepositoryImpl(additionalStorageConfigDao, centralConfigDao,
++                agentConfigDao, agentRollupDao, userDao, roleDao, cassandraSymmetricEncryptionKey);
+         transactionTypeDao = new TransactionTypeDao(session, configRepository, clusterManager);
+         FullQueryTextDao fullQueryTextDao = new FullQueryTextDao(session, configRepository);
+         aggregateDao = new AggregateDao(session, agentRollupDao, transactionTypeDao,
+diff --git a/central/src/main/java/org/glowroot/central/repo/ConfigRepositoryImpl.java b/central/src/main/java/org/glowroot/central/repo/ConfigRepositoryImpl.java
+index 2d72b499b..c32f52d27 100644
+--- a/central/src/main/java/org/glowroot/central/repo/ConfigRepositoryImpl.java
++++ b/central/src/main/java/org/glowroot/central/repo/ConfigRepositoryImpl.java
+@@ -42,7 +42,6 @@ import org.glowroot.common.config.HealthchecksIoConfig;
+ import org.glowroot.common.config.HttpProxyConfig;
+ import org.glowroot.common.config.ImmutableCentralStorageConfig;
+ import org.glowroot.common.config.ImmutableCentralWebConfig;
+-import org.glowroot.common.config.ImmutableEmbeddedStorageConfig;
+ import org.glowroot.common.config.ImmutableHttpProxyConfig;
+ import org.glowroot.common.config.ImmutableLdapConfig;
+ import org.glowroot.common.config.ImmutablePagerDutyConfig;
+@@ -81,6 +80,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
+     private static final long GAUGE_COLLECTION_INTERVAL_MILLIS =
+             Long.getLong("glowroot.internal.gaugeCollectionIntervalMillis", 5000);
+ 
++    private final AdditionalStorageConfigDao additionalStorageConfigDao;
+     private final CentralConfigDao centralConfigDao;
+     private final AgentConfigDao agentConfigDao;
+     private final AgentRollupDao agentRollupDao;
+@@ -93,9 +93,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
+ 
+     private final Set<AgentConfigListener> agentConfigListeners = Sets.newCopyOnWriteArraySet();
+ 
+-    ConfigRepositoryImpl(CentralConfigDao centralConfigDao, AgentConfigDao agentConfigDao,
++    ConfigRepositoryImpl(AdditionalStorageConfigDao additionalStorageConfigDao,
++            CentralConfigDao centralConfigDao, AgentConfigDao agentConfigDao,
+             AgentRollupDao agentRollupDao, UserDao userDao, RoleDao roleDao,
+             String symmetricEncryptionKey) {
++        this.additionalStorageConfigDao = additionalStorageConfigDao;
+         this.centralConfigDao = centralConfigDao;
+         this.agentConfigDao = agentConfigDao;
+         this.agentRollupDao = agentRollupDao;
+@@ -337,8 +339,9 @@ public class ConfigRepositoryImpl implements ConfigRepository {
+     }
+ 
+     @Override
+-    public StorageConfig getStorageConfig() throws Exception {
+-        return getCentralStorageConfig();
++    public StorageConfig getStorageConfig(String agentRollupId) throws Exception {
++        // FIXME
++        return getDefaultCentralStorageConfig();
+     }
+ 
+     @Override
+@@ -347,18 +350,20 @@ public class ConfigRepositoryImpl implements ConfigRepository {
+     }
+ 
+     @Override
+-    public CentralStorageConfig getCentralStorageConfig() throws Exception {
++    public CentralStorageConfig getDefaultCentralStorageConfig() throws Exception {
+         CentralStorageConfig config = (CentralStorageConfig) centralConfigDao.read(STORAGE_KEY);
+         if (config == null) {
+-            return ImmutableCentralStorageConfig.builder().build();
+-        }
+-        if (config.hasListIssues()) {
+-            return withCorrectedLists(config);
++            return ImmutableCentralStorageConfig.builder().id("").build();
+         }
+         return config;
+     }
+ 
+     @Override
++    public List<CentralStorageConfig> getAdditionalCentralStorageConfigs() throws Exception {
++        return additionalStorageConfigDao.read();
++    }
++
++    @Override
+     public SmtpConfig getSmtpConfig() throws Exception {
+         SmtpConfig config = (SmtpConfig) centralConfigDao.read(SMTP_KEY);
+         if (config == null) {
+@@ -999,12 +1004,35 @@ public class ConfigRepositoryImpl implements ConfigRepository {
+     }
+ 
+     @Override
+-    public void updateCentralStorageConfig(CentralStorageConfig config, String priorVersion)
++    public void updateDefaultCentralStorageConfig(CentralStorageConfig config, String priorVersion)
+             throws Exception {
+         centralConfigDao.write(STORAGE_KEY, config, priorVersion);
+     }
+ 
+     @Override
++    public void insertAdditionalCentralStorageConfig(CentralStorageConfig config) throws Exception {
++        additionalStorageConfigDao.insertIfNotExists(config);
++    }
++
++    @Override
++    public void updateAdditionalCentralStorageConfig(CentralStorageConfig config,
++            String priorVersion) throws Exception {
++        CentralStorageConfig existingConfig = additionalStorageConfigDao.read(config.id());
++        if (existingConfig == null) {
++            throw new StorageConfigNotFoundException();
++        }
++        if (!existingConfig.version().equals(priorVersion)) {
++            throw new OptimisticLockException();
++        }
++        additionalStorageConfigDao.insert(config);
++    }
++
++    @Override
++    public void deleteAdditionalCentralStorageConfig(String id) throws Exception {
++        additionalStorageConfigDao.delete(id);
++    }
++
++    @Override
+     public void updateSmtpConfig(SmtpConfig config, String priorVersion) throws Exception {
+         centralConfigDao.write(SMTP_KEY, config, priorVersion);
+     }
+@@ -1121,28 +1149,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
+         return left.getValCase() == right.getValCase();
+     }
+ 
+-    private static CentralStorageConfig withCorrectedLists(CentralStorageConfig config) {
+-        EmbeddedStorageConfig defaultConfig = ImmutableEmbeddedStorageConfig.builder().build();
+-        ImmutableList<Integer> rollupExpirationHours =
+-                fix(config.rollupExpirationHours(), defaultConfig.rollupExpirationHours());
+-        return ImmutableCentralStorageConfig.builder()
+-                .copyFrom(config)
+-                .rollupExpirationHours(rollupExpirationHours)
+-                .build();
+-    }
+-
+-    private static ImmutableList<Integer> fix(ImmutableList<Integer> thisList,
+-            List<Integer> defaultList) {
+-        if (thisList.size() >= defaultList.size()) {
+-            return thisList.subList(0, defaultList.size());
+-        }
+-        List<Integer> correctedList = Lists.newArrayList(thisList);
+-        for (int i = thisList.size(); i < defaultList.size(); i++) {
+-            correctedList.add(defaultList.get(i));
+-        }
+-        return ImmutableList.copyOf(correctedList);
+-    }
+-
+     public interface AgentConfigListener {
+ 
+         // the new config is not passed to onChange so that the receiver has to get the latest,
+diff --git a/central/src/main/java/org/glowroot/central/repo/FullQueryTextDao.java b/central/src/main/java/org/glowroot/central/repo/FullQueryTextDao.java
+index e1b5b1f02..ec45aefce 100644
+--- a/central/src/main/java/org/glowroot/central/repo/FullQueryTextDao.java
++++ b/central/src/main/java/org/glowroot/central/repo/FullQueryTextDao.java
+@@ -16,24 +16,28 @@
+ package org.glowroot.central.repo;
+ 
+ import java.util.List;
++import java.util.concurrent.CompletableFuture;
++import java.util.concurrent.Future;
+ 
+ import javax.annotation.Nullable;
+ 
+ import com.datastax.driver.core.BoundStatement;
+ import com.datastax.driver.core.PreparedStatement;
+ import com.datastax.driver.core.ResultSet;
+-import com.datastax.driver.core.ResultSetFuture;
+ import com.datastax.driver.core.Row;
+ import com.google.common.collect.ImmutableList;
+-import com.google.common.collect.Lists;
+ import com.google.common.primitives.Ints;
++import com.google.common.util.concurrent.FutureCallback;
++import com.google.common.util.concurrent.Futures;
++import com.google.common.util.concurrent.ListenableFuture;
++import com.google.common.util.concurrent.MoreExecutors;
+ import org.immutables.value.Value;
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
+ 
++import org.glowroot.central.util.MoreFutures;
+ import org.glowroot.central.util.RateLimiter;
+ import org.glowroot.central.util.Session;
+-import org.glowroot.common.repo.ConfigRepository;
+ import org.glowroot.common.repo.ConfigRepository.RollupConfig;
+ import org.glowroot.common.util.Styles;
+ 
+@@ -47,17 +51,18 @@ class FullQueryTextDao {
+     private static final Logger logger = LoggerFactory.getLogger(FullQueryTextDao.class);
+ 
+     private final Session session;
+-    private final ConfigRepository configRepository;
++    private final ConfigRepositoryImpl configRepository;
+ 
+     private final PreparedStatement insertCheckPS;
+     private final PreparedStatement readCheckPS;
+ 
+     private final PreparedStatement insertPS;
+     private final PreparedStatement readPS;
++    private final PreparedStatement readTtlPS;
+ 
+     private final RateLimiter<FullQueryTextKey> rateLimiter = new RateLimiter<>(10000);
+ 
+-    FullQueryTextDao(Session session, ConfigRepository configRepository) throws Exception {
++    FullQueryTextDao(Session session, ConfigRepositoryImpl configRepository) throws Exception {
+         this.session = session;
+         this.configRepository = configRepository;
+ 
+@@ -78,6 +83,8 @@ class FullQueryTextDao {
+                 + " full_query_text) values (?, ?) using ttl ?");
+         readPS = session.prepare(
+                 "select full_query_text from full_query_text where full_query_text_sha1 = ?");
++        readTtlPS = session.prepare(
++                "select TTL(full_query_text) from full_query_text where full_query_text_sha1 = ?");
+     }
+ 
+     @Nullable
+@@ -99,78 +106,165 @@ class FullQueryTextDao {
+         return row.getString(0);
+     }
+ 
+-    List<ResultSetFuture> store(String agentRollupId, String fullTextSha1, String fullText)
++    List<Future<?>> store(String agentRollupId, String fullTextSha1, String fullText)
+             throws Exception {
+         FullQueryTextKey rateLimiterKey = ImmutableFullQueryTextKey.of(agentRollupId, fullTextSha1);
+         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
+             return ImmutableList.of();
+         }
+-        return storeInternal(rateLimiterKey, fullText);
++        return ImmutableList.of(storeInternal(agentRollupId, rateLimiterKey, fullText));
+     }
+ 
+-    List<ResultSetFuture> updateTTL(String agentRollupId, String fullTextSha1) throws Exception {
++    List<Future<?>> updateTTL(String agentRollupId, String fullTextSha1) throws Exception {
+         FullQueryTextKey rateLimiterKey = ImmutableFullQueryTextKey.of(agentRollupId, fullTextSha1);
+         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
+             return ImmutableList.of();
+         }
+-        BoundStatement boundStatement = readPS.bind();
+-        boundStatement.setString(0, fullTextSha1);
+-        ResultSet results = session.execute(boundStatement);
+-        Row row = results.one();
+-        if (row == null) {
+-            // this shouldn't happen any more now that full query text insert futures are waited on
+-            // prior to inserting aggregate/trace records with sha1
+-            logger.warn("full query text record not found for sha1: {}", fullTextSha1);
+-            return ImmutableList.of();
++        ListenableFuture<ResultSet> future;
++        try {
++            BoundStatement boundStatement = readPS.bind();
++            boundStatement.setString(0, fullTextSha1);
++            future = session.executeAsync(boundStatement);
++        } catch (Exception e) {
++            rateLimiter.invalidate(rateLimiterKey);
++            throw e;
+         }
+-        String fullText = checkNotNull(row.getString(0));
+-        return storeInternal(rateLimiterKey, fullText);
++        CompletableFuture</*@Nullable*/ Void> chainedFuture = new CompletableFuture<>();
++        Futures.addCallback(future, new FutureCallback<ResultSet>() {
++            @Override
++            public void onSuccess(ResultSet results) {
++                Row row = results.one();
++                if (row == null) {
++                    // this shouldn't happen any more now that full query text insert futures are
++                    // waited on prior to inserting aggregate/trace records with sha1
++                    logger.warn("full query text record not found for sha1: {}", fullTextSha1);
++                    chainedFuture.complete(null);
++                    return;
++                }
++                String fullText = checkNotNull(row.getString(0));
++                try {
++                    CompletableFuture<?> future =
++                            storeInternal(agentRollupId, rateLimiterKey, fullText);
++                    future.whenComplete((result, t) -> {
++                        if (t != null) {
++                            chainedFuture.completeExceptionally(t);
++                        } else {
++                            chainedFuture.complete(null);
++                        }
++                    });
++                } catch (Exception e) {
++                    logger.debug(e.getMessage(), e);
++                    chainedFuture.completeExceptionally(e);
++                }
++            }
++            @Override
++            public void onFailure(Throwable t) {
++                logger.debug(t.getMessage(), t);
++                chainedFuture.completeExceptionally(t);
++            }
++        }, MoreExecutors.directExecutor());
++        CompletableFuture<?> chainedFuture2 = MoreFutures.onFailure(chainedFuture,
++                () -> rateLimiter.invalidate(rateLimiterKey));
++        return ImmutableList.of(chainedFuture2);
+     }
+ 
+-    List<ResultSetFuture> updateCheckTTL(String agentRollupId, String fullTextSha1)
+-            throws Exception {
++    List<Future<?>> updateCheckTTL(String agentRollupId, String fullTextSha1) throws Exception {
+         FullQueryTextKey rateLimiterKey = ImmutableFullQueryTextKey.of(agentRollupId, fullTextSha1);
+         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
+             return ImmutableList.of();
+         }
+-        List<ResultSetFuture> futures = Lists.newArrayList();
+-        storeCheckInternal(rateLimiterKey);
+-        return futures;
++        try {
++            ListenableFuture<?> future = storeCheckInternal(agentRollupId, rateLimiterKey);
++            CompletableFuture<?> chainedFuture =
++                    MoreFutures.onFailure(future, () -> rateLimiter.invalidate(rateLimiterKey));
++            return ImmutableList.of(chainedFuture);
++        } catch (Exception e) {
++            rateLimiter.invalidate(rateLimiterKey);
++            throw e;
++        }
+     }
+ 
+-    private List<ResultSetFuture> storeInternal(FullQueryTextKey rateLimiterKey, String fullText)
+-            throws Exception {
+-        List<ResultSetFuture> futures = Lists.newArrayList();
+-        futures.add(storeCheckInternal(rateLimiterKey));
+-        BoundStatement boundStatement = insertPS.bind();
+-        int i = 0;
+-        boundStatement.setString(i++, rateLimiterKey.fullTextSha1());
+-        boundStatement.setString(i++, fullText);
+-        boundStatement.setInt(i++, getTTL());
+-        futures.add(session.executeAsyncWithOnFailure(boundStatement,
+-                () -> rateLimiter.invalidate(rateLimiterKey)));
+-        return futures;
++    private CompletableFuture<?> storeInternal(String agentRollupId,
++            FullQueryTextKey rateLimiterKey, String fullText) throws Exception {
++        ListenableFuture<?> future = storeCheckInternal(agentRollupId, rateLimiterKey);
++        BoundStatement boundStatement = readTtlPS.bind();
++        boundStatement.setString(0, rateLimiterKey.fullTextSha1());
++        ListenableFuture<ResultSet> future2 = session.executeAsync(boundStatement);
++
++        CompletableFuture</*@Nullable*/ Void> chainedFuture = new CompletableFuture<>();
++
++        Futures.addCallback(future2, new FutureCallback<ResultSet>() {
++            @Override
++            public void onSuccess(ResultSet results) {
++                try {
++                    Row row = results.one();
++                    int ttl = getTTL(agentRollupId);
++                    if (row == null) {
++                        insertAndCompleteFuture(ttl);
++                    } else {
++                        int existingTTL = row.getInt(0);
++                        if (existingTTL < ttl && existingTTL != 0) {
++                            insertAndCompleteFuture(ttl);
++                        } else {
++                            chainedFuture.complete(null);
++                        }
++                    }
++                } catch (Exception e) {
++                    logger.debug(e.getMessage(), e);
++                    chainedFuture.completeExceptionally(e);
++                }
++            }
++            @Override
++            public void onFailure(Throwable t) {
++                logger.debug(t.getMessage(), t);
++                chainedFuture.completeExceptionally(t);
++            }
++            private void insertAndCompleteFuture(int ttl) throws Exception {
++                try {
++                    BoundStatement boundStatement = insertPS.bind();
++                    int i = 0;
++                    boundStatement.setString(i++, rateLimiterKey.fullTextSha1());
++                    boundStatement.setString(i++, fullText);
++                    boundStatement.setInt(i++, ttl);
++                    ListenableFuture<ResultSet> future = session.executeAsync(boundStatement);
++                    Futures.addCallback(future, new FutureCallback<ResultSet>() {
++                        @Override
++                        public void onSuccess(ResultSet results) {
++                            chainedFuture.complete(null);
++                        }
++                        @Override
++                        public void onFailure(Throwable t) {
++                            logger.debug(t.getMessage(), t);
++                            chainedFuture.completeExceptionally(t);
++                        }
++                    }, MoreExecutors.directExecutor());
++                } catch (Exception e) {
++                    logger.debug(e.getMessage(), e);
++                    chainedFuture.completeExceptionally(e);
++                }
++            }
++        }, MoreExecutors.directExecutor());
++        return CompletableFuture.allOf(MoreFutures.toCompletableFuture(future), chainedFuture);
+     }
+ 
+-    private ResultSetFuture storeCheckInternal(FullQueryTextKey rateLimiterKey) throws Exception {
++    private ListenableFuture<?> storeCheckInternal(String agentRollupId,
++            FullQueryTextKey rateLimiterKey) throws Exception {
+         BoundStatement boundStatement = insertCheckPS.bind();
+         int i = 0;
+         boundStatement.setString(i++, rateLimiterKey.agentRollupId());
+         boundStatement.setString(i++, rateLimiterKey.fullTextSha1());
+-        boundStatement.setInt(i++, getTTL());
+-        return session.executeAsyncWithOnFailure(boundStatement,
+-                () -> rateLimiter.invalidate(rateLimiterKey));
++        boundStatement.setInt(i++, getTTL(agentRollupId));
++        return session.executeAsync(boundStatement);
+     }
+ 
+-    private int getTTL() throws Exception {
++    private int getTTL(String agentRollupId) throws Exception {
+         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
+         RollupConfig lastRollupConfig = rollupConfigs.get(rollupConfigs.size() - 1);
+         // adding largest rollup time to account for query being retained longer by rollups
+         long ttl = MILLISECONDS.toSeconds(lastRollupConfig.intervalMillis())
+                 // adding 1 day to account for rateLimiter
+-                + DAYS.toSeconds(1)
+-                + HOURS.toSeconds(
+-                        configRepository.getStorageConfig().fullQueryTextExpirationHours());
++                + DAYS.toSeconds(1) + HOURS.toSeconds(configRepository
++                        .getStorageConfig(agentRollupId).fullQueryTextExpirationHours());
+         return Ints.saturatedCast(ttl);
+     }
+ 
+diff --git a/central/src/main/java/org/glowroot/central/repo/GaugeNameDao.java b/central/src/main/java/org/glowroot/central/repo/GaugeNameDao.java
+index 3f647e0cc..24595c043 100644
+--- a/central/src/main/java/org/glowroot/central/repo/GaugeNameDao.java
++++ b/central/src/main/java/org/glowroot/central/repo/GaugeNameDao.java
+@@ -16,24 +16,25 @@
+ package org.glowroot.central.repo;
+ 
+ import java.util.List;
++import java.util.concurrent.CompletableFuture;
++import java.util.concurrent.Future;
+ 
+ import com.datastax.driver.core.BoundStatement;
+ import com.datastax.driver.core.PreparedStatement;
+ import com.datastax.driver.core.ResultSet;
+-import com.datastax.driver.core.ResultSetFuture;
+ import com.datastax.driver.core.Row;
+ import com.google.common.collect.ImmutableList;
+ import com.google.common.collect.Lists;
+ import com.google.common.primitives.Ints;
+-import com.google.common.util.concurrent.MoreExecutors;
++import com.google.common.util.concurrent.ListenableFuture;
+ import org.immutables.value.Value;
+ 
+ import org.glowroot.central.util.Cache;
+ import org.glowroot.central.util.Cache.CacheLoader;
+ import org.glowroot.central.util.ClusterManager;
++import org.glowroot.central.util.MoreFutures;
+ import org.glowroot.central.util.RateLimiter;
+ import org.glowroot.central.util.Session;
+-import org.glowroot.common.repo.ConfigRepository;
+ import org.glowroot.common.util.Styles;
+ 
+ import static com.google.common.base.Preconditions.checkNotNull;
+@@ -45,7 +46,7 @@ class GaugeNameDao {
+             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
+ 
+     private final Session session;
+-    private final ConfigRepository configRepository;
++    private final ConfigRepositoryImpl configRepository;
+ 
+     private final PreparedStatement insertPS;
+     private final PreparedStatement readPS;
+@@ -54,7 +55,7 @@ class GaugeNameDao {
+ 
+     private final Cache<String, List<String>> gaugeNamesCache;
+ 
+-    GaugeNameDao(Session session, ConfigRepository configRepository,
++    GaugeNameDao(Session session, ConfigRepositoryImpl configRepository,
+             ClusterManager clusterManager) throws Exception {
+         this.session = session;
+         this.configRepository = configRepository;
+@@ -73,7 +74,7 @@ class GaugeNameDao {
+         return gaugeNamesCache.get(agentRollupId);
+     }
+ 
+-    List<ResultSetFuture> store(String agentRollupId, String gaugeName) throws Exception {
++    List<Future<?>> store(String agentRollupId, String gaugeName) throws Exception {
+         GaugeNameKey rateLimiterKey = ImmutableGaugeNameKey.of(agentRollupId, gaugeName);
+         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
+             return ImmutableList.of();
+@@ -82,17 +83,17 @@ class GaugeNameDao {
+         int i = 0;
+         boundStatement.setString(i++, agentRollupId);
+         boundStatement.setString(i++, gaugeName);
+-        boundStatement.setInt(i++, getMaxTTL());
+-        ResultSetFuture future = session.executeAsyncWithOnFailure(boundStatement,
+-                () -> rateLimiter.invalidate(rateLimiterKey));
+-        future.addListener(() -> gaugeNamesCache.invalidate(agentRollupId),
+-                MoreExecutors.directExecutor());
+-        return ImmutableList.of(future);
++        boundStatement.setInt(i++, getMaxTTL(agentRollupId));
++        ListenableFuture<ResultSet> future = session.executeAsync(boundStatement);
++        CompletableFuture<?> chainedFuture =
++                MoreFutures.onFailure(future, () -> gaugeNamesCache.invalidate(agentRollupId));
++        return ImmutableList.of(chainedFuture);
+     }
+ 
+-    private int getMaxTTL() throws Exception {
++    private int getMaxTTL(String agentRollupId) throws Exception {
+         long maxTTL = 0;
+-        for (long expirationHours : configRepository.getStorageConfig().rollupExpirationHours()) {
++        for (long expirationHours : configRepository.getStorageConfig(agentRollupId)
++                .rollupExpirationHours()) {
+             if (expirationHours == 0) {
+                 // zero value expiration/TTL means never expire
+                 return 0;
+diff --git a/central/src/main/java/org/glowroot/central/repo/GaugeValueDao.java b/central/src/main/java/org/glowroot/central/repo/GaugeValueDao.java
+index cfd3321a5..bbcfd6dc1 100644
+--- a/central/src/main/java/org/glowroot/central/repo/GaugeValueDao.java
++++ b/central/src/main/java/org/glowroot/central/repo/GaugeValueDao.java
+@@ -20,13 +20,13 @@ import java.util.Date;
+ import java.util.List;
+ import java.util.Map.Entry;
+ import java.util.Set;
++import java.util.concurrent.Future;
+ 
+ import javax.annotation.Nullable;
+ 
+ import com.datastax.driver.core.BoundStatement;
+ import com.datastax.driver.core.PreparedStatement;
+ import com.datastax.driver.core.ResultSet;
+-import com.datastax.driver.core.ResultSetFuture;
+ import com.datastax.driver.core.Row;
+ import com.datastax.driver.core.utils.UUIDs;
+ import com.google.common.collect.HashMultimap;
+@@ -49,7 +49,6 @@ import org.glowroot.central.util.ClusterManager;
+ import org.glowroot.central.util.DummyResultSet;
+ import org.glowroot.central.util.MoreFutures;
+ import org.glowroot.central.util.Session;
+-import org.glowroot.common.repo.ConfigRepository;
+ import org.glowroot.common.repo.ConfigRepository.RollupConfig;
+ import org.glowroot.common.repo.GaugeValueRepository;
+ import org.glowroot.common.repo.Utils;
+@@ -70,7 +69,7 @@ public class GaugeValueDao implements GaugeValueRepository {
+ 
+     private final Session session;
+     private final AgentRollupDao agentRollupDao;
+-    private final ConfigRepository configRepository;
++    private final ConfigRepositoryImpl configRepository;
+     private final Clock clock;
+ 
+     private final GaugeNameDao gaugeNameDao;
+@@ -89,8 +88,9 @@ public class GaugeValueDao implements GaugeValueRepository {
+     private final PreparedStatement readNeedsRollupFromChild;
+     private final PreparedStatement deleteNeedsRollupFromChild;
+ 
+-    GaugeValueDao(Session session, AgentRollupDao agentRollupDao, ConfigRepository configRepository,
+-            ClusterManager clusterManager, Clock clock) throws Exception {
++    GaugeValueDao(Session session, AgentRollupDao agentRollupDao,
++            ConfigRepositoryImpl configRepository, ClusterManager clusterManager, Clock clock)
++            throws Exception {
+         this.session = session;
+         this.agentRollupDao = agentRollupDao;
+         this.configRepository = configRepository;
+@@ -99,7 +99,9 @@ public class GaugeValueDao implements GaugeValueRepository {
+         gaugeNameDao = new GaugeNameDao(session, configRepository, clusterManager);
+ 
+         int count = configRepository.getRollupConfigs().size();
+-        List<Integer> rollupExpirationHours = getRollupExpirationHours(configRepository);
++        List<Integer> rollupExpirationHours = Lists.newArrayList(
++                configRepository.getDefaultCentralStorageConfig().rollupExpirationHours());
++        rollupExpirationHours.add(0, rollupExpirationHours.get(0));
+ 
+         List<PreparedStatement> insertValuePS = Lists.newArrayList();
+         List<PreparedStatement> readValuePS = Lists.newArrayList();
+@@ -176,9 +178,9 @@ public class GaugeValueDao implements GaugeValueRepository {
+             return;
+         }
+         List<String> agentRollupIds = agentRollupDao.readAgentRollupIds(agentId);
+-        int ttl = getTTLs().get(0);
++        int ttl = getTTLs(agentId).get(0);
+         long maxCaptureTime = 0;
+-        List<ResultSetFuture> futures = Lists.newArrayList();
++        List<Future<?>> futures = Lists.newArrayList();
+         for (GaugeValue gaugeValue : gaugeValues) {
+             BoundStatement boundStatement = insertValuePS.get(0).bind();
+             String gaugeName = gaugeValue.getGaugeName();
+@@ -261,7 +263,7 @@ public class GaugeValueDao implements GaugeValueRepository {
+             traceHeadline = "Rollup gauges: {{0}}", timer = "rollup gauges")
+     public void rollup(String agentRollupId, @Nullable String parentAgentRollupId, boolean leaf)
+             throws Exception {
+-        List<Integer> ttls = getTTLs();
++        List<Integer> ttls = getTTLs(agentRollupId);
+         int rollupLevel;
+         if (leaf) {
+             rollupLevel = 1;
+@@ -498,9 +500,11 @@ public class GaugeValueDao implements GaugeValueRepository {
+         return session.executeAsync(boundStatement);
+     }
+ 
+-    private List<Integer> getTTLs() throws Exception {
++    private List<Integer> getTTLs(String agentRollupId) throws Exception {
++        List<Integer> rollupExpirationHours = Lists.newArrayList(
++                configRepository.getStorageConfig(agentRollupId).rollupExpirationHours());
++        rollupExpirationHours.add(0, rollupExpirationHours.get(0));
+         List<Integer> ttls = Lists.newArrayList();
+-        List<Integer> rollupExpirationHours = getRollupExpirationHours(configRepository);
+         for (long expirationHours : rollupExpirationHours) {
+             ttls.add(Ints.saturatedCast(HOURS.toSeconds(expirationHours)));
+         }
+@@ -518,12 +522,4 @@ public class GaugeValueDao implements GaugeValueRepository {
+         session.execute("truncate gauge_name");
+         session.execute("truncate gauge_needs_rollup_from_child");
+     }
+-
+-    private static List<Integer> getRollupExpirationHours(ConfigRepository configRepository)
+-            throws Exception {
+-        List<Integer> rollupExpirationHours =
+-                Lists.newArrayList(configRepository.getStorageConfig().rollupExpirationHours());
+-        rollupExpirationHours.add(0, rollupExpirationHours.get(0));
+-        return rollupExpirationHours;
+-    }
+ }
+diff --git a/central/src/main/java/org/glowroot/central/repo/SyntheticResultDao.java b/central/src/main/java/org/glowroot/central/repo/SyntheticResultDao.java
+index d4c540b74..becc377a9 100644
+--- a/central/src/main/java/org/glowroot/central/repo/SyntheticResultDao.java
++++ b/central/src/main/java/org/glowroot/central/repo/SyntheticResultDao.java
+@@ -42,7 +42,6 @@ import org.glowroot.central.repo.AggregateDao.NeedsRollup;
+ import org.glowroot.central.util.DummyResultSet;
+ import org.glowroot.central.util.MoreFutures;
+ import org.glowroot.central.util.Session;
+-import org.glowroot.common.repo.ConfigRepository;
+ import org.glowroot.common.repo.ConfigRepository.RollupConfig;
+ import org.glowroot.common.repo.ImmutableSyntheticResult;
+ import org.glowroot.common.repo.SyntheticResultRepository;
+@@ -60,7 +59,7 @@ public class SyntheticResultDao implements SyntheticResultRepository {
+     private static final String LCS = "compaction = { 'class' : 'LeveledCompactionStrategy' }";
+ 
+     private final Session session;
+-    private final ConfigRepository configRepository;
++    private final ConfigRepositoryImpl configRepository;
+     private final Clock clock;
+ 
+     // index is rollupLevel
+@@ -72,7 +71,7 @@ public class SyntheticResultDao implements SyntheticResultRepository {
+     private final List<PreparedStatement> readNeedsRollup;
+     private final List<PreparedStatement> deleteNeedsRollup;
+ 
+-    SyntheticResultDao(Session session, ConfigRepository configRepository, Clock clock)
++    SyntheticResultDao(Session session, ConfigRepositoryImpl configRepository, Clock clock)
+             throws Exception {
+         this.session = session;
+         this.configRepository = configRepository;
+@@ -80,7 +79,7 @@ public class SyntheticResultDao implements SyntheticResultRepository {
+ 
+         int count = configRepository.getRollupConfigs().size();
+         List<Integer> rollupExpirationHours =
+-                configRepository.getStorageConfig().rollupExpirationHours();
++                configRepository.getDefaultCentralStorageConfig().rollupExpirationHours();
+ 
+         List<PreparedStatement> insertResultPS = Lists.newArrayList();
+         List<PreparedStatement> readResultPS = Lists.newArrayList();
+@@ -140,7 +139,7 @@ public class SyntheticResultDao implements SyntheticResultRepository {
+ 
+     public void store(String agentId, String syntheticMonitorId, long captureTime,
+             long durationNanos, boolean error) throws Exception {
+-        int ttl = getTTLs().get(0);
++        int ttl = getTTLs(agentId).get(0);
+         long maxCaptureTime = 0;
+         BoundStatement boundStatement = insertResultPS.get(0).bind();
+         maxCaptureTime = Math.max(captureTime, maxCaptureTime);
+@@ -200,7 +199,7 @@ public class SyntheticResultDao implements SyntheticResultRepository {
+             transactionName = "Rollup synthetic results",
+             traceHeadline = "Rollup synthetic results: {{0}}", timer = "rollup synthetic results")
+     public void rollup(String agentRollupId) throws Exception {
+-        List<Integer> ttls = getTTLs();
++        List<Integer> ttls = getTTLs(agentRollupId);
+         int rollupLevel = 1;
+         while (rollupLevel < configRepository.getRollupConfigs().size()) {
+             int ttl = ttls.get(rollupLevel);
+@@ -312,10 +311,10 @@ public class SyntheticResultDao implements SyntheticResultRepository {
+         return session.executeAsync(boundStatement);
+     }
+ 
+-    private List<Integer> getTTLs() throws Exception {
++    private List<Integer> getTTLs(String agentRollupId) throws Exception {
+         List<Integer> ttls = Lists.newArrayList();
+         List<Integer> rollupExpirationHours =
+-                configRepository.getStorageConfig().rollupExpirationHours();
++                configRepository.getStorageConfig(agentRollupId).rollupExpirationHours();
+         for (long expirationHours : rollupExpirationHours) {
+             ttls.add(Ints.saturatedCast(HOURS.toSeconds(expirationHours)));
+         }
+diff --git a/central/src/main/java/org/glowroot/central/repo/TraceAttributeNameDao.java b/central/src/main/java/org/glowroot/central/repo/TraceAttributeNameDao.java
+index 76eed4b5c..48d21dd43 100644
+--- a/central/src/main/java/org/glowroot/central/repo/TraceAttributeNameDao.java
++++ b/central/src/main/java/org/glowroot/central/repo/TraceAttributeNameDao.java
+@@ -19,23 +19,24 @@ import java.util.ArrayList;
+ import java.util.HashMap;
+ import java.util.List;
+ import java.util.Map;
++import java.util.concurrent.CompletableFuture;
++import java.util.concurrent.Future;
+ 
+ import com.datastax.driver.core.BoundStatement;
+ import com.datastax.driver.core.PreparedStatement;
+ import com.datastax.driver.core.ResultSet;
+-import com.datastax.driver.core.ResultSetFuture;
+ import com.datastax.driver.core.Row;
+ import com.google.common.collect.Maps;
+ import com.google.common.primitives.Ints;
+-import com.google.common.util.concurrent.MoreExecutors;
++import com.google.common.util.concurrent.ListenableFuture;
+ import org.immutables.value.Value;
+ 
+ import org.glowroot.central.util.Cache;
+ import org.glowroot.central.util.Cache.CacheLoader;
+ import org.glowroot.central.util.ClusterManager;
++import org.glowroot.central.util.MoreFutures;
+ import org.glowroot.central.util.RateLimiter;
+ import org.glowroot.central.util.Session;
+-import org.glowroot.common.repo.ConfigRepository;
+ import org.glowroot.common.repo.TraceAttributeNameRepository;
+ import org.glowroot.common.util.Styles;
+ 
+@@ -51,7 +52,7 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
+     private static final String SINGLE_CACHE_KEY = "x";
+ 
+     private final Session session;
+-    private final ConfigRepository configRepository;
++    private final ConfigRepositoryImpl configRepository;
+ 
+     private final PreparedStatement insertPS;
+     private final PreparedStatement readPS;
+@@ -60,7 +61,7 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
+ 
+     private final Cache<String, Map<String, Map<String, List<String>>>> traceAttributeNamesCache;
+ 
+-    TraceAttributeNameDao(Session session, ConfigRepository configRepository,
++    TraceAttributeNameDao(Session session, ConfigRepositoryImpl configRepository,
+             ClusterManager clusterManager) throws Exception {
+         this.session = session;
+         this.configRepository = configRepository;
+@@ -85,7 +86,7 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
+     }
+ 
+     void store(String agentRollupId, String transactionType, String traceAttributeName,
+-            List<ResultSetFuture> futures) throws Exception {
++            List<Future<?>> futures) throws Exception {
+         TraceAttributeNameKey rateLimiterKey = ImmutableTraceAttributeNameKey.of(agentRollupId,
+                 transactionType, traceAttributeName);
+         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
+@@ -96,18 +97,17 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
+         boundStatement.setString(i++, agentRollupId);
+         boundStatement.setString(i++, transactionType);
+         boundStatement.setString(i++, traceAttributeName);
+-        boundStatement.setInt(i++, getMaxTTL());
+-        ResultSetFuture future = session.executeAsyncWithOnFailure(boundStatement,
+-                () -> rateLimiter.invalidate(rateLimiterKey));
+-        future.addListener(() -> traceAttributeNamesCache.invalidate(SINGLE_CACHE_KEY),
+-                MoreExecutors.directExecutor());
+-        futures.add(future);
+-        traceAttributeNamesCache.invalidate(SINGLE_CACHE_KEY);
++        boundStatement.setInt(i++, getMaxTTL(agentRollupId));
++        ListenableFuture<ResultSet> future = session.executeAsync(boundStatement);
++        CompletableFuture<?> chainedFuture = MoreFutures.onFailure(future,
++                () -> traceAttributeNamesCache.invalidate(SINGLE_CACHE_KEY));
++        futures.add(chainedFuture);
+     }
+ 
+-    private int getMaxTTL() throws Exception {
++    private int getMaxTTL(String agentRollupId) throws Exception {
+         long maxTTL = 0;
+-        for (long expirationHours : configRepository.getStorageConfig().rollupExpirationHours()) {
++        for (long expirationHours : configRepository.getStorageConfig(agentRollupId)
++                .rollupExpirationHours()) {
+             if (expirationHours == 0) {
+                 // zero value expiration/TTL means never expire
+                 return 0;
+diff --git a/central/src/main/java/org/glowroot/central/repo/TraceDao.java b/central/src/main/java/org/glowroot/central/repo/TraceDao.java
+index 04e26e678..7edefc0b9 100644
+--- a/central/src/main/java/org/glowroot/central/repo/TraceDao.java
++++ b/central/src/main/java/org/glowroot/central/repo/TraceDao.java
+@@ -24,6 +24,7 @@ import java.util.ListIterator;
+ import java.util.Locale;
+ import java.util.Map;
+ import java.util.Set;
++import java.util.concurrent.Future;
+ import java.util.stream.Collectors;
+ 
+ import javax.annotation.Nullable;
+@@ -31,7 +32,6 @@ import javax.annotation.Nullable;
+ import com.datastax.driver.core.BoundStatement;
+ import com.datastax.driver.core.PreparedStatement;
+ import com.datastax.driver.core.ResultSet;
+-import com.datastax.driver.core.ResultSetFuture;
+ import com.datastax.driver.core.Row;
+ import com.google.common.base.Charsets;
+ import com.google.common.base.Strings;
+@@ -54,7 +54,6 @@ import org.glowroot.common.live.LiveTraceRepository.Existence;
+ import org.glowroot.common.live.LiveTraceRepository.TracePoint;
+ import org.glowroot.common.live.LiveTraceRepository.TracePointFilter;
+ import org.glowroot.common.model.Result;
+-import org.glowroot.common.repo.ConfigRepository;
+ import org.glowroot.common.repo.ImmutableErrorMessageCount;
+ import org.glowroot.common.repo.ImmutableErrorMessagePoint;
+ import org.glowroot.common.repo.ImmutableErrorMessageResult;
+@@ -81,7 +80,7 @@ public class TraceDao implements TraceRepository {
+     private final TransactionTypeDao transactionTypeDao;
+     private final FullQueryTextDao fullQueryTextDao;
+     private final TraceAttributeNameDao traceAttributeNameDao;
+-    private final ConfigRepository configRepository;
++    private final ConfigRepositoryImpl configRepository;
+     private final Clock clock;
+ 
+     private final PreparedStatement insertCheck;
+@@ -136,7 +135,7 @@ public class TraceDao implements TraceRepository {
+ 
+     TraceDao(Session session, AgentRollupDao agentRollupDao, TransactionTypeDao transactionTypeDao,
+             FullQueryTextDao fullQueryTextDao, TraceAttributeNameDao traceAttributeNameDao,
+-            ConfigRepository configRepository, Clock clock) throws Exception {
++            ConfigRepositoryImpl configRepository, Clock clock) throws Exception {
+         this.session = session;
+         this.agentRollupDao = agentRollupDao;
+         this.transactionTypeDao = transactionTypeDao;
+@@ -145,7 +144,8 @@ public class TraceDao implements TraceRepository {
+         this.configRepository = configRepository;
+         this.clock = clock;
+ 
+-        int expirationHours = configRepository.getStorageConfig().traceExpirationHours();
++        int expirationHours =
++                configRepository.getDefaultCentralStorageConfig().traceExpirationHours();
+ 
+         session.createTableWithTWCS("create table if not exists trace_check (agent_rollup varchar,"
+                 + " agent_id varchar, trace_id varchar, primary key ((agent_rollup, agent_id),"
+@@ -398,7 +398,7 @@ public class TraceDao implements TraceRepository {
+ 
+         List<String> agentRollupIds = agentRollupDao.readAgentRollupIds(agentId);
+ 
+-        List<ResultSetFuture> futures = Lists.newArrayList();
++        List<Future<?>> futures = Lists.newArrayList();
+ 
+         List<Trace.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
+         for (Trace.SharedQueryText sharedQueryText : trace.getSharedQueryTextList()) {
+@@ -409,9 +409,8 @@ public class TraceDao implements TraceRepository {
+                     fullTextSha1 = SHA_1.hashString(fullText, Charsets.UTF_8).toString();
+                     futures.addAll(fullQueryTextDao.store(agentId, fullTextSha1, fullText));
+                     for (int i = 1; i < agentRollupIds.size(); i++) {
+-                        futures.addAll(
+-                                fullQueryTextDao.updateCheckTTL(agentRollupIds.get(i),
+-                                        fullTextSha1));
++                        futures.addAll(fullQueryTextDao.updateCheckTTL(agentRollupIds.get(i),
++                                fullTextSha1));
+                     }
+                     sharedQueryTexts.add(Trace.SharedQueryText.newBuilder()
+                             .setTruncatedText(
+@@ -439,8 +438,11 @@ public class TraceDao implements TraceRepository {
+         MoreFutures.waitForAll(futures);
+         futures.clear();
+ 
+-        int adjustedTTL = AggregateDao.getAdjustedTTL(getTTL(), header.getCaptureTime(), clock);
++        int maxAdjustedTTL = 0;
+         for (String agentRollupId : agentRollupIds) {
++            int adjustedTTL = AggregateDao.getAdjustedTTL(getTTL(agentRollupId),
++                    header.getCaptureTime(), clock);
++            maxAdjustedTTL = Math.max(maxAdjustedTTL, adjustedTTL);
+ 
+             if (!agentRollupId.equals(agentId)) {
+                 BoundStatement boundStatement = insertCheck.bind();
+@@ -535,7 +537,7 @@ public class TraceDao implements TraceRepository {
+         boundStatement.setString(i++, agentId);
+         boundStatement.setString(i++, traceId);
+         boundStatement.setBytes(i++, ByteBuffer.wrap(header.toByteArray()));
+-        boundStatement.setInt(i++, adjustedTTL);
++        boundStatement.setInt(i++, maxAdjustedTTL);
+         futures.add(session.executeAsync(boundStatement));
+ 
+         int index = 0;
+@@ -580,7 +582,7 @@ public class TraceDao implements TraceRepository {
+             } else {
+                 boundStatement.setToNull(i++);
+             }
+-            boundStatement.setInt(i++, adjustedTTL);
++            boundStatement.setInt(i++, maxAdjustedTTL);
+             futures.add(session.executeAsync(boundStatement));
+         }
+ 
+@@ -601,21 +603,21 @@ public class TraceDao implements TraceRepository {
+                 boundStatement.setToNull(i++);
+                 boundStatement.setToNull(i++);
+             }
+-            boundStatement.setInt(i++, adjustedTTL);
++            boundStatement.setInt(i++, maxAdjustedTTL);
+             futures.add(session.executeAsync(boundStatement));
+         }
+ 
+         if (trace.hasMainThreadProfile()) {
+             boundStatement = insertMainThreadProfile.bind();
+             bindThreadProfile(boundStatement, agentId, traceId, trace.getMainThreadProfile(),
+-                    adjustedTTL);
++                    maxAdjustedTTL);
+             futures.add(session.executeAsync(boundStatement));
+         }
+ 
+         if (trace.hasAuxThreadProfile()) {
+             boundStatement = insertAuxThreadProfile.bind();
+             bindThreadProfile(boundStatement, agentId, traceId, trace.getAuxThreadProfile(),
+-                    adjustedTTL);
++                    maxAdjustedTTL);
+             futures.add(session.executeAsync(boundStatement));
+         }
+         futures.addAll(transactionTypeDao.store(agentRollupIds, header.getTransactionType()));
+@@ -925,9 +927,9 @@ public class TraceDao implements TraceRepository {
+         return sharedQueryTexts;
+     }
+ 
+-    private int getTTL() throws Exception {
+-        return Ints.saturatedCast(
+-                HOURS.toSeconds(configRepository.getStorageConfig().traceExpirationHours()));
++    private int getTTL(String agentRollupId) throws Exception {
++        return Ints.saturatedCast(HOURS.toSeconds(
++                configRepository.getStorageConfig(agentRollupId).traceExpirationHours()));
+     }
+ 
+     private static void bindSlowPoint(BoundStatement boundStatement, String agentRollupId,
+diff --git a/central/src/main/java/org/glowroot/central/repo/TransactionTypeDao.java b/central/src/main/java/org/glowroot/central/repo/TransactionTypeDao.java
+index 253ce118f..09676727d 100644
+--- a/central/src/main/java/org/glowroot/central/repo/TransactionTypeDao.java
++++ b/central/src/main/java/org/glowroot/central/repo/TransactionTypeDao.java
+@@ -17,25 +17,26 @@ package org.glowroot.central.repo;
+ 
+ import java.util.List;
+ import java.util.Map;
++import java.util.concurrent.CompletableFuture;
++import java.util.concurrent.Future;
+ 
+ import com.datastax.driver.core.BoundStatement;
+ import com.datastax.driver.core.PreparedStatement;
+ import com.datastax.driver.core.ResultSet;
+-import com.datastax.driver.core.ResultSetFuture;
+ import com.datastax.driver.core.Row;
+ import com.google.common.collect.ImmutableList;
+ import com.google.common.collect.ImmutableMap;
+ import com.google.common.collect.Lists;
+ import com.google.common.primitives.Ints;
+-import com.google.common.util.concurrent.MoreExecutors;
++import com.google.common.util.concurrent.ListenableFuture;
+ import org.immutables.value.Value;
+ 
+ import org.glowroot.central.util.Cache;
+ import org.glowroot.central.util.Cache.CacheLoader;
+ import org.glowroot.central.util.ClusterManager;
++import org.glowroot.central.util.MoreFutures;
+ import org.glowroot.central.util.RateLimiter;
+ import org.glowroot.central.util.Session;
+-import org.glowroot.common.repo.ConfigRepository;
+ import org.glowroot.common.repo.TransactionTypeRepository;
+ import org.glowroot.common.util.Styles;
+ 
+@@ -50,7 +51,7 @@ class TransactionTypeDao implements TransactionTypeRepository {
+     private static final String SINGLE_CACHE_KEY = "x";
+ 
+     private final Session session;
+-    private final ConfigRepository configRepository;
++    private final ConfigRepositoryImpl configRepository;
+ 
+     private final PreparedStatement insertPS;
+     private final PreparedStatement readPS;
+@@ -59,7 +60,7 @@ class TransactionTypeDao implements TransactionTypeRepository {
+ 
+     private final Cache<String, Map<String, List<String>>> transactionTypesCache;
+ 
+-    TransactionTypeDao(Session session, ConfigRepository configRepository,
++    TransactionTypeDao(Session session, ConfigRepositoryImpl configRepository,
+             ClusterManager clusterManager) throws Exception {
+         this.session = session;
+         this.configRepository = configRepository;
+@@ -82,32 +83,40 @@ class TransactionTypeDao implements TransactionTypeRepository {
+         return transactionTypesCache.get(SINGLE_CACHE_KEY);
+     }
+ 
+-    List<ResultSetFuture> store(List<String> agentRollups, String transactionType)
+-            throws Exception {
+-        List<ResultSetFuture> futures = Lists.newArrayList();
++    List<Future<?>> store(List<String> agentRollups, String transactionType) throws Exception {
++        List<Future<?>> futures = Lists.newArrayList();
+         for (String agentRollupId : agentRollups) {
+             TransactionTypeKey rateLimiterKey =
+                     ImmutableTransactionTypeKey.of(agentRollupId, transactionType);
+             if (!rateLimiter.tryAcquire(rateLimiterKey)) {
+                 continue;
+             }
+-            BoundStatement boundStatement = insertPS.bind();
+-            int i = 0;
+-            boundStatement.setString(i++, agentRollupId);
+-            boundStatement.setString(i++, transactionType);
+-            boundStatement.setInt(i++, getMaxTTL());
+-            ResultSetFuture future = session.executeAsyncWithOnFailure(boundStatement,
+-                    () -> rateLimiter.invalidate(rateLimiterKey));
+-            future.addListener(() -> transactionTypesCache.invalidate(SINGLE_CACHE_KEY),
+-                    MoreExecutors.directExecutor());
+-            futures.add(future);
++            ListenableFuture<ResultSet> future;
++            try {
++                BoundStatement boundStatement = insertPS.bind();
++                int i = 0;
++                boundStatement.setString(i++, agentRollupId);
++                boundStatement.setString(i++, transactionType);
++                boundStatement.setInt(i++, getMaxTTL(agentRollupId));
++                future = session.executeAsync(boundStatement);
++            } catch (Exception e) {
++                rateLimiter.invalidate(rateLimiterKey);
++                transactionTypesCache.invalidate(SINGLE_CACHE_KEY);
++                throw e;
++            }
++            CompletableFuture<?> chainedFuture =
++                    MoreFutures.onFailure(future, () -> rateLimiter.invalidate(rateLimiterKey));
++            chainedFuture = chainedFuture.whenComplete(
++                    (result, t) -> transactionTypesCache.invalidate(SINGLE_CACHE_KEY));
++            futures.add(chainedFuture);
+         }
+         return futures;
+     }
+ 
+-    private int getMaxTTL() throws Exception {
++    private int getMaxTTL(String agentRollupId) throws Exception {
+         long maxTTL = 0;
+-        for (long expirationHours : configRepository.getStorageConfig().rollupExpirationHours()) {
++        for (long expirationHours : configRepository.getStorageConfig(agentRollupId)
++                .rollupExpirationHours()) {
+             if (expirationHours == 0) {
+                 // zero value expiration/TTL means never expire
+                 return 0;
+diff --git a/central/src/main/java/org/glowroot/central/util/MoreFutures.java b/central/src/main/java/org/glowroot/central/util/MoreFutures.java
+index 9e1bf995a..9376f8d55 100644
+--- a/central/src/main/java/org/glowroot/central/util/MoreFutures.java
++++ b/central/src/main/java/org/glowroot/central/util/MoreFutures.java
+@@ -16,9 +16,14 @@
+ package org.glowroot.central.util;
+ 
+ import java.util.List;
++import java.util.concurrent.CompletableFuture;
+ import java.util.concurrent.ExecutionException;
+ import java.util.concurrent.Future;
+ 
++import com.google.common.util.concurrent.FutureCallback;
++import com.google.common.util.concurrent.Futures;
++import com.google.common.util.concurrent.ListenableFuture;
++import com.google.common.util.concurrent.MoreExecutors;
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
+ 
+@@ -47,4 +52,46 @@ public class MoreFutures {
+             throw exception;
+         }
+     }
++
++    public static <V> CompletableFuture<?> onFailure(ListenableFuture<V> future,
++            Runnable onFailure) {
++        CompletableFuture</*@Nullable*/ Void> chainedFuture = new CompletableFuture<>();
++        Futures.addCallback(future, new FutureCallback<V>() {
++            @Override
++            public void onSuccess(V result) {
++                chainedFuture.complete(null);
++            }
++            @Override
++            public void onFailure(Throwable t) {
++                logger.debug(t.getMessage(), t);
++                onFailure.run();
++                chainedFuture.completeExceptionally(t);
++            }
++        }, MoreExecutors.directExecutor());
++        return chainedFuture;
++    }
++
++    public static CompletableFuture<?> onFailure(CompletableFuture<?> future, Runnable onFailure) {
++        return future.whenComplete((result, t) -> {
++            if (t != null) {
++                onFailure.run();
++            }
++        });
++    }
++
++    public static <V> CompletableFuture<?> toCompletableFuture(ListenableFuture<V> future) {
++        CompletableFuture</*@Nullable*/ Void> chainedFuture = new CompletableFuture<>();
++        Futures.addCallback(future, new FutureCallback<V>() {
++            @Override
++            public void onSuccess(V result) {
++                chainedFuture.complete(null);
++            }
++            @Override
++            public void onFailure(Throwable t) {
++                logger.debug(t.getMessage(), t);
++                chainedFuture.completeExceptionally(t);
++            }
++        }, MoreExecutors.directExecutor());
++        return chainedFuture;
++    }
+ }
+diff --git a/central/src/main/java/org/glowroot/central/util/Session.java b/central/src/main/java/org/glowroot/central/util/Session.java
+index 87a366fea..8872d3ecb 100644
+--- a/central/src/main/java/org/glowroot/central/util/Session.java
++++ b/central/src/main/java/org/glowroot/central/util/Session.java
+@@ -18,7 +18,6 @@ package org.glowroot.central.util;
+ import java.util.concurrent.ExecutionException;
+ import java.util.concurrent.Semaphore;
+ 
+-import com.datastax.driver.core.BoundStatement;
+ import com.datastax.driver.core.Cluster;
+ import com.datastax.driver.core.PreparedStatement;
+ import com.datastax.driver.core.ResultSet;
+@@ -27,11 +26,14 @@ import com.datastax.driver.core.Statement;
+ import com.datastax.driver.core.exceptions.DriverException;
+ import com.datastax.driver.core.exceptions.InvalidConfigurationInQueryException;
+ import com.google.common.base.Throwables;
++import com.google.common.util.concurrent.FutureCallback;
++import com.google.common.util.concurrent.Futures;
++import com.google.common.util.concurrent.ListenableFuture;
+ import com.google.common.util.concurrent.MoreExecutors;
++import com.google.common.util.concurrent.SettableFuture;
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
+ 
+-import static com.google.common.base.Preconditions.checkNotNull;
+ import static java.util.concurrent.TimeUnit.DAYS;
+ 
+ public class Session {
+@@ -61,11 +63,11 @@ public class Session {
+         return session.prepare(query);
+     }
+ 
+-    public ResultSetFuture executeAsync(Statement statement) throws Exception {
++    public ListenableFuture<ResultSet> executeAsync(Statement statement) throws Exception {
+         return throttle(() -> session.executeAsync(statement));
+     }
+ 
+-    public ResultSetFuture executeAsync(String query) throws Exception {
++    public ListenableFuture<ResultSet> executeAsync(String query) throws Exception {
+         return throttle(() -> session.executeAsync(query));
+     }
+ 
+@@ -123,59 +125,54 @@ public class Session {
+         //
+         // it seems any value over max_hint_window_in_ms (which defaults to 3 hours) is good
+         long gcGraceSeconds = DAYS.toSeconds(1);
++
++        // using unchecked_tombstone_compaction=true for better tombstone purging
++        // see http://thelastpickle.com/blog/2016/12/08/TWCS-part1.html
+         String term = useAndInsteadOfWith ? "and" : "with";
+         try {
+             session.execute(createTableQuery + " " + term + " compaction = { 'class' :"
+                     + " 'TimeWindowCompactionStrategy', 'compaction_window_unit' : 'HOURS',"
+-                    + " 'compaction_window_size' : '" + windowSizeHours + "' }"
+-                    + " and gc_grace_seconds = " + gcGraceSeconds);
++                    + " 'compaction_window_size' : '" + windowSizeHours + "',"
++                    + " 'unchecked_tombstone_compaction' : true } and gc_grace_seconds = "
++                    + gcGraceSeconds);
+         } catch (InvalidConfigurationInQueryException e) {
+             logger.debug(e.getMessage(), e);
+-            session.execute(createTableQuery
+-                    + " " + term + " compaction = { 'class' : 'DateTieredCompactionStrategy' }"
+-                    + " and gc_grace_seconds = " + gcGraceSeconds);
++            session.execute(createTableQuery + " " + term
++                    + " compaction = { 'class' : 'DateTieredCompactionStrategy',"
++                    + " 'unchecked_tombstone_compaction' : true } and gc_grace_seconds = "
++                    + gcGraceSeconds);
+         }
+     }
+ 
+-    public ResultSetFuture executeAsyncWithOnFailure(BoundStatement boundStatement,
+-            Runnable onFailure) {
+-        ResultSetFuture future = session.executeAsync(boundStatement);
+-        future.addListener(new Runnable() {
+-            @Override
+-            public void run() {
+-                try {
+-                    // TODO report checker framework issue that occurs without checkNotNull
+-                    checkNotNull(future).getUninterruptibly();
+-                } catch (Exception e) {
+-                    logger.debug(e.getMessage(), e);
+-                    onFailure.run();
+-                }
+-            }
+-        }, MoreExecutors.directExecutor());
+-        return future;
+-    }
+-
+-    private ResultSetFuture throttle(DoUnderThrottle doUnderThrottle) throws Exception {
++    private ListenableFuture<ResultSet> throttle(DoUnderThrottle doUnderThrottle) throws Exception {
+         Semaphore perThreadSemaphore = perThreadSemaphores.get();
+         perThreadSemaphore.acquire();
+         overallSemaphore.acquire();
+-        ResultSetFuture future;
++        SettableFuture<ResultSet> outerFuture = SettableFuture.create();
++        ResultSetFuture innerFuture;
+         try {
+-            future = doUnderThrottle.execute();
++            innerFuture = doUnderThrottle.execute();
+         } catch (Throwable t) {
+             overallSemaphore.release();
+             perThreadSemaphore.release();
+             Throwables.propagateIfPossible(t, Exception.class);
+             throw new Exception(t);
+         }
+-        future.addListener(new Runnable() {
++        Futures.addCallback(innerFuture, new FutureCallback<ResultSet>() {
++            @Override
++            public void onSuccess(ResultSet result) {
++                overallSemaphore.release();
++                perThreadSemaphore.release();
++                outerFuture.set(result);
++            }
+             @Override
+-            public void run() {
++            public void onFailure(Throwable t) {
+                 overallSemaphore.release();
+                 perThreadSemaphore.release();
++                outerFuture.setException(t);
+             }
+         }, MoreExecutors.directExecutor());
+-        return future;
++        return outerFuture;
+     }
+ 
+     private static void propagateCauseIfPossible(ExecutionException e) throws Exception {
+diff --git a/central/src/test/java/org/glowroot/central/repo/AggregateDaoIT.java b/central/src/test/java/org/glowroot/central/repo/AggregateDaoIT.java
+index 1c7e1a36a..2b23dbaa2 100644
+--- a/central/src/test/java/org/glowroot/central/repo/AggregateDaoIT.java
++++ b/central/src/test/java/org/glowroot/central/repo/AggregateDaoIT.java
+@@ -29,9 +29,7 @@ import org.junit.Test;
+ 
+ import org.glowroot.central.util.ClusterManager;
+ import org.glowroot.central.util.Session;
+-import org.glowroot.common.config.CentralStorageConfig;
+ import org.glowroot.common.config.ConfigDefaults;
+-import org.glowroot.common.config.ImmutableCentralStorageConfig;
+ import org.glowroot.common.live.ImmutableOverallQuery;
+ import org.glowroot.common.live.ImmutableTransactionQuery;
+ import org.glowroot.common.live.LiveAggregateRepository.OverallQuery;
+@@ -52,7 +50,6 @@ import org.glowroot.common.model.TransactionErrorSummaryCollector.TransactionErr
+ import org.glowroot.common.model.TransactionSummaryCollector;
+ import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
+ import org.glowroot.common.model.TransactionSummaryCollector.TransactionSummary;
+-import org.glowroot.common.repo.ConfigRepository;
+ import org.glowroot.common.util.Clock;
+ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
+@@ -91,19 +88,15 @@ public class AggregateDaoIT {
+                 cluster.getMetadata().getKeyspace("glowroot_unit_tests");
+ 
+         clusterManager = ClusterManager.create();
++        AdditionalStorageConfigDao additionalStorageConfigDao =
++                new AdditionalStorageConfigDao(session, clusterManager);
+         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
+         agentConfigDao = new AgentConfigDao(session, clusterManager);
+         agentRollupDao = new AgentRollupDao(session, agentConfigDao, clusterManager);
+         UserDao userDao = new UserDao(session, keyspaceMetadata, clusterManager);
+         RoleDao roleDao = new RoleDao(session, keyspaceMetadata, clusterManager);
+-        ConfigRepository configRepository = new ConfigRepositoryImpl(centralConfigDao,
+-                agentConfigDao, agentRollupDao, userDao, roleDao, "");
+-        CentralStorageConfig storageConfig = configRepository.getCentralStorageConfig();
+-        configRepository.updateCentralStorageConfig(
+-                ImmutableCentralStorageConfig
+-                        .copyOf(storageConfig)
+-                        .withRollupExpirationHours(0, 0, 0, 0),
+-                storageConfig.version());
++        ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(additionalStorageConfigDao,
++                centralConfigDao, agentConfigDao, agentRollupDao, userDao, roleDao, "");
+         TransactionTypeDao transactionTypeDao =
+                 new TransactionTypeDao(session, configRepository, clusterManager);
+         FullQueryTextDao fullQueryTextDao = new FullQueryTextDao(session, configRepository);
+diff --git a/central/src/test/java/org/glowroot/central/repo/ConfigRepositoryIT.java b/central/src/test/java/org/glowroot/central/repo/ConfigRepositoryIT.java
+index 996999d6b..bf2d2955c 100644
+--- a/central/src/test/java/org/glowroot/central/repo/ConfigRepositoryIT.java
++++ b/central/src/test/java/org/glowroot/central/repo/ConfigRepositoryIT.java
+@@ -42,7 +42,6 @@ import org.glowroot.common.config.RoleConfig;
+ import org.glowroot.common.config.SmtpConfig;
+ import org.glowroot.common.config.SmtpConfig.ConnectionSecurity;
+ import org.glowroot.common.config.UserConfig;
+-import org.glowroot.common.repo.ConfigRepository;
+ import org.glowroot.common.util.Versions;
+ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
+@@ -68,7 +67,7 @@ public class ConfigRepositoryIT {
+     private static Cluster cluster;
+     private static Session session;
+     private static ClusterManager clusterManager;
+-    private static ConfigRepository configRepository;
++    private static ConfigRepositoryImpl configRepository;
+     private static AgentConfigDao agentConfigDao;
+ 
+     @BeforeClass
+@@ -87,13 +86,15 @@ public class ConfigRepositoryIT {
+                 cluster.getMetadata().getKeyspace("glowroot_unit_tests");
+ 
+         clusterManager = ClusterManager.create();
++        AdditionalStorageConfigDao additionalStorageConfigDao =
++                new AdditionalStorageConfigDao(session, clusterManager);
+         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
+         agentConfigDao = new AgentConfigDao(session, clusterManager);
+         AgentRollupDao agentRollupDao = new AgentRollupDao(session, agentConfigDao, clusterManager);
+         UserDao userDao = new UserDao(session, keyspaceMetadata, clusterManager);
+         RoleDao roleDao = new RoleDao(session, keyspaceMetadata, clusterManager);
+-        configRepository = new ConfigRepositoryImpl(centralConfigDao, agentConfigDao,
+-                agentRollupDao, userDao, roleDao, "");
++        configRepository = new ConfigRepositoryImpl(additionalStorageConfigDao, centralConfigDao,
++                agentConfigDao, agentRollupDao, userDao, roleDao, "");
+     }
+ 
+     @AfterClass
+@@ -528,10 +529,11 @@ public class ConfigRepositoryIT {
+     }
+ 
+     @Test
+-    public void shouldUpdateCentralStorageConfig() throws Exception {
++    public void shouldUpdateDefaultCentralStorageConfig() throws Exception {
+         // given
+-        CentralStorageConfig config = configRepository.getCentralStorageConfig();
++        CentralStorageConfig config = configRepository.getDefaultCentralStorageConfig();
+         CentralStorageConfig updatedConfig = ImmutableCentralStorageConfig.builder()
++                .id("")
+                 .addRollupExpirationHours(1)
+                 .addRollupExpirationHours(2)
+                 .addRollupExpirationHours(3)
+@@ -541,8 +543,8 @@ public class ConfigRepositoryIT {
+                 .build();
+ 
+         // when
+-        configRepository.updateCentralStorageConfig(updatedConfig, config.version());
+-        config = configRepository.getCentralStorageConfig();
++        configRepository.updateDefaultCentralStorageConfig(updatedConfig, config.version());
++        config = configRepository.getDefaultCentralStorageConfig();
+ 
+         // then
+         assertThat(config).isEqualTo(updatedConfig);
+diff --git a/central/src/test/java/org/glowroot/central/repo/GaugeValueDaoIT.java b/central/src/test/java/org/glowroot/central/repo/GaugeValueDaoIT.java
+index 8f917d314..966ba93d9 100644
+--- a/central/src/test/java/org/glowroot/central/repo/GaugeValueDaoIT.java
++++ b/central/src/test/java/org/glowroot/central/repo/GaugeValueDaoIT.java
+@@ -26,7 +26,6 @@ import org.junit.Test;
+ 
+ import org.glowroot.central.util.ClusterManager;
+ import org.glowroot.central.util.Session;
+-import org.glowroot.common.config.CentralStorageConfig;
+ import org.glowroot.common.config.ImmutableCentralStorageConfig;
+ import org.glowroot.common.util.Clock;
+ import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
+@@ -52,19 +51,15 @@ public class GaugeValueDaoIT {
+                 cluster.getMetadata().getKeyspace("glowroot_unit_tests");
+ 
+         clusterManager = ClusterManager.create();
++        AdditionalStorageConfigDao additionalStorageConfigDao =
++                new AdditionalStorageConfigDao(session, clusterManager);
+         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
+         AgentConfigDao agentConfigDao = new AgentConfigDao(session, clusterManager);
+         agentRollupDao = new AgentRollupDao(session, agentConfigDao, clusterManager);
+         UserDao userDao = new UserDao(session, keyspaceMetadata, clusterManager);
+         RoleDao roleDao = new RoleDao(session, keyspaceMetadata, clusterManager);
+-        ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(centralConfigDao,
+-                agentConfigDao, agentRollupDao, userDao, roleDao, "");
+-        CentralStorageConfig storageConfig = configRepository.getCentralStorageConfig();
+-        configRepository.updateCentralStorageConfig(
+-                ImmutableCentralStorageConfig
+-                        .copyOf(storageConfig)
+-                        .withRollupExpirationHours(0, 0, 0, 0),
+-                storageConfig.version());
++        ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(additionalStorageConfigDao,
++                centralConfigDao, agentConfigDao, agentRollupDao, userDao, roleDao, "");
+         gaugeValueDao = new GaugeValueDao(session, agentRollupDao, configRepository, clusterManager,
+                 Clock.systemClock());
+     }
+@@ -95,7 +90,10 @@ public class GaugeValueDaoIT {
+ 
+         // rollup
+         List<Integer> rollupExpirationHours = Lists.newArrayList(
+-                ImmutableCentralStorageConfig.builder().build().rollupExpirationHours());
++                ImmutableCentralStorageConfig.builder()
++                        .id("")
++                        .build()
++                        .rollupExpirationHours());
+         rollupExpirationHours.add(0, rollupExpirationHours.get(0));
+         gaugeValueDao.rollup("one", null, true);
+         gaugeValueDao.rollup("one", null, true);
+diff --git a/central/src/test/java/org/glowroot/central/repo/SyntheticResultDaoIT.java b/central/src/test/java/org/glowroot/central/repo/SyntheticResultDaoIT.java
+index c61f120d4..f5e3e87f6 100644
+--- a/central/src/test/java/org/glowroot/central/repo/SyntheticResultDaoIT.java
++++ b/central/src/test/java/org/glowroot/central/repo/SyntheticResultDaoIT.java
+@@ -26,7 +26,6 @@ import org.junit.Test;
+ 
+ import org.glowroot.central.util.ClusterManager;
+ import org.glowroot.central.util.Session;
+-import org.glowroot.common.config.CentralStorageConfig;
+ import org.glowroot.common.config.ImmutableCentralStorageConfig;
+ import org.glowroot.common.repo.SyntheticResultRepository.SyntheticResult;
+ import org.glowroot.common.util.Clock;
+@@ -52,19 +51,15 @@ public class SyntheticResultDaoIT {
+                 cluster.getMetadata().getKeyspace("glowroot_unit_tests");
+ 
+         clusterManager = ClusterManager.create();
++        AdditionalStorageConfigDao additionalStorageConfigDao =
++                new AdditionalStorageConfigDao(session, clusterManager);
+         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
+         AgentConfigDao agentConfigDao = new AgentConfigDao(session, clusterManager);
+         AgentRollupDao agentRollupDao = new AgentRollupDao(session, agentConfigDao, clusterManager);
+         UserDao userDao = new UserDao(session, keyspaceMetadata, clusterManager);
+         RoleDao roleDao = new RoleDao(session, keyspaceMetadata, clusterManager);
+-        ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(centralConfigDao,
+-                agentConfigDao, agentRollupDao, userDao, roleDao, "");
+-        CentralStorageConfig storageConfig = configRepository.getCentralStorageConfig();
+-        configRepository.updateCentralStorageConfig(
+-                ImmutableCentralStorageConfig
+-                        .copyOf(storageConfig)
+-                        .withRollupExpirationHours(0, 0, 0, 0),
+-                storageConfig.version());
++        ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(additionalStorageConfigDao,
++                centralConfigDao, agentConfigDao, agentRollupDao, userDao, roleDao, "");
+         syntheticResultDao = new SyntheticResultDao(session, configRepository, Clock.systemClock());
+     }
+ 
+@@ -100,7 +95,10 @@ public class SyntheticResultDaoIT {
+ 
+         // rollup
+         List<Integer> rollupExpirationHours = Lists.newArrayList(
+-                ImmutableCentralStorageConfig.builder().build().rollupExpirationHours());
++                ImmutableCentralStorageConfig.builder()
++                        .id("")
++                        .build()
++                        .rollupExpirationHours());
+         rollupExpirationHours.add(0, rollupExpirationHours.get(0));
+         syntheticResultDao.rollup("one");
+         syntheticResultDao.rollup("one");
+diff --git a/central/src/test/java/org/glowroot/central/repo/TraceDaoIT.java b/central/src/test/java/org/glowroot/central/repo/TraceDaoIT.java
+index aa439cebd..69688b65a 100644
+--- a/central/src/test/java/org/glowroot/central/repo/TraceDaoIT.java
++++ b/central/src/test/java/org/glowroot/central/repo/TraceDaoIT.java
+@@ -28,13 +28,13 @@ import org.glowroot.common.live.LiveTraceRepository.TracePoint;
+ import org.glowroot.common.live.LiveTraceRepository.TracePointFilter;
+ import org.glowroot.common.live.StringComparator;
+ import org.glowroot.common.model.Result;
+-import org.glowroot.common.repo.ConfigRepository;
+ import org.glowroot.common.repo.ImmutableTraceQuery;
+ import org.glowroot.common.repo.TraceRepository.TraceQuery;
+ import org.glowroot.common.util.Clock;
+ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+ 
+ import static org.assertj.core.api.Assertions.assertThat;
++import static org.mockito.ArgumentMatchers.anyString;
+ import static org.mockito.Mockito.mock;
+ import static org.mockito.Mockito.when;
+ 
+@@ -58,9 +58,15 @@ public class TraceDaoIT {
+         session.execute("use glowroot_unit_tests");
+ 
+         clusterManager = ClusterManager.create();
+-        ConfigRepository configRepository = mock(ConfigRepository.class);
+-        when(configRepository.getStorageConfig())
+-                .thenReturn(ImmutableCentralStorageConfig.builder().build());
++        ConfigRepositoryImpl configRepository = mock(ConfigRepositoryImpl.class);
++        when(configRepository.getDefaultCentralStorageConfig())
++                .thenReturn(ImmutableCentralStorageConfig.builder()
++                        .id("")
++                        .build());
++        when(configRepository.getStorageConfig(anyString()))
++                .thenReturn(ImmutableCentralStorageConfig.builder()
++                        .id("")
++                        .build());
+         traceDao = new TraceDao(session,
+                 new AgentRollupDao(session, mock(AgentConfigDao.class), clusterManager),
+                 mock(TransactionTypeDao.class), mock(FullQueryTextDao.class),
+diff --git a/common/src/main/java/org/glowroot/common/config/CentralStorageConfig.java b/common/src/main/java/org/glowroot/common/config/CentralStorageConfig.java
+index 4f7b520fc..706c676f0 100644
+--- a/common/src/main/java/org/glowroot/common/config/CentralStorageConfig.java
++++ b/common/src/main/java/org/glowroot/common/config/CentralStorageConfig.java
+@@ -15,7 +15,11 @@
+  */
+ package org.glowroot.common.config;
+ 
++import javax.annotation.Nullable;
++
+ import com.fasterxml.jackson.annotation.JsonIgnore;
++import com.fasterxml.jackson.annotation.JsonInclude;
++import com.fasterxml.jackson.annotation.JsonInclude.Include;
+ import com.google.common.collect.ImmutableList;
+ import org.immutables.value.Value;
+ 
+@@ -28,6 +32,12 @@ public abstract class CentralStorageConfig implements StorageConfig {
+     private static final ImmutableList<Integer> DEFAULT_ROLLUP_EXPIRATION_HOURS =
+             ImmutableList.of(24 * 3, 24 * 14, 24 * 90, 24 * 365 * 2);
+ 
++    // default central storage config has id ""
++    @JsonInclude(value = Include.NON_EMPTY)
++    public abstract String id();
++
++    public abstract @Nullable String display();
++
+     // TODO revisit this comment
+     //
+     // currently aggregate expiration should be at least as big as trace expiration
+@@ -57,8 +67,4 @@ public abstract class CentralStorageConfig implements StorageConfig {
+     public String version() {
+         return Versions.getJsonVersion(this);
+     }
+-
+-    public boolean hasListIssues() {
+-        return rollupExpirationHours().size() != DEFAULT_ROLLUP_EXPIRATION_HOURS.size();
+-    }
+ }
+diff --git a/common/src/main/java/org/glowroot/common/repo/ConfigRepository.java b/common/src/main/java/org/glowroot/common/repo/ConfigRepository.java
+index dfa52d344..4e6a0acc0 100644
+--- a/common/src/main/java/org/glowroot/common/repo/ConfigRepository.java
++++ b/common/src/main/java/org/glowroot/common/repo/ConfigRepository.java
+@@ -137,11 +137,13 @@ public interface ConfigRepository {
+ 
+     CentralWebConfig getCentralWebConfig() throws Exception;
+ 
+-    StorageConfig getStorageConfig() throws Exception;
++    StorageConfig getStorageConfig(String agentRollupId) throws Exception;
+ 
+     EmbeddedStorageConfig getEmbeddedStorageConfig() throws Exception;
+ 
+-    CentralStorageConfig getCentralStorageConfig() throws Exception;
++    CentralStorageConfig getDefaultCentralStorageConfig() throws Exception;
++
++    List<CentralStorageConfig> getAdditionalCentralStorageConfigs() throws Exception;
+ 
+     SmtpConfig getSmtpConfig() throws Exception;
+ 
+@@ -236,9 +238,16 @@ public interface ConfigRepository {
+     void updateEmbeddedStorageConfig(EmbeddedStorageConfig config, String priorVersion)
+             throws Exception;
+ 
+-    void updateCentralStorageConfig(CentralStorageConfig config, String priorVersion)
++    void updateDefaultCentralStorageConfig(CentralStorageConfig config, String priorVersion)
++            throws Exception;
++
++    void insertAdditionalCentralStorageConfig(CentralStorageConfig config) throws Exception;
++
++    void updateAdditionalCentralStorageConfig(CentralStorageConfig config, String priorVersion)
+             throws Exception;
+ 
++    void deleteAdditionalCentralStorageConfig(String id) throws Exception;
++
+     void updateSmtpConfig(SmtpConfig config, String priorVersion) throws Exception;
+ 
+     void updateHttpProxyConfig(HttpProxyConfig config, String priorVersion) throws Exception;
+@@ -315,6 +324,9 @@ public interface ConfigRepository {
+     class CannotDeleteLastRoleException extends Exception {}
+ 
+     @SuppressWarnings("serial")
++    class StorageConfigNotFoundException extends Exception {}
++
++    @SuppressWarnings("serial")
+     class DuplicateMBeanObjectNameException extends Exception {}
+ 
+     @SuppressWarnings("serial")
+diff --git a/common/src/main/java/org/glowroot/common/repo/util/MetricService.java b/common/src/main/java/org/glowroot/common/repo/util/MetricService.java
+index eaf1e3701..39a49e4d3 100644
+--- a/common/src/main/java/org/glowroot/common/repo/util/MetricService.java
++++ b/common/src/main/java/org/glowroot/common/repo/util/MetricService.java
+@@ -81,7 +81,8 @@ class MetricService {
+     private @Nullable Double getTransactionDurationPercentile(String agentRollupId,
+             String transactionType, @Nullable String transactionName, double percentile,
+             long startTime, long endTime) throws Exception {
+-        int rollupLevel = rollupLevelService.getRollupLevelForView(startTime, endTime);
++        int rollupLevel =
++                rollupLevelService.getRollupLevelForView(agentRollupId, startTime, endTime);
+         // startTime + 1 in order to not include the aggregate value at startTime
+         List<PercentileAggregate> aggregates =
+                 aggregateRepository.readPercentileAggregates(agentRollupId,
+@@ -165,7 +166,8 @@ class MetricService {
+ 
+     private @Nullable Double getGaugeValue(String agentRollupId, String gaugeName,
+             long startTime, long endTime) throws Exception {
+-        int rollupLevel = rollupLevelService.getGaugeRollupLevelForView(startTime, endTime);
++        int rollupLevel =
++                rollupLevelService.getGaugeRollupLevelForView(agentRollupId, startTime, endTime);
+         // startTime + 1 in order to not include the gauge value at startTime
+         List<GaugeValue> gaugeValues = gaugeValueRepository.readGaugeValues(agentRollupId,
+                 gaugeName, startTime + 1, endTime, rollupLevel);
+@@ -187,7 +189,8 @@ class MetricService {
+     private List<ThroughputAggregate> getThroughputAggregates(String agentRollupId,
+             String transactionType, @Nullable String transactionName, long startTime, long endTime)
+             throws Exception {
+-        int rollupLevel = rollupLevelService.getRollupLevelForView(startTime, endTime);
++        int rollupLevel =
++                rollupLevelService.getRollupLevelForView(agentRollupId, startTime, endTime);
+         // startTime + 1 in order to not include the aggregate at startTime
+         return aggregateRepository.readThroughputAggregates(agentRollupId,
+                 ImmutableTransactionQuery.builder()
+@@ -202,7 +205,8 @@ class MetricService {
+     private List<OverviewAggregate> getOverviewAggregates(String agentRollupId,
+             String transactionType, @Nullable String transactionName, long startTime, long endTime)
+             throws Exception {
+-        int rollupLevel = rollupLevelService.getRollupLevelForView(startTime, endTime);
++        int rollupLevel =
++                rollupLevelService.getRollupLevelForView(agentRollupId, startTime, endTime);
+         // startTime + 1 in order to not include the aggregate at startTime
+         return aggregateRepository.readOverviewAggregates(agentRollupId,
+                 ImmutableTransactionQuery.builder()
+diff --git a/common/src/main/java/org/glowroot/common/repo/util/RollupLevelService.java b/common/src/main/java/org/glowroot/common/repo/util/RollupLevelService.java
+index 4a9a1c1b9..17ed8dd7b 100644
+--- a/common/src/main/java/org/glowroot/common/repo/util/RollupLevelService.java
++++ b/common/src/main/java/org/glowroot/common/repo/util/RollupLevelService.java
+@@ -33,11 +33,11 @@ public class RollupLevelService {
+         this.clock = clock;
+     }
+ 
+-    public int getRollupLevelForView(long from, long to) throws Exception {
++    public int getRollupLevelForView(String agentRollupId, long from, long to) throws Exception {
+         long millis = to - from;
+         long timeAgoMillis = clock.currentTimeMillis() - from;
+         List<Integer> rollupExpirationHours =
+-                configRepository.getStorageConfig().rollupExpirationHours();
++                configRepository.getStorageConfig(agentRollupId).rollupExpirationHours();
+         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
+         for (int i = 0; i < rollupConfigs.size() - 1; i++) {
+             RollupConfig nextRollupConfig = rollupConfigs.get(i + 1);
+@@ -50,11 +50,12 @@ public class RollupLevelService {
+         return rollupConfigs.size() - 1;
+     }
+ 
+-    public int getGaugeRollupLevelForView(long from, long to) throws Exception {
++    public int getGaugeRollupLevelForView(String agentRollupId, long from, long to)
++            throws Exception {
+         long millis = to - from;
+         long timeAgoMillis = clock.currentTimeMillis() - from;
+         List<Integer> rollupExpirationHours =
+-                configRepository.getStorageConfig().rollupExpirationHours();
++                configRepository.getStorageConfig(agentRollupId).rollupExpirationHours();
+         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
+         // gauge point rollup level 0 shares rollup level 1's expiration
+         long viewThresholdMillis = rollupConfigs.get(0).viewThresholdMillis();
+@@ -74,11 +75,12 @@ public class RollupLevelService {
+         return rollupConfigs.size();
+     }
+ 
+-    public long getDataPointIntervalMillis(long from, long to) throws Exception {
++    public long getDataPointIntervalMillis(String agentRollupId, long from, long to)
++            throws Exception {
+         long millis = to - from;
+         long timeAgoMillis = clock.currentTimeMillis() - from;
+         List<Integer> rollupExpirationHours =
+-                configRepository.getStorageConfig().rollupExpirationHours();
++                configRepository.getStorageConfig(agentRollupId).rollupExpirationHours();
+         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
+         for (int i = 0; i < rollupConfigs.size() - 1; i++) {
+             RollupConfig currRollupConfig = rollupConfigs.get(i);
+diff --git a/ui/app/scripts/services/charts.js b/ui/app/scripts/services/charts.js
+index beaf06978..c5547c126 100644
+--- a/ui/app/scripts/services/charts.js
++++ b/ui/app/scripts/services/charts.js
+@@ -182,6 +182,11 @@ glowroot.factory('charts', [
+     }
+ 
+     function getDataPointIntervalMillis(from, to, useGaugeViewThresholdMultiplier, tracePoints) {
++      var agentRollup = $rootScope.layout.agentRollups[$rootScope.agentRollupId];
++      if (!agentRollup) {
++        // this return value is not really used
++        return 1000;
++      }
+       var millis = to - from;
+       if (tracePoints && millis < 120000) {
+         return 1000;
+@@ -196,7 +201,7 @@ glowroot.factory('charts', [
+         if (useGaugeViewThresholdMultiplier) {
+           viewThresholdMillis *= 4;
+         }
+-        var expirationMillis = $rootScope.layout.rollupExpirationMillis[i];
++        var expirationMillis = agentRollup.rollupExpirationMillis[i];
+         if (millis < viewThresholdMillis && (expirationMillis === 0 || expirationMillis > timeAgoMillis)) {
+           return currRollupConfig.intervalMillis;
+         }
+diff --git a/ui/app/views/admin/storage.html b/ui/app/views/admin/storage.html
+index 18e6a59e1..ccc4add72 100644
+--- a/ui/app/views/admin/storage.html
++++ b/ui/app/views/admin/storage.html
+@@ -209,6 +209,25 @@
+         </div>
+       </fieldset>
+       <div ng-if="layout.central">
++        <!--div gt-form-group
++             gt-label="ID"
++             gt-model="config.id"
++             gt-required="loaded"
++             gt-disabled="true"
++             gt-width="20em"
++             gt-col-class1="col-lg-4"
++             gt-col-class2="col-lg-8"
++             class="gt-form-group-without-help-block">
++        </div>
++        <div gt-form-group
++             gt-label="Display"
++             gt-model="config.display"
++             gt-disabled="!layout.adminEdit"
++             gt-width="20em"
++             gt-col-class1="col-lg-4"
++             gt-col-class2="col-lg-8"
++             class="gt-form-group-without-help-block">
++        </div-->
+         <div gt-form-group
+              gt-label="1&nbsp;minute&nbsp;interval&nbsp;data"
+              gt-model="page.rollupExpirationDays[0]"
+diff --git a/ui/src/main/java/org/glowroot/ui/AdminJsonService.java b/ui/src/main/java/org/glowroot/ui/AdminJsonService.java
+index 6e93fc50d..26a83761d 100644
+--- a/ui/src/main/java/org/glowroot/ui/AdminJsonService.java
++++ b/ui/src/main/java/org/glowroot/ui/AdminJsonService.java
+@@ -153,7 +153,7 @@ class AdminJsonService {
+     @GET(path = "/backend/admin/storage", permission = "admin:view:storage")
+     String getStorageConfig() throws Exception {
+         if (central) {
+-            CentralStorageConfig config = configRepository.getCentralStorageConfig();
++            CentralStorageConfig config = configRepository.getDefaultCentralStorageConfig();
+             return mapper.writeValueAsString(CentralStorageConfigDto.create(config));
+         } else {
+             EmbeddedStorageConfig config = configRepository.getEmbeddedStorageConfig();
+@@ -257,7 +257,7 @@ class AdminJsonService {
+             CentralStorageConfigDto configDto =
+                     mapper.readValue(content, ImmutableCentralStorageConfigDto.class);
+             try {
+-                configRepository.updateCentralStorageConfig(configDto.convert(),
++                configRepository.updateDefaultCentralStorageConfig(configDto.convert(),
+                         configDto.version());
+             } catch (OptimisticLockException e) {
+                 throw new JsonServiceException(PRECONDITION_FAILED, e);
+@@ -671,6 +671,8 @@ class AdminJsonService {
+     @Value.Immutable
+     abstract static class CentralStorageConfigDto {
+ 
++        abstract String id();
++        abstract @Nullable String display();
+         abstract ImmutableList<Integer> rollupExpirationHours();
+         abstract int traceExpirationHours();
+         abstract int fullQueryTextExpirationHours();
+@@ -678,6 +680,8 @@ class AdminJsonService {
+ 
+         private CentralStorageConfig convert() {
+             return ImmutableCentralStorageConfig.builder()
++                    .id(id())
++                    .display(display())
+                     .rollupExpirationHours(rollupExpirationHours())
+                     .traceExpirationHours(traceExpirationHours())
+                     .fullQueryTextExpirationHours(fullQueryTextExpirationHours())
+@@ -686,6 +690,8 @@ class AdminJsonService {
+ 
+         private static CentralStorageConfigDto create(CentralStorageConfig config) {
+             return ImmutableCentralStorageConfigDto.builder()
++                    .id(config.id())
++                    .display(config.display())
+                     .addAllRollupExpirationHours(config.rollupExpirationHours())
+                     .traceExpirationHours(config.traceExpirationHours())
+                     .fullQueryTextExpirationHours(config.fullQueryTextExpirationHours())
+diff --git a/ui/src/main/java/org/glowroot/ui/ErrorJsonService.java b/ui/src/main/java/org/glowroot/ui/ErrorJsonService.java
+index 2f069d25a..3c4f2cf0d 100644
+--- a/ui/src/main/java/org/glowroot/ui/ErrorJsonService.java
++++ b/ui/src/main/java/org/glowroot/ui/ErrorJsonService.java
+@@ -92,7 +92,7 @@ class ErrorJsonService {
+                 .transactionName(request.transactionName())
+                 .from(request.from())
+                 .to(request.to())
+-                .rollupLevel(rollupLevelService.getRollupLevelForView(request.from(),
++                .rollupLevel(rollupLevelService.getRollupLevelForView(agentRollupId, request.from(),
+                         request.to()))
+                 .build();
+         ErrorMessageFilter filter = ImmutableErrorMessageFilter.builder()
+@@ -114,8 +114,8 @@ class ErrorJsonService {
+         if (!throughputAggregates.isEmpty()) {
+             long maxCaptureTime =
+                     throughputAggregates.get(throughputAggregates.size() - 1).captureTime();
+-            long resolutionMillis =
+-                    rollupLevelService.getDataPointIntervalMillis(query.from(), query.to());
++            long resolutionMillis = rollupLevelService.getDataPointIntervalMillis(agentRollupId,
++                    query.from(), query.to());
+             ErrorMessageResult result = traceRepository.readErrorMessages(agentRollupId,
+                     ImmutableTraceQuery.builder().copyFrom(query).to(maxCaptureTime).build(),
+                     filter, resolutionMillis, request.errorMessageLimit());
+@@ -134,7 +134,8 @@ class ErrorJsonService {
+                             traceErrorPoint.errorCount(), transactionCount));
+                 }
+             }
+-            populateDataSeries(query, errorPoints, dataSeries, dataSeriesExtra, liveCaptureTime);
++            populateDataSeries(agentRollupId, query, errorPoints, dataSeries, dataSeriesExtra,
++                    liveCaptureTime);
+             records = result.counts().records();
+             moreAvailable = result.counts().moreAvailable();
+         }
+@@ -158,7 +159,8 @@ class ErrorJsonService {
+                 .transactionType(request.transactionType())
+                 .from(request.from())
+                 .to(request.to())
+-                .rollupLevel(rollupLevelService.getRollupLevelForView(request.from(), request.to()))
++                .rollupLevel(rollupLevelService.getRollupLevelForView(agentRollupId, request.from(),
++                        request.to()))
+                 .build();
+         OverallErrorSummary overallSummary =
+                 errorCommonService.readOverallErrorSummary(agentRollupId, query, autoRefresh);
+@@ -177,11 +179,11 @@ class ErrorJsonService {
+         return sb.toString();
+     }
+ 
+-    private void populateDataSeries(TraceQuery query, List<ErrorPoint> errorPoints,
+-            DataSeries dataSeries, Map<Long, Long[]> dataSeriesExtra, long liveCaptureTime)
+-            throws Exception {
+-        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(liveCaptureTime,
+-                rollupLevelService.getDataPointIntervalMillis(query.from(), query.to()));
++    private void populateDataSeries(String agentRollupId, TraceQuery query,
++            List<ErrorPoint> errorPoints, DataSeries dataSeries, Map<Long, Long[]> dataSeriesExtra,
++            long liveCaptureTime) throws Exception {
++        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(liveCaptureTime, rollupLevelService
++                .getDataPointIntervalMillis(agentRollupId, query.from(), query.to()));
+         ErrorPoint lastErrorPoint = null;
+         for (ErrorPoint errorPoint : errorPoints) {
+             if (lastErrorPoint == null) {
+diff --git a/ui/src/main/java/org/glowroot/ui/GaugeValueJsonService.java b/ui/src/main/java/org/glowroot/ui/GaugeValueJsonService.java
+index 3769bbf50..09de14cb0 100644
+--- a/ui/src/main/java/org/glowroot/ui/GaugeValueJsonService.java
++++ b/ui/src/main/java/org/glowroot/ui/GaugeValueJsonService.java
+@@ -62,8 +62,8 @@ class GaugeValueJsonService {
+     @GET(path = "/backend/jvm/gauges", permission = "agent:jvm:gauges")
+     String getGaugeValues(@BindAgentRollupId String agentRollupId,
+             @BindRequest GaugeValueRequest request) throws Exception {
+-        int rollupLevel =
+-                rollupLevelService.getGaugeRollupLevelForView(request.from(), request.to());
++        int rollupLevel = rollupLevelService.getGaugeRollupLevelForView(agentRollupId,
++                request.from(), request.to());
+         if (rollupLevel == 0 && !agentRollupRepository.isAgent(agentRollupId)) {
+             // agent rollups from children do not have level-0 data
+             rollupLevel = 1;
+diff --git a/ui/src/main/java/org/glowroot/ui/LayoutService.java b/ui/src/main/java/org/glowroot/ui/LayoutService.java
+index b80314bea..5cd1ef020 100644
+--- a/ui/src/main/java/org/glowroot/ui/LayoutService.java
++++ b/ui/src/main/java/org/glowroot/ui/LayoutService.java
+@@ -139,12 +139,22 @@ class LayoutService {
+                 .putAllTraceAttributeNames(traceAttributeNames)
+                 .defaultDisplayedTransactionType(defaultDisplayedTransactionType)
+                 .defaultDisplayedPercentiles(uiConfig.getDefaultDisplayedPercentileList())
++                .addAllRollupExpirationMillis(getRollupExpirationMillis(AGENT_ID))
+                 .build());
+ 
+         return createLayout(authentication, agentRollups, showNavbarTransaction, showNavbarError,
+                 showNavbarJvm, false, showNavbarIncident, showNavbarReport, showNavbarConfig);
+     }
+ 
++    private List<Long> getRollupExpirationMillis(String agentRollupId) throws Exception {
++        List<Long> rollupExpirationMillis = Lists.newArrayList();
++        for (long hours : configRepository.getStorageConfig(agentRollupId)
++                .rollupExpirationHours()) {
++            rollupExpirationMillis.add(HOURS.toMillis(hours));
++        }
++        return rollupExpirationMillis;
++    }
++
+     private Layout buildLayoutCentral(Authentication authentication) throws Exception {
+         List<FilteredAgentRollup> agentRollups =
+                 filter(agentRollupRepository.readAgentRollups(), authentication);
+@@ -184,10 +194,6 @@ class LayoutService {
+             boolean showNavbarError, boolean showNavbarJvm, boolean showNavbarSyntheticMonitor,
+             boolean showNavbarIncident, boolean showNavbarReport, boolean showNavbarConfig)
+             throws Exception {
+-        List<Long> rollupExpirationMillis = Lists.newArrayList();
+-        for (long hours : configRepository.getStorageConfig().rollupExpirationHours()) {
+-            rollupExpirationMillis.add(HOURS.toMillis(hours));
+-        }
+         return ImmutableLayout.builder()
+                 .central(central)
+                 .servlet(servlet)
+@@ -197,7 +203,6 @@ class LayoutService {
+                         : configRepository.namedUsersExist()
+                                 || !configRepository.getLdapConfig().host().isEmpty())
+                 .addAllRollupConfigs(configRepository.getRollupConfigs())
+-                .addAllRollupExpirationMillis(rollupExpirationMillis)
+                 .gaugeCollectionIntervalMillis(configRepository.getGaugeCollectionIntervalMillis())
+                 .agentRollups(agentRollups)
+                 .showNavbarTransaction(showNavbarTransaction)
+@@ -399,6 +404,7 @@ class LayoutService {
+                             .putAllTraceAttributeNames(traceAttributeNames)
+                             .defaultDisplayedTransactionType(defaultDisplayedTransactionType)
+                             .defaultDisplayedPercentiles(defaultDisplayedPercentiles)
++                            .addAllRollupExpirationMillis(getRollupExpirationMillis(AGENT_ID))
+                             .build());
+             for (FilteredAgentRollup childAgentRollup : agentRollup.children()) {
+                 process(childAgentRollup, depth + 1);
+@@ -435,7 +441,6 @@ class LayoutService {
+         abstract String glowrootVersion();
+         abstract boolean loginEnabled();
+         abstract ImmutableList<RollupConfig> rollupConfigs();
+-        abstract ImmutableList<Long> rollupExpirationMillis();
+         abstract long gaugeCollectionIntervalMillis();
+         abstract ImmutableMap<String, AgentRollupLayout> agentRollups();
+         abstract boolean showNavbarTransaction();
+@@ -469,6 +474,7 @@ class LayoutService {
+         Map<String, List<String>> traceAttributeNames(); // key is transaction type
+         String defaultDisplayedTransactionType();
+         List<Double> defaultDisplayedPercentiles();
++        ImmutableList<Long> rollupExpirationMillis();
+     }
+ 
+     @Value.Immutable
+diff --git a/ui/src/main/java/org/glowroot/ui/SyntheticResultJsonService.java b/ui/src/main/java/org/glowroot/ui/SyntheticResultJsonService.java
+index 5605742b9..78a1ba6b6 100644
+--- a/ui/src/main/java/org/glowroot/ui/SyntheticResultJsonService.java
++++ b/ui/src/main/java/org/glowroot/ui/SyntheticResultJsonService.java
+@@ -62,7 +62,8 @@ class SyntheticResultJsonService {
+     @GET(path = "/backend/synthetic-monitor/results", permission = "agent:syntheticMonitor")
+     String getSyntheticResults(@BindAgentRollupId String agentRollupId,
+             @BindRequest SyntheticResultRequest request) throws Exception {
+-        int rollupLevel = rollupLevelService.getRollupLevelForView(request.from(), request.to());
++        int rollupLevel = rollupLevelService.getRollupLevelForView(agentRollupId, request.from(),
++                request.to());
+         long intervalMillis = configRepository.getRollupConfigs().get(rollupLevel).intervalMillis();
+         double gapMillis = intervalMillis * 1.5;
+         long revisedFrom = request.from() - intervalMillis;
+diff --git a/ui/src/main/java/org/glowroot/ui/TracePointJsonService.java b/ui/src/main/java/org/glowroot/ui/TracePointJsonService.java
+index 8348901fc..00cfe1cfc 100644
+--- a/ui/src/main/java/org/glowroot/ui/TracePointJsonService.java
++++ b/ui/src/main/java/org/glowroot/ui/TracePointJsonService.java
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright 2011-2016 the original author or authors.
++ * Copyright 2011-2017 the original author or authors.
+  *
+  * Licensed under the Apache License, Version 2.0 (the "License");
+  * you may not use this file except in compliance with the License.
+@@ -167,7 +167,8 @@ class TracePointJsonService {
+                     getStoredAndPendingPoints(captureTime, captureActiveTracePoints);
+             List<TracePoint> points = Lists.newArrayList(queryResult.records());
+             removeDuplicatesBetweenActiveAndNormalTracePoints(activeTracePoints, points);
+-            int traceExpirationHours = configRepository.getStorageConfig().traceExpirationHours();
++            int traceExpirationHours =
++                    configRepository.getStorageConfig(agentRollupId).traceExpirationHours();
+             boolean expired = points.isEmpty() && traceExpirationHours != 0 && query
+                     .to() < clock.currentTimeMillis() - HOURS.toMillis(traceExpirationHours);
+             return writeResponse(points, activeTracePoints, queryResult.moreAvailable(), expired);
+diff --git a/ui/src/main/java/org/glowroot/ui/TransactionJsonService.java b/ui/src/main/java/org/glowroot/ui/TransactionJsonService.java
+index eb7a5806e..96546202d 100644
+--- a/ui/src/main/java/org/glowroot/ui/TransactionJsonService.java
++++ b/ui/src/main/java/org/glowroot/ui/TransactionJsonService.java
+@@ -87,12 +87,12 @@ class TransactionJsonService {
+     String getOverview(@BindAgentRollupId String agentRollupId,
+             @BindRequest TransactionDataRequest request, @BindAutoRefresh boolean autoRefresh)
+             throws Exception {
+-        TransactionQuery query = toChartQuery(request);
++        TransactionQuery query = toChartQuery(agentRollupId, request);
+         long liveCaptureTime = clock.currentTimeMillis();
+         List<OverviewAggregate> overviewAggregates =
+                 transactionCommonService.getOverviewAggregates(agentRollupId, query, autoRefresh);
+-        List<DataSeries> dataSeriesList =
+-                getDataSeriesForTimerChart(request, overviewAggregates, liveCaptureTime);
++        List<DataSeries> dataSeriesList = getDataSeriesForTimerChart(agentRollupId, request,
++                overviewAggregates, liveCaptureTime);
+         Map<Long, Long> transactionCounts = getTransactionCounts(overviewAggregates);
+         // TODO more precise aggregate when from/to not on rollup grid
+         List<OverviewAggregate> overviewAggregatesForMerging = Lists.newArrayList();
+@@ -120,11 +120,11 @@ class TransactionJsonService {
+     String getPercentiles(@BindAgentRollupId String agentRollupId,
+             @BindRequest TransactionPercentileRequest request, @BindAutoRefresh boolean autoRefresh)
+             throws Exception {
+-        TransactionQuery query = toChartQuery(request);
++        TransactionQuery query = toChartQuery(agentRollupId, request);
+         long liveCaptureTime = clock.currentTimeMillis();
+         List<PercentileAggregate> percentileAggregates =
+                 transactionCommonService.getPercentileAggregates(agentRollupId, query, autoRefresh);
+-        PercentileData percentileData = getDataSeriesForPercentileChart(request,
++        PercentileData percentileData = getDataSeriesForPercentileChart(agentRollupId, request,
+                 percentileAggregates, request.percentile(), liveCaptureTime);
+         Map<Long, Long> transactionCounts = getTransactionCounts2(percentileAggregates);
+ 
+@@ -143,12 +143,12 @@ class TransactionJsonService {
+     String getThroughput(@BindAgentRollupId String agentRollupId,
+             @BindRequest TransactionDataRequest request, @BindAutoRefresh boolean autoRefresh)
+             throws Exception {
+-        TransactionQuery query = toChartQuery(request);
++        TransactionQuery query = toChartQuery(agentRollupId, request);
+         long liveCaptureTime = clock.currentTimeMillis();
+         List<ThroughputAggregate> throughputAggregates =
+                 transactionCommonService.getThroughputAggregates(agentRollupId, query, autoRefresh);
+-        List<DataSeries> dataSeriesList =
+-                getDataSeriesForThroughputChart(request, throughputAggregates, liveCaptureTime);
++        List<DataSeries> dataSeriesList = getDataSeriesForThroughputChart(agentRollupId, request,
++                throughputAggregates, liveCaptureTime);
+         // TODO more precise aggregate when from/to not on rollup grid
+         long transactionCount = 0;
+         for (ThroughputAggregate throughputAggregate : throughputAggregates) {
+@@ -173,7 +173,7 @@ class TransactionJsonService {
+     @GET(path = "/backend/transaction/queries", permission = "agent:transaction:queries")
+     String getQueries(@BindAgentRollupId String agentRollupId,
+             @BindRequest TransactionDataRequest request) throws Exception {
+-        TransactionQuery query = toQuery(request);
++        TransactionQuery query = toQuery(agentRollupId, request);
+         Map<String, List<MutableQuery>> queries =
+                 transactionCommonService.getMergedQueries(agentRollupId, query);
+         List<Query> queryList = Lists.newArrayList();
+@@ -220,7 +220,7 @@ class TransactionJsonService {
+     @GET(path = "/backend/transaction/service-calls", permission = "agent:transaction:serviceCalls")
+     String getServiceCalls(@BindAgentRollupId String agentRollupId,
+             @BindRequest TransactionDataRequest request) throws Exception {
+-        TransactionQuery query = toQuery(request);
++        TransactionQuery query = toQuery(agentRollupId, request);
+         List<Aggregate.ServiceCallsByType> queries =
+                 transactionCommonService.getMergedServiceCalls(agentRollupId, query);
+         List<ServiceCall> serviceCallList = Lists.newArrayList();
+@@ -255,7 +255,7 @@ class TransactionJsonService {
+     @GET(path = "/backend/transaction/profile", permission = "agent:transaction:profile")
+     String getProfile(@BindAgentRollupId String agentRollupId,
+             @BindRequest TransactionProfileRequest request) throws Exception {
+-        TransactionQuery query = toQuery(request);
++        TransactionQuery query = toQuery(agentRollupId, request);
+         MutableProfile profile =
+                 transactionCommonService.getMergedProfile(agentRollupId, query, request.auxiliary(),
+                         request.include(), request.exclude(), request.truncateBranchPercentage());
+@@ -302,7 +302,8 @@ class TransactionJsonService {
+                 .transactionType(request.transactionType())
+                 .from(request.from())
+                 .to(request.to())
+-                .rollupLevel(rollupLevelService.getRollupLevelForView(request.from(), request.to()))
++                .rollupLevel(rollupLevelService.getRollupLevelForView(agentRollupId, request.from(),
++                        request.to()))
+                 .build();
+         OverallSummary overallSummary =
+                 transactionCommonService.readOverallSummary(agentRollupId, query, autoRefresh);
+@@ -324,15 +325,17 @@ class TransactionJsonService {
+     @GET(path = "/backend/transaction/flame-graph", permission = "agent:transaction:profile")
+     String getFlameGraph(@BindAgentRollupId String agentRollupId,
+             @BindRequest FlameGraphRequest request) throws Exception {
+-        TransactionQuery query = toQuery(request);
++        TransactionQuery query = toQuery(agentRollupId, request);
+         MutableProfile profile =
+                 transactionCommonService.getMergedProfile(agentRollupId, query, request.auxiliary(),
+                         request.include(), request.exclude(), request.truncateBranchPercentage());
+         return profile.toFlameGraphJson();
+     }
+ 
+-    private TransactionQuery toChartQuery(RequestBase request) throws Exception {
+-        int rollupLevel = rollupLevelService.getRollupLevelForView(request.from(), request.to());
++    private TransactionQuery toChartQuery(String agentRollupId, RequestBase request)
++            throws Exception {
++        int rollupLevel = rollupLevelService.getRollupLevelForView(agentRollupId, request.from(),
++                request.to());
+         long rollupIntervalMillis =
+                 configRepository.getRollupConfigs().get(rollupLevel).intervalMillis();
+         // read the closest rollup to the left and right of chart, in order to display line sloping
+@@ -348,13 +351,14 @@ class TransactionJsonService {
+                 .build();
+     }
+ 
+-    private TransactionQuery toQuery(RequestBase request) throws Exception {
++    private TransactionQuery toQuery(String agentRollupId, RequestBase request) throws Exception {
+         return ImmutableTransactionQuery.builder()
+                 .transactionType(request.transactionType())
+                 .transactionName(request.transactionName())
+                 .from(request.from())
+                 .to(request.to())
+-                .rollupLevel(rollupLevelService.getRollupLevelForView(request.from(), request.to()))
++                .rollupLevel(rollupLevelService.getRollupLevelForView(agentRollupId, request.from(),
++                        request.to()))
+                 .build();
+     }
+ 
+@@ -376,8 +380,9 @@ class TransactionJsonService {
+         return transactionCounts;
+     }
+ 
+-    private List<DataSeries> getDataSeriesForTimerChart(TransactionDataRequest request,
+-            List<OverviewAggregate> aggregates, long liveCaptureTime) throws Exception {
++    private List<DataSeries> getDataSeriesForTimerChart(String agentRollupId,
++            TransactionDataRequest request, List<OverviewAggregate> aggregates,
++            long liveCaptureTime) throws Exception {
+         if (aggregates.isEmpty()) {
+             return Lists.newArrayList();
+         }
+@@ -385,12 +390,12 @@ class TransactionJsonService {
+         for (OverviewAggregate aggregate : aggregates) {
+             stackedPoints.add(StackedPoint.create(aggregate));
+         }
+-        return getTimerDataSeries(request, stackedPoints, liveCaptureTime);
++        return getTimerDataSeries(agentRollupId, request, stackedPoints, liveCaptureTime);
+     }
+ 
+-    private PercentileData getDataSeriesForPercentileChart(TransactionPercentileRequest request,
+-            List<PercentileAggregate> percentileAggregates, List<Double> percentiles,
+-            long liveCaptureTime) throws Exception {
++    private PercentileData getDataSeriesForPercentileChart(String agentRollupId,
++            TransactionPercentileRequest request, List<PercentileAggregate> percentileAggregates,
++            List<Double> percentiles, long liveCaptureTime) throws Exception {
+         if (percentileAggregates.isEmpty()) {
+             return ImmutablePercentileData.builder()
+                     .mergedAggregate(ImmutablePercentileMergedAggregate.builder()
+@@ -399,8 +404,8 @@ class TransactionJsonService {
+                             .build())
+                     .build();
+         }
+-        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(liveCaptureTime,
+-                rollupLevelService.getDataPointIntervalMillis(request.from(), request.to()));
++        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(liveCaptureTime, rollupLevelService
++                .getDataPointIntervalMillis(agentRollupId, request.from(), request.to()));
+         List<DataSeries> dataSeriesList = Lists.newArrayList();
+         for (double percentile : percentiles) {
+             dataSeriesList
+@@ -461,13 +466,14 @@ class TransactionJsonService {
+                 .build();
+     }
+ 
+-    private List<DataSeries> getDataSeriesForThroughputChart(TransactionDataRequest request,
+-            List<ThroughputAggregate> throughputAggregates, long liveCaptureTime) throws Exception {
++    private List<DataSeries> getDataSeriesForThroughputChart(String agentRollupId,
++            TransactionDataRequest request, List<ThroughputAggregate> throughputAggregates,
++            long liveCaptureTime) throws Exception {
+         if (throughputAggregates.isEmpty()) {
+             return Lists.newArrayList();
+         }
+-        long dataPointIntervalMillis =
+-                rollupLevelService.getDataPointIntervalMillis(request.from(), request.to());
++        long dataPointIntervalMillis = rollupLevelService.getDataPointIntervalMillis(agentRollupId,
++                request.from(), request.to());
+         DataSeriesHelper dataSeriesHelper =
+                 new DataSeriesHelper(liveCaptureTime, dataPointIntervalMillis);
+         DataSeries dataSeries = new DataSeries("throughput");
+@@ -497,10 +503,11 @@ class TransactionJsonService {
+         return dataSeriesList;
+     }
+ 
+-    private List<DataSeries> getTimerDataSeries(TransactionDataRequest request,
+-            List<StackedPoint> stackedPoints, long liveCaptureTime) throws Exception {
+-        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(liveCaptureTime,
+-                rollupLevelService.getDataPointIntervalMillis(request.from(), request.to()));
++    private List<DataSeries> getTimerDataSeries(String agentRollupId,
++            TransactionDataRequest request, List<StackedPoint> stackedPoints, long liveCaptureTime)
++            throws Exception {
++        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(liveCaptureTime, rollupLevelService
++                .getDataPointIntervalMillis(agentRollupId, request.from(), request.to()));
+         final int topX = 5;
+         List<String> timerNames = getTopTimerNames(stackedPoints, topX + 1);
+         List<DataSeries> dataSeriesList = Lists.newArrayList();
+diff --git a/webdriver-tests/src/test/java/org/glowroot/tests/WebDriverIT.java b/webdriver-tests/src/test/java/org/glowroot/tests/WebDriverIT.java
+index 4a5be2c4e..0342ddd61 100644
+--- a/webdriver-tests/src/test/java/org/glowroot/tests/WebDriverIT.java
++++ b/webdriver-tests/src/test/java/org/glowroot/tests/WebDriverIT.java
+@@ -129,7 +129,8 @@ public abstract class WebDriverIT {
+         resetCentralConfigAdmin("web", "{\"sessionTimeoutMinutes\":30,"
+                 + "\"sessionCookieName\":\"GLOWROOT_SESSION_ID\","
+                 + "\"version\":\"$version\"}");
+-        resetCentralConfigAdmin("storage", "{\"rollupExpirationHours\":[72,336,2160,17520],"
++        resetCentralConfigAdmin("storage", "{\"id\":\"default\","
++                + "\"rollupExpirationHours\":[72,336,2160,17520],"
+                 + "\"traceExpirationHours\":336,"
+                 + "\"fullQueryTextExpirationHours\":336,"
+                 + "\"version\":\"$version\"}");
+diff --git a/wire-api/src/main/protobuf/AgentConfig.proto b/wire-api/src/main/protobuf/AgentConfig.proto
+index 03b6d1bbb..db4a600d5 100644
+--- a/wire-api/src/main/protobuf/AgentConfig.proto
++++ b/wire-api/src/main/protobuf/AgentConfig.proto
+@@ -15,6 +15,7 @@ message AgentConfig {
+   UiConfig ui_config = 3;
+   UserRecordingConfig user_recording_config = 4;
+   AdvancedConfig advanced_config = 5;
++  StorageConfig storage_config = 17;
+ 
+   repeated GaugeConfig gauge_config = 10;
+   repeated SyntheticMonitorConfig synthetic_monitor_config = 14;
+@@ -57,6 +58,10 @@ message AgentConfig {
+     OptionalInt32 mbean_gauge_not_found_delay_seconds = 8;
+   }
+ 
++  message StorageConfig {
++    string storage_config_id = 1;
++  }
++
+   message GaugeConfig {
+     string mbean_object_name = 1;
+     repeated MBeanAttribute mbean_attribute = 2;
+-- 
+2.13.0.windows.1
+

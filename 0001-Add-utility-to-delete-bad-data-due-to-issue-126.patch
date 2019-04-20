@@ -1,0 +1,195 @@
+From 30fb08faec3f6ba98bea3e7996a3838ddb9411f9 Mon Sep 17 00:00:00 2001
+From: Trask Stalnaker <trask.stalnaker@gmail.com>
+Date: Sat, 22 Oct 2016 21:21:40 -0700
+Subject: [PATCH] Add utility to delete bad data due to issue 126
+
+---
+ .../java/org/glowroot/central/CentralModule.java   |   5 +-
+ .../central/DeleteBadDataFromIssue126.java         | 152 +++++++++++++++++++++
+ 2 files changed, 154 insertions(+), 3 deletions(-)
+ create mode 100644 central/src/main/java/org/glowroot/central/DeleteBadDataFromIssue126.java
+
+diff --git a/central/src/main/java/org/glowroot/central/CentralModule.java b/central/src/main/java/org/glowroot/central/CentralModule.java
+index b1ec3e9..81e86bf 100644
+--- a/central/src/main/java/org/glowroot/central/CentralModule.java
++++ b/central/src/main/java/org/glowroot/central/CentralModule.java
+@@ -322,8 +322,7 @@ class CentralModule {
+         }
+     }
+ 
+-    private static CentralConfiguration getCentralConfiguration(File centralDir)
+-            throws IOException {
++    static CentralConfiguration getCentralConfiguration(File centralDir) throws IOException {
+         ImmutableCentralConfiguration.Builder builder = ImmutableCentralConfiguration.builder();
+         File propFile = new File(centralDir, "glowroot-central.properties");
+         if (!propFile.exists()) {
+@@ -367,7 +366,7 @@ class CentralModule {
+     }
+ 
+     @RequiresNonNull("startupLogger")
+-    private static Session connect(CentralConfiguration centralConfig) throws InterruptedException {
++    static Session connect(CentralConfiguration centralConfig) throws InterruptedException {
+         Stopwatch stopwatch = Stopwatch.createStarted();
+         boolean waitingForCassandraLogged = false;
+         NoHostAvailableException lastException = null;
+diff --git a/central/src/main/java/org/glowroot/central/DeleteBadDataFromIssue126.java b/central/src/main/java/org/glowroot/central/DeleteBadDataFromIssue126.java
+new file mode 100644
+index 0000000..d84d413
+--- /dev/null
++++ b/central/src/main/java/org/glowroot/central/DeleteBadDataFromIssue126.java
+@@ -0,0 +1,152 @@
++/*
++ * Copyright 2016-2017 the original author or authors.
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++package org.glowroot.central;
++
++import java.io.File;
++import java.util.Date;
++import java.util.HashSet;
++import java.util.Set;
++
++import com.datastax.driver.core.Cluster;
++import com.datastax.driver.core.ResultSet;
++import com.datastax.driver.core.Row;
++import com.datastax.driver.core.Session;
++import com.datastax.driver.core.exceptions.QueryConsistencyException;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
++
++import org.glowroot.central.CentralModule.CentralConfiguration;
++import org.glowroot.common.config.StorageConfig;
++import org.glowroot.common.repo.ConfigRepository;
++
++// this is to delete bad data created by https://github.com/glowroot/glowroot/issues/126
++public class DeleteBadDataFromIssue126 {
++
++    private static final Logger logger = LoggerFactory.getLogger(DeleteBadDataFromIssue126.class);
++
++    private DeleteBadDataFromIssue126() {}
++
++    public static void main(String[] args) throws Exception {
++        CentralConfiguration centralConfig = CentralModule.getCentralConfiguration(new File("."));
++        Session session = CentralModule.connect(centralConfig);
++        Cluster cluster = session.getCluster();
++        try {
++            session.execute("use glowroot");
++            deleteBadAggregateQueryRecordsFromGlowrootCentralVersion_0_9_4(session);
++        } finally {
++            session.close();
++            cluster.close();
++        }
++    }
++
++    private static void deleteBadAggregateQueryRecordsFromGlowrootCentralVersion_0_9_4(
++            Session session) {
++        ResultSet results = session.execute(
++                "select agent_rollup, transaction_type from transaction_type where one = 1");
++        Range range = new Range();
++        for (Row row : results) {
++            String agentRollupId = row.getString(0);
++            String transactionType = row.getString(1);
++            long lastMinCaptureTime = range.minCaptureTime;
++            long lastMaxCaptureTime = range.maxCaptureTime;
++            logger.info("checking for bad aggregate query data: {} / {}", agentRollupId,
++                    transactionType);
++            QueryConsistencyException exception = null;
++            for (int i = 0; i < 10; i++) {
++                try {
++                    exception = null;
++                    deleteBadAggregateQueryRecordsFromGlowrootCentralVersion_0_9_4(session,
++                            agentRollupId, transactionType, range);
++                    break;
++                } catch (QueryConsistencyException e) {
++                    exception = e;
++                }
++            }
++            if (exception != null) {
++                logger.error(exception.getMessage(), exception);
++            }
++            if (range.minCaptureTime != lastMinCaptureTime
++                    || range.maxCaptureTime != lastMaxCaptureTime) {
++                logger.info("bad aggregate query data range expanded to {} - {}",
++                        new Date(range.minCaptureTime), new Date(range.maxCaptureTime));
++            }
++        }
++        results = session.execute(
++                "select agent_rollup, transaction_type from transaction_type where one = 1");
++        long badRangeFrom = range.minCaptureTime - ConfigRepository.ROLLUP_3_INTERVAL_MILLIS;
++        long badRangeTo = range.maxCaptureTime;
++        logger.info("deleting all aggregate query data from {} (non-inclusive) to {} (inclusive)",
++                new Date(badRangeFrom), new Date(badRangeTo));
++        for (Row row : results) {
++            String agentRollupId = row.getString(0);
++            String transactionType = row.getString(1);
++            logger.info("deleting bad aggregate query data: {} / {}", agentRollupId,
++                    transactionType);
++            for (int i = 0; i <= 3; i++) {
++                session.execute("delete from aggregate_tt_query_rollup_" + i
++                        + " where agent_rollup = ? and transaction_type = ? and capture_time > ?"
++                        + " and capture_time <= ?", agentRollupId, transactionType, badRangeFrom,
++                        badRangeTo);
++            }
++            ResultSet transactionNameResults = session.execute("select transaction_name"
++                    + " from aggregate_tn_summary_rollup_3 where agent_rollup = ?"
++                    + " and transaction_type = ? and capture_time > ? and capture_time <= ?",
++                    agentRollupId, transactionType, badRangeFrom, badRangeTo);
++            Set<String> transactionNames = new HashSet<>();
++            for (Row transactionNameRow : transactionNameResults) {
++                transactionNames.add(transactionNameRow.getString(0));
++            }
++            for (String transactionName : transactionNames) {
++                logger.info("deleting bad aggregate query data: {} / {} / {}", agentRollupId,
++                        transactionType, transactionName);
++                for (int i = 0; i <= 3; i++) {
++                    session.execute("delete from aggregate_tn_query_rollup_" + i
++                            + " where agent_rollup = ? and transaction_type = ?"
++                            + " and transaction_name = ? and capture_time > ?"
++                            + " and capture_time <= ?", agentRollupId, transactionType,
++                            transactionName, badRangeFrom, badRangeTo);
++                }
++            }
++        }
++        logger.info("deleted all aggregate query data from {} (non-inclusive) to {} (inclusive)",
++                new Date(badRangeFrom), new Date(badRangeTo));
++    }
++
++    private static void deleteBadAggregateQueryRecordsFromGlowrootCentralVersion_0_9_4(
++            Session session, String agentRollupId, String transactionType, Range range) {
++        ResultSet results = session.execute("select capture_time, truncated_query_text from "
++                + "aggregate_tt_query_rollup_3 where agent_rollup = ? and transaction_type = ?",
++                agentRollupId, transactionType);
++        for (Row row : results) {
++            long captureTime = row.getTimestamp(0).getTime();
++            String truncatedQueryText = row.getString(1);
++            if (truncatedQueryText.length() > StorageConfig.AGGREGATE_QUERY_TEXT_TRUNCATE) {
++                range.expand(captureTime);
++            }
++        }
++    }
++
++    private static class Range {
++
++        private long minCaptureTime = Long.MAX_VALUE;
++        private long maxCaptureTime = 0;
++
++        private void expand(long captureTime) {
++            minCaptureTime = Math.min(minCaptureTime, captureTime);
++            maxCaptureTime = Math.max(maxCaptureTime, captureTime);
++        }
++    }
++}
+-- 
+2.6.4.windows.1
+

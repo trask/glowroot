@@ -1,0 +1,314 @@
+From 09efd0d5b9863b194f75d5cb10667c25836f90ad Mon Sep 17 00:00:00 2001
+From: Trask Stalnaker <trask.stalnaker@gmail.com>
+Date: Wed, 5 Jul 2017 20:32:13 -0700
+Subject: [PATCH] Distributed tracing baby step
+
+Send glowroot http headers over the wire.
+---
+ .../agent/impl/OptionalThreadContextImpl.java      |  9 ++++++++
+ .../org/glowroot/agent/impl/ThreadContextImpl.java |  5 +++++
+ .../glowroot/agent/plugin/api/ThreadContext.java   |  6 ++++++
+ .../httpclient/ApacheHttpAsyncClientAspect.java    |  2 ++
+ .../httpclient/ApacheHttpClient3xAspect.java       |  3 +++
+ .../plugin/httpclient/ApacheHttpClientAspect.java  |  6 ++++++
+ .../plugin/httpclient/AsyncHttpClientAspect.java   | 25 ++++++++++++++++++++++
+ .../plugin/httpclient/HttpURLConnectionAspect.java |  6 ++++++
+ .../agent/plugin/httpclient/CxfClientPluginIT.java | 15 +++++++++++++
+ .../agent/plugin/httpclient/ExecuteHttpBase.java   | 14 ++++++++++++
+ 10 files changed, 91 insertions(+)
+
+diff --git a/agent/core/src/main/java/org/glowroot/agent/impl/OptionalThreadContextImpl.java b/agent/core/src/main/java/org/glowroot/agent/impl/OptionalThreadContextImpl.java
+index 4fbb46562..70adedf2a 100644
+--- a/agent/core/src/main/java/org/glowroot/agent/impl/OptionalThreadContextImpl.java
++++ b/agent/core/src/main/java/org/glowroot/agent/impl/OptionalThreadContextImpl.java
+@@ -274,6 +274,15 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
+     }
+ 
+     @Override
++    public String getTraceId() {
++        if (threadContext == null) {
++            logger.error("do not call getTraceId() on OptionalThreadContext");
++            return "";
++        }
++        return threadContext.getTraceId();
++    }
++
++    @Override
+     public @Nullable ServletRequestInfo getServletRequestInfo() {
+         if (threadContext != null) {
+             return threadContext.getServletRequestInfo();
+diff --git a/agent/core/src/main/java/org/glowroot/agent/impl/ThreadContextImpl.java b/agent/core/src/main/java/org/glowroot/agent/impl/ThreadContextImpl.java
+index d249d5ac8..cd22c9a5d 100644
+--- a/agent/core/src/main/java/org/glowroot/agent/impl/ThreadContextImpl.java
++++ b/agent/core/src/main/java/org/glowroot/agent/impl/ThreadContextImpl.java
+@@ -933,6 +933,11 @@ public class ThreadContextImpl implements ThreadContextPlus {
+     }
+ 
+     @Override
++    public String getTraceId() {
++        return transaction.getTraceId();
++    }
++
++    @Override
+     public @Nullable ServletRequestInfo getServletRequestInfo() {
+         return servletRequestInfo;
+     }
+diff --git a/agent/plugin-api/src/main/java/org/glowroot/agent/plugin/api/ThreadContext.java b/agent/plugin-api/src/main/java/org/glowroot/agent/plugin/api/ThreadContext.java
+index 2c3e01208..7f1c0d288 100644
+--- a/agent/plugin-api/src/main/java/org/glowroot/agent/plugin/api/ThreadContext.java
++++ b/agent/plugin-api/src/main/java/org/glowroot/agent/plugin/api/ThreadContext.java
+@@ -313,6 +313,12 @@ public interface ThreadContext {
+      */
+     void addErrorEntry(@Nullable String message, Throwable t);
+ 
++    /**
++     * This is used for passing Glowroot-Trace-Id header to an outgoing http request to support
++     * distributed tracing.
++     */
++    String getTraceId();
++
+     @Nullable
+     ServletRequestInfo getServletRequestInfo();
+ 
+diff --git a/agent/plugins/http-client-plugin/src/main/java/org/glowroot/agent/plugin/httpclient/ApacheHttpAsyncClientAspect.java b/agent/plugins/http-client-plugin/src/main/java/org/glowroot/agent/plugin/httpclient/ApacheHttpAsyncClientAspect.java
+index 56addc542..066d9bf07 100644
+--- a/agent/plugins/http-client-plugin/src/main/java/org/glowroot/agent/plugin/httpclient/ApacheHttpAsyncClientAspect.java
++++ b/agent/plugins/http-client-plugin/src/main/java/org/glowroot/agent/plugin/httpclient/ApacheHttpAsyncClientAspect.java
+@@ -111,6 +111,7 @@ public class ApacheHttpAsyncClientAspect {
+             if (request == null) {
+                 return null;
+             }
++            request.setHeader("Glowroot-Trace-Id", context.getTraceId());
+             String method = request.getMethod();
+             if (method == null) {
+                 method = "";
+@@ -161,6 +162,7 @@ public class ApacheHttpAsyncClientAspect {
+             if (request == null) {
+                 return null;
+             }
++            request.setHeader("Glowroot-Trace-Id", context.getTraceId());
+             RequestLine requestLine = request.glowroot$getRequestLine();
+             if (requestLine == null) {
+                 return null;
+diff --git a/agent/plugins/http-client-plugin/src/main/java/org/glowroot/agent/plugin/httpclient/ApacheHttpClient3xAspect.java b/agent/plugins/http-client-plugin/src/main/java/org/glowroot/agent/plugin/httpclient/ApacheHttpClient3xAspect.java
+index 5f29bc771..d9dc380be 100644
+--- a/agent/plugins/http-client-plugin/src/main/java/org/glowroot/agent/plugin/httpclient/ApacheHttpClient3xAspect.java
++++ b/agent/plugins/http-client-plugin/src/main/java/org/glowroot/agent/plugin/httpclient/ApacheHttpClient3xAspect.java
+@@ -36,6 +36,8 @@ public class ApacheHttpClient3xAspect {
+     @Shim("org.apache.commons.httpclient.HttpMethod")
+     public interface HttpMethod {
+ 
++        void setRequestHeader(String headerName, String headerValue);
++
+         @Nullable
+         String getName();
+ 
+@@ -58,6 +60,7 @@ public class ApacheHttpClient3xAspect {
+             if (methodObj == null) {
+                 return null;
+             }
++            methodObj.setRequestHeader("Glowroot-Trace-Id", context.getTraceId());
+             String method = methodObj.getName();
+             if (method == null) {
+                 method = "";
+diff --git a/agent/plugins/http-client-plugin/src/main/java/org/glowroot/agent/plugin/httpclient/ApacheHttpClientAspect.java b/agent/plugins/http-client-plugin/src/main/java/org/glowroot/agent/plugin/httpclient/ApacheHttpClientAspect.java
+index b284d74c0..fd6aea867 100644
+--- a/agent/plugins/http-client-plugin/src/main/java/org/glowroot/agent/plugin/httpclient/ApacheHttpClientAspect.java
++++ b/agent/plugins/http-client-plugin/src/main/java/org/glowroot/agent/plugin/httpclient/ApacheHttpClientAspect.java
+@@ -55,6 +55,8 @@ public class ApacheHttpClientAspect {
+ 
+     public interface HttpRequest {
+ 
++        void setHeader(String name, String value);
++
+         @Nullable
+         RequestLine glowroot$getRequestLine();
+     }
+@@ -79,6 +81,8 @@ public class ApacheHttpClientAspect {
+             "wiremock.org.apache.http.client.methods.HttpUriRequest"})
+     public interface HttpUriRequest {
+ 
++        void setHeader(String name, String value);
++
+         @Nullable
+         String getMethod();
+ 
+@@ -99,6 +103,7 @@ public class ApacheHttpClientAspect {
+             if (request == null) {
+                 return null;
+             }
++            request.setHeader("Glowroot-Trace-Id", context.getTraceId());
+             String method = request.getMethod();
+             if (method == null) {
+                 method = "";
+@@ -145,6 +150,7 @@ public class ApacheHttpClientAspect {
+             if (request == null) {
+                 return null;
+             }
++            request.setHeader("Glowroot-Trace-Id", context.getTraceId());
+             RequestLine requestLine = request.glowroot$getRequestLine();
+             if (requestLine == null) {
+                 return null;
+diff --git a/agent/plugins/http-client-plugin/src/main/java/org/glowroot/agent/plugin/httpclient/AsyncHttpClientAspect.java b/agent/plugins/http-client-plugin/src/main/java/org/glowroot/agent/plugin/httpclient/AsyncHttpClientAspect.java
+index d806cf43c..5c3d0c9ff 100644
+--- a/agent/plugins/http-client-plugin/src/main/java/org/glowroot/agent/plugin/httpclient/AsyncHttpClientAspect.java
++++ b/agent/plugins/http-client-plugin/src/main/java/org/glowroot/agent/plugin/httpclient/AsyncHttpClientAspect.java
+@@ -15,6 +15,9 @@
+  */
+ package org.glowroot.agent.plugin.httpclient;
+ 
++import java.util.Arrays;
++import java.util.List;
++import java.util.Map;
+ import java.util.concurrent.Executor;
+ import java.util.concurrent.Future;
+ 
+@@ -60,12 +63,26 @@ public class AsyncHttpClientAspect {
+ 
+         @Nullable
+         String getUrl();
++
++        @Shim("io.netty.handler.codec.http.HttpHeaders getHeaders()")
++        @Nullable
++        HttpHeaders glowroot$getHeaders();
++    }
++
++    @Shim("io.netty.handler.codec.http.HttpHeaders")
++    public interface HttpHeaders {
++        @Shim("io.netty.handler.codec.http.HttpHeaders set(java.lang.String, java.lang.Object)")
++        HttpHeaders glowroot$set(String name, Object value);
+     }
+ 
+     @Shim("com.ning.http.client.Request")
+     public interface OldRequest {
+         @Nullable
+         String getMethod();
++
++        @Shim("com.ning.http.client.FluentCaseInsensitiveStringsMap getHeaders()")
++        @Nullable
++        Map<String, List<String>> glowroot$getHeaders();
+     }
+ 
+     // the field and method names are verbose since they will be mixed in to existing classes
+@@ -130,6 +147,10 @@ public class AsyncHttpClientAspect {
+             if (request == null) {
+                 return null;
+             }
++            HttpHeaders headers = request.glowroot$getHeaders();
++            if (headers != null) {
++                headers.glowroot$set("Glowroot-Trace-Id", context.getTraceId());
++            }
+             String method = request.getMethod();
+             if (method == null) {
+                 method = "";
+@@ -208,6 +229,10 @@ public class AsyncHttpClientAspect {
+             if (request == null) {
+                 return null;
+             }
++            Map<String, List<String>> headers = request.glowroot$getHeaders();
++            if (headers != null) {
++                headers.put("Glowroot-Trace-Id", Arrays.asList(context.getTraceId()));
++            }
+             String method = request.getMethod();
+             if (method == null) {
+                 method = "";
+diff --git a/agent/plugins/http-client-plugin/src/main/java/org/glowroot/agent/plugin/httpclient/HttpURLConnectionAspect.java b/agent/plugins/http-client-plugin/src/main/java/org/glowroot/agent/plugin/httpclient/HttpURLConnectionAspect.java
+index 47807c083..1de1d5be0 100644
+--- a/agent/plugins/http-client-plugin/src/main/java/org/glowroot/agent/plugin/httpclient/HttpURLConnectionAspect.java
++++ b/agent/plugins/http-client-plugin/src/main/java/org/glowroot/agent/plugin/httpclient/HttpURLConnectionAspect.java
+@@ -110,6 +110,12 @@ public class HttpURLConnectionAspect {
+             if (!(httpURLConnection instanceof HasTraceEntry)) {
+                 return null;
+             }
++            try {
++                httpURLConnection.setRequestProperty("Glowroot-Trace-Id",
++                        threadContext.getTraceId());
++            } catch (IllegalStateException e) {
++                // already connected
++            }
+             TraceEntry traceEntry = ((HasTraceEntry) httpURLConnection).glowroot$getTraceEntry();
+             if (traceEntry != null) {
+                 return traceEntry.extend();
+diff --git a/agent/plugins/http-client-plugin/src/test/java/org/glowroot/agent/plugin/httpclient/CxfClientPluginIT.java b/agent/plugins/http-client-plugin/src/test/java/org/glowroot/agent/plugin/httpclient/CxfClientPluginIT.java
+index 24b41edaf..fd3bf5676 100644
+--- a/agent/plugins/http-client-plugin/src/test/java/org/glowroot/agent/plugin/httpclient/CxfClientPluginIT.java
++++ b/agent/plugins/http-client-plugin/src/test/java/org/glowroot/agent/plugin/httpclient/CxfClientPluginIT.java
+@@ -18,12 +18,17 @@ package org.glowroot.agent.plugin.httpclient;
+ import java.net.ServerSocket;
+ import java.util.Iterator;
+ 
++import javax.annotation.Resource;
+ import javax.jws.WebMethod;
+ import javax.jws.WebParam;
+ import javax.jws.WebService;
+ import javax.jws.soap.SOAPBinding;
++import javax.servlet.http.HttpServletRequest;
+ import javax.xml.ws.Endpoint;
++import javax.xml.ws.WebServiceContext;
++import javax.xml.ws.handler.MessageContext;
+ 
++import com.google.common.base.Strings;
+ import org.apache.cxf.jaxws.JaxWsProxyFactoryBean;
+ import org.junit.After;
+ import org.junit.AfterClass;
+@@ -114,8 +119,18 @@ public class CxfClientPluginIT {
+     @WebService(
+             endpointInterface = "org.glowroot.agent.plugin.httpclient.CxfClientPluginIT$HelloWorld")
+     public static class HelloWorldImpl implements HelloWorld {
++
++        @Resource
++        WebServiceContext context;
++
+         @Override
+         public String hello(String text) {
++            HttpServletRequest request = (HttpServletRequest) context.getMessageContext()
++                    .get(MessageContext.SERVLET_REQUEST);
++            String glowrootTraceId = request.getHeader("Glowroot-Trace-Id");
++            if (Strings.isNullOrEmpty(glowrootTraceId)) {
++                throw new IllegalStateException("Missing header Glowroot-Trace-Id");
++            }
+             return "Hello " + text;
+         }
+     }
+diff --git a/agent/plugins/http-client-plugin/src/test/java/org/glowroot/agent/plugin/httpclient/ExecuteHttpBase.java b/agent/plugins/http-client-plugin/src/test/java/org/glowroot/agent/plugin/httpclient/ExecuteHttpBase.java
+index a58e0a554..ca7a69e84 100644
+--- a/agent/plugins/http-client-plugin/src/test/java/org/glowroot/agent/plugin/httpclient/ExecuteHttpBase.java
++++ b/agent/plugins/http-client-plugin/src/test/java/org/glowroot/agent/plugin/httpclient/ExecuteHttpBase.java
+@@ -44,6 +44,9 @@ import io.netty.handler.codec.http.HttpResponseStatus;
+ import io.netty.handler.codec.http.HttpServerCodec;
+ import io.netty.handler.ssl.SslContext;
+ import io.netty.handler.ssl.SslContextBuilder;
++import org.assertj.core.util.Strings;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
+ 
+ import org.glowroot.agent.it.harness.AppUnderTest;
+ import org.glowroot.agent.it.harness.TransactionMarker;
+@@ -52,6 +55,8 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
+ 
+ public abstract class ExecuteHttpBase implements AppUnderTest, TransactionMarker {
+ 
++    private static final Logger logger = LoggerFactory.getLogger(ExecuteHttpBase.class);
++
+     static {
+         TrustManager[] trustAllCerts = new TrustManager[] {
+                 new X509TrustManager() {
+@@ -129,6 +134,15 @@ public abstract class ExecuteHttpBase implements AppUnderTest, TransactionMarker
+         @Override
+         public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+             FullHttpRequest request = (FullHttpRequest) msg;
++            String glowrootTraceId = request.headers().get("Glowroot-Trace-Id");
++            if (Strings.isNullOrEmpty(glowrootTraceId)) {
++                logger.error("missing header Glowroot-Trace-Id");
++                ChannelFuture f = ctx.write(
++                        new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST));
++                f.addListener(ChannelFutureListener.CLOSE);
++                request.release();
++                return;
++            }
+             FullHttpResponse response =
+                     new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.OK);
+             response.headers().set("Connection", "Close");
+-- 
+2.13.0.windows.1
+
