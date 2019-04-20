@@ -28,6 +28,11 @@ public class AsyncServletAspect {
 
     static final String GLOWROOT_AUX_CONTEXT_REQUEST_ATTRIBUTE = "glowroot$auxContext";
 
+    // this is just to shortcut request attribute lookup when there are no async servlets whatsoever
+    // TODO look into using SwitchPoint to avoid volatile flag
+    // see http://blog.headius.com/2011/08/invokedynamic-in-jruby-constant-lookup.html
+    static volatile boolean needToCheckGlowrootAuxContextRequestAttribute;
+
     @Shim("javax.servlet.AsyncContext")
     public interface AsyncContext {
 
@@ -72,6 +77,7 @@ public class AsyncServletAspect {
             }
             request.setAttribute(GLOWROOT_AUX_CONTEXT_REQUEST_ATTRIBUTE,
                     context.createAuxThreadContext());
+            needToCheckGlowrootAuxContextRequestAttribute = true;
         }
     }
 }

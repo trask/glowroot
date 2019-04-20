@@ -126,13 +126,15 @@ public class ServletAspect {
                 return null;
             }
             HttpServletRequest request = (HttpServletRequest) req;
-            AuxThreadContext auxContextObj = (AuxThreadContext) request
-                    .getAttribute(AsyncServletAspect.GLOWROOT_AUX_CONTEXT_REQUEST_ATTRIBUTE);
-            if (auxContextObj != null) {
-                request.removeAttribute(
-                        AsyncServletAspect.GLOWROOT_AUX_CONTEXT_REQUEST_ATTRIBUTE);
-                AuxThreadContext auxContext = auxContextObj;
-                return auxContext.startAndMarkAsyncTransactionComplete();
+            if (AsyncServletAspect.needToCheckGlowrootAuxContextRequestAttribute) {
+                AuxThreadContext auxContextObj = (AuxThreadContext) request
+                        .getAttribute(AsyncServletAspect.GLOWROOT_AUX_CONTEXT_REQUEST_ATTRIBUTE);
+                if (auxContextObj != null) {
+                    request.removeAttribute(
+                            AsyncServletAspect.GLOWROOT_AUX_CONTEXT_REQUEST_ATTRIBUTE);
+                    AuxThreadContext auxContext = auxContextObj;
+                    return auxContext.startAndMarkAsyncTransactionComplete();
+                }
             }
             // request parameter map is collected in GetParameterAdvice
             // session info is collected here if the request already has a session
