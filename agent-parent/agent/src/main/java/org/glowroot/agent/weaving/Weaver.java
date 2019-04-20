@@ -87,25 +87,32 @@ public class Weaver {
                 classBytes, loader, className);
         ThinClassVisitor accv = new ThinClassVisitor();
         new ClassReader(classBytes).accept(accv, ClassReader.SKIP_FRAMES + ClassReader.SKIP_CODE);
-        byte[] maybeFelixBytes = null;
+        byte[] maybeHackedBytes = null;
         if (className.equals("org/apache/felix/framework/BundleWiringImpl")) {
             ClassWriter cw = new ComputeFramesClassWriter(ClassWriter.COMPUTE_FRAMES, analyzedWorld,
                     loader, codeSource, className);
             ClassVisitor cv = new FelixOsgiHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
             cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);
-            maybeFelixBytes = cw.toByteArray();
+            maybeHackedBytes = cw.toByteArray();
+        } else if (className.equals("org/eclipse/jetty/util/thread/QueuedThreadPool")) {
+            ClassWriter cw = new ComputeFramesClassWriter(ClassWriter.COMPUTE_FRAMES, analyzedWorld,
+                    loader, codeSource, className);
+            ClassVisitor cv = new JettyThreadPoolHackClassVisitor(cw);
+            ClassReader cr = new ClassReader(classBytes);
+            cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);
+            maybeHackedBytes = cw.toByteArray();
         }
         ClassAnalyzer classAnalyzer = new ClassAnalyzer(accv.getThinClass(), advisors, shimTypes,
                 mixinTypes, loader, analyzedWorld, codeSource, classBytes);
         if (classAnalyzer.isShortCircuitBeforeAnalyzeMethods()) {
             analyzedWorld.add(classAnalyzer.getAnalyzedClass(), loader);
-            return maybeFelixBytes;
+            return maybeHackedBytes;
         }
         classAnalyzer.analyzeMethods();
         if (!classAnalyzer.isWeavingRequired()) {
             analyzedWorld.add(classAnalyzer.getAnalyzedClass(), loader);
-            return maybeFelixBytes;
+            return maybeHackedBytes;
         }
         // from http://www.oracle.com/technetwork/java/javase/compatibility-417013.html:
         //
@@ -126,7 +133,7 @@ public class Weaver {
                         classAnalyzer.getMethodsThatOnlyNowFulfillAdvice(),
                         classAnalyzer.getMatchedShimTypes(), classAnalyzer.getMatchedMixinTypes(),
                         classAnalyzer.getMethodAdvisors(), analyzedWorld);
-        ClassReader cr = new ClassReader(maybeFelixBytes == null ? classBytes : maybeFelixBytes);
+        ClassReader cr = new ClassReader(maybeHackedBytes == null ? classBytes : maybeHackedBytes);
         try {
             cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);
         } catch (RuntimeException e) {

@@ -28,6 +28,12 @@ import static org.glowroot.agent.util.Checkers.castInitialized;
 
 public class TransactionRegistry {
 
+    private static final boolean disableThreadLocalOptimization =
+            Boolean.getBoolean("glowroot.disable.thread.local.optimization");
+
+    private static final Holder</*@Nullable*/ ThreadContextImpl> HOLDER =
+            new Holder</*@Nullable*/ ThreadContextImpl>(null);
+
     // collection of active running transactions
     private final TransactionCollection transactions = new TransactionCollection();
 
@@ -41,16 +47,28 @@ public class TransactionRegistry {
 
     @Nullable
     Transaction getCurrentTransaction() {
-        ThreadContextImpl threadContext = currentThreadContext.get();
+        ThreadContextImpl threadContext = getCurrentThreadContext();
         if (threadContext == null) {
             return null;
         }
         return threadContext.getTransaction();
     }
 
+    private @Nullable ThreadContextImpl getCurrentThreadContext() {
+        Thread thread = Thread.currentThread();
+        if (!disableThreadLocalOptimization && thread instanceof FastThreadLocalThread) {
+            return ((FastThreadLocalThread) thread).getCurrentThreadContext();
+        }
+        return null;
+    }
+
     @UsedByGeneratedBytecode
     public Holder</*@Nullable*/ ThreadContextImpl> getCurrentThreadContextHolder() {
-        return currentThreadContext.getHolder();
+        Thread thread = Thread.currentThread();
+        if (!disableThreadLocalOptimization && thread instanceof FastThreadLocalThread) {
+            return ((FastThreadLocalThread) thread).getCurrentThreadContextHolder();
+        }
+        return HOLDER;
     }
 
     TransactionEntry addTransaction(Transaction transaction) {

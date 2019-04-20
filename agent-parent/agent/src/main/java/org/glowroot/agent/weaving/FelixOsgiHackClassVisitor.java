@@ -62,7 +62,6 @@ class FelixOsgiHackClassVisitor extends ClassVisitor {
             mv.visitInsn(ICONST_1);
             mv.visitInsn(IRETURN);
             mv.visitLabel(label);
-
         }
     }
 }

@@ -55,7 +55,7 @@ public class FastThreadLocal</*@Nullable*/ T> {
 
         private T value;
 
-        private Holder(T value) {
+        public Holder(T value) {
             this.value = value;
         }
 
