@@ -315,6 +315,8 @@ public interface ThreadContext {
 
     void trackResourceReleased(Object resource);
 
+    <R> void propagateTrace(R request, Propagator<R> propagator);
+
     @Nullable
     ServletRequestInfo getServletRequestInfo();
 
@@ -324,6 +326,10 @@ public interface ThreadContext {
      * This method should only ever be used by the servlet instrumentation.
      */
     void setServletRequestInfo(@Nullable ServletRequestInfo servletRequestInfo);
+
+    interface Propagator<R> {
+        void propagate(R request, String name, String value);
+    }
 
     interface ServletRequestInfo {
         String getMethod();

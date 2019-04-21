@@ -993,6 +993,11 @@ public class ThreadContextImpl implements ThreadContextPlus {
     }
 
     @Override
+    public <R> void propagateTrace(R request, Propagator<R> propagator) {
+        // currently not implemented
+    }
+
+    @Override
     public @Nullable ServletRequestInfo getServletRequestInfo() {
         return servletRequestInfo;
     }

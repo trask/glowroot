@@ -25,6 +25,7 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.glowroot.xyzzy.instrumentation.api.Agent;
 import org.glowroot.xyzzy.instrumentation.api.MessageSupplier;
 import org.glowroot.xyzzy.instrumentation.api.ThreadContext;
+import org.glowroot.xyzzy.instrumentation.api.ThreadContext.Propagator;
 import org.glowroot.xyzzy.instrumentation.api.TimerName;
 import org.glowroot.xyzzy.instrumentation.api.TraceEntry;
 import org.glowroot.xyzzy.instrumentation.api.checker.Nullable;
@@ -39,6 +40,13 @@ import org.glowroot.xyzzy.instrumentation.httpclient._.Uris;
 
 // see nearly identical copy of this in WiremockApacheHttpClientInstrumentation
 public class ApacheHttpClientInstrumentation {
+
+    private static final Propagator<HttpUriRequest> PROPAGATOR = new Propagator<HttpUriRequest>() {
+        @Override
+        public void propagate(HttpUriRequest request, String name, String value) {
+            request.setHeader(name, value);
+        }
+    };
 
     @Pointcut(className = "org.apache.http.client.HttpClient", methodName = "execute",
             methodParameterTypes = {"org.apache.http.client.methods.HttpUriRequest", ".."},
@@ -64,6 +72,7 @@ public class ApacheHttpClientInstrumentation {
             } else {
                 uri = uriObj.toString();
             }
+            context.propagateTrace(request, PROPAGATOR);
             return context.startServiceCallEntry("HTTP", method + Uris.stripQueryString(uri),
                     MessageSupplier.create("http client request: {}{}", method, uri),
                     timerName);

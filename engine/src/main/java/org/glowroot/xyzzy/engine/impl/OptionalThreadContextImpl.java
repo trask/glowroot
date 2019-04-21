@@ -297,6 +297,13 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
     }
 
     @Override
+    public <R> void propagateTrace(R request, Propagator<R> propagator) {
+        if (threadContext != null) {
+            threadContext.propagateTrace(request, propagator);
+        }
+    }
+
+    @Override
     public @Nullable ServletRequestInfo getServletRequestInfo() {
         if (threadContext != null) {
             return threadContext.getServletRequestInfo();
