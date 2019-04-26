@@ -152,21 +152,21 @@
       <dependencies>
         <dependency>
           <!-- netty plugin is required for play 2.x -->
-          <groupId>org.glowroot.xyzzy</groupId>
+          <groupId>org.glowroot.xyzzy.instrumentation</groupId>
           <artifactId>instrumentation-netty</artifactId>
           <version>${project.version}</version>
           <scope>test</scope>
         </dependency>
         <dependency>
           <!-- executor plugin is required for play 2.x -->
-          <groupId>org.glowroot.xyzzy</groupId>
+          <groupId>org.glowroot.xyzzy.instrumentation</groupId>
           <artifactId>instrumentation-executor</artifactId>
           <version>${project.version}</version>
           <scope>test</scope>
         </dependency>
         <dependency>
           <!-- logger plugin is included to test 500 responses -->
-          <groupId>org.glowroot.xyzzy</groupId>
+          <groupId>org.glowroot.xyzzy.instrumentation</groupId>
           <artifactId>instrumentation-logger</artifactId>
           <version>${project.version}</version>
           <scope>test</scope>
