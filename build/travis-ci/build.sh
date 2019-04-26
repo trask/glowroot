@@ -134,7 +134,7 @@ case "$1" in
                then
                  # HIKARI_CP_WRAPPED tests using old versions of HikariCP (old versions are needed
                  # in order to test HikariCpProxyHackClassVisitor) only work with javaagent container,
-                 # see org.glowroot.instrumentation.jdbc.Connections#createHikariCpWrappedConnection()
+                 # see org.glowroot.xyzzy.instrumentation.jdbc.Connections#createHikariCpWrappedConnection()
                  mvn clean verify -pl :instrumentation-jdbc \
                                   -DargLine="$surefire_jvm_args" \
                                   $test_shaded_opt \
@@ -377,8 +377,8 @@ case "$1" in
                find -name *.java -print0 | xargs -0 sed -i 's|/\*@Initialized\*/|@org.checkerframework.checker.initialization.qual.Initialized|g'
                find -name *.java -print0 | xargs -0 sed -i 's|/\*@Untainted\*/|@org.checkerframework.checker.tainting.qual.Untainted|g'
                find -name *.java -print0 | xargs -0 sed -i 's|/\*@\([A-Za-z]*\)\*/|@org.checkerframework.checker.nullness.qual.\1|g'
-               find instrumentation-api -name *.java -print0 | xargs -0 sed -i 's|^import org.glowroot.instrumentation.api.checker.|import org.checkerframework.checker.nullness.qual.|g'
-               find instrumentation -name *.java -print0 | xargs -0 sed -i 's|^import org.glowroot.instrumentation.api.checker.|import org.checkerframework.checker.nullness.qual.|g'
+               find instrumentation-api -name *.java -print0 | xargs -0 sed -i 's|^import org.glowroot.xyzzy.instrumentation.api.checker.|import org.checkerframework.checker.nullness.qual.|g'
+               find instrumentation -name *.java -print0 | xargs -0 sed -i 's|^import org.glowroot.xyzzy.instrumentation.api.checker.|import org.checkerframework.checker.nullness.qual.|g'
 
                # omitting shared-wire-api from checker framework validation since it contains large protobuf generated code which does not pass
                # and even when using -AskipDefs, checker framework still runs on the code (even though it does not report errors)

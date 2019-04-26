@@ -103,17 +103,17 @@ public class JavaLoggingIT {
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage())
-                .isEqualTo("log info: o.g.x.i.logger.JavaLoggingIT$ShouldLog - cde");
+                .isEqualTo("log info: o.g.x.i.l.JavaLoggingIT$ShouldLog - cde");
 
         entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage())
-                .isEqualTo("log warning: o.g.x.i.logger.JavaLoggingIT$ShouldLog - def");
+                .isEqualTo("log warning: o.g.x.i.l.JavaLoggingIT$ShouldLog - def");
 
         entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage())
-                .isEqualTo("log severe: o.g.x.i.logger.JavaLoggingIT$ShouldLog - efg");
+                .isEqualTo("log severe: o.g.x.i.l.JavaLoggingIT$ShouldLog - efg");
 
         assertThat(i.hasNext()).isFalse();
     }

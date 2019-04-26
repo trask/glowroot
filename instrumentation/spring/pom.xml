@@ -283,7 +283,7 @@
         </dependency>
         <dependency>
           <!-- netty plugin is required to capture webflux over netty -->
-          <groupId>org.glowroot.xyzzy</groupId>
+          <groupId>org.glowroot.xyzzy.instrumentation</groupId>
           <artifactId>instrumentation-netty</artifactId>
           <version>${project.version}</version>
           <scope>test</scope>
@@ -346,7 +346,7 @@
         </dependency>
         <dependency>
           <!-- netty plugin is required to capture webflux over netty -->
-          <groupId>org.glowroot.xyzzy</groupId>
+          <groupId>org.glowroot.xyzzy.instrumentation</groupId>
           <artifactId>instrumentation-netty</artifactId>
           <version>${project.version}</version>
           <scope>test</scope>
