@@ -191,7 +191,7 @@ public class Connections {
 
     static void hackGlassfishConnection(Connection connection) throws Exception {
         Class<?> hackClass =
-                Class.forName("org.glowroot.agent.plugin.jdbc.GlassfishConnectionHack");
+                Class.forName("org.glowroot.xyzzy.instrumentation.jdbc.GlassfishConnectionHack");
         hackClass.getMethod("hack", Connection.class).invoke(null, connection);
     }
 
