@@ -15,8 +15,6 @@
  */
 package org.glowroot.xyzzy.instrumentation.jaxws;
 
-import java.util.Iterator;
-
 import javax.jws.WebMethod;
 import javax.jws.WebParam;
 import javax.jws.WebService;
@@ -29,9 +27,10 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.ServerSpan;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.glowroot.agent.it.harness.validation.HarnessAssertions.assertSingleLocalSpanMessage;
 
 public class WebServiceIT {
 
@@ -135,132 +134,91 @@ public class WebServiceIT {
         container.setInstrumentationProperty("jaxws", "useAltTransactionNaming", true);
 
         // when
-        Trace trace = container.execute(WithNormalServletMapping.class, "Web");
+        ServerSpan serverSpan = container.execute(WithNormalServletMapping.class, "Web");
 
         // then
-        assertThat(trace.transactionName()).isEqualTo("HelloService#echo");
+        assertThat(serverSpan.transactionName()).isEqualTo("HelloService#echo");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("jaxws service:"
+        assertSingleLocalSpanMessage(serverSpan).isEqualTo("jaxws service:"
                 + " org.glowroot.xyzzy.instrumentation.jaxws.WebServiceIT$HelloService.echo()");
-
-        assertThat(i.hasNext()).isFalse();
     }
 
     private void shouldCaptureTransactionNameWithNormalServletMapping(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass, "Web");
+        ServerSpan serverSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.transactionName()).isEqualTo("POST " + contextPath + "/hello#echo");
+        assertThat(serverSpan.transactionName()).isEqualTo("POST " + contextPath + "/hello#echo");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("jaxws service:"
+        assertSingleLocalSpanMessage(serverSpan).isEqualTo("jaxws service:"
                 + " org.glowroot.xyzzy.instrumentation.jaxws.WebServiceIT$HelloService.echo()");
-
-        assertThat(i.hasNext()).isFalse();
     }
 
     private void shouldCaptureTransactionNameWithNormalServletMappingHittingRoot(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass, "Web");
+        ServerSpan serverSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.transactionName()).isEqualTo("POST " + contextPath + "/#echo");
+        assertThat(serverSpan.transactionName()).isEqualTo("POST " + contextPath + "/#echo");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("jaxws service:"
+        assertSingleLocalSpanMessage(serverSpan).isEqualTo("jaxws service:"
                 + " org.glowroot.xyzzy.instrumentation.jaxws.WebServiceIT$RootService.echo()");
-
-        assertThat(i.hasNext()).isFalse();
     }
 
     private void shouldCaptureTransactionNameWithNestedServletMapping(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass, "Web");
+        ServerSpan serverSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.transactionName())
+        assertThat(serverSpan.transactionName())
                 .isEqualTo("POST " + contextPath + "/service/hello#echo");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("jaxws service:"
+        assertSingleLocalSpanMessage(serverSpan).isEqualTo("jaxws service:"
                 + " org.glowroot.xyzzy.instrumentation.jaxws.WebServiceIT$HelloService.echo()");
-
-        assertThat(i.hasNext()).isFalse();
     }
 
     private void shouldCaptureTransactionNameWithNestedServletMappingHittingRoot(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass, "Web");
+        ServerSpan serverSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.transactionName()).isEqualTo("POST " + contextPath + "/service/#echo");
+        assertThat(serverSpan.transactionName())
+                .isEqualTo("POST " + contextPath + "/service/#echo");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("jaxws service:"
+        assertSingleLocalSpanMessage(serverSpan).isEqualTo("jaxws service:"
                 + " org.glowroot.xyzzy.instrumentation.jaxws.WebServiceIT$RootService.echo()");
-
-        assertThat(i.hasNext()).isFalse();
     }
 
     private void shouldCaptureTransactionNameWithLessNormalServletMapping(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass, "Web");
+        ServerSpan serverSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        if (!trace.transactionName().equals("POST " + contextPath + "/hello#echo")) {
+        if (!serverSpan.transactionName().equals("POST " + contextPath + "/hello#echo")) {
             // Jersey (2.5 and above) doesn't like this "less than normal" servlet mapping, and ends
             // up mapping everything to RootService
-            assertThat(trace.transactionName()).isEqualTo("POST " + contextPath + "#echo");
+            assertThat(serverSpan.transactionName()).isEqualTo("POST " + contextPath + "#echo");
         }
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("jaxws service:"
+        assertSingleLocalSpanMessage(serverSpan).isEqualTo("jaxws service:"
                 + " org.glowroot.xyzzy.instrumentation.jaxws.WebServiceIT$RootService.echo()");
-
-        assertThat(i.hasNext()).isFalse();
     }
 
     private void shouldCaptureTransactionNameWithLessNormalServletMappingHittingRoot(
             String contextPath, Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass, "Web");
+        ServerSpan serverSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.transactionName()).isEqualTo("POST " + contextPath + "/#echo");
+        assertThat(serverSpan.transactionName()).isEqualTo("POST " + contextPath + "/#echo");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("jaxws service:"
+        assertSingleLocalSpanMessage(serverSpan).isEqualTo("jaxws service:"
                 + " org.glowroot.xyzzy.instrumentation.jaxws.WebServiceIT$RootService.echo()");
-
-        assertThat(i.hasNext()).isFalse();
     }
 
     public static class WithNormalServletMapping extends InvokeJaxwsWebServiceInTomcat {

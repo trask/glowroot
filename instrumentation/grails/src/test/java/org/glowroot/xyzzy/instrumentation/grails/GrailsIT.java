@@ -18,7 +18,6 @@ package org.glowroot.xyzzy.instrumentation.grails;
 import java.io.File;
 import java.net.ServerSocket;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 
 import com.google.common.base.StandardSystemProperty;
@@ -45,9 +44,10 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.ServerSpan;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.glowroot.agent.it.harness.validation.HarnessAssertions.assertSingleLocalSpanMessage;
 
 public class GrailsIT {
 
@@ -79,37 +79,25 @@ public class GrailsIT {
     @Test
     public void shouldCaptureNonDefaultAction() throws Exception {
         // when
-        Trace trace = container.execute(GetHelloAbc.class, "Web");
+        ServerSpan serverSpan = container.execute(GetHelloAbc.class, "Web");
 
         // then
-        assertThat(trace.transactionName()).isEqualTo("Hello#abc");
+        assertThat(serverSpan.transactionName()).isEqualTo("Hello#abc");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo(
+        assertSingleLocalSpanMessage(serverSpan).isEqualTo(
                 "grails controller: org.glowroot.xyzzy.instrumentation.grails.HelloController.abc()");
-
-        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureDefaultAction() throws Exception {
         // when
-        Trace trace = container.execute(GetHello.class, "Web");
+        ServerSpan serverSpan = container.execute(GetHello.class, "Web");
 
         // then
-        assertThat(trace.transactionName()).isEqualTo("Hello#index");
+        assertThat(serverSpan.transactionName()).isEqualTo("Hello#index");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo(
-                "grails controller: org.glowroot.xyzzy.instrumentation.grails.HelloController.index()");
-
-        assertThat(i.hasNext()).isFalse();
+        assertSingleLocalSpanMessage(serverSpan).isEqualTo("grails controller:"
+                + " org.glowroot.xyzzy.instrumentation.grails.HelloController.index()");
     }
 
     public static class ApplicationLoader extends GrailsAppServletInitializer

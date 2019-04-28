@@ -34,7 +34,9 @@ import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TraceEntryMarker;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.ClientSpan;
+import org.glowroot.agent.it.harness.model.ServerSpan;
+import org.glowroot.agent.it.harness.model.Span;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -66,18 +68,16 @@ public class OtherIT {
                 ImmutableList.of(".*"));
 
         // when
-        Trace trace = container.execute(ExecuteCallableStatement.class);
+        ServerSpan serverSpan = container.execute(ExecuteCallableStatement.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEmpty();
-        assertThat(entry.queryEntryMessage().queryText())
-                .isEqualTo("insert into employee (name, misc) values (?, ?)");
-        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("jdbc query: ");
-        assertThat(entry.queryEntryMessage().suffix()).isEqualTo(" ['jane', NULL]");
+        ClientSpan entry = (ClientSpan) i.next();
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(entry.getMessage()).isEqualTo("insert into employee (name, misc) values (?, ?)");
+        assertThat(entry.getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(entry.getSuffix()).isEqualTo(" ['jane', NULL]");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -85,9 +85,10 @@ public class OtherIT {
     @Test
     public void testWithoutResultSetValueTimerNormal() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
+        ServerSpan serverSpan = container.execute(ExecuteStatementAndIterateOverResults.class);
+
         // then
-        boolean found = findExtendedTimerName(trace.mainThreadRootTimer(), "jdbc query");
+        boolean found = findExtendedTimerName(serverSpan.mainThreadRootTimer(), "jdbc query");
         assertThat(found).isFalse();
     }
 
@@ -95,19 +96,22 @@ public class OtherIT {
     public void testWithResultSetValueTimerNormal() throws Exception {
         // given
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResultSetGet", true);
+
         // when
-        Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
+        ServerSpan serverSpan = container.execute(ExecuteStatementAndIterateOverResults.class);
+
         // then
-        boolean found = findExtendedTimerName(trace, "jdbc query");
+        boolean found = findExtendedTimerName(serverSpan, "jdbc query");
         assertThat(found).isFalse();
     }
 
     @Test
     public void testWithoutResultSetValueTimerUnderSeparateTraceEntry() throws Exception {
         // when
-        Trace trace = container.execute(GetResultSetValueUnderSeparateTraceEntry.class);
+        ServerSpan serverSpan = container.execute(GetResultSetValueUnderSeparateTraceEntry.class);
+
         // then
-        boolean found = findExtendedTimerName(trace, "jdbc query");
+        boolean found = findExtendedTimerName(serverSpan, "jdbc query");
         assertThat(found).isFalse();
     }
 
@@ -115,10 +119,12 @@ public class OtherIT {
     public void testWithResultSetValueTimerUnderSeparateTraceEntry() throws Exception {
         // given
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResultSetGet", true);
+
         // when
-        Trace trace = container.execute(GetResultSetValueUnderSeparateTraceEntry.class);
+        ServerSpan serverSpan = container.execute(GetResultSetValueUnderSeparateTraceEntry.class);
+
         // then
-        boolean found = findExtendedTimerName(trace, "jdbc query");
+        boolean found = findExtendedTimerName(serverSpan, "jdbc query");
         assertThat(found).isTrue();
     }
 
@@ -126,10 +132,13 @@ public class OtherIT {
     public void testResultSetValueTimerUsingColumnName() throws Exception {
         // given
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResultSetGet", true);
+
         // when
-        Trace trace = container.execute(ExecuteStatementAndIterateOverResultsUsingColumnName.class);
+        ServerSpan serverSpan =
+                container.execute(ExecuteStatementAndIterateOverResultsUsingColumnName.class);
+
         // then
-        boolean found = findExtendedTimerName(trace, "jdbc query");
+        boolean found = findExtendedTimerName(serverSpan, "jdbc query");
         assertThat(found).isFalse();
     }
 
@@ -137,29 +146,33 @@ public class OtherIT {
     public void testResultSetValueTimerUsingColumnNameUnderSeparateTraceEntry() throws Exception {
         // given
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResultSetGet", true);
+
         // when
-        Trace trace = container.execute(
+        ServerSpan serverSpan = container.execute(
                 ExecuteStatementAndIterateOverResultsUsingColumnNameUnderSeparateTraceEntry.class);
+
         // then
-        boolean found = findExtendedTimerName(trace, "jdbc query");
+        boolean found = findExtendedTimerName(serverSpan, "jdbc query");
         assertThat(found).isTrue();
     }
 
     @Test
     public void testWithResultSetNavigateTimerNormal() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
+        ServerSpan serverSpan = container.execute(ExecuteStatementAndIterateOverResults.class);
+
         // then
-        boolean found = findExtendedTimerName(trace, "jdbc query");
+        boolean found = findExtendedTimerName(serverSpan, "jdbc query");
         assertThat(found).isFalse();
     }
 
     @Test
     public void testWithResultSetNavigateTimerUnderSeparateTraceEntry() throws Exception {
         // when
-        Trace trace = container.execute(IterateOverResultsUnderSeparateTraceEntry.class);
+        ServerSpan serverSpan = container.execute(IterateOverResultsUnderSeparateTraceEntry.class);
+
         // then
-        boolean found = findExtendedTimerName(trace, "jdbc query");
+        boolean found = findExtendedTimerName(serverSpan, "jdbc query");
         assertThat(found).isTrue();
     }
 
@@ -167,28 +180,29 @@ public class OtherIT {
     public void testWithoutResultSetNavigateTimerUnderSeparateTraceEntry() throws Exception {
         // given
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResultSetNavigate", false);
+
         // when
-        Trace trace = container.execute(IterateOverResultsUnderSeparateTraceEntry.class);
+        ServerSpan serverSpan = container.execute(IterateOverResultsUnderSeparateTraceEntry.class);
+
         // then
-        boolean found = findExtendedTimerName(trace, "jdbc query");
+        boolean found = findExtendedTimerName(serverSpan, "jdbc query");
         assertThat(found).isFalse();
     }
 
     @Test
     public void testDefaultStackTraceThreshold() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
+        ServerSpan serverSpan = container.execute(ExecuteStatementAndIterateOverResults.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEmpty();
-        assertThat(entry.queryEntryMessage().queryText()).isEqualTo("select * from employee");
-        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("jdbc query: ");
-        assertThat(entry.queryEntryMessage().suffix()).isEqualTo(" => 3 rows");
-        assertThat(entry.locationStackTraceMillis()).isNull();
+        ClientSpan clientSpan = (ClientSpan) i.next();
+        assertThat(clientSpan.getMessage()).isEmpty();
+        assertThat(clientSpan.getMessage()).isEqualTo("select * from employee");
+        assertThat(clientSpan.getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(clientSpan.getSuffix()).isEqualTo(" => 3 rows");
+        assertThat(clientSpan.getLocationStackTraceMillis()).isNull();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -199,18 +213,17 @@ public class OtherIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "stackTraceThresholdMillis", 0.0);
 
         // when
-        Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
+        ServerSpan serverSpan = container.execute(ExecuteStatementAndIterateOverResults.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEmpty();
-        assertThat(entry.queryEntryMessage().queryText()).isEqualTo("select * from employee");
-        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("jdbc query: ");
-        assertThat(entry.queryEntryMessage().suffix()).isEqualTo(" => 3 rows");
-        assertThat(entry.locationStackTraceMillis()).isZero();
+        ClientSpan clientSpan = (ClientSpan) i.next();
+        assertThat(clientSpan.getMessage()).isEmpty();
+        assertThat(clientSpan.getMessage()).isEqualTo("select * from employee");
+        assertThat(clientSpan.getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(clientSpan.getSuffix()).isEqualTo(" => 3 rows");
+        assertThat(clientSpan.getLocationStackTraceMillis()).isZero();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -222,31 +235,30 @@ public class OtherIT {
                 (Double) null);
 
         // when
-        Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
+        ServerSpan serverSpan = container.execute(ExecuteStatementAndIterateOverResults.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEmpty();
-        assertThat(entry.queryEntryMessage().queryText()).isEqualTo("select * from employee");
-        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("jdbc query: ");
-        assertThat(entry.queryEntryMessage().suffix()).isEqualTo(" => 3 rows");
-        assertThat(entry.locationStackTraceMillis()).isNull();
+        ClientSpan clientSpan = (ClientSpan) i.next();
+        assertThat(clientSpan.getMessage()).isEmpty();
+        assertThat(clientSpan.getMessage()).isEqualTo("select * from employee");
+        assertThat(clientSpan.getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(clientSpan.getSuffix()).isEqualTo(" => 3 rows");
+        assertThat(clientSpan.getLocationStackTraceMillis()).isNull();
 
         assertThat(i.hasNext()).isFalse();
     }
 
-    private static boolean findExtendedTimerName(Trace trace, String timerName) {
-        return findExtendedTimerName(trace.mainThreadRootTimer(), timerName);
+    private static boolean findExtendedTimerName(ServerSpan serverSpan, String timerName) {
+        return findExtendedTimerName(serverSpan.mainThreadRootTimer(), timerName);
     }
 
-    private static boolean findExtendedTimerName(Trace.Timer timer, String timerName) {
+    private static boolean findExtendedTimerName(ServerSpan.Timer timer, String timerName) {
         if (timer.name().equals(timerName) && timer.extended()) {
             return true;
         }
-        for (Trace.Timer nestedTimer : timer.childTimers()) {
+        for (ServerSpan.Timer nestedTimer : timer.childTimers()) {
             if (findExtendedTimerName(nestedTimer, timerName)) {
                 return true;
             }

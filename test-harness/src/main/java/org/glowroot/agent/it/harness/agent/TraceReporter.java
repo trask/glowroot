@@ -20,7 +20,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.ServerSpan;
 
 public class TraceReporter {
 
@@ -34,7 +34,7 @@ public class TraceReporter {
         in = new ObjectInputStream(socket.getInputStream());
     }
 
-    public void send(Trace trace) throws Exception {
+    public void send(ServerSpan trace) throws Exception {
         out.writeObject(trace);
         in.readObject();
     }

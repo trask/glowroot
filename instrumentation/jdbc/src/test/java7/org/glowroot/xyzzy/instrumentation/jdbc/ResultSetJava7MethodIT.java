@@ -29,7 +29,9 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.ClientSpan;
+import org.glowroot.agent.it.harness.model.ServerSpan;
+import org.glowroot.agent.it.harness.model.Span;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -55,20 +57,19 @@ public class ResultSetJava7MethodIT {
     @Test
     public void testResultSetJava7Method() throws Exception {
         // when
-        Trace trace =
+        ServerSpan serverSpan =
                 container.execute(ExecuteStatementAndIterateOverResultsUsingJava7Method.class);
 
         // then
-        assertThat(trace.error()).isNull();
+        assertThat(serverSpan.getError()).isNull();
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEmpty();
-        assertThat(entry.queryEntryMessage().queryText()).isEqualTo("select * from employee");
-        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("jdbc query: ");
-        assertThat(entry.queryEntryMessage().suffix()).isEqualTo(" => 1 row");
+        ClientSpan clientSpan = (ClientSpan) i.next();
+        assertThat(clientSpan.getMessage()).isEmpty();
+        assertThat(clientSpan.getMessage()).isEqualTo("select * from employee");
+        assertThat(clientSpan.getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(clientSpan.getSuffix()).isEqualTo(" => 1 row");
 
         assertThat(i.hasNext()).isFalse();
     }

@@ -29,7 +29,9 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.LocalSpan;
+import org.glowroot.agent.it.harness.model.ServerSpan;
+import org.glowroot.agent.it.harness.model.Span;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -61,22 +63,22 @@ public class Log4jMarkerIT {
                 "traceErrorOnErrorWithoutThrowable", true);
 
         // when
-        Trace trace = container.execute(ShouldLog.class);
+        ServerSpan serverSpan = container.execute(ShouldLog.class);
 
         // then
-        assertThat(trace.error().message()).isEqualTo("efg");
+        assertThat(serverSpan.getError().message()).isEqualTo("efg");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message())
+        LocalSpan localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage())
                 .isEqualTo("log warn: " + ShouldLog.logger.getName() + " - def");
+        assertThat(localSpan.childSpans()).isEmpty();
 
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message())
+        localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage())
                 .isEqualTo("log error: " + ShouldLog.logger.getName() + " - efg");
+        assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -88,29 +90,29 @@ public class Log4jMarkerIT {
                 "traceErrorOnErrorWithoutThrowable", true);
 
         // when
-        Trace trace = container.execute(ShouldLogWithThrowable.class);
+        ServerSpan serverSpan = container.execute(ShouldLogWithThrowable.class);
 
         // then
-        assertThat(trace.error().message())
+        assertThat(serverSpan.getError().message())
                 .isEqualTo("java.lang.IllegalStateException: 567");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message())
+        LocalSpan localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage())
                 .isEqualTo("log warn: " + ShouldLogWithThrowable.logger.getName() + " - def_t");
-        assertThat(entry.error().message()).isEqualTo("java.lang.IllegalStateException: 456");
-        assertThat(entry.error().exception().getStackTrace()[0].getMethodName())
+        assertThat(localSpan.getError().message()).isEqualTo("java.lang.IllegalStateException: 456");
+        assertThat(localSpan.getError().exception().getStackTrace()[0].getMethodName())
                 .isEqualTo("transactionMarker");
+        assertThat(localSpan.childSpans()).isEmpty();
 
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message())
+        localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage())
                 .isEqualTo("log error: " + ShouldLogWithThrowable.logger.getName() + " - efg_t");
-        assertThat(entry.error().message()).isEqualTo("java.lang.IllegalStateException: 567");
-        assertThat(entry.error().exception().getStackTrace()[0].getMethodName())
+        assertThat(localSpan.getError().message()).isEqualTo("java.lang.IllegalStateException: 567");
+        assertThat(localSpan.getError().exception().getStackTrace()[0].getMethodName())
                 .isEqualTo("transactionMarker");
+        assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -122,24 +124,24 @@ public class Log4jMarkerIT {
                 "traceErrorOnErrorWithoutThrowable", true);
 
         // when
-        Trace trace = container.execute(ShouldLogWithNullThrowable.class);
+        ServerSpan serverSpan = container.execute(ShouldLogWithNullThrowable.class);
 
         // then
-        assertThat(trace.error().message()).isEqualTo("efg_tnull");
+        assertThat(serverSpan.getError().message()).isEqualTo("efg_tnull");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo(
+        LocalSpan localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo(
                 "log warn: " + ShouldLogWithNullThrowable.logger.getName() + " - def_tnull");
-        assertThat(entry.error().message()).isEqualTo("def_tnull");
+        assertThat(localSpan.getError().message()).isEqualTo("def_tnull");
+        assertThat(localSpan.childSpans()).isEmpty();
 
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo(
+        localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo(
                 "log error: " + ShouldLogWithNullThrowable.logger.getName() + " - efg_tnull");
-        assertThat(entry.error().message()).isEqualTo("efg_tnull");
+        assertThat(localSpan.getError().message()).isEqualTo("efg_tnull");
+        assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -147,20 +149,20 @@ public class Log4jMarkerIT {
     @Test
     public void testLogWithOneParameter() throws Exception {
         // when
-        Trace trace = container.execute(ShouldLogWithOneParameter.class);
+        ServerSpan serverSpan = container.execute(ShouldLogWithOneParameter.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo(
+        LocalSpan localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo(
                 "log warn: " + ShouldLogWithOneParameter.logger.getName() + " - def_1 d");
+        assertThat(localSpan.childSpans()).isEmpty();
 
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo(
+        localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo(
                 "log error: " + ShouldLogWithOneParameter.logger.getName() + " - efg_1 e");
+        assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -168,29 +170,29 @@ public class Log4jMarkerIT {
     @Test
     public void testLogWithOneParameterAndThrowable() throws Exception {
         // when
-        Trace trace = container.execute(ShouldLogWithOneParameterAndThrowable.class);
+        ServerSpan serverSpan = container.execute(ShouldLogWithOneParameterAndThrowable.class);
 
         // then
-        assertThat(trace.error().message())
+        assertThat(serverSpan.getError().message())
                 .isEqualTo("java.lang.IllegalStateException: 567");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("log warn: "
+        LocalSpan localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("log warn: "
                 + ShouldLogWithOneParameterAndThrowable.logger.getName() + " - def_1_t d");
-        assertThat(entry.error().message()).isEqualTo("java.lang.IllegalStateException: 456");
-        assertThat(entry.error().exception().getStackTrace()[0].getMethodName())
+        assertThat(localSpan.getError().message()).isEqualTo("java.lang.IllegalStateException: 456");
+        assertThat(localSpan.getError().exception().getStackTrace()[0].getMethodName())
                 .isEqualTo("transactionMarker");
+        assertThat(localSpan.childSpans()).isEmpty();
 
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("log error: "
+        localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("log error: "
                 + ShouldLogWithOneParameterAndThrowable.logger.getName() + " - efg_1_t e");
-        assertThat(entry.error().message()).isEqualTo("java.lang.IllegalStateException: 567");
-        assertThat(entry.error().exception().getStackTrace()[0].getMethodName())
+        assertThat(localSpan.getError().message()).isEqualTo("java.lang.IllegalStateException: 567");
+        assertThat(localSpan.getError().exception().getStackTrace()[0].getMethodName())
                 .isEqualTo("transactionMarker");
+        assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -198,20 +200,20 @@ public class Log4jMarkerIT {
     @Test
     public void testLogWithTwoParameters() throws Exception {
         // when
-        Trace trace = container.execute(ShouldLogWithTwoParameters.class);
+        ServerSpan serverSpan = container.execute(ShouldLogWithTwoParameters.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo(
+        LocalSpan localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo(
                 "log warn: " + ShouldLogWithTwoParameters.logger.getName() + " - def_2 d e");
+        assertThat(localSpan.childSpans()).isEmpty();
 
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo(
+        localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo(
                 "log error: " + ShouldLogWithTwoParameters.logger.getName() + " - efg_2 e f");
+        assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -219,20 +221,20 @@ public class Log4jMarkerIT {
     @Test
     public void testLogWithMoreThanTwoParameters() throws Exception {
         // when
-        Trace trace = container.execute(ShouldLogWithMoreThanTwoParameters.class);
+        ServerSpan serverSpan = container.execute(ShouldLogWithMoreThanTwoParameters.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("log warn: "
+        LocalSpan localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("log warn: "
                 + ShouldLogWithMoreThanTwoParameters.logger.getName() + " - def_3 d e f");
+        assertThat(localSpan.childSpans()).isEmpty();
 
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("log error: "
+        localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("log error: "
                 + ShouldLogWithMoreThanTwoParameters.logger.getName() + " - efg_3 e f g");
+        assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -240,26 +242,26 @@ public class Log4jMarkerIT {
     @Test
     public void testLogWithParametersAndThrowable() throws Exception {
         // when
-        Trace trace = container.execute(ShouldLogWithParametersAndThrowable.class);
+        ServerSpan serverSpan = container.execute(ShouldLogWithParametersAndThrowable.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("log warn: "
+        LocalSpan localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("log warn: "
                 + ShouldLogWithParametersAndThrowable.logger.getName() + " - def_3_t d e f");
-        assertThat(entry.error().message()).isEqualTo("java.lang.IllegalStateException: 456");
-        assertThat(entry.error().exception().getStackTrace()[0].getMethodName())
+        assertThat(localSpan.getError().message()).isEqualTo("java.lang.IllegalStateException: 456");
+        assertThat(localSpan.getError().exception().getStackTrace()[0].getMethodName())
                 .isEqualTo("transactionMarker");
+        assertThat(localSpan.childSpans()).isEmpty();
 
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("log error: "
+        localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("log error: "
                 + ShouldLogWithParametersAndThrowable.logger.getName() + " - efg_3_t e f g");
-        assertThat(entry.error().message()).isEqualTo("java.lang.IllegalStateException: 567");
-        assertThat(entry.error().exception().getStackTrace()[0].getMethodName())
+        assertThat(localSpan.getError().message()).isEqualTo("java.lang.IllegalStateException: 567");
+        assertThat(localSpan.getError().exception().getStackTrace()[0].getMethodName())
                 .isEqualTo("transactionMarker");
+        assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }

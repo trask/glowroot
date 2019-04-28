@@ -35,7 +35,9 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.LocalSpan;
+import org.glowroot.agent.it.harness.model.ServerSpan;
+import org.glowroot.agent.it.harness.model.Span;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -62,14 +64,14 @@ public class JsfRenderIT {
     @Test
     public void shouldCaptureJsfRendering() throws Exception {
         // when
-        Trace trace = container.execute(GetHello.class, "Web");
+        ServerSpan serverSpan = container.execute(GetHello.class, "Web");
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("jsf render: /hello.xhtml");
+        LocalSpan localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("jsf render: /hello.xhtml");
+        assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -77,23 +79,23 @@ public class JsfRenderIT {
     @Test
     public void shouldCaptureJsfAction() throws Exception {
         // when
-        Trace trace = container.execute(PostHello.class, "Web", "/hello.xhtml;xyz");
+        ServerSpan serverSpan = container.execute(PostHello.class, "Web", "/hello.xhtml;xyz");
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message())
+        LocalSpan localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage())
                 .isEqualTo("jsf apply request: /hello.xhtml");
+        assertThat(localSpan.childSpans()).isEmpty();
 
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("jsf invoke: #{helloBean.hello}");
+        localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("jsf invoke: #{helloBean.hello}");
+        assertThat(localSpan.childSpans()).isEmpty();
 
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("jsf render: /hello.xhtml");
+        localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("jsf render: /hello.xhtml");
+        assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }

@@ -36,7 +36,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.ServerSpan;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -68,7 +68,7 @@ public class RequestHeaderIT {
                 ImmutableList.of("Content-Type", " Content-Length"));
 
         // when
-        Trace trace = container.execute(SetStandardRequestHeaders.class, "Web");
+        ServerSpan trace = container.execute(SetStandardRequestHeaders.class, "Web");
 
         // then
         Map<String, Object> requestHeaders =
@@ -85,7 +85,7 @@ public class RequestHeaderIT {
                 ImmutableList.of("Content-Type", " Content-Length"));
 
         // when
-        Trace trace = container.execute(SetStandardRequestHeadersLowercase.class, "Web");
+        ServerSpan trace = container.execute(SetStandardRequestHeadersLowercase.class, "Web");
 
         // then
         Map<String, Object> requestHeaders =
@@ -102,7 +102,7 @@ public class RequestHeaderIT {
                 ImmutableList.of("One", "Two"));
 
         // when
-        Trace trace = container.execute(SetOtherRequestHeaders.class, "Web");
+        ServerSpan trace = container.execute(SetOtherRequestHeaders.class, "Web");
 
         // then
         Map<String, Object> requestHeaders =
@@ -121,7 +121,7 @@ public class RequestHeaderIT {
                 ImmutableList.of("Content-Type", " Content-Length"));
 
         // when
-        Trace trace = container.execute(GetBadRequestHeaders.class, "Web");
+        ServerSpan trace = container.execute(GetBadRequestHeaders.class, "Web");
 
         // then
         Map<String, Object> requestHeaders =
@@ -136,7 +136,7 @@ public class RequestHeaderIT {
                 ImmutableList.of("Content-Type", " Content-Length", " h1"));
 
         // when
-        Trace trace = container.execute(GetBadRequestHeaders2.class, "Web");
+        ServerSpan trace = container.execute(GetBadRequestHeaders2.class, "Web");
 
         // then
         Map<String, Object> requestHeaders =

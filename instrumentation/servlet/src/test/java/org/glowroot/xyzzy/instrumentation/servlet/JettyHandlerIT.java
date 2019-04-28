@@ -34,7 +34,7 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.ServerSpan;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -60,10 +60,10 @@ public class JettyHandlerIT {
     @Test
     public void testJettyHandler() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteJettyHandler.class, "Web");
+        ServerSpan trace = container.execute(ExecuteJettyHandler.class, "Web");
 
         // then
-        assertThat(trace.headline()).isEqualTo("/hello");
+        assertThat(trace.getMessage()).isEqualTo("/hello");
         assertThat(trace.transactionName()).isEqualTo("/hello");
     }
 

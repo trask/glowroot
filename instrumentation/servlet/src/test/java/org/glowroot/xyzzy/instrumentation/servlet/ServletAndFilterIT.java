@@ -37,7 +37,9 @@ import org.springframework.mock.web.MockHttpSession;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.LocalSpan;
+import org.glowroot.agent.it.harness.model.ServerSpan;
+import org.glowroot.agent.it.harness.model.Span;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -65,122 +67,124 @@ public class ServletAndFilterIT {
     @Test
     public void testServlet() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteServlet.class, "Web");
+        ServerSpan serverSpan = container.execute(ExecuteServlet.class, "Web");
 
         // then
-        assertThat(trace.headline()).isEqualTo("/testservlet");
-        assertThat(trace.transactionName()).isEqualTo("/testservlet");
-        assertThat(trace.details().get("Request http method")).isEqualTo("GET");
-        assertThat(trace.details().get("Response code")).isEqualTo(200);
-        assertThat(trace.entries()).isEmpty();
+        assertThat(serverSpan.getMessage()).isEqualTo("/testservlet");
+        assertThat(serverSpan.transactionName()).isEqualTo("/testservlet");
+        assertThat(serverSpan.getDetails().get("Request http method")).isEqualTo("GET");
+        assertThat(serverSpan.getDetails().get("Response code")).isEqualTo(200);
+        assertThat(serverSpan.childSpans()).isEmpty();
     }
 
     @Test
     public void testFilter() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteFilter.class, "Web");
+        ServerSpan serverSpan = container.execute(ExecuteFilter.class, "Web");
 
         // then
-        assertThat(trace.headline()).isEqualTo("/testfilter");
-        assertThat(trace.transactionName()).isEqualTo("/testfilter");
-        assertThat(trace.details().get("Request http method")).isEqualTo("GET");
-        assertThat(trace.details().get("Response code")).isEqualTo(200);
-        assertThat(trace.entries()).isEmpty();
+        assertThat(serverSpan.getMessage()).isEqualTo("/testfilter");
+        assertThat(serverSpan.transactionName()).isEqualTo("/testfilter");
+        assertThat(serverSpan.getDetails().get("Request http method")).isEqualTo("GET");
+        assertThat(serverSpan.getDetails().get("Response code")).isEqualTo(200);
+        assertThat(serverSpan.childSpans()).isEmpty();
     }
 
     @Test
     public void testCombination() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteFilterWithNestedServlet.class, "Web");
+        ServerSpan serverSpan = container.execute(ExecuteFilterWithNestedServlet.class, "Web");
 
         // then
-        assertThat(trace.headline()).isEqualTo("/testfilter");
-        assertThat(trace.transactionName()).isEqualTo("/testfilter");
-        assertThat(trace.details().get("Request http method")).isEqualTo("GET");
-        assertThat(trace.details().get("Response code")).isEqualTo(200);
-        assertThat(trace.entries()).isEmpty();
+        assertThat(serverSpan.getMessage()).isEqualTo("/testfilter");
+        assertThat(serverSpan.transactionName()).isEqualTo("/testfilter");
+        assertThat(serverSpan.getDetails().get("Request http method")).isEqualTo("GET");
+        assertThat(serverSpan.getDetails().get("Response code")).isEqualTo(200);
+        assertThat(serverSpan.childSpans()).isEmpty();
     }
 
     @Test
     public void testNoQueryString() throws Exception {
         // when
-        Trace trace = container.execute(TestNoQueryString.class, "Web");
+        ServerSpan serverSpan = container.execute(TestNoQueryString.class, "Web");
         // then
-        assertThat(trace.details().get("Request query string")).isNull();
-        assertThat(trace.details().get("Response code")).isEqualTo(200);
-        assertThat(trace.entries()).isEmpty();
+        assertThat(serverSpan.getDetails().get("Request query string")).isNull();
+        assertThat(serverSpan.getDetails().get("Response code")).isEqualTo(200);
+        assertThat(serverSpan.childSpans()).isEmpty();
     }
 
     @Test
     public void testEmptyQueryString() throws Exception {
         // when
-        Trace trace = container.execute(TestEmptyQueryString.class, "Web");
+        ServerSpan serverSpan = container.execute(TestEmptyQueryString.class, "Web");
         // then
-        assertThat(trace.details().get("Request query string")).isEqualTo("");
-        assertThat(trace.details().get("Response code")).isEqualTo(200);
-        assertThat(trace.entries()).isEmpty();
+        assertThat(serverSpan.getDetails().get("Request query string")).isEqualTo("");
+        assertThat(serverSpan.getDetails().get("Response code")).isEqualTo(200);
+        assertThat(serverSpan.childSpans()).isEmpty();
     }
 
     @Test
     public void testNonEmptyQueryString() throws Exception {
         // when
-        Trace trace = container.execute(TestNonEmptyQueryString.class, "Web");
+        ServerSpan serverSpan = container.execute(TestNonEmptyQueryString.class, "Web");
         // then
-        assertThat(trace.details().get("Request query string")).isEqualTo("a=b&c=d");
-        assertThat(trace.details().get("Response code")).isEqualTo(200);
-        assertThat(trace.entries()).isEmpty();
+        assertThat(serverSpan.getDetails().get("Request query string")).isEqualTo("a=b&c=d");
+        assertThat(serverSpan.getDetails().get("Response code")).isEqualTo(200);
+        assertThat(serverSpan.childSpans()).isEmpty();
     }
 
     @Test
     public void testServletThrowsException() throws Exception {
         // when
-        Trace trace = container.execute(ServletThrowsException.class, "Web");
+        ServerSpan serverSpan = container.execute(ServletThrowsException.class, "Web");
 
         // then
-        assertThat(trace.details().get("Response code")).isEqualTo(200);
-        assertThat(trace.error().message()).isNotEmpty();
-        assertThat(trace.error().exception()).isNotNull();
-        assertThat(trace.entries()).isEmpty();
+        assertThat(serverSpan.getDetails().get("Response code")).isEqualTo(200);
+        assertThat(serverSpan.getError().message()).isNotEmpty();
+        assertThat(serverSpan.getError().exception()).isNotNull();
+        assertThat(serverSpan.childSpans()).isEmpty();
     }
 
     @Test
     public void testFilterThrowsException() throws Exception {
         // when
-        Trace trace = container.execute(FilterThrowsException.class, "Web");
+        ServerSpan serverSpan = container.execute(FilterThrowsException.class, "Web");
 
         // then
-        assertThat(trace.details().get("Response code")).isEqualTo(200);
-        assertThat(trace.error().message()).isNotEmpty();
-        assertThat(trace.error().exception()).isNotNull();
-        assertThat(trace.entries()).isEmpty();
+        assertThat(serverSpan.getDetails().get("Response code")).isEqualTo(200);
+        assertThat(serverSpan.getError().message()).isNotEmpty();
+        assertThat(serverSpan.getError().exception()).isNotNull();
+        assertThat(serverSpan.childSpans()).isEmpty();
     }
 
     @Test
     public void testSendRedirect() throws Exception {
         // when
-        Trace trace = container.execute(SendRedirect.class, "Web");
+        ServerSpan serverSpan = container.execute(SendRedirect.class, "Web");
 
         // then
-        assertThat(trace.details().get("Response code")).isEqualTo(302);
-        assertThat(ResponseHeaderIT.getResponseHeaders(trace).get("Location")).isEqualTo("tohere");
+        assertThat(serverSpan.getDetails().get("Response code")).isEqualTo(302);
+        assertThat(ResponseHeaderIT.getResponseHeaders(serverSpan).get("Location"))
+                .isEqualTo("tohere");
     }
 
     @Test
     public void testSend500Error() throws Exception {
         // when
-        Trace trace = container.execute(Send500Error.class, "Web");
+        ServerSpan serverSpan = container.execute(Send500Error.class, "Web");
 
         // then
-        assertThat(trace.error().message()).isEqualTo("sendError, HTTP status code 500");
-        assertThat(trace.error().exception()).isNull();
+        assertThat(serverSpan.getError().message()).isEqualTo("sendError, HTTP status code 500");
+        assertThat(serverSpan.getError().exception()).isNull();
 
-        assertThat(trace.details().get("Response code")).isEqualTo(500);
+        assertThat(serverSpan.getDetails().get("Response code")).isEqualTo(500);
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.error().message()).isEqualTo("sendError, HTTP status code 500");
-        assertThat(entry.error().exception()).isNull();
+        LocalSpan localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getError().message()).isEqualTo("sendError, HTTP status code 500");
+        assertThat(localSpan.getError().exception()).isNull();
+        assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -188,19 +192,20 @@ public class ServletAndFilterIT {
     @Test
     public void testSetStatus500Error() throws Exception {
         // when
-        Trace trace = container.execute(SetStatus500Error.class, "Web");
+        ServerSpan serverSpan = container.execute(SetStatus500Error.class, "Web");
 
         // then
-        assertThat(trace.error().message()).isEqualTo("setStatus, HTTP status code 500");
-        assertThat(trace.error().exception()).isNull();
+        assertThat(serverSpan.getError().message()).isEqualTo("setStatus, HTTP status code 500");
+        assertThat(serverSpan.getError().exception()).isNull();
 
-        assertThat(trace.details().get("Response code")).isEqualTo(500);
+        assertThat(serverSpan.getDetails().get("Response code")).isEqualTo(500);
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.error().message()).isEqualTo("setStatus, HTTP status code 500");
-        assertThat(entry.error().exception()).isNull();
+        LocalSpan localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getError().message()).isEqualTo("setStatus, HTTP status code 500");
+        assertThat(localSpan.getError().exception()).isNull();
+        assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -208,25 +213,25 @@ public class ServletAndFilterIT {
     @Test
     public void testSend400Error() throws Exception {
         // when
-        Trace trace = container.execute(Send400Error.class, "Web");
+        ServerSpan serverSpan = container.execute(Send400Error.class, "Web");
 
         // then
-        assertThat(trace.error()).isNull();
-        assertThat(trace.entries()).isEmpty();
+        assertThat(serverSpan.getError()).isNull();
+        assertThat(serverSpan.childSpans()).isEmpty();
 
-        assertThat(trace.details().get("Response code")).isEqualTo(400);
+        assertThat(serverSpan.getDetails().get("Response code")).isEqualTo(400);
     }
 
     @Test
     public void testSetStatus400Error() throws Exception {
         // when
-        Trace trace = container.execute(SetStatus400Error.class, "Web");
+        ServerSpan serverSpan = container.execute(SetStatus400Error.class, "Web");
 
         // then
-        assertThat(trace.error()).isNull();
-        assertThat(trace.entries()).isEmpty();
+        assertThat(serverSpan.getError()).isNull();
+        assertThat(serverSpan.childSpans()).isEmpty();
 
-        assertThat(trace.details().get("Response code")).isEqualTo(400);
+        assertThat(serverSpan.getDetails().get("Response code")).isEqualTo(400);
     }
 
     @Test
@@ -236,19 +241,20 @@ public class ServletAndFilterIT {
                 true);
 
         // when
-        Trace trace = container.execute(Send400Error.class, "Web");
+        ServerSpan serverSpan = container.execute(Send400Error.class, "Web");
 
         // then
-        assertThat(trace.error().message()).isEqualTo("sendError, HTTP status code 400");
-        assertThat(trace.error().exception()).isNull();
+        assertThat(serverSpan.getError().message()).isEqualTo("sendError, HTTP status code 400");
+        assertThat(serverSpan.getError().exception()).isNull();
 
-        assertThat(trace.details().get("Response code")).isEqualTo(400);
+        assertThat(serverSpan.getDetails().get("Response code")).isEqualTo(400);
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.error().message()).isEqualTo("sendError, HTTP status code 400");
-        assertThat(entry.error().exception()).isNull();
+        LocalSpan localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getError().message()).isEqualTo("sendError, HTTP status code 400");
+        assertThat(localSpan.getError().exception()).isNull();
+        assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -260,19 +266,20 @@ public class ServletAndFilterIT {
                 true);
 
         // when
-        Trace trace = container.execute(SetStatus400Error.class, "Web");
+        ServerSpan serverSpan = container.execute(SetStatus400Error.class, "Web");
 
         // then
-        assertThat(trace.error().message()).isEqualTo("setStatus, HTTP status code 400");
-        assertThat(trace.error().exception()).isNull();
+        assertThat(serverSpan.getError().message()).isEqualTo("setStatus, HTTP status code 400");
+        assertThat(serverSpan.getError().exception()).isNull();
 
-        assertThat(trace.details().get("Response code")).isEqualTo(400);
+        assertThat(serverSpan.getDetails().get("Response code")).isEqualTo(400);
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.error().message()).isEqualTo("setStatus, HTTP status code 400");
-        assertThat(entry.error().exception()).isNull();
+        LocalSpan localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getError().message()).isEqualTo("setStatus, HTTP status code 400");
+        assertThat(localSpan.getError().exception()).isNull();
+        assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }

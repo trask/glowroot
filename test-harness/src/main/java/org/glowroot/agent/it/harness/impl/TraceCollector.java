@@ -27,14 +27,14 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.ServerSpan;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 class TraceCollector {
 
-    private final List<Trace> traces = Lists.newCopyOnWriteArrayList();
+    private final List<ServerSpan> traces = Lists.newCopyOnWriteArrayList();
 
     private final ServerSocket serverSocket;
 
@@ -44,7 +44,7 @@ class TraceCollector {
         ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
         ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
         while (true) {
-            traces.add((Trace) in.readObject());
+            traces.add((ServerSpan) in.readObject());
             out.writeObject("ok");
         }
     }
@@ -53,14 +53,14 @@ class TraceCollector {
         serverSocket.close();
     }
 
-    Trace getCompletedTrace(@Nullable String transactionType, @Nullable String transactionName,
+    ServerSpan getCompletedTrace(@Nullable String transactionType, @Nullable String transactionName,
             int timeout, TimeUnit unit) throws InterruptedException {
         if (transactionName != null) {
             checkNotNull(transactionType);
         }
         Stopwatch stopwatch = Stopwatch.createStarted();
         while (stopwatch.elapsed(unit) < timeout) {
-            for (Trace trace : traces) {
+            for (ServerSpan trace : traces) {
                 if ((transactionType == null || trace.transactionType().equals(transactionType))
                         && (transactionName == null
                                 || trace.transactionName().equals(transactionName))) {

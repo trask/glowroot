@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import org.glowroot.agent.it.harness.model.ImmutableTrace;
+import org.glowroot.agent.it.harness.model.ParentSpanImpl;
 import org.glowroot.xyzzy.engine.bytecode.api.ThreadContextPlus;
 import org.glowroot.xyzzy.engine.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.xyzzy.engine.impl.NopTransactionService;
@@ -30,12 +30,12 @@ import org.glowroot.xyzzy.instrumentation.api.TraceEntry;
 
 public class AuxThreadContextImpl implements AuxThreadContext {
 
-    private final ImmutableTrace.Builder trace;
+    private final ParentSpanImpl parentSpan;
     private final @Nullable ServletRequestInfo servletRequestInfo;
 
-    public AuxThreadContextImpl(ImmutableTrace.Builder trace,
+    public AuxThreadContextImpl(ParentSpanImpl parentSpan,
             @Nullable ServletRequestInfo servletRequestInfo) {
-        this.trace = trace;
+        this.parentSpan = parentSpan;
         this.servletRequestInfo = servletRequestInfo;
     }
 
@@ -58,7 +58,8 @@ public class AuxThreadContextImpl implements AuxThreadContext {
             }
             return NopTransactionService.TRACE_ENTRY;
         }
-        threadContext = new ThreadContextImpl(threadContextHolder, trace, servletRequestInfo, 0, 0);
+        threadContext =
+                new ThreadContextImpl(threadContextHolder, parentSpan, servletRequestInfo, 0, 0);
         threadContextHolder.set(threadContext);
         if (completeAsyncTransaction) {
             threadContext.setTransactionAsyncComplete();

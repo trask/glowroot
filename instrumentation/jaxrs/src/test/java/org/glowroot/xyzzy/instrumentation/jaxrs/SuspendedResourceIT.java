@@ -33,7 +33,9 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TraceEntryMarker;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.LocalSpan;
+import org.glowroot.agent.it.harness.model.ServerSpan;
+import org.glowroot.agent.it.harness.model.Span;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -72,27 +74,23 @@ public class SuspendedResourceIT {
     private void shouldCaptureSuspendedResponse(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass, "Web");
+        ServerSpan serverSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.transactionName()).isEqualTo("GET " + contextPath + "/suspended/*");
-        assertThat(trace.async()).isTrue();
+        assertThat(serverSpan.transactionName()).isEqualTo("GET " + contextPath + "/suspended/*");
+        assertThat(serverSpan.async()).isTrue();
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message())
+        LocalSpan localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage())
                 .isEqualTo("jaxrs resource: org.glowroot.xyzzy.instrumentation"
                         + ".jaxrs.SuspendedResourceIT$SuspendedResource.log()");
+        assertThat(localSpan.childSpans()).isEmpty();
 
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(1);
-        assertThat(entry.message()).isEqualTo("auxiliary thread");
-
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(2);
-        assertThat(entry.message()).isEqualTo("trace entry marker / CreateTraceEntry");
+        localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }

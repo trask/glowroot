@@ -30,7 +30,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.ServerSpan;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -62,12 +62,12 @@ public class LotsOfNonNestedAuxThreadContextsIT {
     @Test
     public void shouldCaptureSubmitCallable() throws Exception {
         // when
-        Trace trace = container.execute(DoSubmitCallable.class);
+        ServerSpan serverSpan = container.execute(DoSubmitCallable.class);
 
         // then
-        assertThat(trace.entries()).isEmpty();
-        assertThat(trace.auxThreadRootTimer()).isNotNull();
-        Trace.Timer auxThreadRootTimer = trace.auxThreadRootTimer();
+        assertThat(serverSpan.childSpans()).isEmpty();
+        assertThat(serverSpan.auxThreadRootTimer()).isNotNull();
+        ServerSpan.Timer auxThreadRootTimer = serverSpan.auxThreadRootTimer();
         assertThat(auxThreadRootTimer.count()).isEqualTo(100000);
         assertThat(auxThreadRootTimer.childTimers()).isEmpty();
     }

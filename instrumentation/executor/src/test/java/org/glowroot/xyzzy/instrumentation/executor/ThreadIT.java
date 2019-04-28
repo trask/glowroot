@@ -15,10 +15,8 @@
  */
 package org.glowroot.xyzzy.instrumentation.executor;
 
-import java.util.Iterator;
 import java.util.List;
 
-import com.google.common.collect.Lists;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -29,10 +27,12 @@ import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TraceEntryMarker;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.ServerSpan;
+import org.glowroot.agent.it.harness.model.Span;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.glowroot.agent.it.harness.validation.HarnessAssertions.assertSingleLocalSpanMessage;
 
 public class ThreadIT {
 
@@ -57,109 +57,103 @@ public class ThreadIT {
     @Test
     public void shouldCaptureThread() throws Exception {
         // when
-        Trace trace = container.execute(DoExecuteThread.class);
+        ServerSpan serverSpan = container.execute(DoExecuteThread.class);
+
         // then
-        checkTrace(trace, false, false);
+        checkTrace(serverSpan, false, false);
     }
 
     @Test
     public void shouldCaptureThreadWithName() throws Exception {
         // when
-        Trace trace = container.execute(DoExecuteThreadWithName.class);
+        ServerSpan serverSpan = container.execute(DoExecuteThreadWithName.class);
+
         // then
-        checkTrace(trace, false, false);
+        checkTrace(serverSpan, false, false);
     }
 
     @Test
     public void shouldCaptureThreadWithThreadGroup() throws Exception {
         // when
-        Trace trace = container.execute(DoExecuteThreadWithThreadGroup.class);
+        ServerSpan serverSpan = container.execute(DoExecuteThreadWithThreadGroup.class);
+
         // then
-        checkTrace(trace, false, false);
+        checkTrace(serverSpan, false, false);
     }
 
     @Test
     public void shouldCaptureThreadWithThreadGroupAndName() throws Exception {
         // when
-        Trace trace = container.execute(DoExecuteThreadWithThreadGroupAndName.class);
+        ServerSpan serverSpan = container.execute(DoExecuteThreadWithThreadGroupAndName.class);
+
         // then
-        checkTrace(trace, false, false);
+        checkTrace(serverSpan, false, false);
     }
 
     @Test
     public void shouldCaptureThreadSubclassed() throws Exception {
         // when
-        Trace trace = container.execute(DoExecuteThreadSubclassed.class);
+        ServerSpan serverSpan = container.execute(DoExecuteThreadSubclassed.class);
+
         // then
-        checkTrace(trace, false, false);
+        checkTrace(serverSpan, false, false);
     }
 
     @Test
     public void shouldCaptureThreadSubSubclassed() throws Exception {
         // when
-        Trace trace = container.execute(DoExecuteThreadSubSubclassed.class);
+        ServerSpan serverSpan = container.execute(DoExecuteThreadSubSubclassed.class);
+
         // then
-        checkTrace(trace, false, false);
+        checkTrace(serverSpan, false, false);
     }
 
     @Test
     public void shouldCaptureThreadSubSubclassedWithRunnable() throws Exception {
         // when
-        Trace trace = container.execute(DoExecuteThreadSubSubclassedWithRunnable.class);
+        ServerSpan serverSpan = container.execute(DoExecuteThreadSubSubclassedWithRunnable.class);
+
         // then
-        checkTrace(trace, false, false);
+        checkTrace(serverSpan, false, false);
     }
 
-    private static void checkTrace(Trace trace, boolean isAny, boolean withFuture) {
+    private static void checkTrace(ServerSpan serverSpan, boolean isAny, boolean withFuture) {
         if (withFuture) {
-            assertThat(trace.mainThreadRootTimer().childTimers().size()).isEqualTo(1);
-            assertThat(trace.mainThreadRootTimer().childTimers().get(0).name())
+            assertThat(serverSpan.mainThreadRootTimer().childTimers().size()).isEqualTo(1);
+            assertThat(serverSpan.mainThreadRootTimer().childTimers().get(0).name())
                     .isEqualTo("wait on future");
-            assertThat(trace.mainThreadRootTimer().childTimers().get(0).count())
+            assertThat(serverSpan.mainThreadRootTimer().childTimers().get(0).count())
                     .isGreaterThanOrEqualTo(1);
-            assertThat(trace.mainThreadRootTimer().childTimers().get(0).count())
+            assertThat(serverSpan.mainThreadRootTimer().childTimers().get(0).count())
                     .isLessThanOrEqualTo(3);
         }
-        assertThat(trace.auxThreadRootTimer()).isNotNull();
-        assertThat(trace.asyncTimers()).isEmpty();
-        assertThat(trace.auxThreadRootTimer().name()).isEqualTo("auxiliary thread");
+        assertThat(serverSpan.auxThreadRootTimer()).isNotNull();
+        assertThat(serverSpan.asyncTimers()).isEmpty();
+        assertThat(serverSpan.auxThreadRootTimer().name()).isEqualTo("auxiliary thread");
         if (isAny) {
-            assertThat(trace.auxThreadRootTimer().count()).isBetween(1L, 3L);
+            assertThat(serverSpan.auxThreadRootTimer().count()).isBetween(1L, 3L);
             // should be 100-300ms, but margin of error, esp. in travis builds is high
-            assertThat(trace.auxThreadRootTimer().totalNanos())
+            assertThat(serverSpan.auxThreadRootTimer().totalNanos())
                     .isGreaterThanOrEqualTo(MILLISECONDS.toNanos(50));
         } else {
-            assertThat(trace.auxThreadRootTimer().count()).isEqualTo(3);
+            assertThat(serverSpan.auxThreadRootTimer().count()).isEqualTo(3);
             // should be 300ms, but margin of error, esp. in travis builds is high
-            assertThat(trace.auxThreadRootTimer().totalNanos())
+            assertThat(serverSpan.auxThreadRootTimer().totalNanos())
                     .isGreaterThanOrEqualTo(MILLISECONDS.toNanos(250));
         }
-        assertThat(trace.auxThreadRootTimer().childTimers().size()).isEqualTo(1);
-        assertThat(trace.auxThreadRootTimer().childTimers().get(0).name())
+        assertThat(serverSpan.auxThreadRootTimer().childTimers().size()).isEqualTo(1);
+        assertThat(serverSpan.auxThreadRootTimer().childTimers().get(0).name())
                 .isEqualTo("mock trace entry marker");
-        List<Trace.Entry> entries = trace.entries();
+
+        List<Span> spans = serverSpan.childSpans();
 
         if (isAny) {
-            entries = Lists.newArrayList(entries);
-            for (Iterator<Trace.Entry> i = entries.iterator(); i.hasNext();) {
-                if (i.next().message().equals(
-                        "this auxiliary thread was still running when the transaction ended")) {
-                    i.remove();
-                }
-            }
-        }
-        if (isAny) {
-            assertThat(entries.size()).isBetween(2, 6);
+            assertThat(spans.size()).isBetween(1, 3);
         } else {
-            assertThat(entries).hasSize(6);
+            assertThat(spans).hasSize(3);
         }
-        for (int i = 0; i < entries.size(); i += 2) {
-            assertThat(entries.get(i).depth()).isEqualTo(0);
-            assertThat(entries.get(i).message()).isEqualTo("auxiliary thread");
-
-            assertThat(entries.get(i + 1).depth()).isEqualTo(1);
-            assertThat(entries.get(i + 1).message())
-                    .isEqualTo("trace entry marker / CreateTraceEntry");
+        for (Span span : spans) {
+            assertSingleLocalSpanMessage(span).isEqualTo("trace entry marker / CreateTraceEntry");
         }
     }
 

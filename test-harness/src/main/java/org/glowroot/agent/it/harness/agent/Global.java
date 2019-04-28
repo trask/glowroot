@@ -19,7 +19,7 @@ import java.util.Random;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.ServerSpan;
 import org.glowroot.xyzzy.engine.bytecode.api.ThreadContextThreadLocal;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -44,7 +44,7 @@ public class Global {
         return threadContextThreadLocal.getHolder();
     }
 
-    public static void report(Trace trace) throws Exception {
+    public static void report(ServerSpan trace) throws Exception {
         checkNotNull(traceReporter).send(trace);
     }
 

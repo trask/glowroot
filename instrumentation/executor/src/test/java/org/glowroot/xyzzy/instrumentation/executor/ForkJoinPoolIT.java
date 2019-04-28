@@ -15,7 +15,6 @@
  */
 package org.glowroot.xyzzy.instrumentation.executor;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -34,10 +33,12 @@ import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TraceEntryMarker;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.ServerSpan;
+import org.glowroot.agent.it.harness.model.Span;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.glowroot.agent.it.harness.validation.HarnessAssertions.assertSingleLocalSpanMessage;
 
 public class ForkJoinPoolIT {
 
@@ -63,116 +64,105 @@ public class ForkJoinPoolIT {
     @Test
     public void shouldCaptureSubmitCallable() throws Exception {
         // when
-        Trace trace = container.execute(DoPoolSubmitCallable.class);
+        ServerSpan serverSpan = container.execute(DoPoolSubmitCallable.class);
+
         // then
-        checkTrace(trace);
+        assertSingleLocalSpanMessage(serverSpan).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     @Test
     public void shouldCaptureSubmitRunnable() throws Exception {
         // when
-        Trace trace = container.execute(DoPoolSubmitRunnable.class);
+        ServerSpan serverSpan = container.execute(DoPoolSubmitRunnable.class);
+
         // then
-        checkTrace(trace);
+        assertSingleLocalSpanMessage(serverSpan).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     @Test
     public void shouldCaptureSubmitRunnableWithReturnValue() throws Exception {
         // when
-        Trace trace = container.execute(DoPoolSubmitRunnableWithReturnValue.class);
+        ServerSpan serverSpan = container.execute(DoPoolSubmitRunnableWithReturnValue.class);
+
         // then
-        checkTrace(trace);
+        assertSingleLocalSpanMessage(serverSpan).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     @Test
     public void shouldCaptureSubmitForkJoinTask() throws Exception {
         // when
-        Trace trace = container.execute(DoPoolSubmitForkJoinTask.class);
+        ServerSpan serverSpan = container.execute(DoPoolSubmitForkJoinTask.class);
+
         // then
-        checkTrace(trace);
+        assertSingleLocalSpanMessage(serverSpan).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     @Test
     public void shouldCaptureSubmitCallableAsForkJoinTask() throws Exception {
         // when
-        Trace trace = container.execute(DoPoolSubmitCallableAsForkJoinTask.class);
+        ServerSpan serverSpan = container.execute(DoPoolSubmitCallableAsForkJoinTask.class);
+
         // then
-        checkTrace(trace);
+        assertSingleLocalSpanMessage(serverSpan).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     @Test
     public void shouldCaptureSubmitRunnableAsForkJoinTask() throws Exception {
         // when
-        Trace trace = container.execute(DoPoolSubmitRunnableAsForkJoinTask.class);
+        ServerSpan serverSpan = container.execute(DoPoolSubmitRunnableAsForkJoinTask.class);
+
         // then
-        checkTrace(trace);
+        assertSingleLocalSpanMessage(serverSpan).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     @Test
     public void shouldCaptureSubmitRunnableAsForkJoinTaskWithReturnValue() throws Exception {
         // when
-        Trace trace = container.execute(DoPoolSubmitRunnableAsForkJoinTaskWithReturnValue.class);
+        ServerSpan serverSpan =
+                container.execute(DoPoolSubmitRunnableAsForkJoinTaskWithReturnValue.class);
+
         // then
-        checkTrace(trace);
+        assertSingleLocalSpanMessage(serverSpan).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     @Test
     public void shouldCaptureExecuteRunnable() throws Exception {
         // when
-        Trace trace = container.execute(DoPoolExecuteRunnable.class);
+        ServerSpan serverSpan = container.execute(DoPoolExecuteRunnable.class);
+
         // then
-        checkTrace(trace);
+        assertSingleLocalSpanMessage(serverSpan).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     @Test
     public void shouldCaptureExecuteForkJoinTask() throws Exception {
         // when
-        Trace trace = container.execute(DoPoolExecuteForkJoinTask.class);
+        ServerSpan serverSpan = container.execute(DoPoolExecuteForkJoinTask.class);
+
         // then
-        checkTrace(trace);
+        assertSingleLocalSpanMessage(serverSpan).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     @Test
     public void shouldCaptureInvokeForkJoinTask() throws Exception {
         // when
-        Trace trace = container.execute(DoPoolInvokeForkJoinTask.class);
+        ServerSpan serverSpan = container.execute(DoPoolInvokeForkJoinTask.class);
+
         // then
-        checkTrace(trace);
+        assertSingleLocalSpanMessage(serverSpan).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     @Test
     public void shouldCaptureInvokeAll() throws Exception {
         // when
-        Trace trace = container.execute(DoPoolInvokeAll.class);
+        ServerSpan serverSpan = container.execute(DoPoolInvokeAll.class);
 
         // then
-
-        // count does not include "auxiliary thread" entries
-        assertThat(trace.entries().size()).isEqualTo(3);
-
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        int count = 0;
-        while (i.hasNext()) {
-            if (i.next().message().equals("trace entry marker / CreateTraceEntry")) {
-                count++;
-            }
+        List<Span> spans = serverSpan.childSpans();
+        assertThat(spans.size()).isEqualTo(3);
+        for (Span span : spans) {
+            assertSingleLocalSpanMessage(span).isEqualTo("trace entry marker / CreateTraceEntry");
         }
-        assertThat(count).isEqualTo(3);
-    }
-
-    private static void checkTrace(Trace trace) {
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("auxiliary thread");
-
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(1);
-        assertThat(entry.message()).isEqualTo("trace entry marker / CreateTraceEntry");
-
-        assertThat(i.hasNext()).isFalse();
     }
 
     public static class DoPoolSubmitCallable implements AppUnderTest, TransactionMarker {

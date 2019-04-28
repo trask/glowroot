@@ -40,7 +40,9 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.LocalSpan;
+import org.glowroot.agent.it.harness.model.ServerSpan;
+import org.glowroot.agent.it.harness.model.Span;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -68,14 +70,14 @@ public class JspRenderIT {
     @Test
     public void shouldCaptureJspRendering() throws Exception {
         // when
-        Trace trace = container.execute(RenderJsp.class);
+        ServerSpan serverSpan = container.execute(RenderJsp.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("jsp render: /WEB-INF/jsp/index.jsp");
+        LocalSpan localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("jsp render: /WEB-INF/jsp/index.jsp");
+        assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -83,14 +85,14 @@ public class JspRenderIT {
     @Test
     public void shouldCaptureJspRenderingInTomcat() throws Exception {
         // when
-        Trace trace = container.execute(RenderJspInTomcat.class);
+        ServerSpan serverSpan = container.execute(RenderJspInTomcat.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("jsp render: /WEB-INF/jsp/index.jsp");
+        LocalSpan localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("jsp render: /WEB-INF/jsp/index.jsp");
+        assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }

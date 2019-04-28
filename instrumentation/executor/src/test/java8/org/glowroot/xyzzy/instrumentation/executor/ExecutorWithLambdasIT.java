@@ -31,11 +31,13 @@ import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TraceEntryMarker;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.ServerSpan;
+import org.glowroot.agent.it.harness.model.Span;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.glowroot.agent.it.harness.validation.HarnessAssertions.assertSingleLocalSpanMessage;
 
 public class ExecutorWithLambdasIT {
 
@@ -61,7 +63,7 @@ public class ExecutorWithLambdasIT {
     @Test
     public void shouldCaptureExecute() throws Exception {
         // when
-        Trace trace = container.execute(DoExecuteRunnableWithLambda.class);
+        ServerSpan trace = container.execute(DoExecuteRunnableWithLambda.class);
         // then
         checkTrace(trace);
     }
@@ -69,12 +71,12 @@ public class ExecutorWithLambdasIT {
     @Test
     public void shouldCaptureNestedExecute() throws Exception {
         // when
-        Trace trace = container.execute(DoNestedExecuteRunnableWithLambda.class);
+        ServerSpan trace = container.execute(DoNestedExecuteRunnableWithLambda.class);
         // then
         checkTrace(trace);
     }
 
-    private static void checkTrace(Trace trace) {
+    private static void checkTrace(ServerSpan trace) {
         assertThat(trace.auxThreadRootTimer()).isNotNull();
         assertThat(trace.asyncTimers()).isEmpty();
         assertThat(trace.auxThreadRootTimer().name()).isEqualTo("auxiliary thread");
@@ -85,16 +87,11 @@ public class ExecutorWithLambdasIT {
         assertThat(trace.auxThreadRootTimer().childTimers().size()).isEqualTo(1);
         assertThat(trace.auxThreadRootTimer().childTimers().get(0).name())
                 .isEqualTo("mock trace entry marker");
-        List<Trace.Entry> entries = trace.entries();
 
-        assertThat(entries.size()).isBetween(2, 6);
-        for (int i = 0; i < entries.size(); i += 2) {
-            assertThat(entries.get(i).depth()).isEqualTo(0);
-            assertThat(entries.get(i).message()).isEqualTo("auxiliary thread");
-
-            assertThat(entries.get(i + 1).depth()).isEqualTo(1);
-            assertThat(entries.get(i + 1).message())
-                    .isEqualTo("trace entry marker / CreateTraceEntry");
+        List<Span> spans = trace.childSpans();
+        assertThat(spans.size()).isBetween(1, 3);
+        for (Span span : spans) {
+            assertSingleLocalSpanMessage(span).isEqualTo("trace entry marker / CreateTraceEntry");
         }
     }
 

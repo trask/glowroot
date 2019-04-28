@@ -17,7 +17,6 @@ package org.glowroot.xyzzy.instrumentation.httpclient;
 
 import java.net.ServerSocket;
 import java.net.URL;
-import java.util.Iterator;
 
 import javax.jws.WebMethod;
 import javax.jws.WebService;
@@ -37,9 +36,9 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.ServerSpan;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.glowroot.agent.it.harness.validation.HarnessAssertions.assertSingleClientSpanMessage;
 
 public class AxisClientIT {
 
@@ -63,17 +62,11 @@ public class AxisClientIT {
     @Test
     public void shouldCaptureAxisCall() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteSoapRequest.class);
+        ServerSpan serverSpan = container.execute(ExecuteSoapRequest.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).matches("http client request:"
+        assertSingleClientSpanMessage(serverSpan).matches("http client request:"
                 + " POST http://localhost:\\d+/cxf/helloWorld");
-
-        assertThat(i.hasNext()).isFalse();
     }
 
     public static class ExecuteSoapRequest implements AppUnderTest, TransactionMarker {
@@ -100,7 +93,8 @@ public class AxisClientIT {
 
             call.setTargetEndpointAddress(new URL(endpoint));
             call.setPortTypeName(
-                    new QName("http://httpclient.instrumentation.xyzzy.glowroot.org/", "HelloWorld"));
+                    new QName("http://httpclient.instrumentation.xyzzy.glowroot.org/",
+                            "HelloWorld"));
             call.setOperationName(
                     new QName("http://httpclient.instrumentation.xyzzy.glowroot.org/", "hello"));
 

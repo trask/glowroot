@@ -32,7 +32,9 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.ClientSpan;
+import org.glowroot.agent.it.harness.model.ServerSpan;
+import org.glowroot.agent.it.harness.model.Span;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -58,18 +60,16 @@ public class CassandraSyncIT {
     @Test
     public void shouldExecuteStatement() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteStatement.class);
+        ServerSpan trace = container.execute(ExecuteStatement.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = trace.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEmpty();
-        assertThat(entry.queryEntryMessage().queryText())
-                .isEqualTo("SELECT * FROM test.users");
-        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("cassandra query: ");
-        assertThat(entry.queryEntryMessage().suffix()).isEqualTo(" => 10 rows");
+        ClientSpan clientSpan = (ClientSpan) i.next();
+        assertThat(clientSpan.getMessage()).isEmpty();
+        assertThat(clientSpan.getMessage()).isEqualTo("SELECT * FROM test.users");
+        assertThat(clientSpan.getPrefix()).isEqualTo("cassandra query: ");
+        assertThat(clientSpan.getSuffix()).isEqualTo(" => 10 rows");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -77,18 +77,16 @@ public class CassandraSyncIT {
     @Test
     public void shouldExecuteStatementReturningNoRecords() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteStatementReturningNoRecords.class);
+        ServerSpan trace = container.execute(ExecuteStatementReturningNoRecords.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = trace.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEmpty();
-        assertThat(entry.queryEntryMessage().queryText())
-                .isEqualTo("SELECT * FROM test.users where id = 12345");
-        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("cassandra query: ");
-        assertThat(entry.queryEntryMessage().suffix()).isEqualTo(" => 0 rows");
+        ClientSpan clientSpan = (ClientSpan) i.next();
+        assertThat(clientSpan.getMessage()).isEmpty();
+        assertThat(clientSpan.getMessage()).isEqualTo("SELECT * FROM test.users where id = 12345");
+        assertThat(clientSpan.getPrefix()).isEqualTo("cassandra query: ");
+        assertThat(clientSpan.getSuffix()).isEqualTo(" => 0 rows");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -96,18 +94,17 @@ public class CassandraSyncIT {
     @Test
     public void shouldExecuteStatementReturningNoRecordsCheckIsExhausted() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteStatementReturningNoRecordsCheckIsExhausted.class);
+        ServerSpan trace =
+                container.execute(ExecuteStatementReturningNoRecordsCheckIsExhausted.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = trace.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEmpty();
-        assertThat(entry.queryEntryMessage().queryText())
-                .isEqualTo("SELECT * FROM test.users where id = 12345");
-        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("cassandra query: ");
-        assertThat(entry.queryEntryMessage().suffix()).isEqualTo(" => 0 rows");
+        ClientSpan clientSpan = (ClientSpan) i.next();
+        assertThat(clientSpan.getMessage()).isEmpty();
+        assertThat(clientSpan.getMessage()).isEqualTo("SELECT * FROM test.users where id = 12345");
+        assertThat(clientSpan.getPrefix()).isEqualTo("cassandra query: ");
+        assertThat(clientSpan.getSuffix()).isEqualTo(" => 0 rows");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -115,18 +112,16 @@ public class CassandraSyncIT {
     @Test
     public void shouldIterateUsingOneAndAll() throws Exception {
         // when
-        Trace trace = container.execute(IterateUsingOneAndAll.class);
+        ServerSpan trace = container.execute(IterateUsingOneAndAll.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = trace.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEmpty();
-        assertThat(entry.queryEntryMessage().queryText())
-                .isEqualTo("SELECT * FROM test.users");
-        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("cassandra query: ");
-        assertThat(entry.queryEntryMessage().suffix()).isEqualTo(" => 10 rows");
+        ClientSpan clientSpan = (ClientSpan) i.next();
+        assertThat(clientSpan.getMessage()).isEmpty();
+        assertThat(clientSpan.getMessage()).isEqualTo("SELECT * FROM test.users");
+        assertThat(clientSpan.getPrefix()).isEqualTo("cassandra query: ");
+        assertThat(clientSpan.getSuffix()).isEqualTo(" => 10 rows");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -134,18 +129,17 @@ public class CassandraSyncIT {
     @Test
     public void shouldExecuteBoundStatement() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteBoundStatement.class);
+        ServerSpan trace = container.execute(ExecuteBoundStatement.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = trace.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEmpty();
-        assertThat(entry.queryEntryMessage().queryText())
+        ClientSpan clientSpan = (ClientSpan) i.next();
+        assertThat(clientSpan.getMessage()).isEmpty();
+        assertThat(clientSpan.getMessage())
                 .isEqualTo("INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
-        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("cassandra query: ");
-        assertThat(entry.queryEntryMessage().suffix()).isEmpty();
+        assertThat(clientSpan.getPrefix()).isEqualTo("cassandra query: ");
+        assertThat(clientSpan.getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -153,15 +147,14 @@ public class CassandraSyncIT {
     @Test
     public void shouldExecuteBatchStatement() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteBatchStatement.class);
+        ServerSpan trace = container.execute(ExecuteBatchStatement.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = trace.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEmpty();
-        assertThat(entry.queryEntryMessage().queryText())
+        ClientSpan clientSpan = (ClientSpan) i.next();
+        assertThat(clientSpan.getMessage()).isEmpty();
+        assertThat(clientSpan.getMessage())
                 .isEqualTo("[batch] INSERT INTO test.users (id,  fname, lname)"
                         + " VALUES (100, 'f100', 'l100'),"
                         + " INSERT INTO test.users (id,  fname, lname)"
@@ -169,8 +162,8 @@ public class CassandraSyncIT {
                         + " 10 x INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?),"
                         + " INSERT INTO test.users (id,  fname, lname)"
                         + " VALUES (300, 'f300', 'l300')");
-        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("cassandra query: ");
-        assertThat(entry.queryEntryMessage().suffix()).isEmpty();
+        assertThat(clientSpan.getPrefix()).isEqualTo("cassandra query: ");
+        assertThat(clientSpan.getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }

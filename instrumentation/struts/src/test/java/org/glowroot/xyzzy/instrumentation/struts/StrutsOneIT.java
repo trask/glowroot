@@ -17,7 +17,6 @@ package org.glowroot.xyzzy.instrumentation.struts;
 
 import java.io.File;
 import java.net.ServerSocket;
-import java.util.Iterator;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -38,9 +37,10 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.ServerSpan;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.glowroot.agent.it.harness.validation.HarnessAssertions.assertSingleLocalSpanMessage;
 
 public class StrutsOneIT {
 
@@ -64,19 +64,13 @@ public class StrutsOneIT {
     @Test
     public void shouldCaptureAction() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteActionInTomcat.class, "Web");
+        ServerSpan serverSpan = container.execute(ExecuteActionInTomcat.class, "Web");
 
         // then
-        assertThat(trace.transactionName()).isEqualTo("HelloWorldAction#execute");
+        assertThat(serverSpan.transactionName()).isEqualTo("HelloWorldAction#execute");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("struts action:"
-                + " org.glowroot.xyzzy.instrumentation.struts.StrutsOneIT$HelloWorldAction.execute()");
-
-        assertThat(i.hasNext()).isFalse();
+        assertSingleLocalSpanMessage(serverSpan).isEqualTo("struts action: org.glowroot.xyzzy"
+                + ".instrumentation.struts.StrutsOneIT$HelloWorldAction.execute()");
     }
 
     public static class HelloWorldAction extends Action {

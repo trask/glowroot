@@ -32,9 +32,12 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.LocalSpan;
+import org.glowroot.agent.it.harness.model.ServerSpan;
+import org.glowroot.agent.it.harness.model.Span;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.glowroot.agent.it.harness.validation.HarnessAssertions.assertSingleLocalSpanMessage;
 
 public class ConnectionAndTxLifecycleIT {
 
@@ -64,18 +67,18 @@ public class ConnectionAndTxLifecycleIT {
                 "captureConnectionLifecycleTraceEntries", true);
 
         // when
-        Trace trace = container.execute(ExecuteGetConnectionAndConnectionClose.class);
+        ServerSpan serverSpan = container.execute(ExecuteGetConnectionAndConnectionClose.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("jdbc get connection");
+        LocalSpan localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("jdbc get connection");
+        assertThat(localSpan.childSpans()).isEmpty();
 
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("jdbc connection close");
+        localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("jdbc connection close");
+        assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -87,12 +90,12 @@ public class ConnectionAndTxLifecycleIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureConnectionClose", false);
 
         // when
-        Trace trace = container.execute(ExecuteGetConnectionAndConnectionClose.class);
+        ServerSpan serverSpan = container.execute(ExecuteGetConnectionAndConnectionClose.class);
 
         // then
-        Trace.Timer rootTimer = trace.mainThreadRootTimer();
+        ServerSpan.Timer rootTimer = serverSpan.mainThreadRootTimer();
         assertThat(rootTimer.childTimers()).isEmpty();
-        assertThat(trace.entries()).isEmpty();
+        assertThat(serverSpan.childSpans()).isEmpty();
     }
 
     @Test
@@ -101,17 +104,17 @@ public class ConnectionAndTxLifecycleIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureConnectionClose", true);
 
         // when
-        Trace trace = container.execute(ExecuteGetConnectionAndConnectionClose.class);
+        ServerSpan serverSpan = container.execute(ExecuteGetConnectionAndConnectionClose.class);
 
         // then
-        Trace.Timer rootTimer = trace.mainThreadRootTimer();
+        ServerSpan.Timer rootTimer = serverSpan.mainThreadRootTimer();
         assertThat(rootTimer.childTimers()).hasSize(2);
         // ordering is by total desc, so order is not fixed
         Set<String> childTimerNames = Sets.newHashSet();
         childTimerNames.add(rootTimer.childTimers().get(0).name());
         childTimerNames.add(rootTimer.childTimers().get(1).name());
         assertThat(childTimerNames).containsOnly("jdbc get connection", "jdbc connection close");
-        assertThat(trace.entries()).isEmpty();
+        assertThat(serverSpan.childSpans()).isEmpty();
     }
 
     @Test
@@ -121,17 +124,16 @@ public class ConnectionAndTxLifecycleIT {
                 "captureConnectionLifecycleTraceEntries", true);
 
         // when
-        Trace trace = container.execute(ExecuteGetConnectionOnThrowingDataSource.class);
+        ServerSpan serverSpan = container.execute(ExecuteGetConnectionOnThrowingDataSource.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("jdbc get connection");
-
-        assertThat(entry.error().message())
+        LocalSpan localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("jdbc get connection");
+        assertThat(localSpan.getError().message())
                 .isEqualTo("java.sql.SQLException: A getconnection failure");
+        assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -143,24 +145,24 @@ public class ConnectionAndTxLifecycleIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureConnectionClose", false);
 
         // when
-        Trace trace = container.execute(ExecuteGetConnectionOnThrowingDataSource.class);
+        ServerSpan serverSpan = container.execute(ExecuteGetConnectionOnThrowingDataSource.class);
 
         // then
-        Trace.Timer rootTimer = trace.mainThreadRootTimer();
+        ServerSpan.Timer rootTimer = serverSpan.mainThreadRootTimer();
         assertThat(rootTimer.childTimers()).isEmpty();
-        assertThat(trace.entries()).isEmpty();
+        assertThat(serverSpan.childSpans()).isEmpty();
     }
 
     @Test
     public void testConnectionLifecycleGetConnectionThrowsPartiallyDisabled() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteGetConnectionOnThrowingDataSource.class);
+        ServerSpan serverSpan = container.execute(ExecuteGetConnectionOnThrowingDataSource.class);
 
         // then
-        Trace.Timer rootTimer = trace.mainThreadRootTimer();
+        ServerSpan.Timer rootTimer = serverSpan.mainThreadRootTimer();
         assertThat(rootTimer.childTimers()).hasSize(1);
         assertThat(rootTimer.childTimers().get(0).name()).isEqualTo("jdbc get connection");
-        assertThat(trace.entries()).isEmpty();
+        assertThat(serverSpan.childSpans()).isEmpty();
     }
 
     @Test
@@ -170,24 +172,24 @@ public class ConnectionAndTxLifecycleIT {
                 "captureConnectionLifecycleTraceEntries", true);
 
         // when
-        Trace trace = container.execute(ExecuteCloseConnectionOnThrowingDataSource.class);
+        ServerSpan serverSpan = container.execute(ExecuteCloseConnectionOnThrowingDataSource.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("jdbc get connection");
+        LocalSpan localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("jdbc get connection");
+        assertThat(localSpan.childSpans()).isEmpty();
 
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("jdbc connection close");
-
-        assertThat(entry.error().message())
+        localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("jdbc connection close");
+        assertThat(localSpan.getError().message())
                 .isEqualTo("java.sql.SQLException: A close failure");
+        assertThat(localSpan.childSpans()).isEmpty();
 
-        entry = i.next();
-        assertThat(entry.message()).startsWith("Resource leak");
+        localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).startsWith("Resource leak");
+        assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -199,18 +201,13 @@ public class ConnectionAndTxLifecycleIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureConnectionClose", false);
 
         // when
-        Trace trace = container.execute(ExecuteCloseConnectionOnThrowingDataSource.class);
+        ServerSpan serverSpan = container.execute(ExecuteCloseConnectionOnThrowingDataSource.class);
 
         // then
-        Trace.Timer rootTimer = trace.mainThreadRootTimer();
+        ServerSpan.Timer rootTimer = serverSpan.mainThreadRootTimer();
         assertThat(rootTimer.childTimers()).isEmpty();
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.message()).startsWith("Resource leak");
-
-        assertThat(i.hasNext()).isFalse();
+        assertSingleLocalSpanMessage(serverSpan).startsWith("Resource leak");
     }
 
     @Test
@@ -219,10 +216,10 @@ public class ConnectionAndTxLifecycleIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureConnectionClose", true);
 
         // when
-        Trace trace = container.execute(ExecuteCloseConnectionOnThrowingDataSource.class);
+        ServerSpan serverSpan = container.execute(ExecuteCloseConnectionOnThrowingDataSource.class);
 
         // then
-        Trace.Timer rootTimer = trace.mainThreadRootTimer();
+        ServerSpan.Timer rootTimer = serverSpan.mainThreadRootTimer();
         assertThat(rootTimer.childTimers()).hasSize(2);
         // ordering is by total desc, so order is not fixed
         Set<String> childTimerNames = Sets.newHashSet();
@@ -230,12 +227,7 @@ public class ConnectionAndTxLifecycleIT {
         childTimerNames.add(rootTimer.childTimers().get(1).name());
         assertThat(childTimerNames).containsOnly("jdbc get connection", "jdbc connection close");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.message()).startsWith("Resource leak");
-
-        assertThat(i.hasNext()).isFalse();
+        assertSingleLocalSpanMessage(serverSpan).startsWith("Resource leak");
     }
 
     @Test
@@ -245,24 +237,23 @@ public class ConnectionAndTxLifecycleIT {
                 "captureTransactionLifecycleTraceEntries", true);
 
         // when
-        Trace trace = container.execute(ExecuteSetAutoCommit.class);
+        ServerSpan serverSpan = container.execute(ExecuteSetAutoCommit.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("jdbc set autocommit: false");
+        LocalSpan localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("jdbc set autocommit: false");
+        assertThat(localSpan.childSpans()).isEmpty();
 
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("jdbc set autocommit: true");
+        localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("jdbc set autocommit: true");
+        assertThat(localSpan.childSpans()).isEmpty();
 
         if (i.hasNext()) {
-            entry = i.next();
-            assertThat(entry.depth()).isEqualTo(0);
-            assertThat(entry.message()).isEqualTo("jdbc commit");
-
+            localSpan = (LocalSpan) i.next();
+            assertThat(localSpan.getMessage()).isEqualTo("jdbc commit");
+            assertThat(localSpan.childSpans()).isEmpty();
         }
 
         assertThat(i.hasNext()).isFalse();
@@ -275,24 +266,22 @@ public class ConnectionAndTxLifecycleIT {
                 "captureTransactionLifecycleTraceEntries", true);
 
         // when
-        Trace trace = container.execute(ExecuteSetAutoCommitThrowing.class);
+        ServerSpan serverSpan = container.execute(ExecuteSetAutoCommitThrowing.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("jdbc set autocommit: false");
-
-        assertThat(entry.error().message())
+        LocalSpan localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("jdbc set autocommit: false");
+        assertThat(localSpan.getError().message())
                 .isEqualTo("java.sql.SQLException: A setautocommit failure");
+        assertThat(localSpan.childSpans()).isEmpty();
 
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("jdbc set autocommit: true");
-
-        assertThat(entry.error().message())
+        localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("jdbc set autocommit: true");
+        assertThat(localSpan.getError().message())
                 .isEqualTo("java.sql.SQLException: A setautocommit failure");
+        assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -306,18 +295,18 @@ public class ConnectionAndTxLifecycleIT {
                 "captureTransactionLifecycleTraceEntries", true);
 
         // when
-        Trace trace = container.execute(ExecuteGetConnectionAndConnectionClose.class);
+        ServerSpan serverSpan = container.execute(ExecuteGetConnectionAndConnectionClose.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("jdbc get connection (autocommit: true)");
+        LocalSpan localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("jdbc get connection (autocommit: true)");
+        assertThat(localSpan.childSpans()).isEmpty();
 
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("jdbc connection close");
+        localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("jdbc connection close");
+        assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }

@@ -25,7 +25,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.agent.MainEntryPoint;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.ServerSpan;
 import org.glowroot.xyzzy.engine.weaving.IsolatedWeavingClassLoader;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -88,18 +88,18 @@ public class LocalContainer implements Container {
     }
 
     @Override
-    public Trace execute(Class<? extends AppUnderTest> appClass) throws Exception {
+    public ServerSpan execute(Class<? extends AppUnderTest> appClass) throws Exception {
         return executeInternal(appClass, null, null);
     }
 
     @Override
-    public Trace execute(Class<? extends AppUnderTest> appClass, String transactionType)
+    public ServerSpan execute(Class<? extends AppUnderTest> appClass, String transactionType)
             throws Exception {
         return executeInternal(appClass, transactionType, null);
     }
 
     @Override
-    public Trace execute(Class<? extends AppUnderTest> appClass, String transactionType,
+    public ServerSpan execute(Class<? extends AppUnderTest> appClass, String transactionType,
             String transactionName) throws Exception {
         return executeInternal(appClass, transactionType, transactionName);
     }
@@ -123,11 +123,11 @@ public class LocalContainer implements Container {
         traceCollector.close();
     }
 
-    public Trace executeInternal(Class<? extends AppUnderTest> appClass,
+    public ServerSpan executeInternal(Class<? extends AppUnderTest> appClass,
             @Nullable String transactionType, @Nullable String transactionName) throws Exception {
         checkNotNull(traceCollector);
         executeInternal(appClass);
-        Trace trace =
+        ServerSpan trace =
                 traceCollector.getCompletedTrace(transactionType, transactionName, 10, SECONDS);
         traceCollector.clearTrace();
         return trace;

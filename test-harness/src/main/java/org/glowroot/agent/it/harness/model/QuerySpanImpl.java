@@ -13,16 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.it.harness.agent;
+package org.glowroot.agent.it.harness.model;
 
 import java.util.concurrent.TimeUnit;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import org.glowroot.agent.it.harness.model.ImmutableEntry;
-import org.glowroot.agent.it.harness.model.ImmutableError;
-import org.glowroot.agent.it.harness.model.ImmutableQueryEntryMessage;
-import org.glowroot.agent.it.harness.model.ImmutableTrace;
 import org.glowroot.xyzzy.engine.impl.NopTransactionService;
 import org.glowroot.xyzzy.instrumentation.api.AsyncQueryEntry;
 import org.glowroot.xyzzy.instrumentation.api.QueryMessageSupplier;
@@ -30,65 +26,50 @@ import org.glowroot.xyzzy.instrumentation.api.ThreadContext;
 import org.glowroot.xyzzy.instrumentation.api.Timer;
 import org.glowroot.xyzzy.instrumentation.api.internal.ReadableQueryMessage;
 
-class QueryEntryImpl implements AsyncQueryEntry {
+public class QuerySpanImpl extends SpanImpl implements AsyncQueryEntry {
 
-    private final ImmutableTrace.Builder trace;
     private final String queryText;
     private final QueryMessageSupplier queryMessageSupplier;
 
-    QueryEntryImpl(ImmutableTrace.Builder trace, String queryText,
-            QueryMessageSupplier queryMessageSupplier) {
+    public QuerySpanImpl(String queryText, QueryMessageSupplier queryMessageSupplier) {
         this.queryText = queryText;
         this.queryMessageSupplier = queryMessageSupplier;
-        this.trace = trace;
     }
 
     @Override
-    public void end() {
-        trace.addEntries(toEntry().build());
-    }
+    public void end() {}
 
     @Override
     public void endWithLocationStackTrace(long threshold, TimeUnit unit) {
-        trace.addEntries(toEntry()
-                .locationStackTraceMillis(unit.toMillis(threshold))
-                .build());
+        setLocationStackTraceMillis(unit.toMillis(threshold));
     }
 
     @Override
     public void endWithError(Throwable t) {
-        trace.addEntries(toEntry()
-                .error(ImmutableError.builder()
-                        .exception(t)
-                        .build())
+        setError(ImmutableError.builder()
+                .exception(t)
                 .build());
     }
 
     @Override
     public void endWithError(String message) {
-        trace.addEntries(toEntry()
-                .error(ImmutableError.builder()
-                        .message(message)
-                        .build())
+        setError(ImmutableError.builder()
+                .message(message)
                 .build());
     }
 
     @Override
     public void endWithError(String message, Throwable t) {
-        trace.addEntries(toEntry()
-                .error(ImmutableError.builder()
-                        .message(message)
-                        .exception(t)
-                        .build())
+        setError(ImmutableError.builder()
+                .message(message)
+                .exception(t)
                 .build());
     }
 
     @Override
     public void endWithInfo(Throwable t) {
-        trace.addEntries(toEntry()
-                .error(ImmutableError.builder()
-                        .exception(t)
-                        .build())
+        setError(ImmutableError.builder()
+                .exception(t)
                 .build());
     }
 
@@ -119,13 +100,16 @@ class QueryEntryImpl implements AsyncQueryEntry {
         return NopTransactionService.TIMER;
     }
 
-    private ImmutableEntry.Builder toEntry() {
-        ReadableQueryMessage queryMessage = (ReadableQueryMessage) queryMessageSupplier.get();
-        return ImmutableEntry.builder()
-                .queryEntryMessage(ImmutableQueryEntryMessage.builder()
-                        .queryText(queryText)
-                        .prefix(queryMessage.getPrefix())
-                        .suffix(queryMessage.getSuffix())
-                        .build());
+    @Override
+    public ImmutableClientSpan toImmutable() {
+        ReadableQueryMessage message = (ReadableQueryMessage) queryMessageSupplier.get();
+        return ImmutableClientSpan.builder()
+                .message(queryText)
+                .prefix(message.getPrefix())
+                .suffix(message.getSuffix())
+                .details(getDetails())
+                .error(getError())
+                .locationStackTraceMillis(getLocationStackTraceMillis())
+                .build();
     }
 }

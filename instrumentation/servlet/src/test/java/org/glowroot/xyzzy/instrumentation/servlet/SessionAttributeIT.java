@@ -36,7 +36,7 @@ import org.springframework.mock.web.MockHttpSession;
 
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.ServerSpan;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -67,7 +67,7 @@ public class SessionAttributeIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
                 ImmutableList.of("testattr"));
         // when
-        Trace trace = container.execute(HasSessionAttribute.class, "Web");
+        ServerSpan trace = container.execute(HasSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNotNull();
         assertThat(getSessionAttributes(trace).get("testattr")).isEqualTo("val");
@@ -80,7 +80,7 @@ public class SessionAttributeIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
                 ImmutableList.of(" testattr ", " other"));
         // when
-        Trace trace = container.execute(HasSessionAttribute.class, "Web");
+        ServerSpan trace = container.execute(HasSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNotNull();
         assertThat(getSessionAttributes(trace).get("testattr")).isEqualTo("val");
@@ -93,7 +93,7 @@ public class SessionAttributeIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
                 ImmutableList.of("*"));
         // when
-        Trace trace = container.execute(HasSessionAttribute.class, "Web");
+        ServerSpan trace = container.execute(HasSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNotNull();
         assertThat(getSessionAttributes(trace).get("testattr")).isEqualTo("val");
@@ -106,7 +106,7 @@ public class SessionAttributeIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
                 ImmutableList.of("*", "other", "::id"));
         // when
-        Trace trace = container.execute(HasSessionAttribute.class, "Web");
+        ServerSpan trace = container.execute(HasSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNotNull();
         assertThat(getSessionAttributes(trace).get("testattr")).isEqualTo("val");
@@ -120,7 +120,7 @@ public class SessionAttributeIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
                 ImmutableList.<String>of());
         // when
-        Trace trace = container.execute(HasSessionAttribute.class, "Web");
+        ServerSpan trace = container.execute(HasSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNull();
@@ -132,7 +132,7 @@ public class SessionAttributeIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
                 ImmutableList.of("testattr", "testother"));
         // when
-        Trace trace = container.execute(SetSessionAttribute.class, "Web");
+        ServerSpan trace = container.execute(SetSessionAttribute.class, "Web");
         // then
         assertThat(getInitialSessionAttributes(trace)).isNotNull();
         assertThat(getInitialSessionAttributes(trace).get("testother")).isEqualTo("v");
@@ -146,7 +146,7 @@ public class SessionAttributeIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
                 ImmutableList.of("*"));
         // when
-        Trace trace = container.execute(SetSessionAttribute.class, "Web");
+        ServerSpan trace = container.execute(SetSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
@@ -159,7 +159,7 @@ public class SessionAttributeIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
                 ImmutableList.of("*", "other"));
         // when
-        Trace trace = container.execute(SetSessionAttribute.class, "Web");
+        ServerSpan trace = container.execute(SetSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
@@ -172,7 +172,7 @@ public class SessionAttributeIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
                 ImmutableList.<String>of());
         // when
-        Trace trace = container.execute(SetSessionAttribute.class, "Web");
+        ServerSpan trace = container.execute(SetSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNull();
@@ -184,7 +184,7 @@ public class SessionAttributeIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
                 ImmutableList.of("*"));
         // when
-        Trace trace = container.execute(SetSessionAttributeNull.class, "Web");
+        ServerSpan trace = container.execute(SetSessionAttributeNull.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
@@ -197,7 +197,7 @@ public class SessionAttributeIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
                 ImmutableList.of("one.two.three", "one.amap.x"));
         // when
-        Trace trace = container.execute(HasNestedSessionAttribute.class, "Web");
+        ServerSpan trace = container.execute(HasNestedSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNotNull();
         assertThat(getSessionAttributes(trace).get("one.two.three")).isEqualTo("four");
@@ -211,7 +211,7 @@ public class SessionAttributeIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
                 ImmutableList.of("one.two.three", "one.amap.x"));
         // when
-        Trace trace = container.execute(SetNestedSessionAttribute.class, "Web");
+        ServerSpan trace = container.execute(SetNestedSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
@@ -225,7 +225,7 @@ public class SessionAttributeIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
                 ImmutableList.of("missingtestattr"));
         // when
-        Trace trace = container.execute(HasSessionAttribute.class, "Web");
+        ServerSpan trace = container.execute(HasSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNull();
@@ -237,7 +237,7 @@ public class SessionAttributeIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
                 ImmutableList.of("one.missingtwo"));
         // when
-        Trace trace = container.execute(HasNestedSessionAttribute.class, "Web");
+        ServerSpan trace = container.execute(HasNestedSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNull();
@@ -249,7 +249,7 @@ public class SessionAttributeIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
                 ImmutableList.of("one.*", "one.two.*", "one.amap.*"));
         // when
-        Trace trace = container.execute(HasNestedSessionAttribute.class, "Web");
+        ServerSpan trace = container.execute(HasNestedSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNotNull();
         assertThat(getSessionAttributes(trace)).hasSize(5);
@@ -265,7 +265,7 @@ public class SessionAttributeIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
                 ImmutableList.of("one.*", "one.two.*", "one.amap.*"));
         // when
-        Trace trace = container.execute(SetNestedSessionAttribute.class, "Web");
+        ServerSpan trace = container.execute(SetNestedSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
@@ -281,7 +281,7 @@ public class SessionAttributeIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
                 ImmutableList.of("one.*"));
         // when
-        Trace trace = container.execute(SetNestedSessionAttributeToNull.class, "Web");
+        ServerSpan trace = container.execute(SetNestedSessionAttributeToNull.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
@@ -296,7 +296,7 @@ public class SessionAttributeIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
                 ImmutableList.of("one.two"));
         // when
-        Trace trace = container.execute(SetNestedSessionAttributeToNull.class, "Web");
+        ServerSpan trace = container.execute(SetNestedSessionAttributeToNull.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
@@ -311,7 +311,7 @@ public class SessionAttributeIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
                 ImmutableList.of("*"));
         // when
-        Trace trace = container.execute(HasBadSessionAttribute.class, "Web");
+        ServerSpan trace = container.execute(HasBadSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNotNull();
         assertThat(getSessionAttributes(trace)).hasSize(1);
@@ -325,7 +325,7 @@ public class SessionAttributeIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
                 ImmutableList.of("*"));
         // when
-        Trace trace = container.execute(SetBadSessionAttribute.class, "Web");
+        ServerSpan trace = container.execute(SetBadSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
@@ -340,7 +340,7 @@ public class SessionAttributeIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
                 ImmutableList.of("missingtestattr.*"));
         // when
-        Trace trace = container.execute(HasSessionAttribute.class, "Web");
+        ServerSpan trace = container.execute(HasSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNull();
@@ -352,7 +352,7 @@ public class SessionAttributeIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
                 ImmutableList.of("one.missingtwo.*"));
         // when
-        Trace trace = container.execute(HasNestedSessionAttribute.class, "Web");
+        ServerSpan trace = container.execute(HasNestedSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNull();
@@ -364,7 +364,7 @@ public class SessionAttributeIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
                 ImmutableList.of("*"));
         // when
-        Trace trace = container.execute(GetBadAttributeNames.class, "Web");
+        ServerSpan trace = container.execute(GetBadAttributeNames.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNull();
@@ -376,7 +376,7 @@ public class SessionAttributeIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
                 ImmutableList.of("::id"));
         // when
-        Trace trace = container.execute(HasHttpSession.class, "Web");
+        ServerSpan trace = container.execute(HasHttpSession.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNotNull();
         assertThat(getSessionAttributes(trace).get("::id")).isEqualTo("123456789");
@@ -390,7 +390,7 @@ public class SessionAttributeIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
                 ImmutableList.of("::id"));
         // when
-        Trace trace = container.execute(HasNoHttpSession.class, "Web");
+        ServerSpan trace = container.execute(HasNoHttpSession.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getInitialSessionAttributes(trace)).isNull();
@@ -403,7 +403,7 @@ public class SessionAttributeIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
                 ImmutableList.of("::id"));
         // when
-        Trace trace = container.execute(CreateHttpSession.class, "Web");
+        ServerSpan trace = container.execute(CreateHttpSession.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getInitialSessionAttributes(trace)).isNull();
@@ -416,7 +416,7 @@ public class SessionAttributeIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
                 ImmutableList.of("::id"));
         // when
-        Trace trace = container.execute(CreateHttpSessionTrue.class, "Web");
+        ServerSpan trace = container.execute(CreateHttpSessionTrue.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getInitialSessionAttributes(trace)).isNull();
@@ -429,7 +429,7 @@ public class SessionAttributeIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
                 ImmutableList.of("::id"));
         // when
-        Trace trace = container.execute(CreateHttpSessionFalse.class, "Web");
+        ServerSpan trace = container.execute(CreateHttpSessionFalse.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getInitialSessionAttributes(trace)).isNull();
@@ -442,7 +442,7 @@ public class SessionAttributeIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
                 ImmutableList.of("::id"));
         // when
-        Trace trace = container.execute(ChangeHttpSession.class, "Web");
+        ServerSpan trace = container.execute(ChangeHttpSession.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getInitialSessionAttributes(trace).get("::id")).isEqualTo("123456789");
@@ -455,28 +455,28 @@ public class SessionAttributeIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
                 ImmutableList.of("::id"));
         // when
-        Trace trace = container.execute(CreateAndChangeHttpSession.class, "Web");
+        ServerSpan trace = container.execute(CreateAndChangeHttpSession.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getInitialSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace).get("::id")).isEqualTo("abcdef");
     }
 
-    static Map<String, String> getSessionAttributes(Trace trace) {
+    static Map<String, String> getSessionAttributes(ServerSpan trace) {
         return getDetailMap(trace, "Session attributes");
     }
 
-    static Map<String, String> getInitialSessionAttributes(Trace trace) {
+    static Map<String, String> getInitialSessionAttributes(ServerSpan trace) {
         return getDetailMap(trace, "Session attributes (at beginning of this request)");
     }
 
-    static Map<String, String> getUpdatedSessionAttributes(Trace trace) {
+    static Map<String, String> getUpdatedSessionAttributes(ServerSpan trace) {
         return getDetailMap(trace, "Session attributes (updated during this request)");
     }
 
     @SuppressWarnings("unchecked")
-    private static Map<String, String> getDetailMap(Trace trace, String name) {
-        return (Map<String, String>) trace.details().get(name);
+    private static Map<String, String> getDetailMap(ServerSpan trace, String name) {
+        return (Map<String, String>) trace.getDetails().get(name);
     }
 
     @SuppressWarnings("serial")

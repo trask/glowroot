@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.it.harness.agent;
 
-import org.glowroot.agent.it.harness.model.ImmutableTrace;
+import org.glowroot.agent.it.harness.model.ServerSpanImpl;
 import org.glowroot.xyzzy.engine.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.xyzzy.engine.weaving.AgentSPI;
 import org.glowroot.xyzzy.instrumentation.api.MessageSupplier;
@@ -34,27 +34,11 @@ class AgentImpl implements AgentSPI {
             ThreadContextThreadLocal.Holder threadContextHolder, int rootNestingGroupId,
             int rootSuppressionKeyId) {
 
-        ImmutableTrace.Builder trace = ImmutableTrace.builder();
-        ThreadContextImpl threadContext = new ThreadContextImpl(threadContextHolder, trace,
+        ServerSpanImpl serverSpan = new ServerSpanImpl(messageSupplier, threadContextHolder);
+        ThreadContextImpl threadContext = new ThreadContextImpl(threadContextHolder, serverSpan,
                 null, rootNestingGroupId, rootSuppressionKeyId);
         threadContextHolder.set(threadContext);
 
-        return new RootTraceEntryImpl(trace, messageSupplier, threadContextHolder);
-    }
-
-    private static class RootTraceEntryImpl extends TraceEntryImpl {
-
-        private final ThreadContextThreadLocal.Holder threadContextHolder;
-
-        public RootTraceEntryImpl(ImmutableTrace.Builder trace, MessageSupplier messageSupplier,
-                ThreadContextThreadLocal.Holder threadContextHolder) {
-            super(trace, messageSupplier);
-            this.threadContextHolder = threadContextHolder;
-        }
-
-        @Override
-        protected void postFinish() {
-            threadContextHolder.set(null);
-        }
+        return serverSpan;
     }
 }

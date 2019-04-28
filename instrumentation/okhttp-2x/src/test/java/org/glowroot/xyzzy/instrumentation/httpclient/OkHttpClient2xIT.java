@@ -34,11 +34,15 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TraceEntryMarker;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.ClientSpan;
+import org.glowroot.agent.it.harness.model.LocalSpan;
+import org.glowroot.agent.it.harness.model.ServerSpan;
+import org.glowroot.agent.it.harness.model.Span;
 import org.glowroot.agent.it.harness.util.ExecuteHttpBase;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.glowroot.agent.it.harness.validation.HarnessAssertions.assertSingleClientSpanMessage;
 
 public class OkHttpClient2xIT {
 
@@ -62,56 +66,39 @@ public class OkHttpClient2xIT {
     @Test
     public void shouldCaptureHttpGet() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteHttpGet.class);
+        ServerSpan serverSpan = container.execute(ExecuteHttpGet.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message())
+        assertSingleClientSpanMessage(serverSpan)
                 .matches("http client request: GET http://localhost:\\d+/hello1/");
-
-        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureHttpPost() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteHttpPost.class);
+        ServerSpan serverSpan = container.execute(ExecuteHttpPost.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.message())
+        assertSingleClientSpanMessage(serverSpan)
                 .matches("http client request: POST http://localhost:\\d+/hello2");
-
-        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureAsyncHttpGet() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteAsyncHttpGet.class);
+        ServerSpan serverSpan = container.execute(ExecuteAsyncHttpGet.class);
 
         // then
-        assertThat(trace.asyncTimers().get(0).name()).isEqualTo("http client request");
+        assertThat(serverSpan.asyncTimers().get(0).name()).isEqualTo("http client request");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message())
+        ClientSpan clientSpan = (ClientSpan) i.next();
+        assertThat(clientSpan.getMessage())
                 .matches("http client request: GET http://localhost:\\d+/hello1/");
 
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(1);
-        assertThat(entry.message()).matches("auxiliary thread");
-
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(2);
-        assertThat(entry.message()).matches("trace entry marker / CreateTraceEntry");
+        LocalSpan localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).matches("trace entry marker / CreateTraceEntry");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -119,25 +106,19 @@ public class OkHttpClient2xIT {
     @Test
     public void shouldCaptureAsyncHttpPost() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteAsyncHttpPost.class);
+        ServerSpan serverSpan = container.execute(ExecuteAsyncHttpPost.class);
 
         // then
-        assertThat(trace.asyncTimers().get(0).name()).isEqualTo("http client request");
+        assertThat(serverSpan.asyncTimers().get(0).name()).isEqualTo("http client request");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message())
+        ClientSpan clientSpan = (ClientSpan) i.next();
+        assertThat(clientSpan.getMessage())
                 .matches("http client request: POST http://localhost:\\d+/hello2");
 
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(1);
-        assertThat(entry.message()).matches("auxiliary thread");
-
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(2);
-        assertThat(entry.message()).matches("trace entry marker / CreateTraceEntry");
+        LocalSpan localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).matches("trace entry marker / CreateTraceEntry");
 
         assertThat(i.hasNext()).isFalse();
     }

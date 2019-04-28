@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.agent.Premain;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.ServerSpan;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -161,18 +161,18 @@ public class JavaagentContainer implements Container {
     }
 
     @Override
-    public Trace execute(Class<? extends AppUnderTest> appClass) throws Exception {
+    public ServerSpan execute(Class<? extends AppUnderTest> appClass) throws Exception {
         return executeInternal(appClass, null, null);
     }
 
     @Override
-    public Trace execute(Class<? extends AppUnderTest> appClass, String transactionType)
+    public ServerSpan execute(Class<? extends AppUnderTest> appClass, String transactionType)
             throws Exception {
         return executeInternal(appClass, transactionType, null);
     }
 
     @Override
-    public Trace execute(Class<? extends AppUnderTest> appClass, String transactionType,
+    public ServerSpan execute(Class<? extends AppUnderTest> appClass, String transactionType,
             String transactionName) throws Exception {
         return executeInternal(appClass, transactionType, transactionName);
     }
@@ -210,13 +210,13 @@ public class JavaagentContainer implements Container {
         Runtime.getRuntime().removeShutdownHook(shutdownHook);
     }
 
-    private Trace executeInternal(Class<? extends AppUnderTest> appClass,
+    private ServerSpan executeInternal(Class<? extends AppUnderTest> appClass,
             @Nullable String transactionType, @Nullable String transactionName) throws Exception {
         checkNotNull(traceCollector);
         executeInternal(appClass);
         // extra long wait time is needed for StackOverflowOOMIT on slow travis ci machines since it
         // can sometimes take a long time for that large trace to be serialized and transferred
-        Trace trace =
+        ServerSpan trace =
                 traceCollector.getCompletedTrace(transactionType, transactionName, 20, SECONDS);
         traceCollector.clearTrace();
         return trace;

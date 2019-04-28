@@ -16,6 +16,7 @@
 package org.glowroot.xyzzy.instrumentation.spring;
 
 import java.util.Iterator;
+import java.util.List;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -27,7 +28,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.LocalSpan;
+import org.glowroot.agent.it.harness.model.ServerSpan;
+import org.glowroot.agent.it.harness.model.Span;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -79,37 +82,32 @@ public class RestControllerIT {
     private void shouldCaptureTransactionNameWithNormalServletMappingHittingRest(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass, "Web");
+        ServerSpan serverSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.transactionName()).isEqualTo(contextPath + "/rest");
+        assertThat(serverSpan.transactionName()).isEqualTo(contextPath + "/rest");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message())
-                .isEqualTo("spring controller: org.glowroot.xyzzy.instrumentation"
-                        + ".spring.RestControllerIT$TestRestController.rest()");
-
-        assertThat(i.hasNext()).isFalse();
+        validateSpans(serverSpan.childSpans(), TestRestController.class, "rest");
     }
 
     private void shouldCaptureTransactionNameWithNormalServletMappingHittingAbc(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass, "Web");
+        ServerSpan serverSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.transactionName()).isEqualTo(contextPath + "/abc");
+        assertThat(serverSpan.transactionName()).isEqualTo(contextPath + "/abc");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        validateSpans(serverSpan.childSpans(), TestRestWithPropertyController.class, "abc");
+    }
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message())
-                .isEqualTo("spring controller: org.glowroot.xyzzy.instrumentation"
-                        + ".spring.RestControllerIT$TestRestWithPropertyController.abc()");
+    private void validateSpans(List<Span> spans, Class<?> clazz, String methodName) {
+        Iterator<Span> i = spans.iterator();
+
+        LocalSpan localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage())
+                .isEqualTo("spring controller: " + clazz.getName() + "." + methodName + "()");
+        assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }

@@ -17,6 +17,7 @@ package org.glowroot.xyzzy.instrumentation.servlet;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -33,7 +34,9 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.LocalSpan;
+import org.glowroot.agent.it.harness.model.ServerSpan;
+import org.glowroot.agent.it.harness.model.Span;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -100,73 +103,59 @@ public class ServletDispatcherIT {
     private void testForwardServlet(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass, "Web");
+        ServerSpan trace = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.headline()).isEqualTo(contextPath + "/first-forward");
+        assertThat(trace.getMessage()).isEqualTo(contextPath + "/first-forward");
         assertThat(trace.transactionName()).isEqualTo(contextPath + "/first-forward");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("servlet dispatch: /second");
-
-        assertThat(i.hasNext()).isFalse();
+        validateSingleLocalSpan(trace.childSpans(), "servlet dispatch: /second");
     }
 
     private void testForwardServletUsingContext(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass, "Web");
+        ServerSpan trace = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.headline()).isEqualTo(contextPath + "/first-forward-using-context");
+        assertThat(trace.getMessage()).isEqualTo(contextPath + "/first-forward-using-context");
         assertThat(trace.transactionName())
                 .isEqualTo(contextPath + "/first-forward-using-context");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("servlet dispatch: /second");
-
-        assertThat(i.hasNext()).isFalse();
+        validateSingleLocalSpan(trace.childSpans(), "servlet dispatch: /second");
     }
 
     private void testForwardServletUsingNamed(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass, "Web");
+        ServerSpan trace = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.headline()).isEqualTo(contextPath + "/first-forward-using-named");
+        assertThat(trace.getMessage()).isEqualTo(contextPath + "/first-forward-using-named");
         assertThat(trace.transactionName())
                 .isEqualTo(contextPath + "/first-forward-using-named");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("servlet dispatch: yyy");
-
-        assertThat(i.hasNext()).isFalse();
+        validateSingleLocalSpan(trace.childSpans(), "servlet dispatch: yyy");
     }
 
     private void testIncludeServlet(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass, "Web");
+        ServerSpan trace = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.headline()).isEqualTo(contextPath + "/first-include");
+        assertThat(trace.getMessage()).isEqualTo(contextPath + "/first-include");
         assertThat(trace.transactionName()).isEqualTo(contextPath + "/first-include");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        validateSingleLocalSpan(trace.childSpans(), "servlet dispatch: /second");
+    }
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("servlet dispatch: /second");
+    private void validateSingleLocalSpan(List<Span> spans, String message) {
+        Iterator<Span> i = spans.iterator();
+
+        LocalSpan entry = (LocalSpan) i.next();
+        assertThat(entry.getMessage()).isEqualTo(message);
+        assertThat(entry.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }

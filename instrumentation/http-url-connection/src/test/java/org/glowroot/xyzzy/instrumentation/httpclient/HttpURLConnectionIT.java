@@ -18,7 +18,6 @@ package org.glowroot.xyzzy.instrumentation.httpclient;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Iterator;
 
 import com.google.common.io.ByteStreams;
 import org.junit.After;
@@ -29,10 +28,10 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.ServerSpan;
 import org.glowroot.agent.it.harness.util.ExecuteHttpBase;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.glowroot.agent.it.harness.validation.HarnessAssertions.assertSingleClientSpanMessage;
 
 public class HttpURLConnectionIT {
 
@@ -87,49 +86,31 @@ public class HttpURLConnectionIT {
     private void shouldCaptureHttpGet(Class<? extends AppUnderTest> appUnderTestClass,
             String protocol) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass);
+        ServerSpan serverSpan = container.execute(appUnderTestClass);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message())
+        assertSingleClientSpanMessage(serverSpan)
                 .matches("http client request: GET " + protocol + "://localhost:\\d+/hello1/");
-
-        assertThat(i.hasNext()).isFalse();
     }
 
     private void shouldCaptureHttpGetWithQueryString(
             Class<? extends AppUnderTest> appUnderTestClass, String protocol) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass);
+        ServerSpan serverSpan = container.execute(appUnderTestClass);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).matches(
-                "http client request: GET " + protocol + "://localhost:\\d+/hello1\\?abc=xyz");
-
-        assertThat(i.hasNext()).isFalse();
+        assertSingleClientSpanMessage(serverSpan).matches("http client request: GET " + protocol
+                + "http client request: GET " + protocol + "://localhost:\\d+/hello1\\?abc=xyz");
     }
 
     private void shouldCaptureHttpPost(Class<? extends AppUnderTest> appUnderTestClass,
             String protocol) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass);
+        ServerSpan serverSpan = container.execute(appUnderTestClass);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message())
+        assertSingleClientSpanMessage(serverSpan)
                 .matches("http client request: POST " + protocol + "://localhost:\\d+/hello1/");
-
-        assertThat(i.hasNext()).isFalse();
     }
 
     public static class ExecuteHttpGet extends ExecuteHttpBase {

@@ -33,7 +33,9 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TraceEntryMarker;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.LocalSpan;
+import org.glowroot.agent.it.harness.model.ServerSpan;
+import org.glowroot.agent.it.harness.model.Span;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -61,22 +63,22 @@ public class CamelIT {
     @Test
     public void shouldRoute() throws Exception {
         // when
-        Trace trace = container.execute(Route.class);
+        ServerSpan serverSpan = container.execute(Route.class);
 
         // then
-        List<Trace.Timer> nestedTimers = trace.mainThreadRootTimer().childTimers();
+        List<ServerSpan.Timer> nestedTimers = serverSpan.mainThreadRootTimer().childTimers();
         assertThat(nestedTimers).hasSize(1);
         assertThat(nestedTimers.get(0).name()).isEqualTo("mock trace entry marker");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("trace entry marker / CreateTraceEntry");
+        LocalSpan localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(localSpan.childSpans()).isEmpty();
 
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("trace entry marker / CreateTraceEntry");
+        localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }

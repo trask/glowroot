@@ -17,6 +17,7 @@ package org.glowroot.xyzzy.instrumentation.servlet;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import javax.servlet.Filter;
@@ -43,7 +44,9 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.LocalSpan;
+import org.glowroot.agent.it.harness.model.ServerSpan;
+import org.glowroot.agent.it.harness.model.Span;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -69,62 +72,49 @@ public class StartupIT {
     @Test
     public void testServletContextInitialized() throws Exception {
         // when
-        Trace trace = container.execute(TestServletContextListener.class);
+        ServerSpan serverSpan = container.execute(TestServletContextListener.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message())
-                .isEqualTo("Listener init: " + TestServletContextListener.class.getName());
-
-        assertThat(i.hasNext()).isFalse();
+        validateSingleLocalSpan(serverSpan.childSpans(),
+                "Listener init: " + TestServletContextListener.class.getName());
     }
 
     @Test
     public void testServletInit() throws Exception {
         // when
-        Trace trace = container.execute(TestServletInit.class);
+        ServerSpan serverSpan = container.execute(TestServletInit.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message())
-                .isEqualTo("Servlet init: " + TestServletInit.class.getName());
-
-        assertThat(i.hasNext()).isFalse();
+        validateSingleLocalSpan(serverSpan.childSpans(),
+                "Servlet init: " + TestServletInit.class.getName());
     }
 
     @Test
     public void testFilterInit() throws Exception {
         // when
-        Trace trace = container.execute(TestFilterInit.class);
+        ServerSpan serverSpan = container.execute(TestFilterInit.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("Filter init: " + TestFilterInit.class.getName());
-
-        assertThat(i.hasNext()).isFalse();
+        validateSingleLocalSpan(serverSpan.childSpans(),
+                "Filter init: " + TestFilterInit.class.getName());
     }
 
     @Test
     public void testContainerInitializer() throws Exception {
         // when
-        Trace trace = container.execute(TestServletContainerInitializer.class);
+        ServerSpan serverSpan = container.execute(TestServletContainerInitializer.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo(
+        validateSingleLocalSpan(serverSpan.childSpans(),
                 "Container initializer: " + TestServletContainerInitializer.class.getName());
+    }
+
+    private void validateSingleLocalSpan(List<Span> spans, String message) {
+        Iterator<Span> i = spans.iterator();
+
+        LocalSpan entry = (LocalSpan) i.next();
+        assertThat(entry.getMessage()).isEqualTo(message);
+        assertThat(entry.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }

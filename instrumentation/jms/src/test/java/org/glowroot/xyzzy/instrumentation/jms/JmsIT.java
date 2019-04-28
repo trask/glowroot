@@ -36,7 +36,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.ServerSpan;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -62,18 +62,21 @@ public class JmsIT {
 
     @Test
     public void shouldReceiveMessage() throws Exception {
-        Trace trace = container.execute(ReceiveMessage.class);
-        assertThat(trace.transactionType()).isEqualTo("Background");
-        assertThat(trace.transactionName()).isEqualTo("JMS Message: TestMessageListener");
-        assertThat(trace.headline()).isEqualTo("JMS Message: TestMessageListener");
+        ServerSpan serverSpan = container.execute(ReceiveMessage.class);
+        assertThat(serverSpan.transactionType()).isEqualTo("Background");
+        assertThat(serverSpan.transactionName()).isEqualTo("JMS Message: TestMessageListener");
+        assertThat(serverSpan.getMessage()).isEqualTo("JMS Message: TestMessageListener");
+        assertThat(serverSpan.childSpans()).isEmpty();
     }
 
     @Test
     public void shouldSendMessage() throws Exception {
-        Trace trace = container.execute(SendMessage.class);
-        List<Trace.Timer> nestedTimers = trace.mainThreadRootTimer().childTimers();
+        ServerSpan serverSpan = container.execute(SendMessage.class);
+        List<ServerSpan.Timer> nestedTimers = serverSpan.mainThreadRootTimer().childTimers();
         assertThat(nestedTimers).hasSize(1);
         assertThat(nestedTimers.get(0).name()).isEqualTo("jms send message");
+
+        // TODO implement client span for send
     }
 
     public static class ReceiveMessage implements AppUnderTest {

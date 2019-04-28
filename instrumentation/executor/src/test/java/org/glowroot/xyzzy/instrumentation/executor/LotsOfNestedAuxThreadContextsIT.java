@@ -15,7 +15,6 @@
  */
 package org.glowroot.xyzzy.instrumentation.executor;
 
-import java.util.Iterator;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -32,11 +31,12 @@ import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TraceEntryMarker;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.ServerSpan;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.glowroot.agent.it.harness.validation.HarnessAssertions.assertSingleLocalSpanMessage;
 
 public class LotsOfNestedAuxThreadContextsIT {
 
@@ -66,27 +66,17 @@ public class LotsOfNestedAuxThreadContextsIT {
     @Test
     public void shouldCaptureSubmitCallable() throws Exception {
         // when
-        Trace trace = container.execute(DoSubmitCallable.class);
+        ServerSpan serverSpan = container.execute(DoSubmitCallable.class);
 
         // then
-        assertThat(trace.auxThreadRootTimer()).isNotNull();
-        Trace.Timer auxThreadRootTimer = trace.auxThreadRootTimer();
+        assertThat(serverSpan.auxThreadRootTimer()).isNotNull();
+        ServerSpan.Timer auxThreadRootTimer = serverSpan.auxThreadRootTimer();
         assertThat(auxThreadRootTimer.count()).isEqualTo(100000);
         assertThat(auxThreadRootTimer.childTimers().size()).isEqualTo(1);
         assertThat(auxThreadRootTimer.childTimers().get(0).name())
                 .isEqualTo("mock trace entry marker");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("auxiliary thread");
-
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(1);
-        assertThat(entry.message()).isEqualTo("trace entry marker / CreateTraceEntry");
-
-        assertThat(i.hasNext()).isFalse();
+        assertSingleLocalSpanMessage(serverSpan).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     public static class DoSubmitCallable implements AppUnderTest, TransactionMarker {

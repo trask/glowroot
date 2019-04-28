@@ -16,6 +16,7 @@
 package org.glowroot.xyzzy.instrumentation.spring;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -33,7 +34,9 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TraceEntryMarker;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.LocalSpan;
+import org.glowroot.agent.it.harness.model.ServerSpan;
+import org.glowroot.agent.it.harness.model.Span;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -82,63 +85,27 @@ public class AsyncControllerIT {
     private void shouldCaptureCallableAsyncController(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass, "Web");
+        ServerSpan serverSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.async()).isTrue();
-        assertThat(trace.transactionName()).isEqualTo(contextPath + "/async");
+        assertThat(serverSpan.async()).isTrue();
+        assertThat(serverSpan.transactionName()).isEqualTo(contextPath + "/async");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("spring controller: org.glowroot.xyzzy"
+        LocalSpan localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("spring controller: org.glowroot.xyzzy"
                 + ".instrumentation.spring.AsyncControllerIT$CallableAsyncController.test()");
 
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(1);
-        assertThat(entry.message()).isEqualTo("trace entry marker / CreateTraceEntry");
+        List<Span> nestedSpans = localSpan.childSpans();
+        assertThat(nestedSpans).hasSize(1);
 
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("auxiliary thread");
+        LocalSpan nestedLocalSpan = (LocalSpan) nestedSpans.get(0);
+        assertThat(nestedLocalSpan.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(nestedLocalSpan.childSpans()).isEmpty();
 
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(1);
-        assertThat(entry.message()).isEqualTo("trace entry marker / CreateTraceEntry");
-
-        if (i.hasNext()) {
-            // this happens sporadically on travis ci because the auxiliary thread is demarcated by
-            // WebAsyncManager$4.run(), which calls both CallableAsyncController$1.call() and
-            // calls javax.servlet.AsyncContext.dispatch(), and sporadically dispatch() can process
-            // and returns the response before WebAsyncManager$4.run() completes, leading to
-            // glowroot adding a trace entry under the auxiliary thread to note that
-            // "this auxiliary thread was still running when the transaction ended"
-
-            // this is the stack trace for the call to CallableAsyncController$1.call():
-
-            // org.glowroot.xyzzy.instrumentation.spring.AsyncControllerIT$CallableAsyncController$1.call()
-            // org.springframework.web.context.request.async.WebAsyncManager$4.run(WebAsyncManager.java:316)
-            // java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:471)
-            // java.util.concurrent.FutureTask.run(FutureTask.java:262)
-
-            // this is the stack trace for the call to javax.servlet.AsyncContext.dispatch():
-
-            // org.apache.catalina.core.AsyncContextImpl.dispatch(AsyncContextImpl.java)
-            // org.springframework.web.context.request.async.StandardServletAsyncWebRequest.dispatch(StandardServletAsyncWebRequest.java:123)
-            // org.springframework.web.context.request.async.WebAsyncManager.setConcurrentResultAndDispatch(WebAsyncManager.java:353)
-            // org.springframework.web.context.request.async.WebAsyncManager.access$200(WebAsyncManager.java:58)
-            // org.springframework.web.context.request.async.WebAsyncManager$4.run(WebAsyncManager.java:324)
-            // java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:471)
-            // java.util.concurrent.FutureTask.run(FutureTask.java:262)
-
-            // see similar issue in org.glowroot.xyzzy.instrumentation.servlet.AsyncServletIT
-
-            entry = i.next();
-            assertThat(entry.depth()).isEqualTo(1);
-            assertThat(entry.message()).isEqualTo(
-                    "this auxiliary thread was still running when the transaction ended");
-        }
+        localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -146,46 +113,27 @@ public class AsyncControllerIT {
     private void shouldCaptureDeferredResultAsyncController(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass, "Web");
+        ServerSpan serverSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.async()).isTrue();
-        assertThat(trace.transactionName()).isEqualTo(contextPath + "/async2");
+        assertThat(serverSpan.async()).isTrue();
+        assertThat(serverSpan.transactionName()).isEqualTo(contextPath + "/async2");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("spring controller: org.glowroot.xyzzy"
+        LocalSpan localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("spring controller: org.glowroot.xyzzy"
                 + ".instrumentation.spring.AsyncControllerIT$DeferredResultAsyncController.test()");
 
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(1);
-        assertThat(entry.message()).isEqualTo("trace entry marker / CreateTraceEntry");
+        List<Span> nestedSpans = localSpan.childSpans();
+        assertThat(nestedSpans).hasSize(1);
 
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(1);
-        assertThat(entry.message()).isEqualTo("auxiliary thread");
+        LocalSpan nestedLocalSpan = (LocalSpan) nestedSpans.get(0);
+        assertThat(nestedLocalSpan.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(nestedLocalSpan.childSpans()).isEmpty();
 
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(2);
-        assertThat(entry.message()).isEqualTo("trace entry marker / CreateTraceEntry");
-
-        if (i.hasNext()) {
-            // this happens sporadically on travis ci because the auxiliary thread
-            // (DeferredResultAsyncController$1) calls javax.servlet.AsyncContext.dispatch(), and
-            // sporadically dispatch() can process and returns the response before
-            // DeferredResultAsyncController$1.run() completes, leading to glowroot adding a trace
-            // entry under the auxiliary thread to note that "this auxiliary thread was still
-            // running when the transaction ended"
-
-            // see similar issue in org.glowroot.xyzzy.instrumentation.spring.AsyncControllerIT
-
-            entry = i.next();
-            assertThat(entry.depth()).isEqualTo(2);
-            assertThat(entry.message()).isEqualTo(
-                    "this auxiliary thread was still running when the transaction ended");
-        }
+        localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
 
         assertThat(i.hasNext()).isFalse();
     }

@@ -33,11 +33,13 @@ import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TraceEntryMarker;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.ServerSpan;
+import org.glowroot.agent.it.harness.model.Span;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.glowroot.agent.it.harness.validation.HarnessAssertions.assertSingleLocalSpanMessage;
 
 // see https://github.com/glowroot/glowroot/issues/564
 public class ProblemExecutorIT {
@@ -64,7 +66,7 @@ public class ProblemExecutorIT {
     @Test
     public void shouldCaptureSubmit() throws Exception {
         // when
-        Trace trace = container.execute(DoSubmitRunnable.class);
+        ServerSpan trace = container.execute(DoSubmitRunnable.class);
 
         // then
         assertThat(trace.auxThreadRootTimer()).isNotNull();
@@ -77,16 +79,11 @@ public class ProblemExecutorIT {
         assertThat(trace.auxThreadRootTimer().childTimers().size()).isEqualTo(1);
         assertThat(trace.auxThreadRootTimer().childTimers().get(0).name())
                 .isEqualTo("mock trace entry marker");
-        List<Trace.Entry> entries = trace.entries();
 
-        assertThat(entries).hasSize(6);
-        for (int i = 0; i < entries.size(); i += 2) {
-            assertThat(entries.get(i).depth()).isEqualTo(0);
-            assertThat(entries.get(i).message()).isEqualTo("auxiliary thread");
-
-            assertThat(entries.get(i + 1).depth()).isEqualTo(1);
-            assertThat(entries.get(i + 1).message())
-                    .isEqualTo("trace entry marker / CreateTraceEntry");
+        List<Span> spans = trace.childSpans();
+        assertThat(spans).hasSize(3);
+        for (Span span : spans) {
+            assertSingleLocalSpanMessage(span).isEqualTo("trace entry marker / CreateTraceEntry");
         }
     }
 

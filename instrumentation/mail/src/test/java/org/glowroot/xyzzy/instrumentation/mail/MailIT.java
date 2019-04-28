@@ -15,11 +15,8 @@
  */
 package org.glowroot.xyzzy.instrumentation.mail;
 
-import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 
-import com.google.common.collect.Lists;
 import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.GreenMailUtil;
 import org.junit.After;
@@ -31,7 +28,9 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.ClientSpan;
+import org.glowroot.agent.it.harness.model.ServerSpan;
+import org.glowroot.agent.it.harness.model.Span;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -57,39 +56,18 @@ public class MailIT {
     @Test
     public void shouldSendMessage() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteSend.class);
+        ServerSpan serverSpan = container.execute(ExecuteSend.class);
 
         // then
-        checkTimers(trace);
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        ClientSpan clientSpan = (ClientSpan) i.next();
+        assertThat(clientSpan.getMessage()).startsWith("mail connect smtp://");
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).startsWith("mail connect smtp://");
-
-        assertThat(i.hasNext()).isTrue();
-
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("mail send message");
+        clientSpan = (ClientSpan) i.next();
+        assertThat(clientSpan.getMessage()).isEqualTo("mail send message");
 
         assertThat(i.hasNext()).isFalse();
-
-    }
-
-    private static void checkTimers(Trace trace) {
-        Trace.Timer rootTimer = trace.mainThreadRootTimer();
-        List<String> timerNames = Lists.newArrayList();
-        for (Trace.Timer timer : rootTimer.childTimers()) {
-            timerNames.add(timer.name());
-        }
-        Collections.sort(timerNames);
-        assertThat(timerNames).containsExactly("mail");
-        for (Trace.Timer timer : rootTimer.childTimers()) {
-            assertThat(timer.childTimers()).isEmpty();
-        }
-        assertThat(trace.asyncTimers()).isEmpty();
     }
 
     public static class ExecuteSend extends DoMail {

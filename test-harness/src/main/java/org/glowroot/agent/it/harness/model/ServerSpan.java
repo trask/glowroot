@@ -16,27 +16,24 @@
 package org.glowroot.agent.it.harness.model;
 
 import java.util.List;
-import java.util.Map;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
 @Value.Immutable
-public interface Trace {
+public interface ServerSpan extends Span {
 
     boolean async();
     String transactionType();
     String transactionName();
-    String headline();
     String user();
-    Map<String, Object> details();
+
     Timer mainThreadRootTimer();
     @Nullable
     Timer auxThreadRootTimer();
     List<Timer> asyncTimers();
-    List<Trace.Entry> entries();
-    @Nullable
-    Error error();
+
+    List<Span> childSpans();
 
     @Value.Immutable
     public interface Timer {
@@ -45,36 +42,5 @@ public interface Trace {
         long totalNanos();
         long count();
         List<Timer> childTimers();
-    }
-
-    @Value.Immutable
-    public interface Entry {
-        int depth();
-        String message();
-        QueryEntryMessage queryEntryMessage();
-        Error error();
-        @Nullable
-        Long locationStackTraceMillis();
-    }
-
-    @Value.Immutable
-    public interface QueryEntryMessage {
-        String queryText();
-        String prefix();
-        String suffix();
-    }
-
-    @Value.Immutable
-    public interface Error {
-        String message();
-        Throwable exception();
-    }
-
-    @Value.Immutable
-    public interface StackTraceElement {
-        String className();
-        String methodName();
-        String fileName();
-        int lineNumber();
     }
 }

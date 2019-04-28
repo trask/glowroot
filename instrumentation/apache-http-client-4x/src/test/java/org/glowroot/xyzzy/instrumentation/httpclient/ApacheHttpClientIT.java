@@ -32,7 +32,9 @@ import org.junit.Test;
 
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.ClientSpan;
+import org.glowroot.agent.it.harness.model.ServerSpan;
+import org.glowroot.agent.it.harness.model.Span;
 import org.glowroot.agent.it.harness.util.ExecuteHttpBase;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -59,14 +61,13 @@ public class ApacheHttpClientIT {
     @Test
     public void shouldCaptureHttpGet() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteHttpGet.class);
+        ServerSpan serverSpan = container.execute(ExecuteHttpGet.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message())
+        ClientSpan span = (ClientSpan) i.next();
+        assertThat(span.getMessage())
                 .matches("http client request: GET http://localhost:\\d+/hello1");
 
         assertThat(i.hasNext()).isFalse();
@@ -75,14 +76,13 @@ public class ApacheHttpClientIT {
     @Test
     public void shouldCaptureHttpGetUsingHttpHostArg() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteHttpGetUsingHttpHostArg.class);
+        ServerSpan serverSpan = container.execute(ExecuteHttpGetUsingHttpHostArg.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message())
+        ClientSpan span = (ClientSpan) i.next();
+        assertThat(span.getMessage())
                 .matches("http client request: GET http://localhost:\\d+/hello2");
 
         assertThat(i.hasNext()).isFalse();
@@ -91,14 +91,13 @@ public class ApacheHttpClientIT {
     @Test
     public void shouldCaptureHttpPost() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteHttpPost.class);
+        ServerSpan serverSpan = container.execute(ExecuteHttpPost.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message())
+        ClientSpan span = (ClientSpan) i.next();
+        assertThat(span.getMessage())
                 .matches("http client request: POST http://localhost:\\d+/hello3");
 
         assertThat(i.hasNext()).isFalse();
@@ -107,14 +106,13 @@ public class ApacheHttpClientIT {
     @Test
     public void shouldCaptureHttpPostUsingHttpHostArg() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteHttpPostUsingHttpHostArg.class);
+        ServerSpan serverSpan = container.execute(ExecuteHttpPostUsingHttpHostArg.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
 
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message())
+        ClientSpan span = (ClientSpan) i.next();
+        assertThat(span.getMessage())
                 .matches("http client request: POST http://localhost:\\d+/hello4");
 
         assertThat(i.hasNext()).isFalse();

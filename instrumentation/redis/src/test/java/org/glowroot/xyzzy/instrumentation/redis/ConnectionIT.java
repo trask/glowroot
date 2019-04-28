@@ -15,8 +15,6 @@
  */
 package org.glowroot.xyzzy.instrumentation.redis;
 
-import java.util.Iterator;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -27,9 +25,9 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.ServerSpan;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.glowroot.agent.it.harness.validation.HarnessAssertions.assertSingleClientSpanMessage;
 
 public class ConnectionIT {
 
@@ -53,46 +51,28 @@ public class ConnectionIT {
     @Test
     public void shouldTraceSet() throws Exception {
         // when
-        Trace trace = container.execute(JedisSet.class);
+        ServerSpan serverSpan = container.execute(JedisSet.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).matches("redis localhost:\\d+ SET");
-
-        assertThat(i.hasNext()).isFalse();
+        assertSingleClientSpanMessage(serverSpan).matches("redis localhost:\\d+ SET");
     }
 
     @Test
     public void shouldTraceGet() throws Exception {
         // when
-        Trace trace = container.execute(JedisGet.class);
+        ServerSpan serverSpan = container.execute(JedisGet.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).matches("redis localhost:\\d+ GET");
-
-        assertThat(i.hasNext()).isFalse();
+        assertSingleClientSpanMessage(serverSpan).matches("redis localhost:\\d+ GET");
     }
 
     @Test
     public void shouldTracePing() throws Exception {
         // when
-        Trace trace = container.execute(JedisPing.class);
+        ServerSpan serverSpan = container.execute(JedisPing.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).matches("redis localhost:\\d+ PING");
-
-        assertThat(i.hasNext()).isFalse();
+        assertSingleClientSpanMessage(serverSpan).matches("redis localhost:\\d+ PING");
     }
 
     private abstract static class JedisBase implements AppUnderTest, TransactionMarker {

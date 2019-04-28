@@ -17,7 +17,7 @@ package org.glowroot.agent.it.harness;
 
 import java.util.List;
 
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.ServerSpan;
 
 public interface Container {
 
@@ -33,12 +33,12 @@ public interface Container {
     void setInstrumentationProperty(String instrumentationId, String propertyName,
             List<String> propertyValue) throws Exception;
 
-    Trace execute(Class<? extends AppUnderTest> appUnderTestClass) throws Exception;
+    ServerSpan execute(Class<? extends AppUnderTest> appUnderTestClass) throws Exception;
 
-    Trace execute(Class<? extends AppUnderTest> appUnderTestClass, String transactionType)
+    ServerSpan execute(Class<? extends AppUnderTest> appUnderTestClass, String transactionType)
             throws Exception;
 
-    Trace execute(Class<? extends AppUnderTest> appUnderTestClass, String transactionType,
+    ServerSpan execute(Class<? extends AppUnderTest> appUnderTestClass, String transactionType,
             String transactionName) throws Exception;
 
     void executeNoExpectedTrace(Class<? extends AppUnderTest> appUnderTestClass) throws Exception;

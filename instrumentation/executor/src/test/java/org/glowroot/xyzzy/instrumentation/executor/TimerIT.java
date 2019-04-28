@@ -15,7 +15,6 @@
  */
 package org.glowroot.xyzzy.instrumentation.executor;
 
-import java.util.Iterator;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CountDownLatch;
@@ -30,10 +29,10 @@ import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TraceEntryMarker;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.ServerSpan;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.glowroot.agent.it.harness.validation.HarnessAssertions.assertSingleLocalSpanMessage;
 
 public class TimerIT {
 
@@ -57,29 +56,10 @@ public class TimerIT {
     @Test
     public void shouldCaptureScheduledTimerTask() throws Exception {
         // when
-        Trace trace = container.execute(DoScheduledTimerTask.class);
+        ServerSpan serverSpan = container.execute(DoScheduledTimerTask.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.depth()).isEqualTo(0);
-        assertThat(entry.message()).isEqualTo("auxiliary thread");
-
-        entry = i.next();
-        assertThat(entry.depth()).isEqualTo(1);
-        assertThat(entry.message()).isEqualTo("trace entry marker / CreateTraceEntry");
-
-        if (i.hasNext()) {
-            // once latch.countDown() executes below, there's no way to ensure the run() method has
-            // completed and that its auxiliary thread has completed
-            entry = i.next();
-            assertThat(entry.depth()).isEqualTo(1);
-            assertThat(entry.message()).isEqualTo(
-                    "this auxiliary thread was still running when the transaction ended");
-        }
-
-        assertThat(i.hasNext()).isFalse();
+        assertSingleLocalSpanMessage(serverSpan).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     public static class DoScheduledTimerTask implements AppUnderTest, TransactionMarker {

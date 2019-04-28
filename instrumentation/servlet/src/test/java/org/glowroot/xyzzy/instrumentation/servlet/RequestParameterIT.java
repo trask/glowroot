@@ -39,7 +39,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.ServerSpan;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -67,7 +67,7 @@ public class RequestParameterIT {
     @Test
     public void testRequestParameters() throws Exception {
         // when
-        Trace trace = container.execute(GetParameter.class, "Web");
+        ServerSpan trace = container.execute(GetParameter.class, "Web");
 
         // then
         Map<String, Object> requestParameters =
@@ -78,14 +78,14 @@ public class RequestParameterIT {
         @SuppressWarnings("unchecked")
         List<String> multi = (List<String>) requestParameters.get("multi");
         assertThat(multi).containsExactly("m1", "m2");
-        String queryString = (String) trace.details().get("Request query string");
+        String queryString = (String) trace.getDetails().get("Request query string");
         assertThat(queryString).isEqualTo("xYz=aBc&jpassword1=****&multi=m1&multi=m2");
     }
 
     @Test
     public void testRequestParametersWithoutMaskedQueryString() throws Exception {
         // when
-        Trace trace = container.execute(GetParameterWithoutMaskedQueryString.class, "Web");
+        ServerSpan trace = container.execute(GetParameterWithoutMaskedQueryString.class, "Web");
 
         // then
         Map<String, Object> requestParameters =
@@ -96,7 +96,7 @@ public class RequestParameterIT {
         @SuppressWarnings("unchecked")
         List<String> multi = (List<String>) requestParameters.get("multi");
         assertThat(multi).containsExactly("m1", "m2");
-        String queryString = (String) trace.details().get("Request query string");
+        String queryString = (String) trace.getDetails().get("Request query string");
         assertThat(queryString).isEqualTo("xYz=aBc&multi=m1&multi=m2");
     }
 
@@ -106,12 +106,12 @@ public class RequestParameterIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureRequestParameters",
                 ImmutableList.<String>of());
         // when
-        Trace trace = container.execute(GetParameter.class, "Web");
+        ServerSpan trace = container.execute(GetParameter.class, "Web");
         // then
-        assertThat(trace.details()).hasSize(3);
-        assertThat(trace.details()).containsKey("Request http method");
-        assertThat(trace.details()).containsKey("Request query string");
-        assertThat(trace.details()).containsKey("Response code");
+        assertThat(trace.getDetails()).hasSize(3);
+        assertThat(trace.getDetails()).containsKey("Request http method");
+        assertThat(trace.getDetails()).containsKey("Request query string");
+        assertThat(trace.getDetails()).containsKey("Response code");
     }
 
     @Test
@@ -124,7 +124,7 @@ public class RequestParameterIT {
     @Test
     public void testBadRequestParameterMap() throws Exception {
         // when
-        Trace trace = container.execute(GetBadParameterMap.class, "Web");
+        ServerSpan trace = container.execute(GetBadParameterMap.class, "Web");
 
         // then
         Map<String, Object> requestParameters =
@@ -136,7 +136,7 @@ public class RequestParameterIT {
     @Test
     public void testExtraBadRequestParameterMap() throws Exception {
         // when
-        Trace trace = container.execute(GetExtraBadParameterMap.class, "Web");
+        ServerSpan trace = container.execute(GetExtraBadParameterMap.class, "Web");
 
         // then
         Map<String, Object> requestParameters =
@@ -148,7 +148,7 @@ public class RequestParameterIT {
     @Test
     public void testAnotherBadRequestParameterMap() throws Exception {
         // when
-        Trace trace = container.execute(GetAnotherBadParameterMap.class, "Web");
+        ServerSpan trace = container.execute(GetAnotherBadParameterMap.class, "Web");
 
         // then
         Map<String, Object> requestParameters =
@@ -160,7 +160,7 @@ public class RequestParameterIT {
     @Test
     public void testLargeRequestParameters() throws Exception {
         // when
-        Trace trace = container.execute(GetLargeParameter.class, "Web");
+        ServerSpan trace = container.execute(GetLargeParameter.class, "Web");
 
         // then
         Map<String, Object> requestParameters =

@@ -19,7 +19,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import org.glowroot.agent.it.harness.model.ImmutableTrace;
+import org.glowroot.agent.it.harness.model.ClientSpanImpl;
+import org.glowroot.agent.it.harness.model.ParentSpanImpl;
+import org.glowroot.agent.it.harness.model.QuerySpanImpl;
 import org.glowroot.xyzzy.engine.bytecode.api.ThreadContextPlus;
 import org.glowroot.xyzzy.engine.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.xyzzy.engine.impl.NopTransactionService;
@@ -37,7 +39,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     private final ThreadContextThreadLocal.Holder threadContextHolder;
 
-    private final ImmutableTrace.Builder trace;
+    private final ParentSpanImpl parentSpan;
 
     private @Nullable ServletRequestInfo servletRequestInfo;
 
@@ -45,10 +47,10 @@ public class ThreadContextImpl implements ThreadContextPlus {
     private int currentSuppressionKeyId;
 
     public ThreadContextImpl(ThreadContextThreadLocal.Holder threadContextHolder,
-            ImmutableTrace.Builder trace, @Nullable ServletRequestInfo servletRequestInfo,
+            ParentSpanImpl parentSpan, @Nullable ServletRequestInfo servletRequestInfo,
             int rootNestingGroupId, int rootSuppressionKeyId) {
         this.threadContextHolder = threadContextHolder;
-        this.trace = trace;
+        this.parentSpan = parentSpan;
         this.servletRequestInfo = servletRequestInfo;
         currentNestingGroupId = rootNestingGroupId;
         currentSuppressionKeyId = rootSuppressionKeyId;
@@ -91,35 +93,35 @@ public class ThreadContextImpl implements ThreadContextPlus {
     public QueryEntry startQueryEntry(String queryType, String queryText,
             QueryMessageSupplier queryMessageSupplier, TimerName timerName) {
         // TODO pass along queryType
-        return new QueryEntryImpl(trace, queryText, queryMessageSupplier);
+        return startQuerySpanInternal(queryText, queryMessageSupplier);
     }
 
     @Override
     public QueryEntry startQueryEntry(String queryType, String queryText, long queryExecutionCount,
             QueryMessageSupplier queryMessageSupplier, TimerName timerName) {
         // TODO pass along queryType and queryExecutionCount
-        return new QueryEntryImpl(trace, queryText, queryMessageSupplier);
+        return startQuerySpanInternal(queryText, queryMessageSupplier);
     }
 
     @Override
     public AsyncQueryEntry startAsyncQueryEntry(String queryType, String queryText,
             QueryMessageSupplier queryMessageSupplier, TimerName timerName) {
         // TODO pass along queryType
-        return new QueryEntryImpl(trace, queryText, queryMessageSupplier);
+        return startQuerySpanInternal(queryText, queryMessageSupplier);
     }
 
     @Override
     public TraceEntry startServiceCallEntry(String type, String text,
             MessageSupplier messageSupplier, TimerName timerName) {
         // TODO pass along type
-        return new TraceEntryImpl(trace, messageSupplier);
+        return startClientSpanInternal(text, messageSupplier);
     }
 
     @Override
     public AsyncTraceEntry startAsyncServiceCallEntry(String type, String text,
             MessageSupplier messageSupplier, TimerName timerName) {
         // TODO pass along type
-        return new TraceEntryImpl(trace, messageSupplier);
+        return startClientSpanInternal(text, messageSupplier);
     }
 
     @Override
@@ -129,7 +131,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     @Override
     public AuxThreadContext createAuxThreadContext() {
-        return new AuxThreadContextImpl(trace, servletRequestInfo);
+        return new AuxThreadContextImpl(parentSpan, servletRequestInfo);
     }
 
     @Override
@@ -208,5 +210,18 @@ public class ThreadContextImpl implements ThreadContextPlus {
     @Override
     public void setCurrentSuppressionKeyId(int suppressionKeyId) {
         this.currentSuppressionKeyId = suppressionKeyId;
+    }
+
+    private QuerySpanImpl startQuerySpanInternal(String queryText,
+            QueryMessageSupplier queryMessageSupplier) {
+        QuerySpanImpl querySpan = new QuerySpanImpl(queryText, queryMessageSupplier);
+        parentSpan.addChildSpan(querySpan);
+        return querySpan;
+    }
+
+    private ClientSpanImpl startClientSpanInternal(String text, MessageSupplier messageSupplier) {
+        ClientSpanImpl serviceCallEntry = new ClientSpanImpl(text, messageSupplier);
+        parentSpan.addChildSpan(serviceCallEntry);
+        return serviceCallEntry;
     }
 }

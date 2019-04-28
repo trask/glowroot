@@ -31,10 +31,11 @@ import com.zaxxer.hikari.HikariDataSource;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.glassfish.api.jdbc.SQLTraceListener;
 import org.glassfish.api.jdbc.SQLTraceRecord;
-import org.glowroot.xyzzy.engine.weaving.IsolatedWeavingClassLoader;
 import org.h2.jdbc.JdbcConnection;
 import org.hsqldb.jdbc.JDBCDriver;
 import org.hsqldb.jdbc.pool.JDBCXADataSource;
+
+import org.glowroot.xyzzy.engine.weaving.IsolatedWeavingClassLoader;
 
 public class Connections {
 

@@ -27,7 +27,7 @@ import org.junit.Test;
 
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.ServerSpan;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -64,7 +64,7 @@ public class RequestHeaderIT {
                 ImmutableList.of("Content-Type", " Content-Length"));
 
         // when
-        Trace trace = container.execute(SetStandardRequestHeaders.class, "Web");
+        ServerSpan trace = container.execute(SetStandardRequestHeaders.class, "Web");
 
         // then
         Map<String, Object> requestHeaders =
@@ -81,7 +81,7 @@ public class RequestHeaderIT {
                 ImmutableList.of("Content-Type", " Content-Length"));
 
         // when
-        Trace trace = container.execute(SetStandardRequestHeadersLowercase.class, "Web");
+        ServerSpan trace = container.execute(SetStandardRequestHeadersLowercase.class, "Web");
 
         // then
         Map<String, Object> requestHeaders =
@@ -98,7 +98,7 @@ public class RequestHeaderIT {
                 ImmutableList.of("One", "two"));
 
         // when
-        Trace trace = container.execute(SetOtherRequestHeaders.class, "Web");
+        ServerSpan trace = container.execute(SetOtherRequestHeaders.class, "Web");
 
         // then
         Map<String, Object> requestHeaders =
@@ -119,7 +119,7 @@ public class RequestHeaderIT {
                 ImmutableList.of("content-Len*"));
 
         // when
-        Trace trace = container.execute(SetStandardRequestHeaders.class, "Web");
+        ServerSpan trace = container.execute(SetStandardRequestHeaders.class, "Web");
 
         // then
         Map<String, Object> requestHeaders =

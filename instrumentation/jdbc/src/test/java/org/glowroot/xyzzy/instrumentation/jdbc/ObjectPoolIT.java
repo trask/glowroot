@@ -29,10 +29,13 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.agent.it.harness.model.Trace;
+import org.glowroot.agent.it.harness.model.LocalSpan;
+import org.glowroot.agent.it.harness.model.ServerSpan;
+import org.glowroot.agent.it.harness.model.Span;
 import org.glowroot.xyzzy.instrumentation.jdbc.Connections.ConnectionType;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.glowroot.agent.it.harness.validation.HarnessAssertions.assertSingleLocalSpanMessage;
 import static org.junit.Assume.assumeTrue;
 
 public class ObjectPoolIT {
@@ -63,13 +66,12 @@ public class ObjectPoolIT {
         assumeTrue(Connections.getConnectionType().equals(ConnectionType.COMMONS_DBCP_WRAPPED));
 
         // when
-        Trace trace = container.execute(ReturnCommonsDbcpConnection.class);
+        ServerSpan serverSpan = container.execute(ReturnCommonsDbcpConnection.class);
 
         // then
-        assertThat(trace.error()).isNull();
+        assertThat(serverSpan.getError()).isNull();
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-        assertThat(i.hasNext()).isFalse();
+        assertThat(serverSpan.childSpans()).isEmpty();
     }
 
     @Test
@@ -79,16 +81,12 @@ public class ObjectPoolIT {
         assumeTrue(Connections.getConnectionType().equals(ConnectionType.COMMONS_DBCP_WRAPPED));
 
         // when
-        Trace trace = container.execute(LeakCommonsDbcpConnection.class);
+        ServerSpan serverSpan = container.execute(LeakCommonsDbcpConnection.class);
 
         // then
-        assertThat(trace.error().message()).startsWith("Resource leaked");
+        assertThat(serverSpan.getError().message()).startsWith("Resource leaked");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-        Trace.Entry entry = i.next();
-        assertThat(entry.message()).startsWith("Resource leaked");
-
-        assertThat(i.hasNext()).isFalse();
+        assertSingleLocalSpanMessage(serverSpan).startsWith("Resource leaked");
     }
 
     @Test
@@ -98,13 +96,12 @@ public class ObjectPoolIT {
         assumeTrue(Connections.getConnectionType().equals(ConnectionType.COMMONS_DBCP2_WRAPPED));
 
         // when
-        Trace trace = container.execute(ReturnCommonsDbcp2Connection.class);
+        ServerSpan serverSpan = container.execute(ReturnCommonsDbcp2Connection.class);
 
         // then
-        assertThat(trace.error()).isNull();
+        assertThat(serverSpan.getError()).isNull();
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-        assertThat(i.hasNext()).isFalse();
+        assertThat(serverSpan.childSpans()).isEmpty();
     }
 
     @Test
@@ -114,16 +111,12 @@ public class ObjectPoolIT {
         assumeTrue(Connections.getConnectionType().equals(ConnectionType.COMMONS_DBCP2_WRAPPED));
 
         // when
-        Trace trace = container.execute(LeakCommonsDbcp2Connection.class);
+        ServerSpan serverSpan = container.execute(LeakCommonsDbcp2Connection.class);
 
         // then
-        assertThat(trace.error().message()).startsWith("Resource leaked");
+        assertThat(serverSpan.getError().message()).startsWith("Resource leaked");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-        Trace.Entry entry = i.next();
-        assertThat(entry.message()).startsWith("Resource leaked");
-
-        assertThat(i.hasNext()).isFalse();
+        assertSingleLocalSpanMessage(serverSpan).startsWith("Resource leaked");
     }
 
     @Test
@@ -133,13 +126,12 @@ public class ObjectPoolIT {
         assumeTrue(Connections.getConnectionType().equals(ConnectionType.TOMCAT_JDBC_POOL_WRAPPED));
 
         // when
-        Trace trace = container.execute(ReturnTomcatConnection.class);
+        ServerSpan serverSpan = container.execute(ReturnTomcatConnection.class);
 
         // then
-        assertThat(trace.error()).isNull();
+        assertThat(serverSpan.getError()).isNull();
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-        assertThat(i.hasNext()).isFalse();
+        assertThat(serverSpan.childSpans()).isEmpty();
     }
 
     @Test
@@ -149,16 +141,12 @@ public class ObjectPoolIT {
         assumeTrue(Connections.getConnectionType().equals(ConnectionType.TOMCAT_JDBC_POOL_WRAPPED));
 
         // when
-        Trace trace = container.execute(LeakTomcatConnection.class);
+        ServerSpan serverSpan = container.execute(LeakTomcatConnection.class);
 
         // then
-        assertThat(trace.error().message()).startsWith("Resource leaked");
+        assertThat(serverSpan.getError().message()).startsWith("Resource leaked");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-        Trace.Entry entry = i.next();
-        assertThat(entry.message()).startsWith("Resource leaked");
-
-        assertThat(i.hasNext()).isFalse();
+        assertSingleLocalSpanMessage(serverSpan).startsWith("Resource leaked");
     }
 
     @Test
@@ -168,13 +156,12 @@ public class ObjectPoolIT {
         assumeTrue(Connections.getConnectionType().equals(ConnectionType.TOMCAT_JDBC_POOL_WRAPPED));
 
         // when
-        Trace trace = container.execute(ReturnTomcatAsyncConnection.class);
+        ServerSpan serverSpan = container.execute(ReturnTomcatAsyncConnection.class);
 
         // then
-        assertThat(trace.error()).isNull();
+        assertThat(serverSpan.getError()).isNull();
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-        assertThat(i.hasNext()).isFalse();
+        assertThat(serverSpan.childSpans()).isEmpty();
     }
 
     @Test
@@ -184,16 +171,12 @@ public class ObjectPoolIT {
         assumeTrue(Connections.getConnectionType().equals(ConnectionType.TOMCAT_JDBC_POOL_WRAPPED));
 
         // when
-        Trace trace = container.execute(LeakTomcatAsyncConnection.class);
+        ServerSpan serverSpan = container.execute(LeakTomcatAsyncConnection.class);
 
         // then
-        assertThat(trace.error().message()).startsWith("Resource leaked");
+        assertThat(serverSpan.getError().message()).startsWith("Resource leaked");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-        Trace.Entry entry = i.next();
-        assertThat(entry.message()).startsWith("Resource leaked");
-
-        assertThat(i.hasNext()).isFalse();
+        assertSingleLocalSpanMessage(serverSpan).startsWith("Resource leaked");
     }
 
     @Test
@@ -204,13 +187,12 @@ public class ObjectPoolIT {
                 Connections.getConnectionType().equals(ConnectionType.GLASSFISH_JDBC_POOL_WRAPPED));
 
         // when
-        Trace trace = container.execute(ReturnGlassfishConnection.class);
+        ServerSpan serverSpan = container.execute(ReturnGlassfishConnection.class);
 
         // then
-        assertThat(trace.error()).isNull();
+        assertThat(serverSpan.getError()).isNull();
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-        assertThat(i.hasNext()).isFalse();
+        assertThat(serverSpan.childSpans()).isEmpty();
     }
 
     @Test
@@ -221,16 +203,12 @@ public class ObjectPoolIT {
                 Connections.getConnectionType().equals(ConnectionType.GLASSFISH_JDBC_POOL_WRAPPED));
 
         // when
-        Trace trace = container.execute(LeakGlassfishConnection.class);
+        ServerSpan serverSpan = container.execute(LeakGlassfishConnection.class);
 
         // then
-        assertThat(trace.error().message()).startsWith("Resource leaked");
+        assertThat(serverSpan.getError().message()).startsWith("Resource leaked");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-        Trace.Entry entry = i.next();
-        assertThat(entry.message()).startsWith("Resource leaked");
-
-        assertThat(i.hasNext()).isFalse();
+        assertSingleLocalSpanMessage(serverSpan).startsWith("Resource leaked");
     }
 
     @Test
@@ -240,13 +218,12 @@ public class ObjectPoolIT {
         assumeTrue(Connections.getConnectionType().equals(ConnectionType.HIKARI_CP_WRAPPED));
 
         // when
-        Trace trace = container.execute(ReturnHikariConnection.class);
+        ServerSpan serverSpan = container.execute(ReturnHikariConnection.class);
 
         // then
-        assertThat(trace.error()).isNull();
+        assertThat(serverSpan.getError()).isNull();
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-        assertThat(i.hasNext()).isFalse();
+        assertThat(serverSpan.childSpans()).isEmpty();
     }
 
     @Test
@@ -256,16 +233,12 @@ public class ObjectPoolIT {
         assumeTrue(Connections.getConnectionType().equals(ConnectionType.HIKARI_CP_WRAPPED));
 
         // when
-        Trace trace = container.execute(LeakHikariConnection.class);
+        ServerSpan serverSpan = container.execute(LeakHikariConnection.class);
 
         // then
-        assertThat(trace.error().message()).startsWith("Resource leaked");
+        assertThat(serverSpan.getError().message()).startsWith("Resource leaked");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-        Trace.Entry entry = i.next();
-        assertThat(entry.message()).startsWith("Resource leaked");
-
-        assertThat(i.hasNext()).isFalse();
+        assertSingleLocalSpanMessage(serverSpan).startsWith("Resource leaked");
     }
 
     @Test
@@ -275,13 +248,12 @@ public class ObjectPoolIT {
         assumeTrue(Connections.getConnectionType().equals(ConnectionType.BITRONIX_WRAPPED));
 
         // when
-        Trace trace = container.execute(ReturnBitronixConnection.class);
+        ServerSpan serverSpan = container.execute(ReturnBitronixConnection.class);
 
         // then
-        assertThat(trace.error()).isNull();
+        assertThat(serverSpan.getError()).isNull();
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-        assertThat(i.hasNext()).isFalse();
+        assertThat(serverSpan.childSpans()).isEmpty();
     }
 
     @Test
@@ -291,16 +263,12 @@ public class ObjectPoolIT {
         assumeTrue(Connections.getConnectionType().equals(ConnectionType.BITRONIX_WRAPPED));
 
         // when
-        Trace trace = container.execute(LeakBitronixConnection.class);
+        ServerSpan serverSpan = container.execute(LeakBitronixConnection.class);
 
         // then
-        assertThat(trace.error().message()).startsWith("Resource leaked");
+        assertThat(serverSpan.getError().message()).startsWith("Resource leaked");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-        Trace.Entry entry = i.next();
-        assertThat(entry.message()).startsWith("Resource leaked");
-
-        assertThat(i.hasNext()).isFalse();
+        assertSingleLocalSpanMessage(serverSpan).startsWith("Resource leaked");
     }
 
     @Test
@@ -310,18 +278,19 @@ public class ObjectPoolIT {
         assumeTrue(Connections.getConnectionType().equals(ConnectionType.COMMONS_DBCP_WRAPPED));
 
         // when
-        Trace trace = container.execute(LeakMultipleDbcpConnections.class);
+        ServerSpan serverSpan = container.execute(LeakMultipleDbcpConnections.class);
 
         // then
-        assertThat(trace.error().message()).startsWith("Resource leaked");
+        assertThat(serverSpan.getError().message()).startsWith("Resource leaked");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-        Trace.Entry entry = i.next();
-        assertThat(entry.message()).startsWith("Resource leaked");
-        assertThat(entry.locationStackTraceMillis()).isNull();
-        entry = i.next();
-        assertThat(entry.message()).startsWith("Resource leaked");
-        assertThat(entry.locationStackTraceMillis()).isNull();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
+        LocalSpan entry = (LocalSpan) i.next();
+        assertThat(entry.getMessage()).startsWith("Resource leaked");
+        assertThat(entry.getLocationStackTraceMillis()).isNull();
+
+        entry = (LocalSpan) i.next();
+        assertThat(entry.getMessage()).startsWith("Resource leaked");
+        assertThat(entry.getLocationStackTraceMillis()).isNull();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -337,15 +306,15 @@ public class ObjectPoolIT {
                 true);
 
         // when
-        Trace trace = container.execute(LeakCommonsDbcpConnection.class);
+        ServerSpan serverSpan = container.execute(LeakCommonsDbcpConnection.class);
 
         // then
-        assertThat(trace.error().message()).startsWith("Resource leaked");
+        assertThat(serverSpan.getError().message()).startsWith("Resource leaked");
 
-        Iterator<Trace.Entry> i = trace.entries().iterator();
-        Trace.Entry entry = i.next();
-        assertThat(entry.message()).startsWith("Resource leaked");
-        assertThat(entry.locationStackTraceMillis()).isZero();
+        Iterator<Span> i = serverSpan.childSpans().iterator();
+        LocalSpan localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).startsWith("Resource leaked");
+        assertThat(localSpan.getLocationStackTraceMillis()).isZero();
 
         assertThat(i.hasNext()).isFalse();
     }
