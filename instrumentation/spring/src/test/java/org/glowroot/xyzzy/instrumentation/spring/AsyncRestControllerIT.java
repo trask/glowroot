@@ -33,7 +33,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TraceEntryMarker;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -54,7 +54,7 @@ public class AsyncRestControllerIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
@@ -85,27 +85,27 @@ public class AsyncRestControllerIT {
         Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.getHeader().getAsync()).isTrue();
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo(contextPath + "/rest-async");
+        assertThat(trace.async()).isTrue();
+        assertThat(trace.transactionName()).isEqualTo(contextPath + "/rest-async");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("spring controller: org.glowroot.xyzzy.instrumentation"
-                + ".spring.AsyncRestControllerIT$CallableAsyncController.test()");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("spring controller: org.glowroot.xyzzy"
+                + ".instrumentation.spring.AsyncRestControllerIT$CallableAsyncController.test()");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(1);
-        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(entry.depth()).isEqualTo(1);
+        assertThat(entry.message()).isEqualTo("trace entry marker / CreateTraceEntry");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("auxiliary thread");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("auxiliary thread");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(1);
-        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(entry.depth()).isEqualTo(1);
+        assertThat(entry.message()).isEqualTo("trace entry marker / CreateTraceEntry");
 
         if (i.hasNext()) {
             // this happens sporadically on travis ci because the auxiliary thread is demarcated by
@@ -135,8 +135,8 @@ public class AsyncRestControllerIT {
             // see similar issue in org.glowroot.xyzzy.instrumentation.servlet.AsyncServletIT
 
             entry = i.next();
-            assertThat(entry.getDepth()).isEqualTo(1);
-            assertThat(entry.getMessage()).isEqualTo(
+            assertThat(entry.depth()).isEqualTo(1);
+            assertThat(entry.message()).isEqualTo(
                     "this auxiliary thread was still running when the transaction ended");
         }
 
@@ -149,27 +149,28 @@ public class AsyncRestControllerIT {
         Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.getHeader().getAsync()).isTrue();
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo(contextPath + "/rest-async2");
+        assertThat(trace.async()).isTrue();
+        assertThat(trace.transactionName()).isEqualTo(contextPath + "/rest-async2");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("spring controller: org.glowroot.xyzzy.instrumentation"
-                + ".spring.AsyncRestControllerIT$DeferredResultAsyncController.test()");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("spring controller: org.glowroot.xyzzy"
+                + ".instrumentation.spring.AsyncRestControllerIT$DeferredResultAsyncController"
+                + ".test()");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(1);
-        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(entry.depth()).isEqualTo(1);
+        assertThat(entry.message()).isEqualTo("trace entry marker / CreateTraceEntry");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(1);
-        assertThat(entry.getMessage()).isEqualTo("auxiliary thread");
+        assertThat(entry.depth()).isEqualTo(1);
+        assertThat(entry.message()).isEqualTo("auxiliary thread");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(2);
-        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(entry.depth()).isEqualTo(2);
+        assertThat(entry.message()).isEqualTo("trace entry marker / CreateTraceEntry");
 
         if (i.hasNext()) {
             // this happens sporadically on travis ci because the auxiliary thread
@@ -182,8 +183,8 @@ public class AsyncRestControllerIT {
             // see similar issue in org.glowroot.xyzzy.instrumentation.spring.AsyncControllerIT
 
             entry = i.next();
-            assertThat(entry.getDepth()).isEqualTo(2);
-            assertThat(entry.getMessage()).isEqualTo(
+            assertThat(entry.depth()).isEqualTo(2);
+            assertThat(entry.message()).isEqualTo(
                     "this auxiliary thread was still running when the transaction ended");
         }
 

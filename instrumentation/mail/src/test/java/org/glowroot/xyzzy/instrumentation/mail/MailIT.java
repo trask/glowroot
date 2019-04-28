@@ -31,7 +31,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -51,7 +51,7 @@ public class MailIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
@@ -62,34 +62,34 @@ public class MailIT {
         // then
         checkTimers(trace);
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).startsWith("mail connect smtp://");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).startsWith("mail connect smtp://");
 
         assertThat(i.hasNext()).isTrue();
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("mail send message");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("mail send message");
 
         assertThat(i.hasNext()).isFalse();
 
     }
 
     private static void checkTimers(Trace trace) {
-        Trace.Timer rootTimer = trace.getHeader().getMainThreadRootTimer();
+        Trace.Timer rootTimer = trace.mainThreadRootTimer();
         List<String> timerNames = Lists.newArrayList();
-        for (Trace.Timer timer : rootTimer.getChildTimerList()) {
-            timerNames.add(timer.getName());
+        for (Trace.Timer timer : rootTimer.childTimers()) {
+            timerNames.add(timer.name());
         }
         Collections.sort(timerNames);
         assertThat(timerNames).containsExactly("mail");
-        for (Trace.Timer timer : rootTimer.getChildTimerList()) {
-            assertThat(timer.getChildTimerList()).isEmpty();
+        for (Trace.Timer timer : rootTimer.childTimers()) {
+            assertThat(timer.childTimers()).isEmpty();
         }
-        assertThat(trace.getHeader().getAsyncTimerCount()).isZero();
+        assertThat(trace.asyncTimers()).isEmpty();
     }
 
     public static class ExecuteSend extends DoMail {

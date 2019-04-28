@@ -19,7 +19,6 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.Iterator;
-import java.util.List;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -30,9 +29,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
-import org.glowroot.xyzzy.instrumentation.jdbc.Connections;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -52,7 +49,7 @@ public class ResultSetJava7MethodIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
@@ -62,31 +59,18 @@ public class ResultSetJava7MethodIT {
                 container.execute(ExecuteStatementAndIterateOverResultsUsingJava7Method.class);
 
         // then
-        assertThat(trace.getHeader().hasError()).isFalse();
+        assertThat(trace.error()).isNull();
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("select * from employee");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 1 row");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText()).isEqualTo("select * from employee");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("jdbc query: ");
+        assertThat(entry.queryEntryMessage().suffix()).isEqualTo(" => 1 row");
 
         assertThat(i.hasNext()).isFalse();
-
-        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
-
-        Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("SQL");
-        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
-                .isEqualTo("select * from employee");
-        assertThat(query.getExecutionCount()).isEqualTo(1);
-        assertThat(query.getTotalRows().getValue()).isEqualTo(1);
-
-        assertThat(j.hasNext()).isFalse();
     }
 
     public static class ExecuteStatementAndIterateOverResultsUsingJava7Method

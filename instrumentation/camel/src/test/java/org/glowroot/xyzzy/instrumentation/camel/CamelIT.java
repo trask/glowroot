@@ -33,7 +33,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TraceEntryMarker;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -55,7 +55,7 @@ public class CamelIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
@@ -64,20 +64,19 @@ public class CamelIT {
         Trace trace = container.execute(Route.class);
 
         // then
-        List<Trace.Timer> nestedTimers =
-                trace.getHeader().getMainThreadRootTimer().getChildTimerList();
+        List<Trace.Timer> nestedTimers = trace.mainThreadRootTimer().childTimers();
         assertThat(nestedTimers).hasSize(1);
-        assertThat(nestedTimers.get(0).getName()).isEqualTo("mock trace entry marker");
+        assertThat(nestedTimers.get(0).name()).isEqualTo("mock trace entry marker");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("trace entry marker / CreateTraceEntry");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("trace entry marker / CreateTraceEntry");
 
         assertThat(i.hasNext()).isFalse();
     }

@@ -38,7 +38,7 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -58,7 +58,7 @@ public class StrutsOneIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
@@ -67,13 +67,13 @@ public class StrutsOneIT {
         Trace trace = container.execute(ExecuteActionInTomcat.class, "Web");
 
         // then
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo("HelloWorldAction#execute");
+        assertThat(trace.transactionName()).isEqualTo("HelloWorldAction#execute");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("struts action:"
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("struts action:"
                 + " org.glowroot.xyzzy.instrumentation.struts.StrutsOneIT$HelloWorldAction.execute()");
 
         assertThat(i.hasNext()).isFalse();

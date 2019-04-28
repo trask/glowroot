@@ -28,7 +28,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -50,36 +50,36 @@ public class Log4j1xIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
     public void testLog() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
+        container.setInstrumentationProperty(INSTRUMENTATION_ID,
                 "traceErrorOnErrorWithoutThrowable", true);
 
         // when
         Trace trace = container.execute(ShouldLog.class);
 
         // then
-        assertThat(trace.getHeader().getError().getMessage()).isEqualTo("efg");
+        assertThat(trace.error().message()).isEqualTo("efg");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message())
                 .isEqualTo("log warn: o.g.x.i.logger.Log4j1xIT$ShouldLog - def");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message())
                 .isEqualTo("log error: o.g.x.i.logger.Log4j1xIT$ShouldLog - efg");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message())
                 .isEqualTo("log fatal: o.g.x.i.logger.Log4j1xIT$ShouldLog - fgh");
 
         assertThat(i.hasNext()).isFalse();
@@ -88,47 +88,44 @@ public class Log4j1xIT {
     @Test
     public void testLogWithThrowable() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
+        container.setInstrumentationProperty(INSTRUMENTATION_ID,
                 "traceErrorOnErrorWithoutThrowable", true);
 
         // when
         Trace trace = container.execute(ShouldLogWithThrowable.class);
 
         // then
-        assertThat(trace.getHeader().getError().getMessage())
+        assertThat(trace.error().message())
                 .isEqualTo("java.lang.IllegalStateException: 567");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message())
                 .isEqualTo("log warn: o.g.x.i.l.Log4j1xIT$ShouldLogWithThrowable - def_");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("java.lang.IllegalStateException: 456");
-        assertThat(
-                entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
-                        .isEqualTo("transactionMarker");
+        assertThat(entry.error().message()).isEqualTo("java.lang.IllegalStateException: 456");
+        assertThat(entry.error().exception().getStackTrace()[0].getMethodName())
+                .isEqualTo("transactionMarker");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message())
                 .isEqualTo("log error: o.g.x.i.l.Log4j1xIT$ShouldLogWithThrowable - efg_");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("java.lang.IllegalStateException: 567");
-        assertThat(
-                entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
-                        .isEqualTo("transactionMarker");
+        assertThat(entry.error().message()).isEqualTo("java.lang.IllegalStateException: 567");
+        assertThat(entry.error().exception().getStackTrace()[0].getMethodName())
+                .isEqualTo("transactionMarker");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message())
                 .isEqualTo("log fatal: o.g.x.i.l.Log4j1xIT$ShouldLogWithThrowable - fgh_");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("java.lang.IllegalStateException: 678");
-        assertThat(
-                entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
-                        .isEqualTo("transactionMarker");
+        assertThat(entry.error().message()).isEqualTo("java.lang.IllegalStateException: 678");
+        assertThat(entry.error().exception().getStackTrace()[0].getMethodName())
+                .isEqualTo("transactionMarker");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -136,37 +133,37 @@ public class Log4j1xIT {
     @Test
     public void testLogWithNullThrowable() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
+        container.setInstrumentationProperty(INSTRUMENTATION_ID,
                 "traceErrorOnErrorWithoutThrowable", true);
 
         // when
         Trace trace = container.execute(ShouldLogWithNullThrowable.class);
 
         // then
-        assertThat(trace.getHeader().getError().getMessage()).isEqualTo("efg_");
+        assertThat(trace.error().message()).isEqualTo("efg_");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message())
                 .isEqualTo("log warn: o.g.x.i.l.Log4j1xIT$ShouldLogWithNullThrowable - def_");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("def_");
+        assertThat(entry.error().message()).isEqualTo("def_");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message())
                 .isEqualTo("log error: o.g.x.i.l.Log4j1xIT$ShouldLogWithNullThrowable - efg_");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("efg_");
+        assertThat(entry.error().message()).isEqualTo("efg_");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message())
                 .isEqualTo("log fatal: o.g.x.i.l.Log4j1xIT$ShouldLogWithNullThrowable - fgh_");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("fgh_");
+        assertThat(entry.error().message()).isEqualTo("fgh_");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -174,30 +171,30 @@ public class Log4j1xIT {
     @Test
     public void testLogWithPriority() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
+        container.setInstrumentationProperty(INSTRUMENTATION_ID,
                 "traceErrorOnErrorWithoutThrowable", true);
 
         // when
         Trace trace = container.execute(ShouldLogWithPriority.class);
 
         // then
-        assertThat(trace.getHeader().getError().getMessage()).isEqualTo("efg__");
+        assertThat(trace.error().message()).isEqualTo("efg__");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message())
                 .isEqualTo("log warn: o.g.x.i.l.Log4j1xIT$ShouldLogWithPriority - def__");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message())
                 .isEqualTo("log error: o.g.x.i.l.Log4j1xIT$ShouldLogWithPriority - efg__");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message())
                 .isEqualTo("log fatal: o.g.x.i.l.Log4j1xIT$ShouldLogWithPriority - fgh__");
 
         assertThat(i.hasNext()).isFalse();
@@ -209,43 +206,40 @@ public class Log4j1xIT {
         Trace trace = container.execute(ShouldLogWithPriorityAndThrowable.class);
 
         // then
-        assertThat(trace.getHeader().getError().getMessage())
+        assertThat(trace.error().message())
                 .isEqualTo("java.lang.IllegalStateException: 567_");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo(
                 "log warn: o.g.x.i.l.Log4j1xIT$ShouldLogWithPriorityAndThrowable - def___");
 
-        assertThat(entry.getError().getMessage())
+        assertThat(entry.error().message())
                 .isEqualTo("java.lang.IllegalStateException: 456_");
-        assertThat(
-                entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
-                        .isEqualTo("transactionMarker");
+        assertThat(entry.error().exception().getStackTrace()[0].getMethodName())
+                .isEqualTo("transactionMarker");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo(
                 "log error: o.g.x.i.l.Log4j1xIT$ShouldLogWithPriorityAndThrowable - efg___");
 
-        assertThat(entry.getError().getMessage())
+        assertThat(entry.error().message())
                 .isEqualTo("java.lang.IllegalStateException: 567_");
-        assertThat(
-                entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
-                        .isEqualTo("transactionMarker");
+        assertThat(entry.error().exception().getStackTrace()[0].getMethodName())
+                .isEqualTo("transactionMarker");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo(
                 "log fatal: o.g.x.i.l.Log4j1xIT$ShouldLogWithPriorityAndThrowable - fgh___");
 
-        assertThat(entry.getError().getMessage())
+        assertThat(entry.error().message())
                 .isEqualTo("java.lang.IllegalStateException: 678_");
-        assertThat(
-                entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
-                        .isEqualTo("transactionMarker");
+        assertThat(entry.error().exception().getStackTrace()[0].getMethodName())
+                .isEqualTo("transactionMarker");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -253,37 +247,37 @@ public class Log4j1xIT {
     @Test
     public void testLogWithPriorityAndNullThrowable() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
+        container.setInstrumentationProperty(INSTRUMENTATION_ID,
                 "traceErrorOnErrorWithoutThrowable", true);
 
         // when
         Trace trace = container.execute(ShouldLogWithPriorityAndNullThrowable.class);
 
         // then
-        assertThat(trace.getHeader().getError().getMessage()).isEqualTo("efg___null");
+        assertThat(trace.error().message()).isEqualTo("efg___null");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo(
                 "log warn: o.g.x.i.l.Log4j1xIT$ShouldLogWithPriorityAndNullThrowable - def___null");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("def___null");
+        assertThat(entry.error().message()).isEqualTo("def___null");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo(
                 "log error: o.g.x.i.l.Log4j1xIT$ShouldLogWithPriorityAndNullThrowable - efg___null");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("efg___null");
+        assertThat(entry.error().message()).isEqualTo("efg___null");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo(
                 "log fatal: o.g.x.i.l.Log4j1xIT$ShouldLogWithPriorityAndNullThrowable - fgh___null");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("fgh___null");
+        assertThat(entry.error().message()).isEqualTo("fgh___null");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -294,43 +288,40 @@ public class Log4j1xIT {
         Trace trace = container.execute(ShouldLocalizedLog.class);
 
         // then
-        assertThat(trace.getHeader().getError().getMessage())
+        assertThat(trace.error().message())
                 .isEqualTo("java.lang.IllegalStateException: 567__");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message())
                 .isEqualTo("log warn: o.g.x.i.l.Log4j1xIT$ShouldLocalizedLog - def____");
 
-        assertThat(entry.getError().getMessage())
+        assertThat(entry.error().message())
                 .isEqualTo("java.lang.IllegalStateException: 456__");
-        assertThat(
-                entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
-                        .isEqualTo("transactionMarker");
+        assertThat(entry.error().exception().getStackTrace()[0].getMethodName())
+                .isEqualTo("transactionMarker");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message())
                 .isEqualTo("log error: o.g.x.i.l.Log4j1xIT$ShouldLocalizedLog - efg____");
 
-        assertThat(entry.getError().getMessage())
+        assertThat(entry.error().message())
                 .isEqualTo("java.lang.IllegalStateException: 567__");
-        assertThat(
-                entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
-                        .isEqualTo("transactionMarker");
+        assertThat(entry.error().exception().getStackTrace()[0].getMethodName())
+                .isEqualTo("transactionMarker");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message())
                 .isEqualTo("log fatal: o.g.x.i.l.Log4j1xIT$ShouldLocalizedLog - fgh____");
 
-        assertThat(entry.getError().getMessage())
+        assertThat(entry.error().message())
                 .isEqualTo("java.lang.IllegalStateException: 678__");
-        assertThat(
-                entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
-                        .isEqualTo("transactionMarker");
+        assertThat(entry.error().exception().getStackTrace()[0].getMethodName())
+                .isEqualTo("transactionMarker");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -338,37 +329,37 @@ public class Log4j1xIT {
     @Test
     public void testLocalizedLogWithNullThrowable() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
+        container.setInstrumentationProperty(INSTRUMENTATION_ID,
                 "traceErrorOnErrorWithoutThrowable", true);
 
         // when
         Trace trace = container.execute(ShouldLocalizedLogWithNullThrowable.class);
 
         // then
-        assertThat(trace.getHeader().getError().getMessage()).isEqualTo("efg____null");
+        assertThat(trace.error().message()).isEqualTo("efg____null");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo(
                 "log warn: o.g.x.i.l.Log4j1xIT$ShouldLocalizedLogWithNullThrowable - def____null");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("def____null");
+        assertThat(entry.error().message()).isEqualTo("def____null");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo(
                 "log error: o.g.x.i.l.Log4j1xIT$ShouldLocalizedLogWithNullThrowable - efg____null");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("efg____null");
+        assertThat(entry.error().message()).isEqualTo("efg____null");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo(
                 "log fatal: o.g.x.i.l.Log4j1xIT$ShouldLocalizedLogWithNullThrowable - fgh____null");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("fgh____null");
+        assertThat(entry.error().message()).isEqualTo("fgh____null");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -379,43 +370,40 @@ public class Log4j1xIT {
         Trace trace = container.execute(ShouldLocalizedLogWithParameters.class);
 
         // then
-        assertThat(trace.getHeader().getError().getMessage())
+        assertThat(trace.error().message())
                 .isEqualTo("java.lang.IllegalStateException: 567__");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo(
                 "log warn: o.g.x.i.l.Log4j1xIT$ShouldLocalizedLogWithParameters - def____");
 
-        assertThat(entry.getError().getMessage())
+        assertThat(entry.error().message())
                 .isEqualTo("java.lang.IllegalStateException: 456__");
-        assertThat(
-                entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
-                        .isEqualTo("transactionMarker");
+        assertThat(entry.error().exception().getStackTrace()[0].getMethodName())
+                .isEqualTo("transactionMarker");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo(
                 "log error: o.g.x.i.l.Log4j1xIT$ShouldLocalizedLogWithParameters - efg____");
 
-        assertThat(entry.getError().getMessage())
+        assertThat(entry.error().message())
                 .isEqualTo("java.lang.IllegalStateException: 567__");
-        assertThat(
-                entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
-                        .isEqualTo("transactionMarker");
+        assertThat(entry.error().exception().getStackTrace()[0].getMethodName())
+                .isEqualTo("transactionMarker");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo(
                 "log fatal: o.g.x.i.l.Log4j1xIT$ShouldLocalizedLogWithParameters - fgh____");
 
-        assertThat(entry.getError().getMessage())
+        assertThat(entry.error().message())
                 .isEqualTo("java.lang.IllegalStateException: 678__");
-        assertThat(
-                entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
-                        .isEqualTo("transactionMarker");
+        assertThat(entry.error().exception().getStackTrace()[0].getMethodName())
+                .isEqualTo("transactionMarker");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -426,43 +414,40 @@ public class Log4j1xIT {
         Trace trace = container.execute(ShouldLocalizedLogWithEmptyParameters.class);
 
         // then
-        assertThat(trace.getHeader().getError().getMessage())
+        assertThat(trace.error().message())
                 .isEqualTo("java.lang.IllegalStateException: 567__");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo(
                 "log warn: o.g.x.i.l.Log4j1xIT$ShouldLocalizedLogWithEmptyParameters - def____");
 
-        assertThat(entry.getError().getMessage())
+        assertThat(entry.error().message())
                 .isEqualTo("java.lang.IllegalStateException: 456__");
-        assertThat(
-                entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
-                        .isEqualTo("transactionMarker");
+        assertThat(entry.error().exception().getStackTrace()[0].getMethodName())
+                .isEqualTo("transactionMarker");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo(
                 "log error: o.g.x.i.l.Log4j1xIT$ShouldLocalizedLogWithEmptyParameters - efg____");
 
-        assertThat(entry.getError().getMessage())
+        assertThat(entry.error().message())
                 .isEqualTo("java.lang.IllegalStateException: 567__");
-        assertThat(
-                entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
-                        .isEqualTo("transactionMarker");
+        assertThat(entry.error().exception().getStackTrace()[0].getMethodName())
+                .isEqualTo("transactionMarker");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo(
                 "log fatal: o.g.x.i.l.Log4j1xIT$ShouldLocalizedLogWithEmptyParameters - fgh____");
 
-        assertThat(entry.getError().getMessage())
+        assertThat(entry.error().message())
                 .isEqualTo("java.lang.IllegalStateException: 678__");
-        assertThat(
-                entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
-                        .isEqualTo("transactionMarker");
+        assertThat(entry.error().exception().getStackTrace()[0].getMethodName())
+                .isEqualTo("transactionMarker");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -470,40 +455,37 @@ public class Log4j1xIT {
     @Test
     public void testLocalizedLogWithParametersAndNullThrowable() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
+        container.setInstrumentationProperty(INSTRUMENTATION_ID,
                 "traceErrorOnErrorWithoutThrowable", true);
 
         // when
         Trace trace = container.execute(ShouldLocalizedLogWithParametersAndNullThrowable.class);
 
         // then
-        assertThat(trace.getHeader().getError().getMessage()).isEqualTo("efg____null");
+        assertThat(trace.error().message()).isEqualTo("efg____null");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
-                .isEqualTo("log warn: o.g.x.i.l.Log4j1xIT"
-                        + "$ShouldLocalizedLogWithParametersAndNullThrowable - def____null");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("log warn: o.g.x.i.l.Log4j1xIT"
+                + "$ShouldLocalizedLogWithParametersAndNullThrowable - def____null");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("def____null");
-
-        entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
-                .isEqualTo("log error: o.g.x.i.l.Log4j1xIT"
-                        + "$ShouldLocalizedLogWithParametersAndNullThrowable - efg____null");
-
-        assertThat(entry.getError().getMessage()).isEqualTo("efg____null");
+        assertThat(entry.error().message()).isEqualTo("def____null");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
-                .isEqualTo("log fatal: o.g.x.i.l.Log4j1xIT"
-                        + "$ShouldLocalizedLogWithParametersAndNullThrowable - fgh____null");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("log error: o.g.x.i.l.Log4j1xIT"
+                + "$ShouldLocalizedLogWithParametersAndNullThrowable - efg____null");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("fgh____null");
+        assertThat(entry.error().message()).isEqualTo("efg____null");
+
+        entry = i.next();
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("log fatal: o.g.x.i.l.Log4j1xIT"
+                + "$ShouldLocalizedLogWithParametersAndNullThrowable - fgh____null");
+
+        assertThat(entry.error().message()).isEqualTo("fgh____null");
 
         assertThat(i.hasNext()).isFalse();
     }

@@ -34,8 +34,7 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -55,7 +54,7 @@ public class ElasticsearchAsyncIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
@@ -66,29 +65,16 @@ public class ElasticsearchAsyncIT {
         // then
         checkTimers(trace, 1);
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("PUT testindex/testtype");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText()).isEqualTo("PUT testindex/testtype");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("elasticsearch query: ");
+        assertThat(entry.queryEntryMessage().suffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
-
-        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
-
-        Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("Elasticsearch");
-        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
-                .isEqualTo("PUT testindex/testtype");
-        assertThat(query.getExecutionCount()).isEqualTo(1);
-        assertThat(query.hasTotalRows()).isFalse();
-
-        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -99,29 +85,16 @@ public class ElasticsearchAsyncIT {
         // then
         checkTimers(trace, 1);
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("GET testindex/testtype");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).startsWith(" [");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText()).isEqualTo("GET testindex/testtype");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("elasticsearch query: ");
+        assertThat(entry.queryEntryMessage().suffix()).startsWith(" [");
 
         assertThat(i.hasNext()).isFalse();
-
-        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
-
-        Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("Elasticsearch");
-        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
-                .isEqualTo("GET testindex/testtype");
-        assertThat(query.getExecutionCount()).isEqualTo(1);
-        assertThat(query.hasTotalRows()).isFalse();
-
-        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -132,31 +105,19 @@ public class ElasticsearchAsyncIT {
         // then
         checkTimers(trace, 100);
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         for (int j = 0; j < 100; j++) {
             Trace.Entry entry = i.next();
-            assertThat(entry.getDepth()).isEqualTo(0);
-            assertThat(entry.getMessage()).isEmpty();
-            assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                    .getFullText()).isEqualTo("GET testindex/testtype");
-            assertThat(entry.getQueryEntryMessage().getPrefix())
+            assertThat(entry.depth()).isEqualTo(0);
+            assertThat(entry.message()).isEmpty();
+            assertThat(entry.queryEntryMessage().queryText())
+                    .isEqualTo("GET testindex/testtype");
+            assertThat(entry.queryEntryMessage().prefix())
                     .isEqualTo("elasticsearch query: ");
-            assertThat(entry.getQueryEntryMessage().getSuffix()).startsWith(" [");
+            assertThat(entry.queryEntryMessage().suffix()).startsWith(" [");
         }
         assertThat(i.hasNext()).isFalse();
-
-        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
-
-        Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("Elasticsearch");
-        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
-                .isEqualTo("GET testindex/testtype");
-        assertThat(query.getExecutionCount()).isEqualTo(100);
-        assertThat(query.hasTotalRows()).isFalse();
-
-        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -167,29 +128,16 @@ public class ElasticsearchAsyncIT {
         // then
         checkTimers(trace, 1);
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("PUT testindex/testtype");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).startsWith(" [");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText()).isEqualTo("PUT testindex/testtype");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("elasticsearch query: ");
+        assertThat(entry.queryEntryMessage().suffix()).startsWith(" [");
 
         assertThat(i.hasNext()).isFalse();
-
-        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
-
-        Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("Elasticsearch");
-        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
-                .isEqualTo("PUT testindex/testtype");
-        assertThat(query.getExecutionCount()).isEqualTo(1);
-        assertThat(query.hasTotalRows()).isFalse();
-
-        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -200,29 +148,17 @@ public class ElasticsearchAsyncIT {
         // then
         checkTimers(trace, 1);
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("DELETE testindex/testtype");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).startsWith(" [");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText())
+                .isEqualTo("DELETE testindex/testtype");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("elasticsearch query: ");
+        assertThat(entry.queryEntryMessage().suffix()).startsWith(" [");
 
         assertThat(i.hasNext()).isFalse();
-
-        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
-
-        Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("Elasticsearch");
-        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
-                .isEqualTo("DELETE testindex/testtype");
-        assertThat(query.getExecutionCount()).isEqualTo(1);
-        assertThat(query.hasTotalRows()).isFalse();
-
-        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -233,29 +169,17 @@ public class ElasticsearchAsyncIT {
         // then
         checkTimers(trace, 1);
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).startsWith("SEARCH testindex/testtype {");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText())
+                .startsWith("SEARCH testindex/testtype {");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("elasticsearch query: ");
+        assertThat(entry.queryEntryMessage().suffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
-
-        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
-
-        Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("Elasticsearch");
-        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
-                .startsWith("SEARCH testindex/testtype {");
-        assertThat(query.getExecutionCount()).isEqualTo(1);
-        assertThat(query.hasTotalRows()).isFalse();
-
-        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -266,29 +190,17 @@ public class ElasticsearchAsyncIT {
         // then
         checkTimers(trace, 1);
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).startsWith("SEARCH _any/testtype {");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText())
+                .startsWith("SEARCH _any/testtype {");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("elasticsearch query: ");
+        assertThat(entry.queryEntryMessage().suffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
-
-        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
-
-        Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("Elasticsearch");
-        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
-                .startsWith("SEARCH _any/testtype {");
-        assertThat(query.getExecutionCount()).isEqualTo(1);
-        assertThat(query.hasTotalRows()).isFalse();
-
-        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -301,29 +213,16 @@ public class ElasticsearchAsyncIT {
         // then
         checkTimers(trace, 1);
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).startsWith("SEARCH / {");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText()).startsWith("SEARCH / {");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("elasticsearch query: ");
+        assertThat(entry.queryEntryMessage().suffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
-
-        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
-
-        Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("Elasticsearch");
-        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
-                .startsWith("SEARCH / {");
-        assertThat(query.getExecutionCount()).isEqualTo(1);
-        assertThat(query.hasTotalRows()).isFalse();
-
-        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -336,29 +235,17 @@ public class ElasticsearchAsyncIT {
         // then
         checkTimers(trace, 1);
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).startsWith("SEARCH testindex,testindex2/testtype,testtype2 {");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText())
+                .startsWith("SEARCH testindex,testindex2/testtype,testtype2 {");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("elasticsearch query: ");
+        assertThat(entry.queryEntryMessage().suffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
-
-        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
-
-        Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("Elasticsearch");
-        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
-                .startsWith("SEARCH testindex,testindex2/testtype,testtype2 {");
-        assertThat(query.getExecutionCount()).isEqualTo(1);
-        assertThat(query.hasTotalRows()).isFalse();
-
-        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -369,47 +256,35 @@ public class ElasticsearchAsyncIT {
         // then
         checkTimers(trace, 1);
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).startsWith("SEARCH testindex/testtype {");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText())
+                .startsWith("SEARCH testindex/testtype {");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("elasticsearch query: ");
+        assertThat(entry.queryEntryMessage().suffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
-
-        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
-
-        Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("Elasticsearch");
-        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
-                .startsWith("SEARCH testindex/testtype {");
-        assertThat(query.getExecutionCount()).isEqualTo(1);
-        assertThat(query.hasTotalRows()).isFalse();
-
-        assertThat(j.hasNext()).isFalse();
     }
 
     private static void checkTimers(Trace trace, int count) {
-        Trace.Timer rootTimer = trace.getHeader().getMainThreadRootTimer();
+        Trace.Timer rootTimer = trace.mainThreadRootTimer();
         List<String> timerNames = Lists.newArrayList();
-        for (Trace.Timer timer : rootTimer.getChildTimerList()) {
-            timerNames.add(timer.getName());
+        for (Trace.Timer timer : rootTimer.childTimers()) {
+            timerNames.add(timer.name());
         }
         Collections.sort(timerNames);
         assertThat(timerNames).containsExactly("elasticsearch query");
-        for (Trace.Timer timer : rootTimer.getChildTimerList()) {
-            assertThat(timer.getChildTimerList()).isEmpty();
+        for (Trace.Timer timer : rootTimer.childTimers()) {
+            assertThat(timer.childTimers()).isEmpty();
         }
-        assertThat(trace.getHeader().getAsyncTimerCount()).isEqualTo(1);
-        Trace.Timer asyncTimer = trace.getHeader().getAsyncTimer(0);
-        assertThat(asyncTimer.getChildTimerCount()).isZero();
-        assertThat(asyncTimer.getName()).isEqualTo("elasticsearch query");
-        assertThat(asyncTimer.getCount()).isEqualTo(count);
+        assertThat(trace.asyncTimers().size()).isEqualTo(1);
+        Trace.Timer asyncTimer = trace.asyncTimers().get(0);
+        assertThat(asyncTimer.childTimers()).isEmpty();
+        assertThat(asyncTimer.name()).isEqualTo("elasticsearch query");
+        assertThat(asyncTimer.count()).isEqualTo(count);
     }
 
     public static class ExecuteDocumentPut implements AppUnderTest, TransactionMarker {

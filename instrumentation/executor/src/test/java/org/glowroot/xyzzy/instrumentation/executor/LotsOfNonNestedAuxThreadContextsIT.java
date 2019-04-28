@@ -30,7 +30,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -56,7 +56,7 @@ public class LotsOfNonNestedAuxThreadContextsIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
@@ -65,12 +65,11 @@ public class LotsOfNonNestedAuxThreadContextsIT {
         Trace trace = container.execute(DoSubmitCallable.class);
 
         // then
-        assertThat(trace.getEntryList()).isEmpty();
-        assertThat(trace.getHeader().hasAuxThreadRootTimer()).isTrue();
-        Trace.Timer auxThreadRootTimer = trace.getHeader().getAuxThreadRootTimer();
-        assertThat(auxThreadRootTimer.getCount()).isEqualTo(100000);
-        assertThat(auxThreadRootTimer.getActive()).isFalse();
-        assertThat(auxThreadRootTimer.getChildTimerCount()).isZero();
+        assertThat(trace.entries()).isEmpty();
+        assertThat(trace.auxThreadRootTimer()).isNotNull();
+        Trace.Timer auxThreadRootTimer = trace.auxThreadRootTimer();
+        assertThat(auxThreadRootTimer.count()).isEqualTo(100000);
+        assertThat(auxThreadRootTimer.childTimers()).isEmpty();
     }
 
     public static class DoSubmitCallable implements AppUnderTest, TransactionMarker {

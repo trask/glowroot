@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.glowroot.xyzzy.instrumentation</groupId>
+    <artifactId>instrumentation-parent</artifactId>
+    <version>0.13.5-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>instrumentation-apache-http-client-3x</artifactId>
+
+  <name>Instrumentation for Apache HttpClient 3.x</name>
+  <description>Instrumentation for Apache HttpClient 3.x</description>
+
+  <properties>
+    <!-- instrumented libraries -->
+    <apache.httpclient3x.version>3.1</apache.httpclient3x.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.glowroot.xyzzy</groupId>
+      <artifactId>xyzzy-instrumentation-api</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>commons-httpclient</groupId>
+      <artifactId>commons-httpclient</artifactId>
+      <version>${apache.httpclient3x.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.glowroot.xyzzy</groupId>
+      <artifactId>xyzzy-test-harness</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+</project>

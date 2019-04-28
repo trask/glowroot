@@ -18,7 +18,6 @@ package org.glowroot.xyzzy.instrumentation.servlet;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.List;
 import java.util.Map;
 
 import javax.servlet.ServletException;
@@ -28,7 +27,6 @@ import javax.servlet.http.HttpServletResponse;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -38,7 +36,7 @@ import org.springframework.mock.web.MockHttpSession;
 
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -60,14 +58,14 @@ public class SessionAttributeIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
     public void testHasSessionAttribute() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.of("testattr"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.of("testattr"));
         // when
         Trace trace = container.execute(HasSessionAttribute.class, "Web");
         // then
@@ -79,8 +77,8 @@ public class SessionAttributeIT {
     @Test
     public void testHasSessionAttributeWithoutTrimmedAttributeName() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.of(" testattr ", " other"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.of(" testattr ", " other"));
         // when
         Trace trace = container.execute(HasSessionAttribute.class, "Web");
         // then
@@ -92,8 +90,8 @@ public class SessionAttributeIT {
     @Test
     public void testHasSessionAttributeUsingWildcard() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.of("*"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.of("*"));
         // when
         Trace trace = container.execute(HasSessionAttribute.class, "Web");
         // then
@@ -105,8 +103,8 @@ public class SessionAttributeIT {
     @Test
     public void testHasSessionAttributeUsingWildcardPlusOther() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.of("*", "other", "::id"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.of("*", "other", "::id"));
         // when
         Trace trace = container.execute(HasSessionAttribute.class, "Web");
         // then
@@ -119,8 +117,8 @@ public class SessionAttributeIT {
     @Test
     public void testHasSessionAttributeNotReadable() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.<String>of());
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.<String>of());
         // when
         Trace trace = container.execute(HasSessionAttribute.class, "Web");
         // then
@@ -131,8 +129,8 @@ public class SessionAttributeIT {
     @Test
     public void testSetSessionAttribute() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.of("testattr", "testother"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.of("testattr", "testother"));
         // when
         Trace trace = container.execute(SetSessionAttribute.class, "Web");
         // then
@@ -145,8 +143,8 @@ public class SessionAttributeIT {
     @Test
     public void testSetSessionAttributeUsingWildcard() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.of("*"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.of("*"));
         // when
         Trace trace = container.execute(SetSessionAttribute.class, "Web");
         // then
@@ -158,8 +156,8 @@ public class SessionAttributeIT {
     @Test
     public void testSetSessionAttributeUsingWildcardAndOther() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.of("*", "other"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.of("*", "other"));
         // when
         Trace trace = container.execute(SetSessionAttribute.class, "Web");
         // then
@@ -171,8 +169,8 @@ public class SessionAttributeIT {
     @Test
     public void testSetSessionAttributeNotReadable() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.<String>of());
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.<String>of());
         // when
         Trace trace = container.execute(SetSessionAttribute.class, "Web");
         // then
@@ -183,8 +181,8 @@ public class SessionAttributeIT {
     @Test
     public void testSetSessionAttributeNull() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.of("*"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.of("*"));
         // when
         Trace trace = container.execute(SetSessionAttributeNull.class, "Web");
         // then
@@ -196,8 +194,8 @@ public class SessionAttributeIT {
     @Test
     public void testHasNestedSessionAttributePath() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.of("one.two.three", "one.amap.x"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.of("one.two.three", "one.amap.x"));
         // when
         Trace trace = container.execute(HasNestedSessionAttribute.class, "Web");
         // then
@@ -210,8 +208,8 @@ public class SessionAttributeIT {
     @Test
     public void testSetNestedSessionAttributePath() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.of("one.two.three", "one.amap.x"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.of("one.two.three", "one.amap.x"));
         // when
         Trace trace = container.execute(SetNestedSessionAttribute.class, "Web");
         // then
@@ -224,8 +222,8 @@ public class SessionAttributeIT {
     @Test
     public void testHasMissingSessionAttribute() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.of("missingtestattr"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.of("missingtestattr"));
         // when
         Trace trace = container.execute(HasSessionAttribute.class, "Web");
         // then
@@ -236,8 +234,8 @@ public class SessionAttributeIT {
     @Test
     public void testHasMissingNestedSessionAttributePath() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.of("one.missingtwo"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.of("one.missingtwo"));
         // when
         Trace trace = container.execute(HasNestedSessionAttribute.class, "Web");
         // then
@@ -248,8 +246,8 @@ public class SessionAttributeIT {
     @Test
     public void testHasNestedSessionAttributePath2() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.of("one.*", "one.two.*", "one.amap.*"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.of("one.*", "one.two.*", "one.amap.*"));
         // when
         Trace trace = container.execute(HasNestedSessionAttribute.class, "Web");
         // then
@@ -264,8 +262,8 @@ public class SessionAttributeIT {
     @Test
     public void testSetNestedSessionAttributePath2() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.of("one.*", "one.two.*", "one.amap.*"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.of("one.*", "one.two.*", "one.amap.*"));
         // when
         Trace trace = container.execute(SetNestedSessionAttribute.class, "Web");
         // then
@@ -280,8 +278,8 @@ public class SessionAttributeIT {
     @Test
     public void testSetNestedSessionAttributeToNull() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.of("one.*"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.of("one.*"));
         // when
         Trace trace = container.execute(SetNestedSessionAttributeToNull.class, "Web");
         // then
@@ -295,8 +293,8 @@ public class SessionAttributeIT {
     @Test
     public void testSetSessionAttributeToNull() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.of("one.two"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.of("one.two"));
         // when
         Trace trace = container.execute(SetNestedSessionAttributeToNull.class, "Web");
         // then
@@ -310,8 +308,8 @@ public class SessionAttributeIT {
     @Test
     public void testHasBadSessionAttribute() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.of("*"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.of("*"));
         // when
         Trace trace = container.execute(HasBadSessionAttribute.class, "Web");
         // then
@@ -324,8 +322,8 @@ public class SessionAttributeIT {
     @Test
     public void testSetBadSessionAttribute() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.of("*"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.of("*"));
         // when
         Trace trace = container.execute(SetBadSessionAttribute.class, "Web");
         // then
@@ -339,8 +337,8 @@ public class SessionAttributeIT {
     @Test
     public void testHasMissingSessionAttribute2() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.of("missingtestattr.*"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.of("missingtestattr.*"));
         // when
         Trace trace = container.execute(HasSessionAttribute.class, "Web");
         // then
@@ -351,8 +349,8 @@ public class SessionAttributeIT {
     @Test
     public void testHasMissingNestedSessionAttributePath2() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.of("one.missingtwo.*"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.of("one.missingtwo.*"));
         // when
         Trace trace = container.execute(HasNestedSessionAttribute.class, "Web");
         // then
@@ -363,8 +361,8 @@ public class SessionAttributeIT {
     @Test
     public void testGetBadAttributeNames() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.of("*"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.of("*"));
         // when
         Trace trace = container.execute(GetBadAttributeNames.class, "Web");
         // then
@@ -375,8 +373,8 @@ public class SessionAttributeIT {
     @Test
     public void testHasHttpSession() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.of("::id"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.of("::id"));
         // when
         Trace trace = container.execute(HasHttpSession.class, "Web");
         // then
@@ -389,8 +387,8 @@ public class SessionAttributeIT {
     @Test
     public void testHasNoHttpSession() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.of("::id"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.of("::id"));
         // when
         Trace trace = container.execute(HasNoHttpSession.class, "Web");
         // then
@@ -402,8 +400,8 @@ public class SessionAttributeIT {
     @Test
     public void testCreateHttpSession() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.of("::id"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.of("::id"));
         // when
         Trace trace = container.execute(CreateHttpSession.class, "Web");
         // then
@@ -415,8 +413,8 @@ public class SessionAttributeIT {
     @Test
     public void testCreateHttpSessionTrue() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.of("::id"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.of("::id"));
         // when
         Trace trace = container.execute(CreateHttpSessionTrue.class, "Web");
         // then
@@ -428,8 +426,8 @@ public class SessionAttributeIT {
     @Test
     public void testCreateHttpSessionFalse() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.of("::id"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.of("::id"));
         // when
         Trace trace = container.execute(CreateHttpSessionFalse.class, "Web");
         // then
@@ -441,8 +439,8 @@ public class SessionAttributeIT {
     @Test
     public void testChangeHttpSession() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.of("::id"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.of("::id"));
         // when
         Trace trace = container.execute(ChangeHttpSession.class, "Web");
         // then
@@ -454,8 +452,8 @@ public class SessionAttributeIT {
     @Test
     public void testCreateAndChangeHttpSession() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.of("::id"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.of("::id"));
         // when
         Trace trace = container.execute(CreateAndChangeHttpSession.class, "Web");
         // then
@@ -476,27 +474,9 @@ public class SessionAttributeIT {
         return getDetailMap(trace, "Session attributes (updated during this request)");
     }
 
+    @SuppressWarnings("unchecked")
     private static Map<String, String> getDetailMap(Trace trace, String name) {
-        List<Trace.DetailEntry> details = trace.getHeader().getDetailEntryList();
-        Trace.DetailEntry found = null;
-        for (Trace.DetailEntry detail : details) {
-            if (detail.getName().equals(name)) {
-                found = detail;
-                break;
-            }
-        }
-        if (found == null) {
-            return null;
-        }
-        Map<String, String> responseHeaders = Maps.newLinkedHashMap();
-        for (Trace.DetailEntry detail : found.getChildEntryList()) {
-            if (detail.getValueList().isEmpty()) {
-                responseHeaders.put(detail.getName(), null);
-            } else {
-                responseHeaders.put(detail.getName(), detail.getValueList().get(0).getString());
-            }
-        }
-        return responseHeaders;
+        return (Map<String, String>) trace.details().get(name);
     }
 
     @SuppressWarnings("serial")

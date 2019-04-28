@@ -34,7 +34,7 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -54,7 +54,7 @@ public class JettyHandlerIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
@@ -63,9 +63,8 @@ public class JettyHandlerIT {
         Trace trace = container.execute(ExecuteJettyHandler.class, "Web");
 
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(header.getHeadline()).isEqualTo("/hello");
-        assertThat(header.getTransactionName()).isEqualTo("/hello");
+        assertThat(trace.headline()).isEqualTo("/hello");
+        assertThat(trace.transactionName()).isEqualTo("/hello");
     }
 
     public static class ExecuteJettyHandler implements AppUnderTest {

@@ -26,7 +26,7 @@ import org.junit.Test;
 
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -51,7 +51,7 @@ public class UserIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
@@ -59,7 +59,7 @@ public class UserIT {
         // when
         Trace trace = container.execute(HasExchangePrincipal.class, "Web");
         // then
-        assertThat(trace.getHeader().getUser()).isEqualTo(PRINCIPAL_NAME);
+        assertThat(trace.user()).isEqualTo(PRINCIPAL_NAME);
     }
 
     @Test

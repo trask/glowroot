@@ -17,6 +17,7 @@ package org.glowroot.xyzzy.instrumentation.kafka;
 
 import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.RecordMetadata;
+
 import org.glowroot.xyzzy.instrumentation.api.AsyncTraceEntry;
 import org.glowroot.xyzzy.instrumentation.api.AuxThreadContext;
 import org.glowroot.xyzzy.instrumentation.api.TraceEntry;

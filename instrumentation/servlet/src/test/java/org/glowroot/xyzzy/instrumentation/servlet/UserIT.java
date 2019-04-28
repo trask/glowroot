@@ -31,7 +31,7 @@ import org.springframework.mock.web.MockHttpSession;
 
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -53,7 +53,7 @@ public class UserIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
@@ -61,7 +61,7 @@ public class UserIT {
         // when
         Trace trace = container.execute(HasRequestUserPrincipal.class, "Web");
         // then
-        assertThat(trace.getHeader().getUser()).isEqualTo("my name is mock");
+        assertThat(trace.user()).isEqualTo("my name is mock");
     }
 
     @Test
@@ -74,157 +74,150 @@ public class UserIT {
     @Test
     public void testHasSessionUserAttribute() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "sessionUserAttribute", "userattr");
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute",
+                "userattr");
         // when
         Trace trace = container.execute(HasSessionUserAttribute.class, "Web");
         // then
-        assertThat(trace.getHeader().getUser()).isEqualTo("abc");
+        assertThat(trace.user()).isEqualTo("abc");
     }
 
     @Test
     public void testSetSessionUserAttribute() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "sessionUserAttribute", "userattr");
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute",
+                "userattr");
         // when
         Trace trace = container.execute(SetSessionUserAttribute.class, "Web");
         // then
-        assertThat(trace.getHeader().getUser()).isEqualTo("abc");
+        assertThat(trace.user()).isEqualTo("abc");
     }
 
     @Test
     public void testSetSessionUserAttributeNull() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "sessionUserAttribute", "userattr");
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute",
+                "userattr");
         // when
         Trace trace = container.execute(SetSessionUserAttributeNull.class, "Web");
         // then
         // this is intentional, setting user attribute to null shouldn't clear out user for
         // that particular request (since the request was in fact, originally, for that user)
-        assertThat(trace.getHeader().getUser()).isEqualTo("something");
+        assertThat(trace.user()).isEqualTo("something");
     }
 
     @Test
     public void testHasNestedSessionUserAttributePath() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "sessionUserAttribute", "userone.two");
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute",
+                "userone.two");
         // when
         Trace trace = container.execute(HasNestedSessionUserAttribute.class, "Web");
         // then
-        assertThat(trace.getHeader().getUser()).isEqualTo("xyz");
+        assertThat(trace.user()).isEqualTo("xyz");
     }
 
     @Test
     public void testSetNestedSessionUserAttributePath() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "sessionUserAttribute", "userone.two");
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute",
+                "userone.two");
         // when
         Trace trace = container.execute(SetNestedSessionUserAttribute.class, "Web");
         // then
-        assertThat(trace.getHeader().getUser()).isEqualTo("xyz");
+        assertThat(trace.user()).isEqualTo("xyz");
     }
 
     @Test
     public void testHasMissingSessionUserAttribute() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "sessionUserAttribute", "missinguserattr");
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute",
+                "missinguserattr");
         // when
         Trace trace = container.execute(HasSessionUserAttribute.class, "Web");
         // then
-        assertThat(trace.getHeader().getUser()).isEmpty();
+        assertThat(trace.user()).isEmpty();
     }
 
     @Test
     public void testHasMissingNestedSessionUserAttributePath() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "sessionUserAttribute", "userone.missingtwo");
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute",
+                "userone.missingtwo");
         // when
         Trace trace = container.execute(HasNestedSessionUserAttribute.class, "Web");
         // then
-        assertThat(trace.getHeader().getUser()).isEmpty();
+        assertThat(trace.user()).isEmpty();
     }
 
     @Test
     public void testHasHttpSession() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "sessionUserAttribute", "::id");
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute", "::id");
         // when
         Trace trace = container.execute(HasHttpSession.class, "Web");
         // then
-        assertThat(trace.getHeader().getUser()).isEqualTo("123456789");
+        assertThat(trace.user()).isEqualTo("123456789");
     }
 
     @Test
     public void testHasNoHttpSession() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "sessionUserAttribute", "::id");
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute", "::id");
         // when
         Trace trace = container.execute(HasNoHttpSession.class, "Web");
         // then
-        assertThat(trace.getHeader().getUser()).isEmpty();
+        assertThat(trace.user()).isEmpty();
     }
 
     @Test
     public void testCreateHttpSession() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "sessionUserAttribute", "::id");
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute", "::id");
         // when
         Trace trace = container.execute(CreateHttpSession.class, "Web");
         // then
-        assertThat(trace.getHeader().getUser()).isEqualTo("123456789");
+        assertThat(trace.user()).isEqualTo("123456789");
     }
 
     @Test
     public void testCreateHttpSessionTrue() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "sessionUserAttribute", "::id");
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute", "::id");
         // when
         Trace trace = container.execute(CreateHttpSessionTrue.class, "Web");
         // then
-        assertThat(trace.getHeader().getUser()).isEqualTo("123456789");
+        assertThat(trace.user()).isEqualTo("123456789");
     }
 
     @Test
     public void testCreateHttpSessionFalse() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "sessionUserAttribute", "::id");
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute", "::id");
         // when
         Trace trace = container.execute(CreateHttpSessionFalse.class, "Web");
         // then
-        assertThat(trace.getHeader().getUser()).isEmpty();
+        assertThat(trace.user()).isEmpty();
     }
 
     @Test
     public void testChangeHttpSession() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "sessionUserAttribute", "::id");
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute", "::id");
         // when
         Trace trace = container.execute(ChangeHttpSession.class, "Web");
         // then
-        assertThat(trace.getHeader().getUser()).isEqualTo("123456789");
+        assertThat(trace.user()).isEqualTo("123456789");
     }
 
     @Test
     public void testCreateAndChangeHttpSession() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "sessionUserAttribute", "::id");
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute", "::id");
         // when
         Trace trace = container.execute(CreateAndChangeHttpSession.class, "Web");
         // then
-        assertThat(trace.getHeader().getUser()).isEqualTo("123456789");
+        assertThat(trace.user()).isEqualTo("123456789");
     }
 
     @SuppressWarnings("serial")

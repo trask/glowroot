@@ -33,6 +33,7 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.glowroot.xyzzy.engine.annotation.spi.GlowrootServiceHolder;
 import org.glowroot.xyzzy.engine.annotation.spi.GlowrootServiceSPI;
 import org.glowroot.xyzzy.engine.bytecode.api.BytecodeServiceHolder;
@@ -41,9 +42,9 @@ import org.glowroot.xyzzy.engine.config.AdviceConfig;
 import org.glowroot.xyzzy.engine.config.InstrumentationDescriptor;
 import org.glowroot.xyzzy.engine.config.InstrumentationDescriptors;
 import org.glowroot.xyzzy.engine.impl.InstrumentationServiceImpl;
+import org.glowroot.xyzzy.engine.impl.InstrumentationServiceImpl.ConfigServiceFactory;
 import org.glowroot.xyzzy.engine.impl.SimpleConfigServiceFactory;
 import org.glowroot.xyzzy.engine.impl.TimerNameCache;
-import org.glowroot.xyzzy.engine.impl.InstrumentationServiceImpl.ConfigServiceFactory;
 import org.glowroot.xyzzy.engine.init.PreCheckLoadedClasses.PreCheckClassFileTransformer;
 import org.glowroot.xyzzy.engine.util.JavaVersion;
 import org.glowroot.xyzzy.engine.util.LazyPlatformMBeanServer;
@@ -51,12 +52,12 @@ import org.glowroot.xyzzy.engine.weaving.AdviceCache;
 import org.glowroot.xyzzy.engine.weaving.AgentSPI;
 import org.glowroot.xyzzy.engine.weaving.AnalyzedWorld;
 import org.glowroot.xyzzy.engine.weaving.BytecodeServiceImpl;
+import org.glowroot.xyzzy.engine.weaving.BytecodeServiceImpl.OnEnteringMain;
 import org.glowroot.xyzzy.engine.weaving.Java9;
 import org.glowroot.xyzzy.engine.weaving.PointcutClassFileTransformer;
 import org.glowroot.xyzzy.engine.weaving.PreloadSomeSuperTypesCache;
 import org.glowroot.xyzzy.engine.weaving.Weaver;
 import org.glowroot.xyzzy.engine.weaving.WeavingClassFileTransformer;
-import org.glowroot.xyzzy.engine.weaving.BytecodeServiceImpl.OnEnteringMain;
 import org.glowroot.xyzzy.instrumentation.api.internal.InstrumentationServiceHolder;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -76,7 +77,7 @@ public class EngineModule {
 
     private volatile @MonotonicNonNull LazyPlatformMBeanServer lazyPlatformMBeanServer;
 
-    public static EngineModule createWithManyDefaults(Instrumentation instrumentation,
+    public static EngineModule createWithManyDefaults(@Nullable Instrumentation instrumentation,
             File tmpDir, ThreadContextThreadLocal threadContextThreadLocal,
             GlowrootServiceSPI glowrootServiceSPI, AgentSPI agentSPI, @Nullable File agentJarFile)
             throws Exception {
@@ -86,8 +87,7 @@ public class EngineModule {
                 instrumentationDescriptors, Collections.<AdviceConfig>emptyList(),
                 threadContextThreadLocal, new TimerNameCache(), glowrootServiceSPI,
                 new SimpleConfigServiceFactory(instrumentationDescriptors), agentSPI, null,
-                new Class<?>[0],
-                agentJarFile);
+                new Class<?>[0], agentJarFile);
     }
 
     public EngineModule(@Nullable Instrumentation instrumentation, File tmpDir, Ticker ticker,

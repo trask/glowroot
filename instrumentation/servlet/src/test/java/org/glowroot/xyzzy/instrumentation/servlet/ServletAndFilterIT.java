@@ -37,7 +37,7 @@ import org.springframework.mock.web.MockHttpSession;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -59,7 +59,7 @@ public class ServletAndFilterIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
@@ -68,12 +68,11 @@ public class ServletAndFilterIT {
         Trace trace = container.execute(ExecuteServlet.class, "Web");
 
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(header.getHeadline()).isEqualTo("/testservlet");
-        assertThat(header.getTransactionName()).isEqualTo("/testservlet");
-        assertThat(getDetailValue(header, "Request http method")).isEqualTo("GET");
-        assertThat(getDetailValueLong(header, "Response code")).isEqualTo(200);
-        assertThat(header.getEntryCount()).isZero();
+        assertThat(trace.headline()).isEqualTo("/testservlet");
+        assertThat(trace.transactionName()).isEqualTo("/testservlet");
+        assertThat(trace.details().get("Request http method")).isEqualTo("GET");
+        assertThat(trace.details().get("Response code")).isEqualTo(200);
+        assertThat(trace.entries()).isEmpty();
     }
 
     @Test
@@ -82,12 +81,11 @@ public class ServletAndFilterIT {
         Trace trace = container.execute(ExecuteFilter.class, "Web");
 
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(header.getHeadline()).isEqualTo("/testfilter");
-        assertThat(header.getTransactionName()).isEqualTo("/testfilter");
-        assertThat(getDetailValue(header, "Request http method")).isEqualTo("GET");
-        assertThat(getDetailValueLong(header, "Response code")).isEqualTo(200);
-        assertThat(header.getEntryCount()).isZero();
+        assertThat(trace.headline()).isEqualTo("/testfilter");
+        assertThat(trace.transactionName()).isEqualTo("/testfilter");
+        assertThat(trace.details().get("Request http method")).isEqualTo("GET");
+        assertThat(trace.details().get("Response code")).isEqualTo(200);
+        assertThat(trace.entries()).isEmpty();
     }
 
     @Test
@@ -96,12 +94,11 @@ public class ServletAndFilterIT {
         Trace trace = container.execute(ExecuteFilterWithNestedServlet.class, "Web");
 
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(header.getHeadline()).isEqualTo("/testfilter");
-        assertThat(header.getTransactionName()).isEqualTo("/testfilter");
-        assertThat(getDetailValue(header, "Request http method")).isEqualTo("GET");
-        assertThat(getDetailValueLong(header, "Response code")).isEqualTo(200);
-        assertThat(header.getEntryCount()).isZero();
+        assertThat(trace.headline()).isEqualTo("/testfilter");
+        assertThat(trace.transactionName()).isEqualTo("/testfilter");
+        assertThat(trace.details().get("Request http method")).isEqualTo("GET");
+        assertThat(trace.details().get("Response code")).isEqualTo(200);
+        assertThat(trace.entries()).isEmpty();
     }
 
     @Test
@@ -109,10 +106,9 @@ public class ServletAndFilterIT {
         // when
         Trace trace = container.execute(TestNoQueryString.class, "Web");
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(getDetailValue(header, "Request query string")).isNull();
-        assertThat(getDetailValueLong(header, "Response code")).isEqualTo(200);
-        assertThat(header.getEntryCount()).isZero();
+        assertThat(trace.details().get("Request query string")).isNull();
+        assertThat(trace.details().get("Response code")).isEqualTo(200);
+        assertThat(trace.entries()).isEmpty();
     }
 
     @Test
@@ -120,10 +116,9 @@ public class ServletAndFilterIT {
         // when
         Trace trace = container.execute(TestEmptyQueryString.class, "Web");
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(getDetailValue(header, "Request query string")).isEqualTo("");
-        assertThat(getDetailValueLong(header, "Response code")).isEqualTo(200);
-        assertThat(header.getEntryCount()).isZero();
+        assertThat(trace.details().get("Request query string")).isEqualTo("");
+        assertThat(trace.details().get("Response code")).isEqualTo(200);
+        assertThat(trace.entries()).isEmpty();
     }
 
     @Test
@@ -131,10 +126,9 @@ public class ServletAndFilterIT {
         // when
         Trace trace = container.execute(TestNonEmptyQueryString.class, "Web");
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(getDetailValue(header, "Request query string")).isEqualTo("a=b&c=d");
-        assertThat(getDetailValueLong(header, "Response code")).isEqualTo(200);
-        assertThat(header.getEntryCount()).isZero();
+        assertThat(trace.details().get("Request query string")).isEqualTo("a=b&c=d");
+        assertThat(trace.details().get("Response code")).isEqualTo(200);
+        assertThat(trace.entries()).isEmpty();
     }
 
     @Test
@@ -143,11 +137,10 @@ public class ServletAndFilterIT {
         Trace trace = container.execute(ServletThrowsException.class, "Web");
 
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(getDetailValueLong(header, "Response code")).isEqualTo(500);
-        assertThat(header.getError().getMessage()).isNotEmpty();
-        assertThat(header.getError().hasException()).isTrue();
-        assertThat(header.getEntryCount()).isZero();
+        assertThat(trace.details().get("Response code")).isEqualTo(200);
+        assertThat(trace.error().message()).isNotEmpty();
+        assertThat(trace.error().exception()).isNotNull();
+        assertThat(trace.entries()).isEmpty();
     }
 
     @Test
@@ -156,11 +149,10 @@ public class ServletAndFilterIT {
         Trace trace = container.execute(FilterThrowsException.class, "Web");
 
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(getDetailValueLong(header, "Response code")).isEqualTo(500);
-        assertThat(header.getError().getMessage()).isNotEmpty();
-        assertThat(header.getError().hasException()).isTrue();
-        assertThat(header.getEntryCount()).isZero();
+        assertThat(trace.details().get("Response code")).isEqualTo(200);
+        assertThat(trace.error().message()).isNotEmpty();
+        assertThat(trace.error().exception()).isNotNull();
+        assertThat(trace.entries()).isEmpty();
     }
 
     @Test
@@ -169,7 +161,7 @@ public class ServletAndFilterIT {
         Trace trace = container.execute(SendRedirect.class, "Web");
 
         // then
-        assertThat(getDetailValueLong(trace.getHeader(), "Response code")).isEqualTo(302);
+        assertThat(trace.details().get("Response code")).isEqualTo(302);
         assertThat(ResponseHeaderIT.getResponseHeaders(trace).get("Location")).isEqualTo("tohere");
     }
 
@@ -179,17 +171,16 @@ public class ServletAndFilterIT {
         Trace trace = container.execute(Send500Error.class, "Web");
 
         // then
-        assertThat(trace.getHeader().getError().getMessage())
-                .isEqualTo("sendError, HTTP status code 500");
-        assertThat(trace.getHeader().getError().hasException()).isFalse();
+        assertThat(trace.error().message()).isEqualTo("sendError, HTTP status code 500");
+        assertThat(trace.error().exception()).isNull();
 
-        assertThat(getDetailValueLong(trace.getHeader(), "Response code")).isEqualTo(500);
+        assertThat(trace.details().get("Response code")).isEqualTo(500);
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getError().getMessage()).isEqualTo("sendError, HTTP status code 500");
-        assertThat(entry.getError().hasException()).isFalse();
+        assertThat(entry.error().message()).isEqualTo("sendError, HTTP status code 500");
+        assertThat(entry.error().exception()).isNull();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -200,17 +191,16 @@ public class ServletAndFilterIT {
         Trace trace = container.execute(SetStatus500Error.class, "Web");
 
         // then
-        assertThat(trace.getHeader().getError().getMessage())
-                .isEqualTo("setStatus, HTTP status code 500");
-        assertThat(trace.getHeader().getError().hasException()).isFalse();
+        assertThat(trace.error().message()).isEqualTo("setStatus, HTTP status code 500");
+        assertThat(trace.error().exception()).isNull();
 
-        assertThat(getDetailValueLong(trace.getHeader(), "Response code")).isEqualTo(500);
+        assertThat(trace.details().get("Response code")).isEqualTo(500);
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getError().getMessage()).isEqualTo("setStatus, HTTP status code 500");
-        assertThat(entry.getError().hasException()).isFalse();
+        assertThat(entry.error().message()).isEqualTo("setStatus, HTTP status code 500");
+        assertThat(entry.error().exception()).isNull();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -221,10 +211,10 @@ public class ServletAndFilterIT {
         Trace trace = container.execute(Send400Error.class, "Web");
 
         // then
-        assertThat(trace.getHeader().hasError()).isFalse();
-        assertThat(trace.getEntryList()).isEmpty();
+        assertThat(trace.error()).isNull();
+        assertThat(trace.entries()).isEmpty();
 
-        assertThat(getDetailValueLong(trace.getHeader(), "Response code")).isEqualTo(400);
+        assertThat(trace.details().get("Response code")).isEqualTo(400);
     }
 
     @Test
@@ -233,33 +223,32 @@ public class ServletAndFilterIT {
         Trace trace = container.execute(SetStatus400Error.class, "Web");
 
         // then
-        assertThat(trace.getHeader().hasError()).isFalse();
-        assertThat(trace.getEntryList()).isEmpty();
+        assertThat(trace.error()).isNull();
+        assertThat(trace.entries()).isEmpty();
 
-        assertThat(getDetailValueLong(trace.getHeader(), "Response code")).isEqualTo(400);
+        assertThat(trace.details().get("Response code")).isEqualTo(400);
     }
 
     @Test
     public void testSend400ErrorWithCaptureOn() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "traceErrorOn4xxResponseCode", true);
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "traceErrorOn4xxResponseCode",
+                true);
 
         // when
         Trace trace = container.execute(Send400Error.class, "Web");
 
         // then
-        assertThat(trace.getHeader().getError().getMessage())
-                .isEqualTo("sendError, HTTP status code 400");
-        assertThat(trace.getHeader().getError().hasException()).isFalse();
+        assertThat(trace.error().message()).isEqualTo("sendError, HTTP status code 400");
+        assertThat(trace.error().exception()).isNull();
 
-        assertThat(getDetailValueLong(trace.getHeader(), "Response code")).isEqualTo(400);
+        assertThat(trace.details().get("Response code")).isEqualTo(400);
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getError().getMessage()).isEqualTo("sendError, HTTP status code 400");
-        assertThat(entry.getError().hasException()).isFalse();
+        assertThat(entry.error().message()).isEqualTo("sendError, HTTP status code 400");
+        assertThat(entry.error().exception()).isNull();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -267,24 +256,23 @@ public class ServletAndFilterIT {
     @Test
     public void testSetStatus400ErrorWithCaptureOn() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "traceErrorOn4xxResponseCode", true);
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "traceErrorOn4xxResponseCode",
+                true);
 
         // when
         Trace trace = container.execute(SetStatus400Error.class, "Web");
 
         // then
-        assertThat(trace.getHeader().getError().getMessage())
-                .isEqualTo("setStatus, HTTP status code 400");
-        assertThat(trace.getHeader().getError().hasException()).isFalse();
+        assertThat(trace.error().message()).isEqualTo("setStatus, HTTP status code 400");
+        assertThat(trace.error().exception()).isNull();
 
-        assertThat(getDetailValueLong(trace.getHeader(), "Response code")).isEqualTo(400);
+        assertThat(trace.details().get("Response code")).isEqualTo(400);
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getError().getMessage()).isEqualTo("setStatus, HTTP status code 400");
-        assertThat(entry.getError().hasException()).isFalse();
+        assertThat(entry.error().message()).isEqualTo("setStatus, HTTP status code 400");
+        assertThat(entry.error().exception()).isNull();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -301,24 +289,6 @@ public class ServletAndFilterIT {
         // when
         container.executeNoExpectedTrace(BizzareThrowingServletContainer.class);
         // then
-    }
-
-    private static String getDetailValue(Trace.Header header, String name) {
-        for (Trace.DetailEntry detail : header.getDetailEntryList()) {
-            if (detail.getName().equals(name)) {
-                return detail.getValueList().get(0).getString();
-            }
-        }
-        return null;
-    }
-
-    private static Long getDetailValueLong(Trace.Header header, String name) {
-        for (Trace.DetailEntry detail : header.getDetailEntryList()) {
-            if (detail.getName().equals(name)) {
-                return detail.getValueList().get(0).getLong();
-            }
-        }
-        return null;
     }
 
     @SuppressWarnings("serial")

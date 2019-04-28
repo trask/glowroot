@@ -41,7 +41,7 @@ public class EjbAsyncResultIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test

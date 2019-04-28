@@ -31,7 +31,7 @@ import org.junit.Test;
 
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -51,7 +51,7 @@ public class AnnotatedServletIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
@@ -60,13 +60,12 @@ public class AnnotatedServletIT {
         Trace trace = container.execute(InvokeServlet.class, "Web");
 
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(header.getHeadline()).isEqualTo("/hello/5");
+        assertThat(trace.headline()).isEqualTo("/hello/5");
         // TODO the transaction name should ideally be /hello/*, but taking safe route for now
         // because servlet could be mapped to another path via web.xml, in future would be good to
         // get use actual servlet mapping, probably need to instrument tomcat/other web containers
         // to capture this
-        assertThat(header.getTransactionName()).isEqualTo("/hello/5");
+        assertThat(trace.transactionName()).isEqualTo("/hello/5");
     }
 
     @Test
@@ -75,13 +74,12 @@ public class AnnotatedServletIT {
         Trace trace = container.execute(InvokeServletWithContextPath.class, "Web");
 
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(header.getHeadline()).isEqualTo("/zzz/hello/5");
+        assertThat(trace.headline()).isEqualTo("/zzz/hello/5");
         // TODO the transaction name should ideally be /hello/*, but taking safe route for now
         // because servlet could be mapped to another path via web.xml, in future would be good to
         // get use actual servlet mapping, probably need to instrument tomcat/other web containers
         // to capture this
-        assertThat(header.getTransactionName()).isEqualTo("/zzz/hello/5");
+        assertThat(trace.transactionName()).isEqualTo("/zzz/hello/5");
     }
 
     public static class InvokeServlet extends InvokeServletInTomcat {

@@ -40,7 +40,7 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -61,25 +61,23 @@ public class KafkaIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
     public void shouldSend() throws Exception {
         Trace trace = container.execute(SendRecord.class);
-        List<Trace.Timer> nestedTimers =
-                trace.getHeader().getMainThreadRootTimer().getChildTimerList();
+        List<Trace.Timer> nestedTimers = trace.mainThreadRootTimer().childTimers();
         assertThat(nestedTimers).hasSize(1);
-        assertThat(nestedTimers.get(0).getName()).isEqualTo("kafka send");
+        assertThat(nestedTimers.get(0).name()).isEqualTo("kafka send");
     }
 
     @Test
     public void shouldPoll() throws Exception {
         Trace trace = container.execute(PollRecord.class);
-        List<Trace.Timer> nestedTimers =
-                trace.getHeader().getMainThreadRootTimer().getChildTimerList();
+        List<Trace.Timer> nestedTimers = trace.mainThreadRootTimer().childTimers();
         assertThat(nestedTimers).hasSize(1);
-        assertThat(nestedTimers.get(0).getName()).isEqualTo("kafka poll");
+        assertThat(nestedTimers.get(0).name()).isEqualTo("kafka poll");
     }
 
     public static class SendRecord implements AppUnderTest, TransactionMarker {

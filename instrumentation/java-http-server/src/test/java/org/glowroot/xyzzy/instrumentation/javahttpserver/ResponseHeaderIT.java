@@ -20,8 +20,6 @@ import java.util.Locale;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.sun.net.httpserver.HttpExchange;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -31,7 +29,7 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -56,14 +54,13 @@ public class ResponseHeaderIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
     public void testStandardResponseHeadersUsingSetHeader() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureResponseHeaders",
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResponseHeaders",
                 ImmutableList.of("Content-Type", " Content-Length", " Content-Language"));
 
         // when
@@ -80,8 +77,7 @@ public class ResponseHeaderIT {
     @Test
     public void testStandardResponseHeadersUsingAddHeader() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureResponseHeaders",
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResponseHeaders",
                 ImmutableList.of("Content-Type", " Content-Length", " Content-Language"));
 
         // when
@@ -98,8 +94,8 @@ public class ResponseHeaderIT {
     @Test
     public void testStandardResponseHeadersLowercase() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureResponseHeaders", ImmutableList.of("Content-Type", " Content-Length"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResponseHeaders",
+                ImmutableList.of("Content-Type", " Content-Length"));
 
         // when
         Trace trace = container.execute(SetStandardResponseHeadersLowercase.class, "Web");
@@ -114,8 +110,8 @@ public class ResponseHeaderIT {
     @Test
     public void testWithoutAnyHeaderCaptureUsingSetHeader() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureResponseHeaders", ImmutableList.<String>of());
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResponseHeaders",
+                ImmutableList.<String>of());
         // when
         Trace trace = container.execute(SetStandardResponseHeadersUsingSetHeader.class, "Web");
         // then
@@ -125,8 +121,7 @@ public class ResponseHeaderIT {
     @Test
     public void testWithoutAnyHeaderCaptureUsingAddHeader() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureResponseHeaders",
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResponseHeaders",
                 ImmutableList.<String>of());
         // when
         Trace trace = container.execute(SetStandardResponseHeadersUsingAddHeader.class, "Web");
@@ -137,9 +132,9 @@ public class ResponseHeaderIT {
     @Test
     public void testLotsOfResponseHeaders() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureResponseHeaders", ImmutableList.of("One", "Two", "Date-One", "Date-Two",
-                        "Int-One", "Int-Two", "X-One"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResponseHeaders",
+                ImmutableList.of("One", "Two", "Date-One", "Date-Two", "Int-One", "Int-Two",
+                        "X-One"));
 
         // when
         Trace trace = container.execute(SetLotsOfResponseHeaders.class, "Web");
@@ -162,8 +157,7 @@ public class ResponseHeaderIT {
     @Test
     public void testOutsideHttpServer() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureResponseHeaders",
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResponseHeaders",
                 ImmutableList.of("Content-Type", " Content-Length", " Content-Language"));
         // when
         container.executeNoExpectedTrace(SetStandardResponseHeadersOutsideHttpServer.class);
@@ -174,10 +168,10 @@ public class ResponseHeaderIT {
     @Test
     public void testDontMaskResponseHeaders() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureResponseHeaders", ImmutableList.of("content*"));
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "maskRequestHeaders", ImmutableList.of("content-Len*"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResponseHeaders",
+                ImmutableList.of("content*"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "maskRequestHeaders",
+                ImmutableList.of("content-Len*"));
 
         // when
         Trace trace = container.execute(SetStandardResponseHeadersLowercase.class, "Web");
@@ -189,32 +183,9 @@ public class ResponseHeaderIT {
         assertThat(responseHeaders.get("Extra")).isNull();
     }
 
+    @SuppressWarnings("unchecked")
     static Map<String, Object> getDetailMap(Trace trace, String name) {
-        List<Trace.DetailEntry> details = trace.getHeader().getDetailEntryList();
-        Trace.DetailEntry found = null;
-        for (Trace.DetailEntry detail : details) {
-            if (detail.getName().equals(name)) {
-                found = detail;
-                break;
-            }
-        }
-        if (found == null) {
-            return null;
-        }
-        Map<String, Object> responseHeaders = Maps.newLinkedHashMap();
-        for (Trace.DetailEntry detail : found.getChildEntryList()) {
-            List<Trace.DetailValue> values = detail.getValueList();
-            if (values.size() == 1) {
-                responseHeaders.put(detail.getName(), values.get(0).getString());
-            } else {
-                List<String> vals = Lists.newArrayList();
-                for (Trace.DetailValue value : values) {
-                    vals.add(value.getString());
-                }
-                responseHeaders.put(detail.getName(), vals);
-            }
-        }
-        return responseHeaders;
+        return (Map<String, Object>) trace.details().get(name);
     }
 
     private static Map<String, Object> getResponseHeaders(Trace trace) {

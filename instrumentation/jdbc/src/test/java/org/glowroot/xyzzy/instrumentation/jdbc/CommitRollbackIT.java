@@ -19,7 +19,6 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
@@ -33,7 +32,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -53,7 +52,7 @@ public class CommitRollbackIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
@@ -62,29 +61,28 @@ public class CommitRollbackIT {
         Trace trace = container.execute(ExecuteJdbcCommit.class);
 
         // then
-        Trace.Timer rootTimer = trace.getHeader().getMainThreadRootTimer();
-        assertThat(rootTimer.getName()).isEqualTo("mock trace marker");
-        assertThat(rootTimer.getChildTimerList()).hasSize(2);
+        Trace.Timer rootTimer = trace.mainThreadRootTimer();
+        assertThat(rootTimer.name()).isEqualTo("mock trace marker");
+        assertThat(rootTimer.childTimers()).hasSize(2);
         // ordering is by total desc, so order is not fixed
         Set<String> childTimerNames = Sets.newHashSet();
-        childTimerNames.add(rootTimer.getChildTimerList().get(0).getName());
-        childTimerNames.add(rootTimer.getChildTimerList().get(1).getName());
+        childTimerNames.add(rootTimer.childTimers().get(0).name());
+        childTimerNames.add(rootTimer.childTimers().get(1).name());
         assertThat(childTimerNames).containsOnly("jdbc query", "jdbc commit");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("insert into employee (name) values ('john doe')");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText())
+                .isEqualTo("insert into employee (name) values ('john doe')");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("jdbc query: ");
+        assertThat(entry.queryEntryMessage().suffix()).isEmpty();
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jdbc commit");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jdbc commit");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -95,31 +93,30 @@ public class CommitRollbackIT {
         Trace trace = container.execute(ExecuteJdbcCommitThrowing.class);
 
         // then
-        Trace.Timer rootTimer = trace.getHeader().getMainThreadRootTimer();
-        assertThat(rootTimer.getName()).isEqualTo("mock trace marker");
-        assertThat(rootTimer.getChildTimerList()).hasSize(2);
+        Trace.Timer rootTimer = trace.mainThreadRootTimer();
+        assertThat(rootTimer.name()).isEqualTo("mock trace marker");
+        assertThat(rootTimer.childTimers()).hasSize(2);
         // ordering is by total desc, so order is not fixed
         Set<String> childTimerNames = Sets.newHashSet();
-        childTimerNames.add(rootTimer.getChildTimerList().get(0).getName());
-        childTimerNames.add(rootTimer.getChildTimerList().get(1).getName());
+        childTimerNames.add(rootTimer.childTimers().get(0).name());
+        childTimerNames.add(rootTimer.childTimers().get(1).name());
         assertThat(childTimerNames).containsOnly("jdbc query", "jdbc commit");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("insert into employee (name) values ('john doe')");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText())
+                .isEqualTo("insert into employee (name) values ('john doe')");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("jdbc query: ");
+        assertThat(entry.queryEntryMessage().suffix()).isEmpty();
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jdbc commit");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jdbc commit");
 
-        assertThat(entry.getError().getMessage())
+        assertThat(entry.error().message())
                 .isEqualTo("java.sql.SQLException: A commit failure");
 
         assertThat(i.hasNext()).isFalse();
@@ -131,29 +128,28 @@ public class CommitRollbackIT {
         Trace trace = container.execute(ExecuteJdbcRollback.class);
 
         // then
-        Trace.Timer rootTimer = trace.getHeader().getMainThreadRootTimer();
-        assertThat(rootTimer.getName()).isEqualTo("mock trace marker");
-        assertThat(rootTimer.getChildTimerList()).hasSize(2);
+        Trace.Timer rootTimer = trace.mainThreadRootTimer();
+        assertThat(rootTimer.name()).isEqualTo("mock trace marker");
+        assertThat(rootTimer.childTimers()).hasSize(2);
         // ordering is by total desc, so order is not fixed
         Set<String> childTimerNames = Sets.newHashSet();
-        childTimerNames.add(rootTimer.getChildTimerList().get(0).getName());
-        childTimerNames.add(rootTimer.getChildTimerList().get(1).getName());
+        childTimerNames.add(rootTimer.childTimers().get(0).name());
+        childTimerNames.add(rootTimer.childTimers().get(1).name());
         assertThat(childTimerNames).containsOnly("jdbc query", "jdbc rollback");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("insert into employee (name) values ('john doe')");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText())
+                .isEqualTo("insert into employee (name) values ('john doe')");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("jdbc query: ");
+        assertThat(entry.queryEntryMessage().suffix()).isEmpty();
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jdbc rollback");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jdbc rollback");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -164,30 +160,29 @@ public class CommitRollbackIT {
         Trace trace = container.execute(ExecuteJdbcRollbackThrowing.class);
 
         // then
-        Trace.Timer rootTimer = trace.getHeader().getMainThreadRootTimer();
-        assertThat(rootTimer.getChildTimerList()).hasSize(2);
+        Trace.Timer rootTimer = trace.mainThreadRootTimer();
+        assertThat(rootTimer.childTimers()).hasSize(2);
         // ordering is by total desc, so order is not fixed
         Set<String> childTimerNames = Sets.newHashSet();
-        childTimerNames.add(rootTimer.getChildTimerList().get(0).getName());
-        childTimerNames.add(rootTimer.getChildTimerList().get(1).getName());
+        childTimerNames.add(rootTimer.childTimers().get(0).name());
+        childTimerNames.add(rootTimer.childTimers().get(1).name());
         assertThat(childTimerNames).containsOnly("jdbc query", "jdbc rollback");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("insert into employee (name) values ('john doe')");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText())
+                .isEqualTo("insert into employee (name) values ('john doe')");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("jdbc query: ");
+        assertThat(entry.queryEntryMessage().suffix()).isEmpty();
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jdbc rollback");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jdbc rollback");
 
-        assertThat(entry.getError().getMessage())
+        assertThat(entry.error().message())
                 .isEqualTo("java.sql.SQLException: A rollback failure");
 
         assertThat(i.hasNext()).isFalse();

@@ -5,12 +5,11 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.glowroot</groupId>
-    <artifactId>glowroot-parent</artifactId>
+    <groupId>org.glowroot.xyzzy</groupId>
+    <artifactId>xyzzy-parent</artifactId>
     <version>0.13.5-SNAPSHOT</version>
   </parent>
 
-  <groupId>org.glowroot.xyzzy</groupId>
   <artifactId>xyzzy-annotation-api</artifactId>
 
   <name>Bytecode Instrumentation Annotation API</name>

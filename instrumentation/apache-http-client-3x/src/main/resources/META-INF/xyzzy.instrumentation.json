@@ -1,0 +1,8 @@
+{
+  "name": "Apache HttpClient 3.x",
+  "id": "apache-http-client-3x",
+  "classes": [
+    "org.glowroot.xyzzy.instrumentation.httpclient.ApacheHttpClient3xInstrumentation"
+  ],
+  "collocate": true
+}

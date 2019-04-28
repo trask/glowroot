@@ -20,7 +20,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Iterator;
-import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.dbcp.DelegatingConnection;
@@ -35,7 +34,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 import org.glowroot.xyzzy.instrumentation.jdbc.Connections.ConnectionType;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,7 +59,7 @@ public class BatchIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
@@ -69,34 +68,33 @@ public class BatchIT {
         Trace trace = container.execute(ExecuteBatchPreparedStatement.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("insert into employee (name) values (?)");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: 3 x ");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText())
+                .isEqualTo("insert into employee (name) values (?)");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("jdbc query: 3 x ");
         if (driverCapturesBatchRows) {
-            assertThat(entry.getQueryEntryMessage().getSuffix())
+            assertThat(entry.queryEntryMessage().suffix())
                     .isEqualTo(" ['huckle'] ['sally'] ['sally'] => 3 rows");
         } else {
-            assertThat(entry.getQueryEntryMessage().getSuffix())
+            assertThat(entry.queryEntryMessage().suffix())
                     .isEqualTo(" ['huckle'] ['sally'] ['sally']");
         }
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("insert into employee (name) values (?)");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: 2 x ");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText())
+                .isEqualTo("insert into employee (name) values (?)");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("jdbc query: 2 x ");
         if (driverCapturesBatchRows) {
-            assertThat(entry.getQueryEntryMessage().getSuffix())
+            assertThat(entry.queryEntryMessage().suffix())
                     .isEqualTo(" ['lowly'] ['pig will'] => 2 rows");
         } else {
-            assertThat(entry.getQueryEntryMessage().getSuffix())
+            assertThat(entry.queryEntryMessage().suffix())
                     .isEqualTo(" ['lowly'] ['pig will']");
         }
 
@@ -109,15 +107,14 @@ public class BatchIT {
         Trace trace = container.execute(ExecuteBatchExceedingLimitPreparedStatement.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("insert into employee (name) values (?)");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: 2002 x ");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText())
+                .isEqualTo("insert into employee (name) values (?)");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("jdbc query: 2002 x ");
         StringBuilder sb = new StringBuilder();
         for (int j = 0; j < 1000; j++) {
             sb.append(" ['name");
@@ -129,7 +126,7 @@ public class BatchIT {
         } else {
             sb.append(" ...");
         }
-        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(sb.toString());
+        assertThat(entry.queryEntryMessage().suffix()).isEqualTo(sb.toString());
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -137,38 +134,37 @@ public class BatchIT {
     @Test
     public void testBatchPreparedStatementWithoutCaptureBindParams() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureBindParametersIncludes", ImmutableList.<String>of());
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureBindParametersIncludes",
+                ImmutableList.<String>of());
 
         // when
         Trace trace = container.execute(ExecuteBatchPreparedStatement.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("insert into employee (name) values (?)");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: 3 x ");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText())
+                .isEqualTo("insert into employee (name) values (?)");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("jdbc query: 3 x ");
         if (driverCapturesBatchRows) {
-            assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 3 rows");
+            assertThat(entry.queryEntryMessage().suffix()).isEqualTo(" => 3 rows");
         } else {
-            assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
+            assertThat(entry.queryEntryMessage().suffix()).isEmpty();
         }
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("insert into employee (name) values (?)");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: 2 x ");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText())
+                .isEqualTo("insert into employee (name) values (?)");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("jdbc query: 2 x ");
         if (driverCapturesBatchRows) {
-            assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 2 rows");
+            assertThat(entry.queryEntryMessage().suffix()).isEqualTo(" => 2 rows");
         } else {
-            assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
+            assertThat(entry.queryEntryMessage().suffix()).isEmpty();
         }
 
         assertThat(i.hasNext()).isFalse();
@@ -180,34 +176,33 @@ public class BatchIT {
         Trace trace = container.execute(ExecuteBatchPreparedStatementWithoutClear.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("insert into employee (name) values (?)");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: 2 x ");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText())
+                .isEqualTo("insert into employee (name) values (?)");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("jdbc query: 2 x ");
         if (driverCapturesBatchRows) {
-            assertThat(entry.getQueryEntryMessage().getSuffix())
+            assertThat(entry.queryEntryMessage().suffix())
                     .isEqualTo(" ['huckle'] ['sally'] => 2 rows");
         } else {
-            assertThat(entry.getQueryEntryMessage().getSuffix())
+            assertThat(entry.queryEntryMessage().suffix())
                     .isEqualTo(" ['huckle'] ['sally']");
         }
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("insert into employee (name) values (?)");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: 2 x ");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText())
+                .isEqualTo("insert into employee (name) values (?)");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("jdbc query: 2 x ");
         if (driverCapturesBatchRows) {
-            assertThat(entry.getQueryEntryMessage().getSuffix())
+            assertThat(entry.queryEntryMessage().suffix())
                     .isEqualTo(" ['lowly'] ['pig will'] => 2 rows");
         } else {
-            assertThat(entry.getQueryEntryMessage().getSuffix())
+            assertThat(entry.queryEntryMessage().suffix())
                     .isEqualTo(" ['lowly'] ['pig will']");
         }
 
@@ -217,38 +212,37 @@ public class BatchIT {
     @Test
     public void testBatchPreparedStatementWithoutClearWithoutCaptureBindParams() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureBindParametersIncludes", ImmutableList.<String>of());
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureBindParametersIncludes",
+                ImmutableList.<String>of());
 
         // when
         Trace trace = container.execute(ExecuteBatchPreparedStatementWithoutClear.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("insert into employee (name) values (?)");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: 2 x ");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText())
+                .isEqualTo("insert into employee (name) values (?)");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("jdbc query: 2 x ");
         if (driverCapturesBatchRows) {
-            assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 2 rows");
+            assertThat(entry.queryEntryMessage().suffix()).isEqualTo(" => 2 rows");
         } else {
-            assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
+            assertThat(entry.queryEntryMessage().suffix()).isEmpty();
         }
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("insert into employee (name) values (?)");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: 2 x ");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText())
+                .isEqualTo("insert into employee (name) values (?)");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("jdbc query: 2 x ");
         if (driverCapturesBatchRows) {
-            assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 2 rows");
+            assertThat(entry.queryEntryMessage().suffix()).isEqualTo(" => 2 rows");
         } else {
-            assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
+            assertThat(entry.queryEntryMessage().suffix()).isEmpty();
         }
 
         assertThat(i.hasNext()).isFalse();
@@ -260,26 +254,25 @@ public class BatchIT {
         Trace trace = container.execute(ExecuteBatchStatement.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("[batch] insert into employee (name) values ('huckle'),"
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText())
+                .isEqualTo("[batch] insert into employee (name) values ('huckle'),"
                         + " insert into employee (name) values ('sally')");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 2 rows");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("jdbc query: ");
+        assertThat(entry.queryEntryMessage().suffix()).isEqualTo(" => 2 rows");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("[batch] insert into employee (name) values ('lowly'),"
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText())
+                .isEqualTo("[batch] insert into employee (name) values ('lowly'),"
                         + " insert into employee (name) values ('pig will')");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 2 rows");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("jdbc query: ");
+        assertThat(entry.queryEntryMessage().suffix()).isEqualTo(" => 2 rows");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -290,16 +283,15 @@ public class BatchIT {
         Trace trace = container.execute(BatchStatementNull.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("[batch] insert into employee (name) values ('1')");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 1 row");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText())
+                .isEqualTo("[batch] insert into employee (name) values ('1')");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("jdbc query: ");
+        assertThat(entry.queryEntryMessage().suffix()).isEqualTo(" => 1 row");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -310,16 +302,14 @@ public class BatchIT {
         Trace trace = container.execute(ExecuteBatchStatementWithNoBatches.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("[empty batch]");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText()).isEqualTo("[empty batch]");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("jdbc query: ");
+        assertThat(entry.queryEntryMessage().suffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -333,15 +323,14 @@ public class BatchIT {
         Trace trace = container.execute(ExecuteBatchPreparedStatementWithNoBatches.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("[empty batch] insert into employee (name) values (?)");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText())
+                .isEqualTo("[empty batch] insert into employee (name) values (?)");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("jdbc query: ");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -352,15 +341,14 @@ public class BatchIT {
         Trace trace = container.execute(ExecuteBatchPreparedStatementWithSingleBatch.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("insert into employee (name) values (?)");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText())
+                .isEqualTo("insert into employee (name) values (?)");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("jdbc query: ");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -371,26 +359,25 @@ public class BatchIT {
         Trace trace = container.execute(ExecuteBatchStatementWithoutClear.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("[batch] insert into employee (name) values ('huckle'),"
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText())
+                .isEqualTo("[batch] insert into employee (name) values ('huckle'),"
                         + " insert into employee (name) values ('sally')");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 2 rows");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("jdbc query: ");
+        assertThat(entry.queryEntryMessage().suffix()).isEqualTo(" => 2 rows");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("[batch] insert into employee (name) values ('lowly'),"
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText())
+                .isEqualTo("[batch] insert into employee (name) values ('lowly'),"
                         + " insert into employee (name) values ('pig will')");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 2 rows");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("jdbc query: ");
+        assertThat(entry.queryEntryMessage().suffix()).isEqualTo(" => 2 rows");
 
         assertThat(i.hasNext()).isFalse();
     }

@@ -43,7 +43,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -63,7 +63,7 @@ public class StartupIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
@@ -72,11 +72,11 @@ public class StartupIT {
         Trace trace = container.execute(TestServletContextListener.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message())
                 .isEqualTo("Listener init: " + TestServletContextListener.class.getName());
 
         assertThat(i.hasNext()).isFalse();
@@ -88,11 +88,11 @@ public class StartupIT {
         Trace trace = container.execute(TestServletInit.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message())
                 .isEqualTo("Servlet init: " + TestServletInit.class.getName());
 
         assertThat(i.hasNext()).isFalse();
@@ -104,11 +104,11 @@ public class StartupIT {
         Trace trace = container.execute(TestFilterInit.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("Filter init: " + TestFilterInit.class.getName());
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("Filter init: " + TestFilterInit.class.getName());
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -119,11 +119,11 @@ public class StartupIT {
         Trace trace = container.execute(TestServletContainerInitializer.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo(
                 "Container initializer: " + TestServletContainerInitializer.class.getName());
 
         assertThat(i.hasNext()).isFalse();

@@ -30,7 +30,7 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -50,7 +50,7 @@ public class ResourceIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
@@ -145,20 +145,19 @@ public class ResourceIT {
     @Test
     public void shouldCaptureAltTransactionName() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty("jaxrs", "useAltTransactionNaming",
-                true);
+        container.setInstrumentationProperty("jaxrs", "useAltTransactionNaming", true);
 
         // when
         Trace trace = container.execute(WithNormalServletMapping.class, "Web");
 
         // then
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo("HelloResource#echo");
+        assertThat(trace.transactionName()).isEqualTo("HelloResource#echo");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jaxrs resource:"
                 + " org.glowroot.xyzzy.instrumentation.jaxrs.ResourceIT$HelloResource.echo()");
 
         assertThat(i.hasNext()).isFalse();
@@ -170,14 +169,13 @@ public class ResourceIT {
         Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.getHeader().getTransactionName())
-                .isEqualTo("GET " + contextPath + "/simple");
+        assertThat(trace.transactionName()).isEqualTo("GET " + contextPath + "/simple");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jaxrs resource:"
                 + " org.glowroot.xyzzy.instrumentation.jaxrs.ResourceIT$SimpleResource.echo()");
 
         assertThat(i.hasNext()).isFalse();
@@ -189,14 +187,13 @@ public class ResourceIT {
         Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.getHeader().getTransactionName())
-                .isEqualTo("GET " + contextPath + "/hello/*");
+        assertThat(trace.transactionName()).isEqualTo("GET " + contextPath + "/hello/*");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jaxrs resource:"
                 + " org.glowroot.xyzzy.instrumentation.jaxrs.ResourceIT$HelloResource.echo()");
 
         assertThat(i.hasNext()).isFalse();
@@ -208,13 +205,13 @@ public class ResourceIT {
         Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo("GET " + contextPath + "/");
+        assertThat(trace.transactionName()).isEqualTo("GET " + contextPath + "/");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jaxrs resource:"
                 + " org.glowroot.xyzzy.instrumentation.jaxrs.ResourceIT$RootResource.echo()");
 
         assertThat(i.hasNext()).isFalse();
@@ -226,14 +223,13 @@ public class ResourceIT {
         Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.getHeader().getTransactionName())
-                .isEqualTo("GET " + contextPath + "/rest/hello/*");
+        assertThat(trace.transactionName()).isEqualTo("GET " + contextPath + "/rest/hello/*");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jaxrs resource:"
                 + " org.glowroot.xyzzy.instrumentation.jaxrs.ResourceIT$HelloResource.echo()");
 
         assertThat(i.hasNext()).isFalse();
@@ -245,14 +241,13 @@ public class ResourceIT {
         Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.getHeader().getTransactionName())
-                .isEqualTo("GET " + contextPath + "/rest/");
+        assertThat(trace.transactionName()).isEqualTo("GET " + contextPath + "/rest/");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jaxrs resource:"
                 + " org.glowroot.xyzzy.instrumentation.jaxrs.ResourceIT$RootResource.echo()");
 
         assertThat(i.hasNext()).isFalse();
@@ -264,33 +259,21 @@ public class ResourceIT {
         Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
-        if (trace.getHeader().getTransactionName().equals("GET " + contextPath + "/")) {
+        if (!trace.transactionName().equals("GET " + contextPath + "/hello/*")) {
             // Jersey (2.5 and above) doesn't like this "less than normal" servlet mapping, and ends
             // up mapping everything to RootResource
-            assertThat(trace.getHeader().getTransactionName())
+            assertThat(trace.transactionName())
                     .isEqualTo("GET " + contextPath + "/");
-
-            Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-
-            Trace.Entry entry = i.next();
-            assertThat(entry.getDepth()).isEqualTo(0);
-            assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
-                    + " org.glowroot.xyzzy.instrumentation.jaxrs.ResourceIT$RootResource.echo()");
-
-            assertThat(i.hasNext()).isFalse();
-        } else {
-            assertThat(trace.getHeader().getTransactionName())
-                    .isEqualTo("GET " + contextPath + "/hello/*");
-
-            Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-
-            Trace.Entry entry = i.next();
-            assertThat(entry.getDepth()).isEqualTo(0);
-            assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
-                    + " org.glowroot.xyzzy.instrumentation.jaxrs.ResourceIT$HelloResource.echo()");
-
-            assertThat(i.hasNext()).isFalse();
         }
+
+        Iterator<Trace.Entry> i = trace.entries().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jaxrs resource:"
+                + " org.glowroot.xyzzy.instrumentation.jaxrs.ResourceIT$RootResource.echo()");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     private void shouldCaptureTransactionNameWithLessNormalServletMappingHittingRoot(
@@ -299,13 +282,13 @@ public class ResourceIT {
         Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo("GET " + contextPath + "/");
+        assertThat(trace.transactionName()).isEqualTo("GET " + contextPath + "/");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jaxrs resource:"
                 + " org.glowroot.xyzzy.instrumentation.jaxrs.ResourceIT$RootResource.echo()");
 
         assertThat(i.hasNext()).isFalse();
@@ -317,13 +300,13 @@ public class ResourceIT {
         Trace trace = container.execute(WithInterfaceAnnotated.class, "Web");
 
         // then
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo("GET /another/*");
+        assertThat(trace.transactionName()).isEqualTo("GET /another/*");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jaxrs resource:"
                 + " org.glowroot.xyzzy.instrumentation.jaxrs.ResourceIT$AnotherResourceImpl.echo()");
 
         assertThat(i.hasNext()).isFalse();
@@ -335,14 +318,13 @@ public class ResourceIT {
         Trace trace = container.execute(WithSubResource.class, "Web");
 
         // then
-        assertThat(trace.getHeader().getTransactionName())
-                .isEqualTo("GET /parent/child/grandchild/*");
+        assertThat(trace.transactionName()).isEqualTo("GET /parent/child/grandchild/*");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jaxrs resource:"
                 + " org.glowroot.xyzzy.instrumentation.jaxrs.ResourceIT$GrandchildResourceImpl.echo()");
 
         assertThat(i.hasNext()).isFalse();

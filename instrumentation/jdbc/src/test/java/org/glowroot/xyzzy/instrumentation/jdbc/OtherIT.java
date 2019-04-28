@@ -22,7 +22,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.Iterator;
-import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 import org.junit.After;
@@ -35,7 +34,7 @@ import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TraceEntryMarker;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -57,29 +56,28 @@ public class OtherIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
     public void testCallableStatement() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureBindParametersIncludes", ImmutableList.of(".*"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureBindParametersIncludes",
+                ImmutableList.of(".*"));
 
         // when
         Trace trace = container.execute(ExecuteCallableStatement.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("insert into employee (name, misc) values (?, ?)");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" ['jane', NULL]");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText())
+                .isEqualTo("insert into employee (name, misc) values (?, ?)");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("jdbc query: ");
+        assertThat(entry.queryEntryMessage().suffix()).isEqualTo(" ['jane', NULL]");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -89,16 +87,14 @@ public class OtherIT {
         // when
         Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
         // then
-        boolean found =
-                findExtendedTimerName(trace.getHeader().getMainThreadRootTimer(), "jdbc query");
+        boolean found = findExtendedTimerName(trace.mainThreadRootTimer(), "jdbc query");
         assertThat(found).isFalse();
     }
 
     @Test
     public void testWithResultSetValueTimerNormal() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureResultSetGet", true);
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResultSetGet", true);
         // when
         Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
         // then
@@ -118,8 +114,7 @@ public class OtherIT {
     @Test
     public void testWithResultSetValueTimerUnderSeparateTraceEntry() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureResultSetGet", true);
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResultSetGet", true);
         // when
         Trace trace = container.execute(GetResultSetValueUnderSeparateTraceEntry.class);
         // then
@@ -130,8 +125,7 @@ public class OtherIT {
     @Test
     public void testResultSetValueTimerUsingColumnName() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureResultSetGet", true);
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResultSetGet", true);
         // when
         Trace trace = container.execute(ExecuteStatementAndIterateOverResultsUsingColumnName.class);
         // then
@@ -142,8 +136,7 @@ public class OtherIT {
     @Test
     public void testResultSetValueTimerUsingColumnNameUnderSeparateTraceEntry() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureResultSetGet", true);
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResultSetGet", true);
         // when
         Trace trace = container.execute(
                 ExecuteStatementAndIterateOverResultsUsingColumnNameUnderSeparateTraceEntry.class);
@@ -173,8 +166,7 @@ public class OtherIT {
     @Test
     public void testWithoutResultSetNavigateTimerUnderSeparateTraceEntry() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureResultSetNavigate", false);
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResultSetNavigate", false);
         // when
         Trace trace = container.execute(IterateOverResultsUnderSeparateTraceEntry.class);
         // then
@@ -188,17 +180,15 @@ public class OtherIT {
         Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("select * from employee");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 3 rows");
-        assertThat(entry.getLocationStackTraceElementList()).isEmpty();
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText()).isEqualTo("select * from employee");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("jdbc query: ");
+        assertThat(entry.queryEntryMessage().suffix()).isEqualTo(" => 3 rows");
+        assertThat(entry.locationStackTraceMillis()).isNull();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -206,24 +196,21 @@ public class OtherIT {
     @Test
     public void testZeroStackTraceThreshold() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "stackTraceThresholdMillis", 0.0);
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "stackTraceThresholdMillis", 0.0);
 
         // when
         Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("select * from employee");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 3 rows");
-        assertThat(entry.getLocationStackTraceElementList()).isNotEmpty();
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText()).isEqualTo("select * from employee");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("jdbc query: ");
+        assertThat(entry.queryEntryMessage().suffix()).isEqualTo(" => 3 rows");
+        assertThat(entry.locationStackTraceMillis()).isZero();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -231,37 +218,35 @@ public class OtherIT {
     @Test
     public void testNullStackTraceThreshold() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "stackTraceThresholdMillis", (Double) null);
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "stackTraceThresholdMillis",
+                (Double) null);
 
         // when
         Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("select * from employee");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 3 rows");
-        assertThat(entry.getLocationStackTraceElementList()).isEmpty();
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText()).isEqualTo("select * from employee");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("jdbc query: ");
+        assertThat(entry.queryEntryMessage().suffix()).isEqualTo(" => 3 rows");
+        assertThat(entry.locationStackTraceMillis()).isNull();
 
         assertThat(i.hasNext()).isFalse();
     }
 
     private static boolean findExtendedTimerName(Trace trace, String timerName) {
-        return findExtendedTimerName(trace.getHeader().getMainThreadRootTimer(), timerName);
+        return findExtendedTimerName(trace.mainThreadRootTimer(), timerName);
     }
 
     private static boolean findExtendedTimerName(Trace.Timer timer, String timerName) {
-        if (timer.getName().equals(timerName) && timer.getExtended()) {
+        if (timer.name().equals(timerName) && timer.extended()) {
             return true;
         }
-        for (Trace.Timer nestedTimer : timer.getChildTimerList()) {
+        for (Trace.Timer nestedTimer : timer.childTimers()) {
             if (findExtendedTimerName(nestedTimer, timerName)) {
                 return true;
             }

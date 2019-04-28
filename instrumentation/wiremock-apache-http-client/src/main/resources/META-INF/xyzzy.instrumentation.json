@@ -1,0 +1,8 @@
+{
+  "name": "Wiremock Apache HttpClient",
+  "id": "wiremock-apache-http-client",
+  "classes": [
+    "org.glowroot.xyzzy.instrumentation.httpclient.WiremockApacheHttpClientInstrumentation
+  ],
+  "collocate": true
+}

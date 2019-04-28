@@ -29,7 +29,7 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -49,7 +49,7 @@ public class WebServiceIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
@@ -132,20 +132,19 @@ public class WebServiceIT {
     @Test
     public void shouldCaptureAltTransactionName() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty("jaxws", "useAltTransactionNaming",
-                true);
+        container.setInstrumentationProperty("jaxws", "useAltTransactionNaming", true);
 
         // when
         Trace trace = container.execute(WithNormalServletMapping.class, "Web");
 
         // then
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo("HelloService#echo");
+        assertThat(trace.transactionName()).isEqualTo("HelloService#echo");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jaxws service:"
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jaxws service:"
                 + " org.glowroot.xyzzy.instrumentation.jaxws.WebServiceIT$HelloService.echo()");
 
         assertThat(i.hasNext()).isFalse();
@@ -157,14 +156,13 @@ public class WebServiceIT {
         Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.getHeader().getTransactionName())
-                .isEqualTo("POST " + contextPath + "/hello#echo");
+        assertThat(trace.transactionName()).isEqualTo("POST " + contextPath + "/hello#echo");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jaxws service:"
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jaxws service:"
                 + " org.glowroot.xyzzy.instrumentation.jaxws.WebServiceIT$HelloService.echo()");
 
         assertThat(i.hasNext()).isFalse();
@@ -176,14 +174,13 @@ public class WebServiceIT {
         Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.getHeader().getTransactionName())
-                .isEqualTo("POST " + contextPath + "/#echo");
+        assertThat(trace.transactionName()).isEqualTo("POST " + contextPath + "/#echo");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jaxws service:"
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jaxws service:"
                 + " org.glowroot.xyzzy.instrumentation.jaxws.WebServiceIT$RootService.echo()");
 
         assertThat(i.hasNext()).isFalse();
@@ -195,14 +192,14 @@ public class WebServiceIT {
         Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.getHeader().getTransactionName())
+        assertThat(trace.transactionName())
                 .isEqualTo("POST " + contextPath + "/service/hello#echo");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jaxws service:"
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jaxws service:"
                 + " org.glowroot.xyzzy.instrumentation.jaxws.WebServiceIT$HelloService.echo()");
 
         assertThat(i.hasNext()).isFalse();
@@ -214,14 +211,13 @@ public class WebServiceIT {
         Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.getHeader().getTransactionName())
-                .isEqualTo("POST " + contextPath + "/service/#echo");
+        assertThat(trace.transactionName()).isEqualTo("POST " + contextPath + "/service/#echo");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jaxws service:"
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jaxws service:"
                 + " org.glowroot.xyzzy.instrumentation.jaxws.WebServiceIT$RootService.echo()");
 
         assertThat(i.hasNext()).isFalse();
@@ -233,33 +229,20 @@ public class WebServiceIT {
         Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
-        if (trace.getHeader().getTransactionName().equals("POST " + contextPath + "#echo")) {
+        if (!trace.transactionName().equals("POST " + contextPath + "/hello#echo")) {
             // Jersey (2.5 and above) doesn't like this "less than normal" servlet mapping, and ends
             // up mapping everything to RootService
-            assertThat(trace.getHeader().getTransactionName())
-                    .isEqualTo("POST " + contextPath + "#echo");
-
-            Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-
-            Trace.Entry entry = i.next();
-            assertThat(entry.getDepth()).isEqualTo(0);
-            assertThat(entry.getMessage()).isEqualTo("jaxws service:"
-                    + " org.glowroot.xyzzy.instrumentation.jaxws.WebServiceIT$RootService.echo()");
-
-            assertThat(i.hasNext()).isFalse();
-        } else {
-            assertThat(trace.getHeader().getTransactionName())
-                    .isEqualTo("POST " + contextPath + "/hello#echo");
-
-            Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-
-            Trace.Entry entry = i.next();
-            assertThat(entry.getDepth()).isEqualTo(0);
-            assertThat(entry.getMessage()).isEqualTo("jaxws service:"
-                    + " org.glowroot.xyzzy.instrumentation.jaxws.WebServiceIT$RootService.echo()");
-
-            assertThat(i.hasNext()).isFalse();
+            assertThat(trace.transactionName()).isEqualTo("POST " + contextPath + "#echo");
         }
+
+        Iterator<Trace.Entry> i = trace.entries().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jaxws service:"
+                + " org.glowroot.xyzzy.instrumentation.jaxws.WebServiceIT$RootService.echo()");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     private void shouldCaptureTransactionNameWithLessNormalServletMappingHittingRoot(
@@ -268,14 +251,13 @@ public class WebServiceIT {
         Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.getHeader().getTransactionName())
-                .isEqualTo("POST " + contextPath + "/#echo");
+        assertThat(trace.transactionName()).isEqualTo("POST " + contextPath + "/#echo");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jaxws service:"
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jaxws service:"
                 + " org.glowroot.xyzzy.instrumentation.jaxws.WebServiceIT$RootService.echo()");
 
         assertThat(i.hasNext()).isFalse();

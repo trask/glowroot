@@ -29,7 +29,7 @@ import org.quartz.impl.StdSchedulerFactory;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,16 +50,15 @@ public class QuartzIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
     public void shouldCaptureJobExecution() throws Exception {
         Trace trace = container.execute(ExecuteJob.class);
-        Trace.Header header = trace.getHeader();
-        assertThat(header.getTransactionType()).isEqualTo("Background");
-        assertThat(header.getTransactionName()).isEqualTo("Quartz job: ajob");
-        assertThat(header.getHeadline()).isEqualTo("Quartz job: ajob");
+        assertThat(trace.transactionType()).isEqualTo("Background");
+        assertThat(trace.transactionName()).isEqualTo("Quartz job: ajob");
+        assertThat(trace.headline()).isEqualTo("Quartz job: ajob");
     }
 
     private static JobDetail createJob1x() throws Exception {

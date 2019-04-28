@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -48,7 +48,7 @@ public class ControllerIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
@@ -131,20 +131,19 @@ public class ControllerIT {
     @Test
     public void shouldCaptureAltTransactionName() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty("spring", "useAltTransactionNaming",
-                true);
+        container.setInstrumentationProperty("spring", "useAltTransactionNaming", true);
 
         // when
         Trace trace = container.execute(WithNormalServletMapping.class, "Web");
 
         // then
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo("TestController#echo");
+        assertThat(trace.transactionName()).isEqualTo("TestController#echo");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("spring controller:"
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("spring controller:"
                 + " org.glowroot.xyzzy.instrumentation.spring.ControllerIT$TestController.echo()");
 
         assertThat(i.hasNext()).isFalse();
@@ -156,13 +155,13 @@ public class ControllerIT {
         Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo(contextPath + "/hello/echo/*");
+        assertThat(trace.transactionName()).isEqualTo(contextPath + "/hello/echo/*");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("spring controller:"
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("spring controller:"
                 + " org.glowroot.xyzzy.instrumentation.spring.ControllerIT$TestController.echo()");
 
         assertThat(i.hasNext()).isFalse();
@@ -174,13 +173,13 @@ public class ControllerIT {
         Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo(contextPath + "/");
+        assertThat(trace.transactionName()).isEqualTo(contextPath + "/");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("spring controller:"
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("spring controller:"
                 + " org.glowroot.xyzzy.instrumentation.spring.ControllerIT$RootController.echo()");
 
         assertThat(i.hasNext()).isFalse();
@@ -192,14 +191,13 @@ public class ControllerIT {
         Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.getHeader().getTransactionName())
-                .isEqualTo(contextPath + "/spring/hello/echo/*");
+        assertThat(trace.transactionName()).isEqualTo(contextPath + "/spring/hello/echo/*");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("spring controller:"
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("spring controller:"
                 + " org.glowroot.xyzzy.instrumentation.spring.ControllerIT$TestController.echo()");
 
         assertThat(i.hasNext()).isFalse();
@@ -211,13 +209,13 @@ public class ControllerIT {
         Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo(contextPath + "/spring/");
+        assertThat(trace.transactionName()).isEqualTo(contextPath + "/spring/");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("spring controller:"
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("spring controller:"
                 + " org.glowroot.xyzzy.instrumentation.spring.ControllerIT$RootController.echo()");
 
         assertThat(i.hasNext()).isFalse();
@@ -229,13 +227,13 @@ public class ControllerIT {
         Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo(contextPath + "/hello/echo/*");
+        assertThat(trace.transactionName()).isEqualTo(contextPath + "/hello/echo/*");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("spring controller:"
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("spring controller:"
                 + " org.glowroot.xyzzy.instrumentation.spring.ControllerIT$TestController.echo()");
 
         assertThat(i.hasNext()).isFalse();
@@ -247,13 +245,13 @@ public class ControllerIT {
         Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo(contextPath + "/");
+        assertThat(trace.transactionName()).isEqualTo(contextPath + "/");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("spring controller:"
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("spring controller:"
                 + " org.glowroot.xyzzy.instrumentation.spring.ControllerIT$RootController.echo()");
 
         assertThat(i.hasNext()).isFalse();

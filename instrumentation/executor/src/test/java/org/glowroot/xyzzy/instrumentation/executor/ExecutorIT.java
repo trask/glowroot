@@ -37,9 +37,7 @@ import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TraceEntryMarker;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
-import org.glowroot.wire.api.model.Proto.OptionalInt32;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -63,7 +61,7 @@ public class ExecutorIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
@@ -104,15 +102,14 @@ public class ExecutorIT {
         Trace trace = container.execute(DoSimpleSubmitRunnableWork.class);
 
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(header.hasAuxThreadRootTimer()).isTrue();
-        assertThat(header.getAsyncTimerCount()).isZero();
-        assertThat(header.getAuxThreadRootTimer().getName()).isEqualTo("auxiliary thread");
-        assertThat(header.getAuxThreadRootTimer().getCount()).isEqualTo(3);
-        assertThat(header.getAuxThreadRootTimer().getTotalNanos())
+        assertThat(trace.auxThreadRootTimer()).isNotNull();
+        assertThat(trace.asyncTimers()).isEmpty();
+        assertThat(trace.auxThreadRootTimer().name()).isEqualTo("auxiliary thread");
+        assertThat(trace.auxThreadRootTimer().count()).isEqualTo(3);
+        assertThat(trace.auxThreadRootTimer().totalNanos())
                 .isGreaterThanOrEqualTo(MILLISECONDS.toNanos(500));
-        assertThat(header.getAuxThreadRootTimer().getChildTimerCount()).isZero();
-        assertThat(header.getEntryCount()).isZero();
+        assertThat(trace.auxThreadRootTimer().childTimers()).isEmpty();
+        assertThat(trace.entries()).isEmpty();
     }
 
     @Test
@@ -121,8 +118,7 @@ public class ExecutorIT {
         Trace trace = container.execute(CallFutureGetOnAlreadyCompletedFuture.class);
 
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(header.getMainThreadRootTimer().getChildTimerCount()).isZero();
+        assertThat(trace.mainThreadRootTimer().childTimers()).isEmpty();
     }
 
     @Test
@@ -131,35 +127,29 @@ public class ExecutorIT {
         Trace trace = container.execute(CallFutureGetOnNestedFuture.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("auxiliary thread");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("auxiliary thread");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(1);
-        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(entry.depth()).isEqualTo(1);
+        assertThat(entry.message()).isEqualTo("trace entry marker / CreateTraceEntry");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(1);
-        assertThat(entry.getMessage()).isEqualTo("auxiliary thread");
+        assertThat(entry.depth()).isEqualTo(1);
+        assertThat(entry.message()).isEqualTo("auxiliary thread");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(2);
-        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(entry.depth()).isEqualTo(2);
+        assertThat(entry.message()).isEqualTo("trace entry marker / CreateTraceEntry");
 
         assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureInvokeAll() throws Exception {
-        // given
-        container.getConfigService().updateTransactionConfig(
-                TransactionConfig.newBuilder()
-                        .setSlowThresholdMillis(OptionalInt32.newBuilder().setValue(0))
-                        .setProfilingIntervalMillis(OptionalInt32.newBuilder().setValue(20).build())
-                        .build());
         // when
         Trace trace = container.execute(DoInvokeAll.class);
         // then
@@ -168,12 +158,6 @@ public class ExecutorIT {
 
     @Test
     public void shouldCaptureInvokeAllWithTimeout() throws Exception {
-        // given
-        container.getConfigService().updateTransactionConfig(
-                TransactionConfig.newBuilder()
-                        .setSlowThresholdMillis(OptionalInt32.newBuilder().setValue(0))
-                        .setProfilingIntervalMillis(OptionalInt32.newBuilder().setValue(20).build())
-                        .build());
         // when
         Trace trace = container.execute(DoInvokeAllWithTimeout.class);
         // then
@@ -182,12 +166,6 @@ public class ExecutorIT {
 
     @Test
     public void shouldCaptureInvokeAny() throws Exception {
-        // given
-        container.getConfigService().updateTransactionConfig(
-                TransactionConfig.newBuilder()
-                        .setSlowThresholdMillis(OptionalInt32.newBuilder().setValue(0))
-                        .setProfilingIntervalMillis(OptionalInt32.newBuilder().setValue(20).build())
-                        .build());
         // when
         Trace trace = container.execute(DoInvokeAny.class);
         // then
@@ -196,12 +174,6 @@ public class ExecutorIT {
 
     @Test
     public void shouldCaptureInvokeAnyWithTimeout() throws Exception {
-        // given
-        container.getConfigService().updateTransactionConfig(
-                TransactionConfig.newBuilder()
-                        .setSlowThresholdMillis(OptionalInt32.newBuilder().setValue(0))
-                        .setProfilingIntervalMillis(OptionalInt32.newBuilder().setValue(20).build())
-                        .build());
         // when
         Trace trace = container.execute(DoInvokeAnyWithTimeout.class);
         // then
@@ -233,39 +205,38 @@ public class ExecutorIT {
     }
 
     private static void checkTrace(Trace trace, boolean isAny, boolean withFuture) {
-        Trace.Header header = trace.getHeader();
         if (withFuture) {
-            assertThat(header.getMainThreadRootTimer().getChildTimerCount()).isEqualTo(1);
-            assertThat(header.getMainThreadRootTimer().getChildTimer(0).getName())
+            assertThat(trace.mainThreadRootTimer().childTimers().size()).isEqualTo(1);
+            assertThat(trace.mainThreadRootTimer().childTimers().get(0).name())
                     .isEqualTo("wait on future");
-            assertThat(header.getMainThreadRootTimer().getChildTimer(0).getCount())
+            assertThat(trace.mainThreadRootTimer().childTimers().get(0).count())
                     .isGreaterThanOrEqualTo(1);
-            assertThat(header.getMainThreadRootTimer().getChildTimer(0).getCount())
+            assertThat(trace.mainThreadRootTimer().childTimers().get(0).count())
                     .isLessThanOrEqualTo(3);
         }
-        assertThat(header.hasAuxThreadRootTimer()).isTrue();
-        assertThat(header.getAsyncTimerCount()).isZero();
-        assertThat(header.getAuxThreadRootTimer().getName()).isEqualTo("auxiliary thread");
+        assertThat(trace.auxThreadRootTimer()).isNotNull();
+        assertThat(trace.asyncTimers()).isEmpty();
+        assertThat(trace.auxThreadRootTimer().name()).isEqualTo("auxiliary thread");
         if (isAny) {
-            assertThat(header.getAuxThreadRootTimer().getCount()).isBetween(1L, 3L);
+            assertThat(trace.auxThreadRootTimer().count()).isBetween(1L, 3L);
             // should be 100-300ms, but margin of error, esp. in travis builds is high
-            assertThat(header.getAuxThreadRootTimer().getTotalNanos())
+            assertThat(trace.auxThreadRootTimer().totalNanos())
                     .isGreaterThanOrEqualTo(MILLISECONDS.toNanos(50));
         } else {
-            assertThat(header.getAuxThreadRootTimer().getCount()).isEqualTo(3);
+            assertThat(trace.auxThreadRootTimer().count()).isEqualTo(3);
             // should be 300ms, but margin of error, esp. in travis builds is high
-            assertThat(header.getAuxThreadRootTimer().getTotalNanos())
+            assertThat(trace.auxThreadRootTimer().totalNanos())
                     .isGreaterThanOrEqualTo(MILLISECONDS.toNanos(250));
         }
-        assertThat(header.getAuxThreadRootTimer().getChildTimerCount()).isEqualTo(1);
-        assertThat(header.getAuxThreadRootTimer().getChildTimer(0).getName())
+        assertThat(trace.auxThreadRootTimer().childTimers().size()).isEqualTo(1);
+        assertThat(trace.auxThreadRootTimer().childTimers().get(0).name())
                 .isEqualTo("mock trace entry marker");
-        List<Trace.Entry> entries = trace.getEntryList();
+        List<Trace.Entry> entries = trace.entries();
 
         if (isAny) {
             entries = Lists.newArrayList(entries);
             for (Iterator<Trace.Entry> i = entries.iterator(); i.hasNext();) {
-                if (i.next().getMessage().equals(
+                if (i.next().message().equals(
                         "this auxiliary thread was still running when the transaction ended")) {
                     i.remove();
                 }
@@ -277,11 +248,11 @@ public class ExecutorIT {
             assertThat(entries).hasSize(6);
         }
         for (int i = 0; i < entries.size(); i += 2) {
-            assertThat(entries.get(i).getDepth()).isEqualTo(0);
-            assertThat(entries.get(i).getMessage()).isEqualTo("auxiliary thread");
+            assertThat(entries.get(i).depth()).isEqualTo(0);
+            assertThat(entries.get(i).message()).isEqualTo("auxiliary thread");
 
-            assertThat(entries.get(i + 1).getDepth()).isEqualTo(1);
-            assertThat(entries.get(i + 1).getMessage())
+            assertThat(entries.get(i + 1).depth()).isEqualTo(1);
+            assertThat(entries.get(i + 1).message())
                     .isEqualTo("trace entry marker / CreateTraceEntry");
         }
     }

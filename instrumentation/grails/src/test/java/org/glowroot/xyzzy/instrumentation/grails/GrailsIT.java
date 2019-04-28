@@ -45,7 +45,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -73,7 +73,7 @@ public class GrailsIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
@@ -82,13 +82,13 @@ public class GrailsIT {
         Trace trace = container.execute(GetHelloAbc.class, "Web");
 
         // then
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo("Hello#abc");
+        assertThat(trace.transactionName()).isEqualTo("Hello#abc");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo(
                 "grails controller: org.glowroot.xyzzy.instrumentation.grails.HelloController.abc()");
 
         assertThat(i.hasNext()).isFalse();
@@ -100,13 +100,13 @@ public class GrailsIT {
         Trace trace = container.execute(GetHello.class, "Web");
 
         // then
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo("Hello#index");
+        assertThat(trace.transactionName()).isEqualTo("Hello#index");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo(
                 "grails controller: org.glowroot.xyzzy.instrumentation.grails.HelloController.index()");
 
         assertThat(i.hasNext()).isFalse();

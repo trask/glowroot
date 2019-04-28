@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.glowroot.xyzzy</groupId>
+    <artifactId>xyzzy-parent</artifactId>
+    <version>0.13.5-SNAPSHOT</version>
+    <relativePath>..</relativePath>
+  </parent>
+
+  <artifactId>xyzzy-test-harness</artifactId>
+
+  <name>Xyzzy Integration Test Harness</name>
+  <description>Xyzzy Integration Test Harness</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.glowroot.xyzzy</groupId>
+      <artifactId>xyzzy-engine</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.immutables</groupId>
+      <artifactId>value</artifactId>
+      <!-- immutables is only needed at compile time -->
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <!-- this dependency is needed for generating Java 6 compatible classes -->
+      <groupId>org.immutables</groupId>
+      <artifactId>android-stub</artifactId>
+      <!-- immutables is only needed at compile time -->
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <!-- this dependency is needed for generating Java 6 compatible classes -->
+      <groupId>com.github.trask</groupId>
+      <artifactId>immutables-jdk6-shim</artifactId>
+      <!-- immutables is only needed at compile time -->
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.github.trask</groupId>
+      <artifactId>error-prone-annotations-for-jdk6</artifactId>
+      <version>1.0.0</version>
+      <!-- don't need this dependency at runtime since only annotations -->
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.nanohttpd</groupId>
+      <artifactId>nanohttpd</artifactId>
+      <version>2.3.1</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <configuration>
+            <excludePackageNames>org.glowroot.agent.it.harness.impl</excludePackageNames>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+  <profiles>
+    <profile>
+      <!-- use custom-built jdk6 compatible checker framework annotations by default except when
+        actually running checker framework code quality tests, in which case the real checker
+        framework annotations are provided -->
+      <id>not-the-checker-build</id>
+      <activation>
+        <property>
+          <name>!glowroot.checker.build</name>
+        </property>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>com.github.trask</groupId>
+          <artifactId>checker-framework-annotations-for-jdk6</artifactId>
+          <version>1.0.0</version>
+          <!-- don't need this dependency at runtime since only annotations -->
+          <optional>true</optional>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+</project>

@@ -28,7 +28,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -50,31 +50,31 @@ public class Log4jIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
     public void testLog() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
+        container.setInstrumentationProperty(INSTRUMENTATION_ID,
                 "traceErrorOnErrorWithoutThrowable", true);
 
         // when
         Trace trace = container.execute(ShouldLog.class);
 
         // then
-        assertThat(trace.getHeader().getError().getMessage()).isEqualTo("efg");
+        assertThat(trace.error().message()).isEqualTo("efg");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message())
                 .isEqualTo("log warn: " + ShouldLog.logger.getName() + " - def");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message())
                 .isEqualTo("log error: " + ShouldLog.logger.getName() + " - efg");
 
         assertThat(i.hasNext()).isFalse();
@@ -83,35 +83,33 @@ public class Log4jIT {
     @Test
     public void testLogWithThrowable() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
+        container.setInstrumentationProperty(INSTRUMENTATION_ID,
                 "traceErrorOnErrorWithoutThrowable", true);
 
         // when
         Trace trace = container.execute(ShouldLogWithThrowable.class);
 
         // then
-        assertThat(trace.getHeader().getError().getMessage())
+        assertThat(trace.error().message())
                 .isEqualTo("java.lang.IllegalStateException: 567");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message())
                 .isEqualTo("log warn: " + ShouldLogWithThrowable.logger.getName() + " - def_t");
-        assertThat(entry.getError().getMessage()).isEqualTo("java.lang.IllegalStateException: 456");
-        assertThat(
-                entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
-                        .isEqualTo("transactionMarker");
+        assertThat(entry.error().message()).isEqualTo("java.lang.IllegalStateException: 456");
+        assertThat(entry.error().exception().getStackTrace()[0].getMethodName())
+                .isEqualTo("transactionMarker");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message())
                 .isEqualTo("log error: " + ShouldLogWithThrowable.logger.getName() + " - efg_t");
-        assertThat(entry.getError().getMessage()).isEqualTo("java.lang.IllegalStateException: 567");
-        assertThat(
-                entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
-                        .isEqualTo("transactionMarker");
+        assertThat(entry.error().message()).isEqualTo("java.lang.IllegalStateException: 567");
+        assertThat(entry.error().exception().getStackTrace()[0].getMethodName())
+                .isEqualTo("transactionMarker");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -119,28 +117,28 @@ public class Log4jIT {
     @Test
     public void testLogWithNullThrowable() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
+        container.setInstrumentationProperty(INSTRUMENTATION_ID,
                 "traceErrorOnErrorWithoutThrowable", true);
 
         // when
         Trace trace = container.execute(ShouldLogWithNullThrowable.class);
 
         // then
-        assertThat(trace.getHeader().getError().getMessage()).isEqualTo("efg_tnull");
+        assertThat(trace.error().message()).isEqualTo("efg_tnull");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo(
                 "log warn: " + ShouldLogWithNullThrowable.logger.getName() + " - def_tnull");
-        assertThat(entry.getError().getMessage()).isEqualTo("def_tnull");
+        assertThat(entry.error().message()).isEqualTo("def_tnull");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo(
                 "log error: " + ShouldLogWithNullThrowable.logger.getName() + " - efg_tnull");
-        assertThat(entry.getError().getMessage()).isEqualTo("efg_tnull");
+        assertThat(entry.error().message()).isEqualTo("efg_tnull");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -151,16 +149,16 @@ public class Log4jIT {
         Trace trace = container.execute(ShouldLogWithOneParameter.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo(
                 "log warn: " + ShouldLogWithOneParameter.logger.getName() + " - def_1 d");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo(
                 "log error: " + ShouldLogWithOneParameter.logger.getName() + " - efg_1 e");
 
         assertThat(i.hasNext()).isFalse();
@@ -172,28 +170,26 @@ public class Log4jIT {
         Trace trace = container.execute(ShouldLogWithOneParameterAndThrowable.class);
 
         // then
-        assertThat(trace.getHeader().getError().getMessage())
+        assertThat(trace.error().message())
                 .isEqualTo("java.lang.IllegalStateException: 567");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("log warn: "
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("log warn: "
                 + ShouldLogWithOneParameterAndThrowable.logger.getName() + " - def_1_t d");
-        assertThat(entry.getError().getMessage()).isEqualTo("java.lang.IllegalStateException: 456");
-        assertThat(
-                entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
-                        .isEqualTo("transactionMarker");
+        assertThat(entry.error().message()).isEqualTo("java.lang.IllegalStateException: 456");
+        assertThat(entry.error().exception().getStackTrace()[0].getMethodName())
+                .isEqualTo("transactionMarker");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("log error: "
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("log error: "
                 + ShouldLogWithOneParameterAndThrowable.logger.getName() + " - efg_1_t e");
-        assertThat(entry.getError().getMessage()).isEqualTo("java.lang.IllegalStateException: 567");
-        assertThat(
-                entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
-                        .isEqualTo("transactionMarker");
+        assertThat(entry.error().message()).isEqualTo("java.lang.IllegalStateException: 567");
+        assertThat(entry.error().exception().getStackTrace()[0].getMethodName())
+                .isEqualTo("transactionMarker");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -204,16 +200,16 @@ public class Log4jIT {
         Trace trace = container.execute(ShouldLogWithTwoParameters.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo(
                 "log warn: " + ShouldLogWithTwoParameters.logger.getName() + " - def_2 d e");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo(
                 "log error: " + ShouldLogWithTwoParameters.logger.getName() + " - efg_2 e f");
 
         assertThat(i.hasNext()).isFalse();
@@ -225,16 +221,16 @@ public class Log4jIT {
         Trace trace = container.execute(ShouldLogWithMoreThanTwoParameters.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("log warn: "
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("log warn: "
                 + ShouldLogWithMoreThanTwoParameters.logger.getName() + " - def_3 d e f");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("log error: "
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("log error: "
                 + ShouldLogWithMoreThanTwoParameters.logger.getName() + " - efg_3 e f g");
 
         assertThat(i.hasNext()).isFalse();
@@ -246,25 +242,23 @@ public class Log4jIT {
         Trace trace = container.execute(ShouldLogWithParametersAndThrowable.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("log warn: "
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("log warn: "
                 + ShouldLogWithParametersAndThrowable.logger.getName() + " - def_3_t d e f");
-        assertThat(entry.getError().getMessage()).isEqualTo("java.lang.IllegalStateException: 456");
-        assertThat(
-                entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
-                        .isEqualTo("transactionMarker");
+        assertThat(entry.error().message()).isEqualTo("java.lang.IllegalStateException: 456");
+        assertThat(entry.error().exception().getStackTrace()[0].getMethodName())
+                .isEqualTo("transactionMarker");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("log error: "
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("log error: "
                 + ShouldLogWithParametersAndThrowable.logger.getName() + " - efg_3_t e f g");
-        assertThat(entry.getError().getMessage()).isEqualTo("java.lang.IllegalStateException: 567");
-        assertThat(
-                entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
-                        .isEqualTo("transactionMarker");
+        assertThat(entry.error().message()).isEqualTo("java.lang.IllegalStateException: 567");
+        assertThat(entry.error().exception().getStackTrace()[0].getMethodName())
+                .isEqualTo("transactionMarker");
 
         assertThat(i.hasNext()).isFalse();
     }

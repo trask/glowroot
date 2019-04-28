@@ -26,7 +26,7 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -48,136 +48,123 @@ public class EjbRemoteIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
     public void shouldCaptureARemoteBeanOne() throws Exception {
         Trace trace = container.execute(ExecuteARemoteBeanOne.class);
-        Trace.Header header = trace.getHeader();
-        assertThat(header.getTransactionType()).isEqualTo("Web");
-        assertThat(header.getTransactionName()).isEqualTo("EJB remote: ARemoteOne#one");
-        assertThat(header.getHeadline()).isEqualTo(
+        assertThat(trace.transactionType()).isEqualTo("Web");
+        assertThat(trace.transactionName()).isEqualTo("EJB remote: ARemoteOne#one");
+        assertThat(trace.headline()).isEqualTo(
                 "EJB remote: org.glowroot.xyzzy.instrumentation.ejb.EjbRemoteIT$ARemoteOne.one()");
     }
 
     @Test
     public void shouldCaptureARemoteBeanTwo() throws Exception {
         Trace trace = container.execute(ExecuteARemoteBeanTwo.class);
-        Trace.Header header = trace.getHeader();
-        assertThat(header.getTransactionType()).isEqualTo("Web");
-        assertThat(header.getTransactionName()).isEqualTo("EJB remote: ARemoteTwo#two");
-        assertThat(header.getHeadline()).isEqualTo(
+        assertThat(trace.transactionType()).isEqualTo("Web");
+        assertThat(trace.transactionName()).isEqualTo("EJB remote: ARemoteTwo#two");
+        assertThat(trace.headline()).isEqualTo(
                 "EJB remote: org.glowroot.xyzzy.instrumentation.ejb.EjbRemoteIT$ARemoteTwo.two()");
     }
 
     @Test
     public void shouldCaptureA2RemoteBeanOne() throws Exception {
         Trace trace = container.execute(ExecuteA2RemoteBeanOne.class);
-        Trace.Header header = trace.getHeader();
-        assertThat(header.getTransactionType()).isEqualTo("Web");
-        assertThat(header.getTransactionName()).isEqualTo("EJB remote: ARemoteOne#one");
-        assertThat(header.getHeadline()).isEqualTo(
+        assertThat(trace.transactionType()).isEqualTo("Web");
+        assertThat(trace.transactionName()).isEqualTo("EJB remote: ARemoteOne#one");
+        assertThat(trace.headline()).isEqualTo(
                 "EJB remote: org.glowroot.xyzzy.instrumentation.ejb.EjbRemoteIT$ARemoteOne.one()");
     }
 
     @Test
     public void shouldCaptureA2RemoteBeanTwo() throws Exception {
         Trace trace = container.execute(ExecuteA2RemoteBeanTwo.class);
-        Trace.Header header = trace.getHeader();
-        assertThat(header.getTransactionType()).isEqualTo("Web");
-        assertThat(header.getTransactionName()).isEqualTo("EJB remote: ARemoteTwo#two");
-        assertThat(header.getHeadline()).isEqualTo(
+        assertThat(trace.transactionType()).isEqualTo("Web");
+        assertThat(trace.transactionName()).isEqualTo("EJB remote: ARemoteTwo#two");
+        assertThat(trace.headline()).isEqualTo(
                 "EJB remote: org.glowroot.xyzzy.instrumentation.ejb.EjbRemoteIT$ARemoteTwo.two()");
     }
 
     @Test
     public void shouldCaptureA3RemoteBeanOne() throws Exception {
         Trace trace = container.execute(ExecuteA3RemoteBeanOne.class);
-        Trace.Header header = trace.getHeader();
-        assertThat(header.getTransactionType()).isEqualTo("Web");
-        assertThat(header.getTransactionName()).isEqualTo("EJB remote: ARemoteOne#one");
-        assertThat(header.getHeadline()).isEqualTo(
+        assertThat(trace.transactionType()).isEqualTo("Web");
+        assertThat(trace.transactionName()).isEqualTo("EJB remote: ARemoteOne#one");
+        assertThat(trace.headline()).isEqualTo(
                 "EJB remote: org.glowroot.xyzzy.instrumentation.ejb.EjbRemoteIT$ARemoteOne.one()");
     }
 
     @Test
     public void shouldCaptureA3RemoteBeanTwo() throws Exception {
         Trace trace = container.execute(ExecuteA3RemoteBeanTwo.class);
-        Trace.Header header = trace.getHeader();
-        assertThat(header.getTransactionType()).isEqualTo("Web");
-        assertThat(header.getTransactionName()).isEqualTo("EJB remote: ARemoteTwo#two");
-        assertThat(header.getHeadline()).isEqualTo(
+        assertThat(trace.transactionType()).isEqualTo("Web");
+        assertThat(trace.transactionName()).isEqualTo("EJB remote: ARemoteTwo#two");
+        assertThat(trace.headline()).isEqualTo(
                 "EJB remote: org.glowroot.xyzzy.instrumentation.ejb.EjbRemoteIT$ARemoteTwo.two()");
     }
 
     @Test
     public void shouldCaptureBRemoteBeanOne() throws Exception {
         Trace trace = container.execute(ExecuteBRemoteBeanOne.class);
-        Trace.Header header = trace.getHeader();
-        assertThat(header.getTransactionType()).isEqualTo("Web");
-        assertThat(header.getTransactionName()).isEqualTo("EJB remote: BRemoteOne#one");
-        assertThat(header.getHeadline()).isEqualTo(
+        assertThat(trace.transactionType()).isEqualTo("Web");
+        assertThat(trace.transactionName()).isEqualTo("EJB remote: BRemoteOne#one");
+        assertThat(trace.headline()).isEqualTo(
                 "EJB remote: org.glowroot.xyzzy.instrumentation.ejb.EjbRemoteIT$BRemoteOne.one()");
     }
 
     @Test
     public void shouldCaptureBRemoteBeanTwo() throws Exception {
         Trace trace = container.execute(ExecuteBRemoteBeanTwo.class);
-        Trace.Header header = trace.getHeader();
-        assertThat(header.getTransactionType()).isEqualTo("Web");
-        assertThat(header.getTransactionName()).isEqualTo("EJB remote: BRemoteTwo#two");
-        assertThat(header.getHeadline()).isEqualTo(
+        assertThat(trace.transactionType()).isEqualTo("Web");
+        assertThat(trace.transactionName()).isEqualTo("EJB remote: BRemoteTwo#two");
+        assertThat(trace.headline()).isEqualTo(
                 "EJB remote: org.glowroot.xyzzy.instrumentation.ejb.EjbRemoteIT$BRemoteTwo.two()");
     }
 
     @Test
     public void shouldCaptureB2RemoteBeanOne() throws Exception {
         Trace trace = container.execute(ExecuteB2RemoteBeanOne.class);
-        Trace.Header header = trace.getHeader();
-        assertThat(header.getTransactionType()).isEqualTo("Web");
-        assertThat(header.getTransactionName()).isEqualTo("EJB remote: BRemoteOne#one");
-        assertThat(header.getHeadline()).isEqualTo(
+        assertThat(trace.transactionType()).isEqualTo("Web");
+        assertThat(trace.transactionName()).isEqualTo("EJB remote: BRemoteOne#one");
+        assertThat(trace.headline()).isEqualTo(
                 "EJB remote: org.glowroot.xyzzy.instrumentation.ejb.EjbRemoteIT$BRemoteOne.one()");
     }
 
     @Test
     public void shouldCaptureB2RemoteBeanTwo() throws Exception {
         Trace trace = container.execute(ExecuteB2RemoteBeanTwo.class);
-        Trace.Header header = trace.getHeader();
-        assertThat(header.getTransactionType()).isEqualTo("Web");
-        assertThat(header.getTransactionName()).isEqualTo("EJB remote: BRemoteTwo#two");
-        assertThat(header.getHeadline()).isEqualTo(
+        assertThat(trace.transactionType()).isEqualTo("Web");
+        assertThat(trace.transactionName()).isEqualTo("EJB remote: BRemoteTwo#two");
+        assertThat(trace.headline()).isEqualTo(
                 "EJB remote: org.glowroot.xyzzy.instrumentation.ejb.EjbRemoteIT$BRemoteTwo.two()");
     }
 
     @Test
     public void shouldCaptureB3RemoteBeanOne() throws Exception {
         Trace trace = container.execute(ExecuteB3RemoteBeanOne.class);
-        Trace.Header header = trace.getHeader();
-        assertThat(header.getTransactionType()).isEqualTo("Web");
-        assertThat(header.getTransactionName()).isEqualTo("EJB remote: BRemoteOne#one");
-        assertThat(header.getHeadline()).isEqualTo(
+        assertThat(trace.transactionType()).isEqualTo("Web");
+        assertThat(trace.transactionName()).isEqualTo("EJB remote: BRemoteOne#one");
+        assertThat(trace.headline()).isEqualTo(
                 "EJB remote: org.glowroot.xyzzy.instrumentation.ejb.EjbRemoteIT$BRemoteOne.one()");
     }
 
     @Test
     public void shouldCaptureB3RemoteBeanTwo() throws Exception {
         Trace trace = container.execute(ExecuteB3RemoteBeanTwo.class);
-        Trace.Header header = trace.getHeader();
-        assertThat(header.getTransactionType()).isEqualTo("Web");
-        assertThat(header.getTransactionName()).isEqualTo("EJB remote: BRemoteTwo#two");
-        assertThat(header.getHeadline()).isEqualTo(
+        assertThat(trace.transactionType()).isEqualTo("Web");
+        assertThat(trace.transactionName()).isEqualTo("EJB remote: BRemoteTwo#two");
+        assertThat(trace.headline()).isEqualTo(
                 "EJB remote: org.glowroot.xyzzy.instrumentation.ejb.EjbRemoteIT$BRemoteTwo.two()");
     }
 
     @Test
     public void shouldCaptureCRemoteSessionBeanOne() throws Exception {
         Trace trace = container.execute(ExecuteCRemoteSessionBeanOne.class);
-        Trace.Header header = trace.getHeader();
-        assertThat(header.getTransactionType()).isEqualTo("Web");
-        assertThat(header.getTransactionName()).isEqualTo("EJB remote: CRemoteSessionOne#one");
-        assertThat(header.getHeadline()).isEqualTo(
+        assertThat(trace.transactionType()).isEqualTo("Web");
+        assertThat(trace.transactionName()).isEqualTo("EJB remote: CRemoteSessionOne#one");
+        assertThat(trace.headline()).isEqualTo(
                 "EJB remote: org.glowroot.xyzzy.instrumentation.ejb.EjbRemoteIT$CRemoteSessionOne.one()");
     }
 

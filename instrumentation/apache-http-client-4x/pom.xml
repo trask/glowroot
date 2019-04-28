@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.glowroot.xyzzy</groupId>
+    <artifactId>xyzzy-parent</artifactId>
+    <version>0.13.5-SNAPSHOT</version>
+    <relativePath>../..</relativePath>
+  </parent>
+
+  <groupId>org.glowroot.xyzzy.instrumentation</groupId>
+  <artifactId>instrumentation-apache-http-client-4x</artifactId>
+
+  <name>Instrumentation for Apache HttpClient 4.x</name>
+  <description>Instrumentation for Apache HttpClient 4.x</description>
+
+  <properties>
+    <!-- instrumented libraries -->
+    <apache.httpclient.version>4.5.6</apache.httpclient.version>
+    <apache.httpcore.version>4.4.10</apache.httpcore.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.glowroot.xyzzy</groupId>
+      <artifactId>xyzzy-instrumentation-api</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <version>${apache.httpclient.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpcore</artifactId>
+      <version>${apache.httpcore.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.glowroot.xyzzy</groupId>
+      <artifactId>xyzzy-test-harness</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <profiles>
+    <profile>
+      <id>apache-httpclient-pre-4.2</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+              <testExcludes>
+                <exclude>
+                  org/glowroot/agent/plugin/httpclient/ApacheHttpAsyncClientPluginIT.java
+                </exclude>
+              </testExcludes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>

@@ -29,7 +29,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -49,7 +49,7 @@ public class SessionIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
@@ -58,11 +58,12 @@ public class SessionIT {
         Trace trace = container.execute(CriteriaQuery.class);
 
         // then
-        Trace.Timer mainThreadRootTimer = trace.getHeader().getMainThreadRootTimer();
-        assertThat(mainThreadRootTimer.getChildTimerCount()).isEqualTo(1);
-        assertThat(mainThreadRootTimer.getChildTimer(0).getName()).isEqualTo("hibernate query");
-        assertThat(mainThreadRootTimer.getChildTimer(0).getChildTimerCount()).isZero();
-        assertThat(trace.getEntryList()).isEmpty();
+        Trace.Timer mainThreadRootTimer = trace.mainThreadRootTimer();
+        assertThat(mainThreadRootTimer.childTimers().size()).isEqualTo(1);
+        assertThat(mainThreadRootTimer.childTimers().get(0).name())
+                .isEqualTo("hibernate query");
+        assertThat(mainThreadRootTimer.childTimers().get(0).childTimers()).isEmpty();
+        assertThat(trace.entries()).isEmpty();
     }
 
     // TODO add unit test for jpa criteria query
@@ -73,9 +74,9 @@ public class SessionIT {
         Trace trace = container.execute(SessionSave.class);
 
         // then
-        List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
+        List<Trace.Timer> timers = trace.mainThreadRootTimer().childTimers();
         assertThat(timers).hasSize(1);
-        assertThat(timers.get(0).getName()).isEqualTo("hibernate save");
+        assertThat(timers.get(0).name()).isEqualTo("hibernate save");
     }
 
     @Test
@@ -84,9 +85,9 @@ public class SessionIT {
         Trace trace = container.execute(SessionSaveTwoArg.class);
 
         // then
-        List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
+        List<Trace.Timer> timers = trace.mainThreadRootTimer().childTimers();
         assertThat(timers).hasSize(1);
-        assertThat(timers.get(0).getName()).isEqualTo("hibernate save");
+        assertThat(timers.get(0).name()).isEqualTo("hibernate save");
     }
 
     @Test
@@ -95,9 +96,9 @@ public class SessionIT {
         Trace trace = container.execute(SessionSaveOrUpdate.class);
 
         // then
-        List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
+        List<Trace.Timer> timers = trace.mainThreadRootTimer().childTimers();
         assertThat(timers).hasSize(1);
-        assertThat(timers.get(0).getName()).isEqualTo("hibernate saveOrUpdate");
+        assertThat(timers.get(0).name()).isEqualTo("hibernate saveOrUpdate");
     }
 
     @Test
@@ -106,9 +107,9 @@ public class SessionIT {
         Trace trace = container.execute(SessionSaveOrUpdateTwoArg.class);
 
         // then
-        List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
+        List<Trace.Timer> timers = trace.mainThreadRootTimer().childTimers();
         assertThat(timers).hasSize(1);
-        assertThat(timers.get(0).getName()).isEqualTo("hibernate saveOrUpdate");
+        assertThat(timers.get(0).name()).isEqualTo("hibernate saveOrUpdate");
     }
 
     @Test
@@ -117,9 +118,9 @@ public class SessionIT {
         Trace trace = container.execute(SessionUpdate.class);
 
         // then
-        List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
+        List<Trace.Timer> timers = trace.mainThreadRootTimer().childTimers();
         assertThat(timers).hasSize(1);
-        assertThat(timers.get(0).getName()).isEqualTo("hibernate update");
+        assertThat(timers.get(0).name()).isEqualTo("hibernate update");
     }
 
     @Test
@@ -128,9 +129,9 @@ public class SessionIT {
         Trace trace = container.execute(SessionUpdateTwoArg.class);
 
         // then
-        List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
+        List<Trace.Timer> timers = trace.mainThreadRootTimer().childTimers();
         assertThat(timers).hasSize(1);
-        assertThat(timers.get(0).getName()).isEqualTo("hibernate update");
+        assertThat(timers.get(0).name()).isEqualTo("hibernate update");
     }
 
     @Test
@@ -139,9 +140,9 @@ public class SessionIT {
         Trace trace = container.execute(SessionMerge.class);
 
         // then
-        List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
+        List<Trace.Timer> timers = trace.mainThreadRootTimer().childTimers();
         assertThat(timers).hasSize(1);
-        assertThat(timers.get(0).getName()).isEqualTo("hibernate merge");
+        assertThat(timers.get(0).name()).isEqualTo("hibernate merge");
     }
 
     @Test
@@ -150,9 +151,9 @@ public class SessionIT {
         Trace trace = container.execute(SessionMergeTwoArg.class);
 
         // then
-        List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
+        List<Trace.Timer> timers = trace.mainThreadRootTimer().childTimers();
         assertThat(timers).hasSize(1);
-        assertThat(timers.get(0).getName()).isEqualTo("hibernate merge");
+        assertThat(timers.get(0).name()).isEqualTo("hibernate merge");
     }
 
     @Test
@@ -161,9 +162,9 @@ public class SessionIT {
         Trace trace = container.execute(SessionPersist.class);
 
         // then
-        List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
+        List<Trace.Timer> timers = trace.mainThreadRootTimer().childTimers();
         assertThat(timers).hasSize(1);
-        assertThat(timers.get(0).getName()).isEqualTo("hibernate persist");
+        assertThat(timers.get(0).name()).isEqualTo("hibernate persist");
     }
 
     @Test
@@ -172,9 +173,9 @@ public class SessionIT {
         Trace trace = container.execute(SessionPersistTwoArg.class);
 
         // then
-        List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
+        List<Trace.Timer> timers = trace.mainThreadRootTimer().childTimers();
         assertThat(timers).hasSize(1);
-        assertThat(timers.get(0).getName()).isEqualTo("hibernate persist");
+        assertThat(timers.get(0).name()).isEqualTo("hibernate persist");
     }
 
     @Test
@@ -183,9 +184,9 @@ public class SessionIT {
         Trace trace = container.execute(SessionDelete.class);
 
         // then
-        List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
+        List<Trace.Timer> timers = trace.mainThreadRootTimer().childTimers();
         assertThat(timers).hasSize(1);
-        assertThat(timers.get(0).getName()).isEqualTo("hibernate delete");
+        assertThat(timers.get(0).name()).isEqualTo("hibernate delete");
     }
 
     @Test
@@ -194,9 +195,9 @@ public class SessionIT {
         Trace trace = container.execute(SessionDeleteTwoArg.class);
 
         // then
-        List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
+        List<Trace.Timer> timers = trace.mainThreadRootTimer().childTimers();
         assertThat(timers).hasSize(1);
-        assertThat(timers.get(0).getName()).isEqualTo("hibernate delete");
+        assertThat(timers.get(0).name()).isEqualTo("hibernate delete");
     }
 
     @Test
@@ -205,11 +206,11 @@ public class SessionIT {
         Trace trace = container.execute(SessionFlush.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("hibernate flush");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("hibernate flush");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -220,11 +221,11 @@ public class SessionIT {
         Trace trace = container.execute(TransactionCommit.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("hibernate commit");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("hibernate commit");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -235,11 +236,11 @@ public class SessionIT {
         Trace trace = container.execute(TransactionRollback.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("hibernate rollback");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("hibernate rollback");
 
         assertThat(i.hasNext()).isFalse();
     }

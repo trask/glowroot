@@ -32,7 +32,7 @@ import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TraceEntryMarker;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -60,7 +60,7 @@ public class LotsOfNestedAuxThreadContextsIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
@@ -69,23 +69,22 @@ public class LotsOfNestedAuxThreadContextsIT {
         Trace trace = container.execute(DoSubmitCallable.class);
 
         // then
-        assertThat(trace.getHeader().hasAuxThreadRootTimer()).isTrue();
-        Trace.Timer auxThreadRootTimer = trace.getHeader().getAuxThreadRootTimer();
-        assertThat(auxThreadRootTimer.getCount()).isEqualTo(100000);
-        assertThat(auxThreadRootTimer.getActive()).isFalse();
-        assertThat(auxThreadRootTimer.getChildTimerCount()).isEqualTo(1);
-        assertThat(auxThreadRootTimer.getChildTimer(0).getName())
+        assertThat(trace.auxThreadRootTimer()).isNotNull();
+        Trace.Timer auxThreadRootTimer = trace.auxThreadRootTimer();
+        assertThat(auxThreadRootTimer.count()).isEqualTo(100000);
+        assertThat(auxThreadRootTimer.childTimers().size()).isEqualTo(1);
+        assertThat(auxThreadRootTimer.childTimers().get(0).name())
                 .isEqualTo("mock trace entry marker");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("auxiliary thread");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("auxiliary thread");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(1);
-        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(entry.depth()).isEqualTo(1);
+        assertThat(entry.message()).isEqualTo("trace entry marker / CreateTraceEntry");
 
         assertThat(i.hasNext()).isFalse();
     }

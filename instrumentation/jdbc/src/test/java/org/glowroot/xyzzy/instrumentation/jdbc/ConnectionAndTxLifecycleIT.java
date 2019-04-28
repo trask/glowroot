@@ -32,7 +32,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -54,28 +54,28 @@ public class ConnectionAndTxLifecycleIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
     public void testConnectionLifecycle() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
+        container.setInstrumentationProperty(INSTRUMENTATION_ID,
                 "captureConnectionLifecycleTraceEntries", true);
 
         // when
         Trace trace = container.execute(ExecuteGetConnectionAndConnectionClose.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jdbc get connection");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jdbc get connection");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jdbc connection close");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jdbc connection close");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -83,59 +83,54 @@ public class ConnectionAndTxLifecycleIT {
     @Test
     public void testConnectionLifecycleDisabled() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureGetConnection", false);
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureConnectionClose", false);
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureGetConnection", false);
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureConnectionClose", false);
 
         // when
         Trace trace = container.execute(ExecuteGetConnectionAndConnectionClose.class);
 
         // then
-        Trace.Header header = trace.getHeader();
-        Trace.Timer rootTimer = header.getMainThreadRootTimer();
-        assertThat(rootTimer.getChildTimerList()).isEmpty();
-        assertThat(header.getEntryCount()).isZero();
+        Trace.Timer rootTimer = trace.mainThreadRootTimer();
+        assertThat(rootTimer.childTimers()).isEmpty();
+        assertThat(trace.entries()).isEmpty();
     }
 
     @Test
     public void testConnectionLifecyclePartiallyDisabled() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureConnectionClose", true);
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureConnectionClose", true);
 
         // when
         Trace trace = container.execute(ExecuteGetConnectionAndConnectionClose.class);
 
         // then
-        Trace.Header header = trace.getHeader();
-        Trace.Timer rootTimer = header.getMainThreadRootTimer();
-        assertThat(rootTimer.getChildTimerList()).hasSize(2);
+        Trace.Timer rootTimer = trace.mainThreadRootTimer();
+        assertThat(rootTimer.childTimers()).hasSize(2);
         // ordering is by total desc, so order is not fixed
         Set<String> childTimerNames = Sets.newHashSet();
-        childTimerNames.add(rootTimer.getChildTimerList().get(0).getName());
-        childTimerNames.add(rootTimer.getChildTimerList().get(1).getName());
+        childTimerNames.add(rootTimer.childTimers().get(0).name());
+        childTimerNames.add(rootTimer.childTimers().get(1).name());
         assertThat(childTimerNames).containsOnly("jdbc get connection", "jdbc connection close");
-        assertThat(header.getEntryCount()).isZero();
+        assertThat(trace.entries()).isEmpty();
     }
 
     @Test
     public void testConnectionLifecycleGetConnectionThrows() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
+        container.setInstrumentationProperty(INSTRUMENTATION_ID,
                 "captureConnectionLifecycleTraceEntries", true);
 
         // when
         Trace trace = container.execute(ExecuteGetConnectionOnThrowingDataSource.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jdbc get connection");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jdbc get connection");
 
-        assertThat(entry.getError().getMessage())
+        assertThat(entry.error().message())
                 .isEqualTo("java.sql.SQLException: A getconnection failure");
 
         assertThat(i.hasNext()).isFalse();
@@ -144,19 +139,16 @@ public class ConnectionAndTxLifecycleIT {
     @Test
     public void testConnectionLifecycleGetConnectionThrowsDisabled() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureGetConnection", false);
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureConnectionClose", false);
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureGetConnection", false);
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureConnectionClose", false);
 
         // when
         Trace trace = container.execute(ExecuteGetConnectionOnThrowingDataSource.class);
 
         // then
-        Trace.Header header = trace.getHeader();
-        Trace.Timer rootTimer = header.getMainThreadRootTimer();
-        assertThat(rootTimer.getChildTimerList()).isEmpty();
-        assertThat(header.getEntryCount()).isZero();
+        Trace.Timer rootTimer = trace.mainThreadRootTimer();
+        assertThat(rootTimer.childTimers()).isEmpty();
+        assertThat(trace.entries()).isEmpty();
     }
 
     @Test
@@ -165,38 +157,37 @@ public class ConnectionAndTxLifecycleIT {
         Trace trace = container.execute(ExecuteGetConnectionOnThrowingDataSource.class);
 
         // then
-        Trace.Header header = trace.getHeader();
-        Trace.Timer rootTimer = header.getMainThreadRootTimer();
-        assertThat(rootTimer.getChildTimerList()).hasSize(1);
-        assertThat(rootTimer.getChildTimerList().get(0).getName()).isEqualTo("jdbc get connection");
-        assertThat(header.getEntryCount()).isZero();
+        Trace.Timer rootTimer = trace.mainThreadRootTimer();
+        assertThat(rootTimer.childTimers()).hasSize(1);
+        assertThat(rootTimer.childTimers().get(0).name()).isEqualTo("jdbc get connection");
+        assertThat(trace.entries()).isEmpty();
     }
 
     @Test
     public void testConnectionLifecycleCloseConnectionThrows() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
+        container.setInstrumentationProperty(INSTRUMENTATION_ID,
                 "captureConnectionLifecycleTraceEntries", true);
 
         // when
         Trace trace = container.execute(ExecuteCloseConnectionOnThrowingDataSource.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jdbc get connection");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jdbc get connection");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jdbc connection close");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jdbc connection close");
 
-        assertThat(entry.getError().getMessage())
+        assertThat(entry.error().message())
                 .isEqualTo("java.sql.SQLException: A close failure");
 
         entry = i.next();
-        assertThat(entry.getMessage()).startsWith("Resource leak");
+        assertThat(entry.message()).startsWith("Resource leak");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -204,23 +195,20 @@ public class ConnectionAndTxLifecycleIT {
     @Test
     public void testConnectionLifecycleCloseConnectionThrowsDisabled() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureGetConnection", false);
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureConnectionClose", false);
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureGetConnection", false);
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureConnectionClose", false);
 
         // when
         Trace trace = container.execute(ExecuteCloseConnectionOnThrowingDataSource.class);
 
         // then
-        Trace.Header header = trace.getHeader();
-        Trace.Timer rootTimer = header.getMainThreadRootTimer();
-        assertThat(rootTimer.getChildTimerList()).isEmpty();
+        Trace.Timer rootTimer = trace.mainThreadRootTimer();
+        assertThat(rootTimer.childTimers()).isEmpty();
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getMessage()).startsWith("Resource leak");
+        assertThat(entry.message()).startsWith("Resource leak");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -228,26 +216,24 @@ public class ConnectionAndTxLifecycleIT {
     @Test
     public void testConnectionLifecycleCloseConnectionThrowsPartiallyDisabled() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureConnectionClose", true);
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureConnectionClose", true);
 
         // when
         Trace trace = container.execute(ExecuteCloseConnectionOnThrowingDataSource.class);
 
         // then
-        Trace.Header header = trace.getHeader();
-        Trace.Timer rootTimer = header.getMainThreadRootTimer();
-        assertThat(rootTimer.getChildTimerList()).hasSize(2);
+        Trace.Timer rootTimer = trace.mainThreadRootTimer();
+        assertThat(rootTimer.childTimers()).hasSize(2);
         // ordering is by total desc, so order is not fixed
         Set<String> childTimerNames = Sets.newHashSet();
-        childTimerNames.add(rootTimer.getChildTimerList().get(0).getName());
-        childTimerNames.add(rootTimer.getChildTimerList().get(1).getName());
+        childTimerNames.add(rootTimer.childTimers().get(0).name());
+        childTimerNames.add(rootTimer.childTimers().get(1).name());
         assertThat(childTimerNames).containsOnly("jdbc get connection", "jdbc connection close");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getMessage()).startsWith("Resource leak");
+        assertThat(entry.message()).startsWith("Resource leak");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -255,27 +241,27 @@ public class ConnectionAndTxLifecycleIT {
     @Test
     public void testTransactionLifecycle() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
+        container.setInstrumentationProperty(INSTRUMENTATION_ID,
                 "captureTransactionLifecycleTraceEntries", true);
 
         // when
         Trace trace = container.execute(ExecuteSetAutoCommit.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jdbc set autocommit: false");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jdbc set autocommit: false");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jdbc set autocommit: true");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jdbc set autocommit: true");
 
         if (i.hasNext()) {
             entry = i.next();
-            assertThat(entry.getDepth()).isEqualTo(0);
-            assertThat(entry.getMessage()).isEqualTo("jdbc commit");
+            assertThat(entry.depth()).isEqualTo(0);
+            assertThat(entry.message()).isEqualTo("jdbc commit");
 
         }
 
@@ -285,27 +271,27 @@ public class ConnectionAndTxLifecycleIT {
     @Test
     public void testTransactionLifecycleThrowing() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
+        container.setInstrumentationProperty(INSTRUMENTATION_ID,
                 "captureTransactionLifecycleTraceEntries", true);
 
         // when
         Trace trace = container.execute(ExecuteSetAutoCommitThrowing.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jdbc set autocommit: false");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jdbc set autocommit: false");
 
-        assertThat(entry.getError().getMessage())
+        assertThat(entry.error().message())
                 .isEqualTo("java.sql.SQLException: A setautocommit failure");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jdbc set autocommit: true");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jdbc set autocommit: true");
 
-        assertThat(entry.getError().getMessage())
+        assertThat(entry.error().message())
                 .isEqualTo("java.sql.SQLException: A setautocommit failure");
 
         assertThat(i.hasNext()).isFalse();
@@ -314,24 +300,24 @@ public class ConnectionAndTxLifecycleIT {
     @Test
     public void testConnectionLifecycleAndTransactionLifecycleTogether() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
+        container.setInstrumentationProperty(INSTRUMENTATION_ID,
                 "captureConnectionLifecycleTraceEntries", true);
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
+        container.setInstrumentationProperty(INSTRUMENTATION_ID,
                 "captureTransactionLifecycleTraceEntries", true);
 
         // when
         Trace trace = container.execute(ExecuteGetConnectionAndConnectionClose.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jdbc get connection (autocommit: true)");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jdbc get connection (autocommit: true)");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jdbc connection close");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("jdbc connection close");
 
         assertThat(i.hasNext()).isFalse();
     }

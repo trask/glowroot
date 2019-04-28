@@ -1,0 +1,8 @@
+{
+  "name": "OkHttp 2.x",
+  "id": "okhttp-2x",
+  "classes": [
+    "org.glowroot.xyzzy.instrumentation.httpclient.OkHttp2xInstrumentation"
+  ],
+  "collocate": true
+}

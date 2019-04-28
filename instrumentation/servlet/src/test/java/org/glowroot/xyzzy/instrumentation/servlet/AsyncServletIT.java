@@ -37,7 +37,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TraceEntryMarker;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -61,7 +61,7 @@ public class AsyncServletIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
@@ -97,17 +97,16 @@ public class AsyncServletIT {
     private void testAsyncServlet(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.of("*"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.of("*"));
 
         // when
         Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(header.getAsync()).isTrue();
-        assertThat(header.getHeadline()).isEqualTo(contextPath + "/async");
-        assertThat(header.getTransactionName()).isEqualTo(contextPath + "/async");
+        assertThat(trace.async()).isTrue();
+        assertThat(trace.headline()).isEqualTo(contextPath + "/async");
+        assertThat(trace.transactionName()).isEqualTo(contextPath + "/async");
 
         // check session attributes set across async boundary
         assertThat(SessionAttributeIT.getSessionAttributes(trace)).isNull();
@@ -117,19 +116,19 @@ public class AsyncServletIT {
         assertThat(SessionAttributeIT.getUpdatedSessionAttributes(trace).get("async"))
                 .isEqualTo("b");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("trace entry marker / CreateTraceEntry");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("auxiliary thread");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("auxiliary thread");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(1);
-        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(entry.depth()).isEqualTo(1);
+        assertThat(entry.message()).isEqualTo("trace entry marker / CreateTraceEntry");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -137,17 +136,16 @@ public class AsyncServletIT {
     private void testAsyncServlet2(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.of("*"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.of("*"));
 
         // when
         Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(header.getAsync()).isTrue();
-        assertThat(header.getHeadline()).isEqualTo(contextPath + "/async2");
-        assertThat(header.getTransactionName()).isEqualTo(contextPath + "/async2");
+        assertThat(trace.async()).isTrue();
+        assertThat(trace.headline()).isEqualTo(contextPath + "/async2");
+        assertThat(trace.transactionName()).isEqualTo(contextPath + "/async2");
 
         // check session attributes set across async boundary
         assertThat(SessionAttributeIT.getSessionAttributes(trace)).isNull();
@@ -157,19 +155,19 @@ public class AsyncServletIT {
         assertThat(SessionAttributeIT.getUpdatedSessionAttributes(trace).get("async"))
                 .isEqualTo("b");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("trace entry marker / CreateTraceEntry");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("auxiliary thread");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("auxiliary thread");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(1);
-        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(entry.depth()).isEqualTo(1);
+        assertThat(entry.message()).isEqualTo("trace entry marker / CreateTraceEntry");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -177,17 +175,16 @@ public class AsyncServletIT {
     private void testAsyncServletWithDispatch(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureSessionAttributes", ImmutableList.of("*"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureSessionAttributes",
+                ImmutableList.of("*"));
 
         // when
         Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(header.getAsync()).isTrue();
-        assertThat(header.getHeadline()).isEqualTo(contextPath + "/async3");
-        assertThat(header.getTransactionName()).isEqualTo(contextPath + "/async3");
+        assertThat(trace.async()).isTrue();
+        assertThat(trace.headline()).isEqualTo(contextPath + "/async3");
+        assertThat(trace.transactionName()).isEqualTo(contextPath + "/async3");
 
         // and check session attributes set across async and dispatch boundary
         assertThat(SessionAttributeIT.getSessionAttributes(trace)).isNull();
@@ -199,27 +196,27 @@ public class AsyncServletIT {
         assertThat(SessionAttributeIT.getUpdatedSessionAttributes(trace).get("async-dispatch"))
                 .isEqualTo("c");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("trace entry marker / CreateTraceEntry");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("auxiliary thread");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEqualTo("auxiliary thread");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(1);
-        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(entry.depth()).isEqualTo(1);
+        assertThat(entry.message()).isEqualTo("trace entry marker / CreateTraceEntry");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(1);
-        assertThat(entry.getMessage()).isEqualTo("auxiliary thread");
+        assertThat(entry.depth()).isEqualTo(1);
+        assertThat(entry.message()).isEqualTo("auxiliary thread");
 
         entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(2);
-        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(entry.depth()).isEqualTo(2);
+        assertThat(entry.message()).isEqualTo("trace entry marker / CreateTraceEntry");
 
         if (i.hasNext()) {
             // this happens sporadically on travis ci because the auxiliary thread
@@ -232,8 +229,8 @@ public class AsyncServletIT {
             // see similar issue in org.glowroot.xyzzy.instrumentation.spring.AsyncControllerIT
 
             entry = i.next();
-            assertThat(entry.getDepth()).isEqualTo(1);
-            assertThat(entry.getMessage()).isEqualTo(
+            assertThat(entry.depth()).isEqualTo(1);
+            assertThat(entry.message()).isEqualTo(
                     "this auxiliary thread was still running when the transaction ended");
         }
 

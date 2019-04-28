@@ -36,7 +36,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -58,14 +58,14 @@ public class RequestHeaderIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
     public void testStandardRequestHeaders() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureRequestHeaders", ImmutableList.of("Content-Type", " Content-Length"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureRequestHeaders",
+                ImmutableList.of("Content-Type", " Content-Length"));
 
         // when
         Trace trace = container.execute(SetStandardRequestHeaders.class, "Web");
@@ -81,8 +81,8 @@ public class RequestHeaderIT {
     @Test
     public void testStandardRequestHeadersLowercase() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureRequestHeaders", ImmutableList.of("Content-Type", " Content-Length"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureRequestHeaders",
+                ImmutableList.of("Content-Type", " Content-Length"));
 
         // when
         Trace trace = container.execute(SetStandardRequestHeadersLowercase.class, "Web");
@@ -98,8 +98,8 @@ public class RequestHeaderIT {
     @Test
     public void testLotsOfRequestHeaders() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureRequestHeaders", ImmutableList.of("One", "Two"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureRequestHeaders",
+                ImmutableList.of("One", "Two"));
 
         // when
         Trace trace = container.execute(SetOtherRequestHeaders.class, "Web");
@@ -117,8 +117,8 @@ public class RequestHeaderIT {
     @Test
     public void testBadRequestHeaders() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureRequestHeaders", ImmutableList.of("Content-Type", " Content-Length"));
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureRequestHeaders",
+                ImmutableList.of("Content-Type", " Content-Length"));
 
         // when
         Trace trace = container.execute(GetBadRequestHeaders.class, "Web");
@@ -132,8 +132,7 @@ public class RequestHeaderIT {
     @Test
     public void testBadRequestHeaders2() throws Exception {
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureRequestHeaders",
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureRequestHeaders",
                 ImmutableList.of("Content-Type", " Content-Length", " h1"));
 
         // when

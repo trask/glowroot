@@ -29,7 +29,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 import org.glowroot.xyzzy.instrumentation.jdbc.Connections.ConnectionType;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,7 +53,7 @@ public class ObjectPoolIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
@@ -66,10 +66,9 @@ public class ObjectPoolIT {
         Trace trace = container.execute(ReturnCommonsDbcpConnection.class);
 
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(header.hasError()).isFalse();
+        assertThat(trace.error()).isNull();
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
         assertThat(i.hasNext()).isFalse();
     }
 
@@ -83,13 +82,11 @@ public class ObjectPoolIT {
         Trace trace = container.execute(LeakCommonsDbcpConnection.class);
 
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(header.hasError()).isTrue();
-        assertThat(header.getError().getMessage()).startsWith("Resource leaked");
+        assertThat(trace.error().message()).startsWith("Resource leaked");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
         Trace.Entry entry = i.next();
-        assertThat(entry.getMessage()).startsWith("Resource leaked");
+        assertThat(entry.message()).startsWith("Resource leaked");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -104,10 +101,9 @@ public class ObjectPoolIT {
         Trace trace = container.execute(ReturnCommonsDbcp2Connection.class);
 
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(header.hasError()).isFalse();
+        assertThat(trace.error()).isNull();
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
         assertThat(i.hasNext()).isFalse();
     }
 
@@ -121,13 +117,11 @@ public class ObjectPoolIT {
         Trace trace = container.execute(LeakCommonsDbcp2Connection.class);
 
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(header.hasError()).isTrue();
-        assertThat(header.getError().getMessage()).startsWith("Resource leaked");
+        assertThat(trace.error().message()).startsWith("Resource leaked");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
         Trace.Entry entry = i.next();
-        assertThat(entry.getMessage()).startsWith("Resource leaked");
+        assertThat(entry.message()).startsWith("Resource leaked");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -142,10 +136,9 @@ public class ObjectPoolIT {
         Trace trace = container.execute(ReturnTomcatConnection.class);
 
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(header.hasError()).isFalse();
+        assertThat(trace.error()).isNull();
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
         assertThat(i.hasNext()).isFalse();
     }
 
@@ -159,13 +152,11 @@ public class ObjectPoolIT {
         Trace trace = container.execute(LeakTomcatConnection.class);
 
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(header.hasError()).isTrue();
-        assertThat(header.getError().getMessage()).startsWith("Resource leaked");
+        assertThat(trace.error().message()).startsWith("Resource leaked");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
         Trace.Entry entry = i.next();
-        assertThat(entry.getMessage()).startsWith("Resource leaked");
+        assertThat(entry.message()).startsWith("Resource leaked");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -180,10 +171,9 @@ public class ObjectPoolIT {
         Trace trace = container.execute(ReturnTomcatAsyncConnection.class);
 
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(header.hasError()).isFalse();
+        assertThat(trace.error()).isNull();
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
         assertThat(i.hasNext()).isFalse();
     }
 
@@ -197,13 +187,11 @@ public class ObjectPoolIT {
         Trace trace = container.execute(LeakTomcatAsyncConnection.class);
 
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(header.hasError()).isTrue();
-        assertThat(header.getError().getMessage()).startsWith("Resource leaked");
+        assertThat(trace.error().message()).startsWith("Resource leaked");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
         Trace.Entry entry = i.next();
-        assertThat(entry.getMessage()).startsWith("Resource leaked");
+        assertThat(entry.message()).startsWith("Resource leaked");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -219,10 +207,9 @@ public class ObjectPoolIT {
         Trace trace = container.execute(ReturnGlassfishConnection.class);
 
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(header.hasError()).isFalse();
+        assertThat(trace.error()).isNull();
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
         assertThat(i.hasNext()).isFalse();
     }
 
@@ -237,13 +224,11 @@ public class ObjectPoolIT {
         Trace trace = container.execute(LeakGlassfishConnection.class);
 
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(header.hasError()).isTrue();
-        assertThat(header.getError().getMessage()).startsWith("Resource leaked");
+        assertThat(trace.error().message()).startsWith("Resource leaked");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
         Trace.Entry entry = i.next();
-        assertThat(entry.getMessage()).startsWith("Resource leaked");
+        assertThat(entry.message()).startsWith("Resource leaked");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -258,10 +243,9 @@ public class ObjectPoolIT {
         Trace trace = container.execute(ReturnHikariConnection.class);
 
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(header.hasError()).isFalse();
+        assertThat(trace.error()).isNull();
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
         assertThat(i.hasNext()).isFalse();
     }
 
@@ -275,13 +259,11 @@ public class ObjectPoolIT {
         Trace trace = container.execute(LeakHikariConnection.class);
 
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(header.hasError()).isTrue();
-        assertThat(header.getError().getMessage()).startsWith("Resource leaked");
+        assertThat(trace.error().message()).startsWith("Resource leaked");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
         Trace.Entry entry = i.next();
-        assertThat(entry.getMessage()).startsWith("Resource leaked");
+        assertThat(entry.message()).startsWith("Resource leaked");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -296,10 +278,9 @@ public class ObjectPoolIT {
         Trace trace = container.execute(ReturnBitronixConnection.class);
 
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(header.hasError()).isFalse();
+        assertThat(trace.error()).isNull();
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
         assertThat(i.hasNext()).isFalse();
     }
 
@@ -313,13 +294,11 @@ public class ObjectPoolIT {
         Trace trace = container.execute(LeakBitronixConnection.class);
 
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(header.hasError()).isTrue();
-        assertThat(header.getError().getMessage()).startsWith("Resource leaked");
+        assertThat(trace.error().message()).startsWith("Resource leaked");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
         Trace.Entry entry = i.next();
-        assertThat(entry.getMessage()).startsWith("Resource leaked");
+        assertThat(entry.message()).startsWith("Resource leaked");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -334,17 +313,15 @@ public class ObjectPoolIT {
         Trace trace = container.execute(LeakMultipleDbcpConnections.class);
 
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(header.hasError()).isTrue();
-        assertThat(header.getError().getMessage()).startsWith("Resource leaked");
+        assertThat(trace.error().message()).startsWith("Resource leaked");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
         Trace.Entry entry = i.next();
-        assertThat(entry.getMessage()).startsWith("Resource leaked");
-        assertThat(entry.getLocationStackTraceElementCount()).isZero();
+        assertThat(entry.message()).startsWith("Resource leaked");
+        assertThat(entry.locationStackTraceMillis()).isNull();
         entry = i.next();
-        assertThat(entry.getMessage()).startsWith("Resource leaked");
-        assertThat(entry.getLocationStackTraceElementCount()).isZero();
+        assertThat(entry.message()).startsWith("Resource leaked");
+        assertThat(entry.locationStackTraceMillis()).isNull();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -356,24 +333,19 @@ public class ObjectPoolIT {
         assumeTrue(Connections.getConnectionType().equals(ConnectionType.COMMONS_DBCP_WRAPPED));
 
         // given
-        container.getConfigService().setInstrumentationProperty(INSTRUMENTATION_ID,
-                "captureConnectionPoolLeakDetails", true);
+        container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureConnectionPoolLeakDetails",
+                true);
 
         // when
         Trace trace = container.execute(LeakCommonsDbcpConnection.class);
 
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(header.hasError()).isTrue();
-        assertThat(header.getError().getMessage()).startsWith("Resource leaked");
+        assertThat(trace.error().message()).startsWith("Resource leaked");
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
         Trace.Entry entry = i.next();
-        assertThat(entry.getMessage()).startsWith("Resource leaked");
-        assertThat(entry.getLocationStackTraceElementCount()).isGreaterThan(0);
-        assertThat(entry.getLocationStackTraceElement(0).getClassName())
-                .isEqualTo("org.apache.commons.pool.impl.GenericObjectPool");
-        assertThat(entry.getLocationStackTraceElement(0).getMethodName()).isEqualTo("borrowObject");
+        assertThat(entry.message()).startsWith("Resource leaked");
+        assertThat(entry.locationStackTraceMillis()).isZero();
 
         assertThat(i.hasNext()).isFalse();
     }

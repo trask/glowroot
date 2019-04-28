@@ -36,8 +36,7 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.it.harness.model.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -57,7 +56,7 @@ public class CassandraAsyncIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetConfig();
     }
 
     @Test
@@ -68,29 +67,17 @@ public class CassandraAsyncIT {
         // then
         checkTimers(trace, false, 1);
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("SELECT * FROM test.users");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("cassandra query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 10 rows");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText())
+                .isEqualTo("SELECT * FROM test.users");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("cassandra query: ");
+        assertThat(entry.queryEntryMessage().suffix()).isEqualTo(" => 10 rows");
 
         assertThat(i.hasNext()).isFalse();
-
-        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
-
-        Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("CQL");
-        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
-                .isEqualTo("SELECT * FROM test.users");
-        assertThat(query.getExecutionCount()).isEqualTo(1);
-        assertThat(query.getTotalRows().getValue()).isEqualTo(10);
-
-        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -101,30 +88,18 @@ public class CassandraAsyncIT {
         // then
         checkTimers(trace, false, 100);
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         for (int j = 0; j < 100; j++) {
             Trace.Entry entry = i.next();
-            assertThat(entry.getDepth()).isEqualTo(0);
-            assertThat(entry.getMessage()).isEmpty();
-            assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                    .getFullText()).isEqualTo("SELECT * FROM test.users");
-            assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("cassandra query: ");
-            assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 10 rows");
+            assertThat(entry.depth()).isEqualTo(0);
+            assertThat(entry.message()).isEmpty();
+            assertThat(entry.queryEntryMessage().queryText())
+                    .isEqualTo("SELECT * FROM test.users");
+            assertThat(entry.queryEntryMessage().prefix()).isEqualTo("cassandra query: ");
+            assertThat(entry.queryEntryMessage().suffix()).isEqualTo(" => 10 rows");
         }
         assertThat(i.hasNext()).isFalse();
-
-        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
-
-        Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("CQL");
-        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
-                .isEqualTo("SELECT * FROM test.users");
-        assertThat(query.getExecutionCount()).isEqualTo(100);
-        assertThat(query.getTotalRows().getValue()).isEqualTo(1000);
-
-        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -135,30 +110,17 @@ public class CassandraAsyncIT {
         // then
         checkTimers(trace, false, 1);
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("SELECT * FROM test.users where id = 12345");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("cassandra query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 0 rows");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText())
+                .isEqualTo("SELECT * FROM test.users where id = 12345");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("cassandra query: ");
+        assertThat(entry.queryEntryMessage().suffix()).isEqualTo(" => 0 rows");
 
         assertThat(i.hasNext()).isFalse();
-
-        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
-
-        Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("CQL");
-        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
-                .isEqualTo("SELECT * FROM test.users where id = 12345");
-        assertThat(query.getExecutionCount()).isEqualTo(1);
-        assertThat(query.hasTotalRows()).isTrue();
-        assertThat(query.getTotalRows().getValue()).isEqualTo(0);
-
-        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -169,29 +131,17 @@ public class CassandraAsyncIT {
         // then
         checkTimers(trace, false, 1);
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("SELECT * FROM test.users");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("cassandra query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 10 rows");
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText())
+                .isEqualTo("SELECT * FROM test.users");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("cassandra query: ");
+        assertThat(entry.queryEntryMessage().suffix()).isEqualTo(" => 10 rows");
 
         assertThat(i.hasNext()).isFalse();
-
-        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
-
-        Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("CQL");
-        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
-                .isEqualTo("SELECT * FROM test.users");
-        assertThat(query.getExecutionCount()).isEqualTo(1);
-        assertThat(query.getTotalRows().getValue()).isEqualTo(10);
-
-        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -202,30 +152,17 @@ public class CassandraAsyncIT {
         // then
         checkTimers(trace, true, 1);
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText())
-                        .isEqualTo("INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("cassandra query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText())
+                .isEqualTo("INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("cassandra query: ");
+        assertThat(entry.queryEntryMessage().suffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
-
-        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
-
-        Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("CQL");
-        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
-                .isEqualTo("INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
-        assertThat(query.getExecutionCount()).isEqualTo(1);
-        assertThat(query.hasTotalRows()).isFalse();
-
-        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -236,30 +173,12 @@ public class CassandraAsyncIT {
         // then
         checkTimers(trace, true, 1);
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+        Iterator<Trace.Entry> i = trace.entries().iterator();
 
         Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("[batch] INSERT INTO test.users (id,  fname, lname)"
-                        + " VALUES (100, 'f100', 'l100'),"
-                        + " INSERT INTO test.users (id,  fname, lname)"
-                        + " VALUES (101, 'f101', 'l101'),"
-                        + " 10 x INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?),"
-                        + " INSERT INTO test.users (id,  fname, lname)"
-                        + " VALUES (300, 'f300', 'l300')");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("cassandra query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
-
-        assertThat(i.hasNext()).isFalse();
-
-        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
-
-        Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("CQL");
-        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
+        assertThat(entry.depth()).isEqualTo(0);
+        assertThat(entry.message()).isEmpty();
+        assertThat(entry.queryEntryMessage().queryText())
                 .isEqualTo("[batch] INSERT INTO test.users (id,  fname, lname)"
                         + " VALUES (100, 'f100', 'l100'),"
                         + " INSERT INTO test.users (id,  fname, lname)"
@@ -267,17 +186,17 @@ public class CassandraAsyncIT {
                         + " 10 x INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?),"
                         + " INSERT INTO test.users (id,  fname, lname)"
                         + " VALUES (300, 'f300', 'l300')");
-        assertThat(query.getExecutionCount()).isEqualTo(1);
-        assertThat(query.hasTotalRows()).isFalse();
+        assertThat(entry.queryEntryMessage().prefix()).isEqualTo("cassandra query: ");
+        assertThat(entry.queryEntryMessage().suffix()).isEmpty();
 
-        assertThat(j.hasNext()).isFalse();
+        assertThat(i.hasNext()).isFalse();
     }
 
     private static void checkTimers(Trace trace, boolean prepared, int count) {
-        Trace.Timer rootTimer = trace.getHeader().getMainThreadRootTimer();
+        Trace.Timer rootTimer = trace.mainThreadRootTimer();
         List<String> timerNames = Lists.newArrayList();
-        for (Trace.Timer timer : rootTimer.getChildTimerList()) {
-            timerNames.add(timer.getName());
+        for (Trace.Timer timer : rootTimer.childTimers()) {
+            timerNames.add(timer.name());
         }
         Collections.sort(timerNames);
         if (prepared) {
@@ -285,14 +204,14 @@ public class CassandraAsyncIT {
         } else {
             assertThat(timerNames).containsExactly("cassandra query");
         }
-        for (Trace.Timer timer : rootTimer.getChildTimerList()) {
-            assertThat(timer.getChildTimerList()).isEmpty();
+        for (Trace.Timer timer : rootTimer.childTimers()) {
+            assertThat(timer.childTimers()).isEmpty();
         }
-        assertThat(trace.getHeader().getAsyncTimerCount()).isEqualTo(1);
-        Trace.Timer asyncTimer = trace.getHeader().getAsyncTimer(0);
-        assertThat(asyncTimer.getChildTimerCount()).isZero();
-        assertThat(asyncTimer.getName()).isEqualTo("cassandra query");
-        assertThat(asyncTimer.getCount()).isEqualTo(count);
+        assertThat(trace.asyncTimers().size()).isEqualTo(1);
+        Trace.Timer asyncTimer = trace.asyncTimers().get(0);
+        assertThat(asyncTimer.childTimers()).isEmpty();
+        assertThat(asyncTimer.name()).isEqualTo("cassandra query");
+        assertThat(asyncTimer.count()).isEqualTo(count);
     }
 
     public static class ExecuteAsyncStatement implements AppUnderTest, TransactionMarker {

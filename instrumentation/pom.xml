@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.glowroot.xyzzy</groupId>
+    <artifactId>xyzzy-parent</artifactId>
+    <version>0.13.5-SNAPSHOT</version>
+  </parent>
+
+  <groupId>org.glowroot.xyzzy.instrumentation</groupId>
+  <artifactId>instrumentation-parent</artifactId>
+  <packaging>pom</packaging>
+
+  <name>Instrumentation Parent Project</name>
+  <description>Instrumentation Parent Project</description>
+
+  <modules>
+    <module>apache-http-async-client</module>
+    <module>apache-http-client-3x</module>
+    <module>apache-http-client-4x</module>
+    <module>async-http-client-1x</module>
+    <module>async-http-client-2x</module>
+    <module>axis-client</module>
+    <module>camel</module>
+    <module>cassandra</module>
+    <module>ejb</module>
+    <module>elasticsearch</module>
+    <module>executor</module>
+    <module>grails</module>
+    <module>hibernate</module>
+    <module>http-url-connection</module>
+    <module>java-http-server</module>
+    <module>jaxrs</module>
+    <module>jaxws</module>
+    <module>jdbc</module>
+    <module>jms</module>
+    <module>jsf</module>
+    <module>jsp</module>
+    <module>kafka</module>
+    <module>logger</module>
+    <module>mail</module>
+    <module>mongodb</module>
+    <module>netty</module>
+    <module>okhttp-1x</module>
+    <module>okhttp-2x</module>
+    <module>play</module>
+    <module>quartz</module>
+    <module>redis</module>
+    <module>servlet</module>
+    <module>spring</module>
+    <module>struts</module>
+    <module>wiremock-apache-http-client</module>
+  </modules>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <profile>
+      <id>test-java6</id>
+      <activation>
+        <property>
+          <name>xyzzy.test.java6</name>
+        </property>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <artifactId>maven-compiler-plugin</artifactId>
+              <executions>
+                <execution>
+                  <id>default-testCompile</id>
+                  <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                  </configuration>
+                </execution>
+              </executions>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+  </profiles>
+</project>
