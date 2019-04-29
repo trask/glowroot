@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.xyzzy.instrumentation.httpclient;
+package org.glowroot.xyzzy.instrumentation.asynchttpclient1x;
 
 import java.util.Iterator;
 import java.util.List;
@@ -31,12 +31,11 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
+import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
-import org.glowroot.xyzzy.test.harness.IncomingSpan.Timer;
 import org.glowroot.xyzzy.test.harness.util.ExecuteHttpBase;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -72,7 +71,7 @@ public class AsyncHttpClientIT {
         assertThat(rootTimer.childTimers().get(0).name()).isEqualTo("http client request");
         assertThat(rootTimer.childTimers().get(0).count()).isEqualTo(1);
 
-        List<Timer> asyncTimers = incomingSpan.asyncTimers();
+        List<IncomingSpan.Timer> asyncTimers = incomingSpan.asyncTimers();
         assertThat(asyncTimers.size()).isEqualTo(1);
 
         IncomingSpan.Timer asyncTimer = asyncTimers.get(0);
@@ -100,7 +99,7 @@ public class AsyncHttpClientIT {
         assertThat(rootTimer.childTimers().get(0).name()).isEqualTo("http client request");
         assertThat(rootTimer.childTimers().get(0).count()).isEqualTo(1);
 
-        List<Timer> asyncTimers = trace.asyncTimers();
+        List<IncomingSpan.Timer> asyncTimers = trace.asyncTimers();
         assertThat(asyncTimers.size()).isEqualTo(1);
 
         IncomingSpan.Timer asyncTimer = asyncTimers.get(0);
@@ -128,7 +127,7 @@ public class AsyncHttpClientIT {
         assertThat(rootTimer.childTimers().get(0).name()).isEqualTo("http client request");
         assertThat(rootTimer.childTimers().get(0).count()).isEqualTo(1);
 
-        List<Timer> asyncTimers = incomingSpan.asyncTimers();
+        List<IncomingSpan.Timer> asyncTimers = incomingSpan.asyncTimers();
         assertThat(asyncTimers.size()).isEqualTo(1);
 
         IncomingSpan.Timer asyncTimer = asyncTimers.get(0);

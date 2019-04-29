@@ -2,7 +2,7 @@
   "name": "AsyncHttpClient 1.x",
   "id": "async-http-client-1x",
   "classes": [
-    "org.glowroot.xyzzy.instrumentation.httpclient.AsyncHttpClient1xInstrumentation"
+    "org.glowroot.xyzzy.instrumentation.asynchttpclient1x.AsyncHttpClient1xInstrumentation"
   ],
   "collocate": true
 }

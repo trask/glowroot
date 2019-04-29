@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.xyzzy.instrumentation.httpclient;
+package org.glowroot.xyzzy.instrumentation.asynchttpclient1x;
 
 import java.util.concurrent.Future;
 
@@ -40,8 +40,8 @@ import org.glowroot.xyzzy.instrumentation.api.weaving.OnBefore;
 import org.glowroot.xyzzy.instrumentation.api.weaving.OnReturn;
 import org.glowroot.xyzzy.instrumentation.api.weaving.OnThrow;
 import org.glowroot.xyzzy.instrumentation.api.weaving.Pointcut;
-import org.glowroot.xyzzy.instrumentation.httpclient._.AsyncHttpClientRequestInvoker;
-import org.glowroot.xyzzy.instrumentation.httpclient._.DirectExecutor;
+import org.glowroot.xyzzy.instrumentation.asynchttpclient1x._.AsyncHttpClientRequestInvoker;
+import org.glowroot.xyzzy.instrumentation.asynchttpclient1x._.DirectExecutor;
 
 public class AsyncHttpClient1xInstrumentation {
 

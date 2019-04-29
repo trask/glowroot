@@ -13,6 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.glowroot.xyzzy.instrumentation.asynchttpclient1x._;
 
-// classes in the "_" package are left in the bootstrap class loader (this is just an optimization)
-package org.glowroot.xyzzy.instrumentation.httpclient._;
+import java.util.concurrent.Executor;
+
+public class DirectExecutor implements Executor {
+
+    public static final DirectExecutor INSTANCE = new DirectExecutor();
+
+    @Override
+    public void execute(Runnable command) {
+        command.run();
+    }
+}

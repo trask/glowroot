@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.xyzzy.instrumentation.httpclient._;
+package org.glowroot.xyzzy.instrumentation.asynchttpclient1x._;
 
 import java.lang.reflect.Method;
 import java.net.URI;
