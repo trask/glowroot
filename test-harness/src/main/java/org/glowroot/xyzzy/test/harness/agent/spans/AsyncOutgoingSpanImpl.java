@@ -32,23 +32,21 @@ import org.glowroot.xyzzy.test.harness.agent.TimerImpl;
 
 public class AsyncOutgoingSpanImpl implements AsyncTraceEntry, SpanImpl {
 
+    private final long startTimeNanos;
     private final MessageSupplier messageSupplier;
-
     private final TimerImpl syncTimer;
     private final TimerImpl asyncTimer;
-
-    private final long startTimeNanos;
 
     private volatile long totalNanos;
     private volatile @Nullable Span.Error error;
     private volatile @Nullable Long locationStackTraceMillis;
 
-    public AsyncOutgoingSpanImpl(MessageSupplier messageSupplier, TimerImpl syncTimer,
-            TimerImpl asyncTimer, long startTimeNanos) {
+    public AsyncOutgoingSpanImpl(long startTimeNanos, MessageSupplier messageSupplier,
+            TimerImpl syncTimer, TimerImpl asyncTimer) {
+        this.startTimeNanos = startTimeNanos;
         this.messageSupplier = messageSupplier;
         this.syncTimer = syncTimer;
         this.asyncTimer = asyncTimer;
-        this.startTimeNanos = startTimeNanos;
     }
 
     @Override
@@ -106,10 +104,13 @@ public class AsyncOutgoingSpanImpl implements AsyncTraceEntry, SpanImpl {
     }
 
     @Override
-    public void stopSyncTimer() {}
+    public void stopSyncTimer() {
+        syncTimer.stop(System.nanoTime());
+    }
 
     @Override
     public Timer extendSyncTimer(ThreadContext currThreadContext) {
+        // TODO implement
         return NopTransactionService.TIMER;
     }
 
@@ -117,6 +118,7 @@ public class AsyncOutgoingSpanImpl implements AsyncTraceEntry, SpanImpl {
     public ImmutableOutgoingSpan toImmutable() {
         ReadableMessage message = (ReadableMessage) messageSupplier.get();
         return ImmutableOutgoingSpan.builder()
+                .totalNanos(totalNanos)
                 .message(message.getText())
                 .prefix("") // TODO revisit
                 .suffix("") // TODO revisit
@@ -127,6 +129,8 @@ public class AsyncOutgoingSpanImpl implements AsyncTraceEntry, SpanImpl {
     }
 
     private void endInternal() {
-        totalNanos = System.nanoTime() - startTimeNanos;
+        long endNanoTime = System.nanoTime();
+        totalNanos = endNanoTime - startTimeNanos;
+        asyncTimer.stop(endNanoTime);
     }
 }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.xyzzy.instrumentation.httpclient;
+package org.glowroot.xyzzy.instrumentation.okhttp2x;
 
 import java.io.IOException;
 
@@ -23,11 +23,11 @@ import com.squareup.okhttp.Callback;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
 
-public class OkHttp2xCallbackWrapperForNullDelegate implements Callback {
+public class CallbackWrapperForNullDelegate implements Callback {
 
     private final AsyncTraceEntry asyncTraceEntry;
 
-    public OkHttp2xCallbackWrapperForNullDelegate(AsyncTraceEntry asyncTraceEntry) {
+    public CallbackWrapperForNullDelegate(AsyncTraceEntry asyncTraceEntry) {
         this.asyncTraceEntry = asyncTraceEntry;
     }
 

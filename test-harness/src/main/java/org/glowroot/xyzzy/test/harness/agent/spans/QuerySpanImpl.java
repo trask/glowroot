@@ -27,23 +27,25 @@ import org.glowroot.xyzzy.instrumentation.api.internal.ReadableQueryMessage;
 import org.glowroot.xyzzy.test.harness.ImmutableError;
 import org.glowroot.xyzzy.test.harness.ImmutableOutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
+import org.glowroot.xyzzy.test.harness.agent.TimerImpl;
 
 public class QuerySpanImpl implements QueryEntry, SpanImpl {
 
-    protected final long startTimeNanos;
+    private final long startTimeNanos;
+    private final String queryText;
+    private final QueryMessageSupplier queryMessageSupplier;
+    private final TimerImpl timer;
 
-    protected final String queryText;
-    protected final QueryMessageSupplier queryMessageSupplier;
+    private volatile @Nullable Span.Error error;
+    private volatile @Nullable Long locationStackTraceMillis;
+    private volatile long totalNanos;
 
-    protected volatile @Nullable Span.Error error;
-    protected volatile @Nullable Long locationStackTraceMillis;
-    protected volatile long totalNanos;
-
-    public QuerySpanImpl(String queryText, QueryMessageSupplier queryMessageSupplier,
-            long startTimeNanos) {
+    public QuerySpanImpl(long startTimeNanos, String queryText,
+            QueryMessageSupplier queryMessageSupplier, TimerImpl timer) {
         this.startTimeNanos = startTimeNanos;
         this.queryText = queryText;
         this.queryMessageSupplier = queryMessageSupplier;
+        this.timer = timer;
     }
 
     @Override
@@ -113,6 +115,7 @@ public class QuerySpanImpl implements QueryEntry, SpanImpl {
     public ImmutableOutgoingSpan toImmutable() {
         ReadableQueryMessage message = (ReadableQueryMessage) queryMessageSupplier.get();
         return ImmutableOutgoingSpan.builder()
+                .totalNanos(totalNanos)
                 .message(queryText)
                 .prefix(message.getPrefix())
                 .suffix(message.getSuffix())
@@ -123,6 +126,8 @@ public class QuerySpanImpl implements QueryEntry, SpanImpl {
     }
 
     private void endInternal() {
-        totalNanos = System.nanoTime() - startTimeNanos;
+        long endNanoTime = System.nanoTime();
+        totalNanos = endNanoTime - startTimeNanos;
+        timer.stop(endNanoTime);
     }
 }

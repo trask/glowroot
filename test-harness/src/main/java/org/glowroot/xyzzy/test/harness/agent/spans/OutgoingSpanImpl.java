@@ -27,20 +27,22 @@ import org.glowroot.xyzzy.instrumentation.api.internal.ReadableMessage;
 import org.glowroot.xyzzy.test.harness.ImmutableError;
 import org.glowroot.xyzzy.test.harness.ImmutableOutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
+import org.glowroot.xyzzy.test.harness.agent.TimerImpl;
 
 public class OutgoingSpanImpl implements TraceEntry, SpanImpl {
 
-    protected final long startTimeNanos;
+    private final long startTimeNanos;
+    private final MessageSupplier messageSupplier;
+    private final TimerImpl timer;
 
-    protected final MessageSupplier messageSupplier;
+    private volatile @Nullable Span.Error error;
+    private volatile @Nullable Long locationStackTraceMillis;
+    private volatile long totalNanos;
 
-    protected volatile @Nullable Span.Error error;
-    protected volatile @Nullable Long locationStackTraceMillis;
-    protected volatile long totalNanos;
-
-    public OutgoingSpanImpl(MessageSupplier messageSupplier, long startTimeNanos) {
+    public OutgoingSpanImpl(long startTimeNanos, MessageSupplier messageSupplier, TimerImpl timer) {
         this.startTimeNanos = startTimeNanos;
         this.messageSupplier = messageSupplier;
+        this.timer = timer;
     }
 
     @Override
@@ -101,6 +103,7 @@ public class OutgoingSpanImpl implements TraceEntry, SpanImpl {
     public ImmutableOutgoingSpan toImmutable() {
         ReadableMessage message = (ReadableMessage) messageSupplier.get();
         return ImmutableOutgoingSpan.builder()
+                .totalNanos(totalNanos)
                 .message(message.getText())
                 .prefix("") // TODO revisit
                 .suffix("") // TODO revisit
@@ -111,6 +114,8 @@ public class OutgoingSpanImpl implements TraceEntry, SpanImpl {
     }
 
     private void endInternal() {
-        totalNanos = System.nanoTime() - startTimeNanos;
+        long endNanoTime = System.nanoTime();
+        totalNanos = endNanoTime - startTimeNanos;
+        timer.stop(endNanoTime);
     }
 }

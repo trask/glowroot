@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.xyzzy.instrumentation.okhttp3;
+package org.glowroot.xyzzy.instrumentation.okhttp2x;
 
 import java.io.IOException;
 
@@ -21,9 +21,9 @@ import org.glowroot.xyzzy.instrumentation.api.AsyncTraceEntry;
 import org.glowroot.xyzzy.instrumentation.api.AuxThreadContext;
 import org.glowroot.xyzzy.instrumentation.api.TraceEntry;
 
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.Response;
+import com.squareup.okhttp.Callback;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.Response;
 
 public class CallbackWrapper implements Callback {
 
@@ -39,11 +39,11 @@ public class CallbackWrapper implements Callback {
     }
 
     @Override
-    public void onFailure(Call call, IOException exception) {
+    public void onFailure(Request request, IOException exception) {
         asyncTraceEntry.endWithError(exception);
         TraceEntry traceEntry = auxContext.start();
         try {
-            delegate.onFailure(call, exception);
+            delegate.onFailure(request, exception);
         } catch (Throwable t) {
             traceEntry.endWithError(t);
             throw rethrow(t);
@@ -52,11 +52,11 @@ public class CallbackWrapper implements Callback {
     }
 
     @Override
-    public void onResponse(Call call, Response response) throws IOException {
+    public void onResponse(Response response) throws IOException {
         asyncTraceEntry.end();
         TraceEntry traceEntry = auxContext.start();
         try {
-            delegate.onResponse(call, response);
+            delegate.onResponse(response);
         } catch (Throwable t) {
             traceEntry.endWithError(t);
             throw rethrow(t);

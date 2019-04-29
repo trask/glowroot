@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.test.harness;
 
+import java.io.Serializable;
 import java.util.Map;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -35,8 +36,10 @@ public interface Span {
     Long getLocationStackTraceMillis();
 
     @Value.Immutable
-    interface Error {
+    interface Error extends Serializable {
+        @Nullable
         String message();
+        @Nullable
         Throwable exception();
     }
 }

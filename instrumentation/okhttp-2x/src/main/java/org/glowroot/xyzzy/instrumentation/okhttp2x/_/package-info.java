@@ -15,4 +15,4 @@
  */
 
 // classes in the "_" package are left in the bootstrap class loader (this is just an optimization)
-package org.glowroot.xyzzy.instrumentation.httpclient._;
+package org.glowroot.xyzzy.instrumentation.okhttp2x._;

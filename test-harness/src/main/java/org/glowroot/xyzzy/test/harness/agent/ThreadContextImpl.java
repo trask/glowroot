@@ -22,6 +22,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glowroot.xyzzy.engine.bytecode.api.ThreadContextPlus;
 import org.glowroot.xyzzy.engine.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.xyzzy.engine.impl.NopTransactionService;
+import org.glowroot.xyzzy.engine.impl.TimerNameImpl;
 import org.glowroot.xyzzy.instrumentation.api.AsyncQueryEntry;
 import org.glowroot.xyzzy.instrumentation.api.AsyncTraceEntry;
 import org.glowroot.xyzzy.instrumentation.api.AuxThreadContext;
@@ -33,6 +34,8 @@ import org.glowroot.xyzzy.instrumentation.api.TimerName;
 import org.glowroot.xyzzy.instrumentation.api.TraceEntry;
 import org.glowroot.xyzzy.test.harness.agent.spans.AsyncOutgoingSpanImpl;
 import org.glowroot.xyzzy.test.harness.agent.spans.AsyncQuerySpanImpl;
+import org.glowroot.xyzzy.test.harness.agent.spans.IncomingSpanImpl;
+import org.glowroot.xyzzy.test.harness.agent.spans.LocalSpanImpl;
 import org.glowroot.xyzzy.test.harness.agent.spans.OutgoingSpanImpl;
 import org.glowroot.xyzzy.test.harness.agent.spans.ParentSpanImpl;
 import org.glowroot.xyzzy.test.harness.agent.spans.QuerySpanImpl;
@@ -41,6 +44,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     private final ThreadContextThreadLocal.Holder threadContextHolder;
 
+    private final IncomingSpanImpl incomingSpan;
     private final ParentSpanImpl parentSpan;
 
     private @Nullable ServletRequestInfo servletRequestInfo;
@@ -49,9 +53,11 @@ public class ThreadContextImpl implements ThreadContextPlus {
     private int currentSuppressionKeyId;
 
     public ThreadContextImpl(ThreadContextThreadLocal.Holder threadContextHolder,
-            ParentSpanImpl parentSpan, @Nullable ServletRequestInfo servletRequestInfo,
-            int rootNestingGroupId, int rootSuppressionKeyId) {
+            IncomingSpanImpl incomingSpan, ParentSpanImpl parentSpan,
+            @Nullable ServletRequestInfo servletRequestInfo, int rootNestingGroupId,
+            int rootSuppressionKeyId) {
         this.threadContextHolder = threadContextHolder;
+        this.incomingSpan = incomingSpan;
         this.parentSpan = parentSpan;
         this.servletRequestInfo = servletRequestInfo;
         currentNestingGroupId = rootNestingGroupId;
@@ -82,34 +88,29 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     @Override
     public TraceEntry startTraceEntry(MessageSupplier messageSupplier, TimerName timerName) {
-        return NopTransactionService.TRACE_ENTRY;
-    }
-
-    @Override
-    public AsyncTraceEntry startAsyncTraceEntry(MessageSupplier messageSupplier,
-            TimerName timerName) {
-        return NopTransactionService.ASYNC_TRACE_ENTRY;
+        return startLocalSpanInternal(messageSupplier, (TimerNameImpl) timerName);
     }
 
     @Override
     public QueryEntry startQueryEntry(String queryType, String queryText,
             QueryMessageSupplier queryMessageSupplier, TimerName timerName) {
         // TODO pass along queryType
-        return startQuerySpanInternal(queryText, queryMessageSupplier);
+        return startQuerySpanInternal(queryText, queryMessageSupplier, (TimerNameImpl) timerName);
     }
 
     @Override
     public QueryEntry startQueryEntry(String queryType, String queryText, long queryExecutionCount,
             QueryMessageSupplier queryMessageSupplier, TimerName timerName) {
         // TODO pass along queryType and queryExecutionCount
-        return startQuerySpanInternal(queryText, queryMessageSupplier);
+        return startQuerySpanInternal(queryText, queryMessageSupplier, (TimerNameImpl) timerName);
     }
 
     @Override
     public AsyncQueryEntry startAsyncQueryEntry(String queryType, String queryText,
             QueryMessageSupplier queryMessageSupplier, TimerName timerName) {
         // TODO pass along queryType
-        return startAsyncQuerySpanInternal(queryText, queryMessageSupplier);
+        return startAsyncQuerySpanInternal(queryText, queryMessageSupplier,
+                (TimerNameImpl) timerName);
     }
 
     @Override
@@ -117,7 +118,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
             MessageSupplier messageSupplier, TimerName timerName) {
         // TODO pass along type
         // TODO revisit the point of text
-        return startOutgoingSpanInternal(messageSupplier);
+        return startOutgoingSpanInternal(messageSupplier, (TimerNameImpl) timerName);
     }
 
     @Override
@@ -125,7 +126,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
             MessageSupplier messageSupplier, TimerName timerName) {
         // TODO pass along type
         // TODO revisit the point of text
-        return startAsyncOutgoingSpanInternal(messageSupplier);
+        return startAsyncOutgoingSpanInternal(messageSupplier, (TimerNameImpl) timerName);
     }
 
     @Override
@@ -135,7 +136,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     @Override
     public AuxThreadContext createAuxThreadContext() {
-        return new AuxThreadContextImpl(parentSpan, servletRequestInfo);
+        return new AuxThreadContextImpl(incomingSpan, parentSpan, servletRequestInfo);
     }
 
     @Override
@@ -216,31 +217,55 @@ public class ThreadContextImpl implements ThreadContextPlus {
         this.currentSuppressionKeyId = suppressionKeyId;
     }
 
-    private OutgoingSpanImpl startOutgoingSpanInternal(MessageSupplier messageSupplier) {
-        OutgoingSpanImpl outgoingSpan = new OutgoingSpanImpl(messageSupplier, System.nanoTime());
+    private LocalSpanImpl startLocalSpanInternal(MessageSupplier messageSupplier,
+            TimerNameImpl timerName) {
+        long startNanoTime = System.nanoTime();
+        TimerImpl timer = new TimerImpl(timerName, startNanoTime);
+        LocalSpanImpl localSpan = new LocalSpanImpl(System.nanoTime(), messageSupplier, timer);
+        parentSpan.addChildSpan(localSpan);
+        return localSpan;
+    }
+
+    private OutgoingSpanImpl startOutgoingSpanInternal(MessageSupplier messageSupplier,
+            TimerNameImpl timerName) {
+        long startNanoTime = System.nanoTime();
+        TimerImpl timer = new TimerImpl(timerName, startNanoTime);
+        OutgoingSpanImpl outgoingSpan =
+                new OutgoingSpanImpl(System.nanoTime(), messageSupplier, timer);
         parentSpan.addChildSpan(outgoingSpan);
         return outgoingSpan;
     }
 
-    private AsyncOutgoingSpanImpl startAsyncOutgoingSpanInternal(MessageSupplier messageSupplier) {
+    private AsyncOutgoingSpanImpl startAsyncOutgoingSpanInternal(MessageSupplier messageSupplier,
+            TimerNameImpl timerName) {
+        long startNanoTime = System.nanoTime();
+        TimerImpl syncTimer = new TimerImpl(timerName, startNanoTime);
+        TimerImpl asyncTimer = new TimerImpl(timerName, startNanoTime);
+        incomingSpan.addAsyncTimer(asyncTimer);
         AsyncOutgoingSpanImpl asyncOutgoingSpan =
-                new AsyncOutgoingSpanImpl(messageSupplier, null, null, System.nanoTime());
+                new AsyncOutgoingSpanImpl(startNanoTime, messageSupplier, syncTimer, asyncTimer);
         parentSpan.addChildSpan(asyncOutgoingSpan);
         return asyncOutgoingSpan;
     }
 
     private QuerySpanImpl startQuerySpanInternal(String queryText,
-            QueryMessageSupplier queryMessageSupplier) {
+            QueryMessageSupplier queryMessageSupplier, TimerNameImpl timerName) {
+        long startNanoTime = System.nanoTime();
+        TimerImpl timer = new TimerImpl(timerName, startNanoTime);
         QuerySpanImpl querySpan =
-                new QuerySpanImpl(queryText, queryMessageSupplier, System.nanoTime());
+                new QuerySpanImpl(startNanoTime, queryText, queryMessageSupplier, timer);
         parentSpan.addChildSpan(querySpan);
         return querySpan;
     }
 
     private AsyncQuerySpanImpl startAsyncQuerySpanInternal(String text,
-            QueryMessageSupplier queryMessageSupplier) {
-        AsyncQuerySpanImpl asyncQuerySpan =
-                new AsyncQuerySpanImpl(text, queryMessageSupplier, null, null, System.nanoTime());
+            QueryMessageSupplier queryMessageSupplier, TimerNameImpl timerName) {
+        long startNanoTime = System.nanoTime();
+        TimerImpl syncTimer = new TimerImpl(timerName, startNanoTime);
+        TimerImpl asyncTimer = new TimerImpl(timerName, startNanoTime);
+        incomingSpan.addAsyncTimer(asyncTimer);
+        AsyncQuerySpanImpl asyncQuerySpan = new AsyncQuerySpanImpl(System.nanoTime(), text,
+                queryMessageSupplier, syncTimer, asyncTimer);
         parentSpan.addChildSpan(asyncQuerySpan);
         return asyncQuerySpan;
     }

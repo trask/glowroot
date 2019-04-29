@@ -32,25 +32,23 @@ import org.glowroot.xyzzy.test.harness.agent.TimerImpl;
 
 public class AsyncQuerySpanImpl implements AsyncQueryEntry, SpanImpl {
 
+    private final long startTimeNanos;
     private final String queryText;
     private final QueryMessageSupplier queryMessageSupplier;
-
     private final TimerImpl syncTimer;
     private final TimerImpl asyncTimer;
-
-    private final long startTimeNanos;
 
     private volatile long totalNanos;
     private volatile @Nullable Span.Error error;
     private volatile @Nullable Long locationStackTraceMillis;
 
-    public AsyncQuerySpanImpl(String queryText, QueryMessageSupplier queryMessageSupplier,
-            TimerImpl syncTimer, TimerImpl asyncTimer, long startTimeNanos) {
+    public AsyncQuerySpanImpl(long startTimeNanos, String queryText,
+            QueryMessageSupplier queryMessageSupplier, TimerImpl syncTimer, TimerImpl asyncTimer) {
+        this.startTimeNanos = startTimeNanos;
         this.queryText = queryText;
         this.queryMessageSupplier = queryMessageSupplier;
         this.syncTimer = syncTimer;
         this.asyncTimer = asyncTimer;
-        this.startTimeNanos = startTimeNanos;
     }
 
     @Override
@@ -117,10 +115,13 @@ public class AsyncQuerySpanImpl implements AsyncQueryEntry, SpanImpl {
     public void setCurrRow(long row) {}
 
     @Override
-    public void stopSyncTimer() {}
+    public void stopSyncTimer() {
+        syncTimer.stop(System.nanoTime());
+    }
 
     @Override
     public Timer extendSyncTimer(ThreadContext currThreadContext) {
+        // TODO implement
         return NopTransactionService.TIMER;
     }
 
@@ -128,6 +129,7 @@ public class AsyncQuerySpanImpl implements AsyncQueryEntry, SpanImpl {
     public ImmutableOutgoingSpan toImmutable() {
         ReadableQueryMessage message = (ReadableQueryMessage) queryMessageSupplier.get();
         return ImmutableOutgoingSpan.builder()
+                .totalNanos(totalNanos)
                 .message(queryText)
                 .prefix(message.getPrefix())
                 .suffix(message.getSuffix())
@@ -138,6 +140,8 @@ public class AsyncQuerySpanImpl implements AsyncQueryEntry, SpanImpl {
     }
 
     private void endInternal() {
-        totalNanos = System.nanoTime() - startTimeNanos;
+        long endNanoTime = System.nanoTime();
+        totalNanos = endNanoTime - startTimeNanos;
+        asyncTimer.stop(endNanoTime);
     }
 }

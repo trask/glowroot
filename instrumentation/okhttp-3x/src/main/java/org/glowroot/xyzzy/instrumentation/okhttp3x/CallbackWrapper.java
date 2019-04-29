@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.xyzzy.instrumentation.httpclient;
+package org.glowroot.xyzzy.instrumentation.okhttp3x;
 
 import java.io.IOException;
 
@@ -21,17 +21,17 @@ import org.glowroot.xyzzy.instrumentation.api.AsyncTraceEntry;
 import org.glowroot.xyzzy.instrumentation.api.AuxThreadContext;
 import org.glowroot.xyzzy.instrumentation.api.TraceEntry;
 
-import com.squareup.okhttp.Callback;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.Response;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.Response;
 
-public class OkHttp2xCallbackWrapper implements Callback {
+public class CallbackWrapper implements Callback {
 
     private final Callback delegate;
     private final AsyncTraceEntry asyncTraceEntry;
     private final AuxThreadContext auxContext;
 
-    public OkHttp2xCallbackWrapper(Callback delegate, AsyncTraceEntry asyncTraceEntry,
+    public CallbackWrapper(Callback delegate, AsyncTraceEntry asyncTraceEntry,
             AuxThreadContext auxContext) {
         this.delegate = delegate;
         this.asyncTraceEntry = asyncTraceEntry;
@@ -39,11 +39,11 @@ public class OkHttp2xCallbackWrapper implements Callback {
     }
 
     @Override
-    public void onFailure(Request request, IOException exception) {
+    public void onFailure(Call call, IOException exception) {
         asyncTraceEntry.endWithError(exception);
         TraceEntry traceEntry = auxContext.start();
         try {
-            delegate.onFailure(request, exception);
+            delegate.onFailure(call, exception);
         } catch (Throwable t) {
             traceEntry.endWithError(t);
             throw rethrow(t);
@@ -52,11 +52,11 @@ public class OkHttp2xCallbackWrapper implements Callback {
     }
 
     @Override
-    public void onResponse(Response response) throws IOException {
+    public void onResponse(Call call, Response response) throws IOException {
         asyncTraceEntry.end();
         TraceEntry traceEntry = auxContext.start();
         try {
-            delegate.onResponse(response);
+            delegate.onResponse(call, response);
         } catch (Throwable t) {
             traceEntry.endWithError(t);
             throw rethrow(t);
@@ -65,7 +65,7 @@ public class OkHttp2xCallbackWrapper implements Callback {
     }
 
     private static RuntimeException rethrow(Throwable t) {
-        OkHttp2xCallbackWrapper.<RuntimeException>throwsUnchecked(t);
+        CallbackWrapper.<RuntimeException>throwsUnchecked(t);
         throw new AssertionError();
     }
 

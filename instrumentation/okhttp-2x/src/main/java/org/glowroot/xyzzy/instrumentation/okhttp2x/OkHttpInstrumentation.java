@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.xyzzy.instrumentation.okhttp3;
+package org.glowroot.xyzzy.instrumentation.okhttp2x;
 
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.HttpUrl;
-import okhttp3.Request;
+import java.net.URL;
+
+import com.squareup.okhttp.Callback;
+import com.squareup.okhttp.Request;
 
 import org.glowroot.xyzzy.instrumentation.api.Agent;
 import org.glowroot.xyzzy.instrumentation.api.AsyncTraceEntry;
@@ -28,6 +28,7 @@ import org.glowroot.xyzzy.instrumentation.api.ThreadContext;
 import org.glowroot.xyzzy.instrumentation.api.TimerName;
 import org.glowroot.xyzzy.instrumentation.api.TraceEntry;
 import org.glowroot.xyzzy.instrumentation.api.checker.Nullable;
+import org.glowroot.xyzzy.instrumentation.api.weaving.BindClassMeta;
 import org.glowroot.xyzzy.instrumentation.api.weaving.BindParameter;
 import org.glowroot.xyzzy.instrumentation.api.weaving.BindReceiver;
 import org.glowroot.xyzzy.instrumentation.api.weaving.BindThrowable;
@@ -36,34 +37,29 @@ import org.glowroot.xyzzy.instrumentation.api.weaving.OnBefore;
 import org.glowroot.xyzzy.instrumentation.api.weaving.OnReturn;
 import org.glowroot.xyzzy.instrumentation.api.weaving.OnThrow;
 import org.glowroot.xyzzy.instrumentation.api.weaving.Pointcut;
+import org.glowroot.xyzzy.instrumentation.okhttp2x._.CallInvoker;
 
 public class OkHttpInstrumentation {
 
-    @Pointcut(className = "okhttp3.Call", methodName = "execute",
+    @Pointcut(className = "com.squareup.okhttp.Call", methodName = "execute",
             methodParameterTypes = {}, nestingGroup = "http-client",
             timerName = "http client request")
     public static class ExecuteAdvice {
         private static final TimerName timerName = Agent.getTimerName(ExecuteAdvice.class);
         @OnBefore
         public static @Nullable TraceEntry onBefore(ThreadContext context,
-                @BindReceiver Call call) {
-            Request request = call.request();
-            if (request == null) {
+                @BindReceiver Object call, @BindClassMeta CallInvoker callInvoker) {
+            Request originalRequest = (Request) callInvoker.getOriginalRequest(call);
+            if (originalRequest == null) {
                 return null;
             }
-            String method = request.method();
+            String method = originalRequest.method();
             if (method == null) {
                 method = "";
             } else {
                 method += " ";
             }
-            HttpUrl httpUrl = request.url();
-            String url;
-            if (httpUrl == null) {
-                url = "";
-            } else {
-                url = httpUrl.toString();
-            }
+            String url = originalRequest.urlString();
             return context.startServiceCallEntry("HTTP", method + stripQueryString(url),
                     MessageSupplier.create("http client request: {}{}", method, url), timerName);
         }
@@ -82,33 +78,34 @@ public class OkHttpInstrumentation {
         }
     }
 
-    @Pointcut(className = "okhttp3.Call", methodName = "enqueue",
-            methodParameterTypes = {"okhttp3.Callback"}, nestingGroup = "http-client",
+    @Pointcut(className = "com.squareup.okhttp.Call", methodName = "enqueue",
+            methodParameterTypes = {"com.squareup.okhttp.Callback"}, nestingGroup = "http-client",
             timerName = "http client request")
     public static class EnqueueAdvice {
         private static final TimerName timerName = Agent.getTimerName(EnqueueAdvice.class);
         @OnBefore
         public static @Nullable AsyncTraceEntry onBefore(ThreadContext context,
-                @BindReceiver Call call, @BindParameter ParameterHolder<Callback> callback) {
-            Request request = call.request();
-            if (request == null) {
+                @BindReceiver Object call, @BindParameter ParameterHolder<Callback> callback,
+                @BindClassMeta CallInvoker callInvoker) {
+            Request originalRequest = (Request) callInvoker.getOriginalRequest(call);
+            if (originalRequest == null) {
                 return null;
             }
             if (callback == null) {
                 return null;
             }
-            String method = request.method();
+            String method = originalRequest.method();
             if (method == null) {
                 method = "";
             } else {
                 method += " ";
             }
-            HttpUrl httpUrl = request.url();
+            URL urlObj = originalRequest.url();
             String url;
-            if (httpUrl == null) {
+            if (urlObj == null) {
                 url = "";
             } else {
-                url = httpUrl.toString();
+                url = urlObj.toString();
             }
             AsyncTraceEntry asyncTraceEntry = context.startAsyncServiceCallEntry("HTTP",
                     method + stripQueryString(url),

@@ -29,12 +29,13 @@ import org.glowroot.xyzzy.instrumentation.api.internal.ReadableMessage;
 import org.glowroot.xyzzy.test.harness.ImmutableError;
 import org.glowroot.xyzzy.test.harness.ImmutableLocalSpan;
 import org.glowroot.xyzzy.test.harness.Span;
+import org.glowroot.xyzzy.test.harness.agent.TimerImpl;
 
 public class LocalSpanImpl implements TraceEntry, ParentSpanImpl {
 
-    private final MessageSupplier messageSupplier;
-
     private final long startTimeNanos;
+    private final MessageSupplier messageSupplier;
+    private final TimerImpl timer;
 
     private final List<SpanImpl> childSpans = Lists.newArrayList();
 
@@ -42,9 +43,10 @@ public class LocalSpanImpl implements TraceEntry, ParentSpanImpl {
     private volatile @Nullable Long locationStackTraceMillis;
     private volatile long totalNanos;
 
-    public LocalSpanImpl(MessageSupplier messageSupplier, long startTimeNanos) {
-        this.messageSupplier = messageSupplier;
+    public LocalSpanImpl(long startTimeNanos, MessageSupplier messageSupplier, TimerImpl timer) {
         this.startTimeNanos = startTimeNanos;
+        this.messageSupplier = messageSupplier;
+        this.timer = timer;
     }
 
     @Override
@@ -110,6 +112,7 @@ public class LocalSpanImpl implements TraceEntry, ParentSpanImpl {
     public ImmutableLocalSpan toImmutable() {
         ReadableMessage message = (ReadableMessage) messageSupplier.get();
         ImmutableLocalSpan.Builder builder = ImmutableLocalSpan.builder()
+                .totalNanos(totalNanos)
                 .message(message.getText())
                 .details(message.getDetail())
                 .error(error)
@@ -121,6 +124,8 @@ public class LocalSpanImpl implements TraceEntry, ParentSpanImpl {
     }
 
     private void endInternal() {
-        totalNanos = System.nanoTime() - startTimeNanos;
+        long endNanoTime = System.nanoTime();
+        totalNanos = endNanoTime - startTimeNanos;
+        timer.stop(endNanoTime);
     }
 }

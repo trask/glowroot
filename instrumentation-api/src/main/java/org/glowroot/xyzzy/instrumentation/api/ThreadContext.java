@@ -49,8 +49,6 @@ public interface ThreadContext {
      */
     TraceEntry startTraceEntry(MessageSupplier messageSupplier, TimerName timerName);
 
-    AsyncTraceEntry startAsyncTraceEntry(MessageSupplier messageSupplier, TimerName timerName);
-
     /**
      * {@link QueryEntry} is a specialized type of {@link TraceEntry} that is aggregated by its
      * query text.

@@ -21,6 +21,7 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.glowroot.xyzzy.engine.bytecode.api.ThreadContextPlus;
 import org.glowroot.xyzzy.engine.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.xyzzy.engine.weaving.AgentSPI;
@@ -107,15 +108,6 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
             return NopTransactionService.TRACE_ENTRY;
         }
         return threadContext.startTraceEntry(messageSupplier, timerName);
-    }
-
-    @Override
-    public AsyncTraceEntry startAsyncTraceEntry(MessageSupplier messageSupplier,
-            TimerName timerName) {
-        if (threadContext == null) {
-            return NopTransactionService.ASYNC_QUERY_ENTRY;
-        }
-        return threadContext.startAsyncTraceEntry(messageSupplier, timerName);
     }
 
     @Override

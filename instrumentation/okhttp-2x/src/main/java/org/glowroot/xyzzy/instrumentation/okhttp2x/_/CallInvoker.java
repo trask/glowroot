@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.xyzzy.instrumentation.httpclient._;
+package org.glowroot.xyzzy.instrumentation.okhttp2x._;
 
 import java.lang.reflect.Field;
 
@@ -22,13 +22,13 @@ import org.glowroot.xyzzy.instrumentation.api.Logger;
 import org.glowroot.xyzzy.instrumentation.api.checker.Nullable;
 import org.glowroot.xyzzy.instrumentation.api.util.Reflection;
 
-public class OkHttpClientCallInvoker {
+public class CallInvoker {
 
-    private static final Logger logger = Logger.getLogger(OkHttpClientCallInvoker.class);
+    private static final Logger logger = Logger.getLogger(CallInvoker.class);
 
     private final @Nullable Field originalRequestField;
 
-    public OkHttpClientCallInvoker(ClassInfo classInfo) {
+    public CallInvoker(ClassInfo classInfo) {
         originalRequestField = getRequestField(classInfo.getLoader());
     }
 

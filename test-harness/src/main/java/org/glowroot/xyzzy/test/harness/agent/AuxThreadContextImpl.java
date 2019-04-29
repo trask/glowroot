@@ -24,17 +24,20 @@ import org.glowroot.xyzzy.engine.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.xyzzy.engine.impl.NopTransactionService;
 import org.glowroot.xyzzy.instrumentation.api.AuxThreadContext;
 import org.glowroot.xyzzy.instrumentation.api.ThreadContext.ServletRequestInfo;
-import org.glowroot.xyzzy.test.harness.agent.spans.ParentSpanImpl;
 import org.glowroot.xyzzy.instrumentation.api.Timer;
 import org.glowroot.xyzzy.instrumentation.api.TraceEntry;
+import org.glowroot.xyzzy.test.harness.agent.spans.IncomingSpanImpl;
+import org.glowroot.xyzzy.test.harness.agent.spans.ParentSpanImpl;
 
 public class AuxThreadContextImpl implements AuxThreadContext {
 
+    private final IncomingSpanImpl incomingSpan;
     private final ParentSpanImpl parentSpan;
     private final @Nullable ServletRequestInfo servletRequestInfo;
 
-    public AuxThreadContextImpl(ParentSpanImpl parentSpan,
+    public AuxThreadContextImpl(IncomingSpanImpl incomingSpan, ParentSpanImpl parentSpan,
             @Nullable ServletRequestInfo servletRequestInfo) {
+        this.incomingSpan = incomingSpan;
         this.parentSpan = parentSpan;
         this.servletRequestInfo = servletRequestInfo;
     }
@@ -58,8 +61,8 @@ public class AuxThreadContextImpl implements AuxThreadContext {
             }
             return NopTransactionService.TRACE_ENTRY;
         }
-        threadContext =
-                new ThreadContextImpl(threadContextHolder, parentSpan, servletRequestInfo, 0, 0);
+        threadContext = new ThreadContextImpl(threadContextHolder, incomingSpan, parentSpan,
+                servletRequestInfo, 0, 0);
         threadContextHolder.set(threadContext);
         if (completeAsyncTransaction) {
             threadContext.setTransactionAsyncComplete();

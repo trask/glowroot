@@ -2,7 +2,7 @@
   "name": "OkHttp 3.x",
   "id": "okhttp-3x",
   "classes": [
-    "org.glowroot.xyzzy.instrumentation.okhttp3.OkHttpInstrumentation"
+    "org.glowroot.xyzzy.instrumentation.okhttp3x.OkHttpInstrumentation"
   ],
   "collocate": true
 }

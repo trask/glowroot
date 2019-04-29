@@ -15,11 +15,11 @@
  */
 package org.glowroot.xyzzy.test.harness.agent.spans;
 
-import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Strings;
-import org.assertj.core.util.Lists;
+import com.google.common.collect.Queues;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.xyzzy.engine.bytecode.api.ThreadContextThreadLocal;
@@ -43,11 +43,12 @@ public class IncomingSpanImpl implements TraceEntry, ParentSpanImpl {
     private final long startTimeNanos;
 
     private final TimerImpl mainThreadRootTimer;
-    private List<TimerImpl> auxThreadRootTimers = Lists.newArrayList();
 
-    private final List<TimerImpl> asyncTimers = Lists.newArrayList();
+    private final Queue<TimerImpl> auxThreadRootTimers = Queues.newConcurrentLinkedQueue();
 
-    private final List<SpanImpl> childSpans = Lists.newArrayList();
+    private final Queue<TimerImpl> asyncTimers = Queues.newConcurrentLinkedQueue();
+
+    private final Queue<SpanImpl> childSpans = Queues.newConcurrentLinkedQueue();
 
     private volatile boolean async;
     private volatile String transactionType;
@@ -67,7 +68,7 @@ public class IncomingSpanImpl implements TraceEntry, ParentSpanImpl {
         this.messageSupplier = messageSupplier;
         this.threadContextHolder = threadContextHolder;
         this.startTimeNanos = startTimeNanos;
-        mainThreadRootTimer = new TimerImpl(timerName);
+        mainThreadRootTimer = new TimerImpl(timerName, startTimeNanos);
     }
 
     @Override
@@ -175,8 +176,13 @@ public class IncomingSpanImpl implements TraceEntry, ParentSpanImpl {
         auxThreadRootTimers.add(auxThreadRootTimer);
     }
 
+    public void addAsyncTimer(TimerImpl asyncTimer) {
+        asyncTimers.add(asyncTimer);
+    }
+
     private void endInternal() {
         threadContextHolder.set(null);
+        totalNanos = System.nanoTime() - startTimeNanos;
         Global.report(toImmutable());
     }
 }

@@ -25,14 +25,18 @@ public class TimerImpl implements Timer {
     private final long startNanoTime;
     private volatile long totalNanos;
 
-    public TimerImpl(TimerNameImpl timerName) {
+    public TimerImpl(TimerNameImpl timerName, long startNanoTime) {
         this.timerName = timerName;
-        startNanoTime = System.nanoTime();
+        this.startNanoTime = startNanoTime;
     }
 
     @Override
     public void stop() {
-        totalNanos = System.nanoTime() - startNanoTime;
+        stop(System.nanoTime());
+    }
+
+    public void stop(long endNanoTime) {
+        totalNanos = endNanoTime - startNanoTime;
     }
 
     public ImmutableTimer toImmutable() {

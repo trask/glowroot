@@ -2,7 +2,7 @@
   "name": "Apache HttpClient 4.x",
   "id": "apache-http-client-4x",
   "classes": [
-    "org.glowroot.xyzzy.instrumentation.httpclient.ApacheHttpClientInstrumentation"
+    "org.glowroot.xyzzy.instrumentation.apachehttpclient4x.ApacheHttpClientInstrumentation"
   ],
   "collocate": true
 }
