@@ -30,13 +30,13 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.async.DeferredResult;
 
-import org.glowroot.agent.it.harness.AppUnderTest;
-import org.glowroot.agent.it.harness.Container;
-import org.glowroot.agent.it.harness.TraceEntryMarker;
-import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.agent.it.harness.model.LocalSpan;
-import org.glowroot.agent.it.harness.model.ServerSpan;
-import org.glowroot.agent.it.harness.model.Span;
+import org.glowroot.xyzzy.test.harness.AppUnderTest;
+import org.glowroot.xyzzy.test.harness.Container;
+import org.glowroot.xyzzy.test.harness.LocalSpan;
+import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.Span;
+import org.glowroot.xyzzy.test.harness.TraceEntryMarker;
+import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -57,7 +57,7 @@ public class AsyncRestControllerIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.resetConfig();
+        container.resetInstrumentationConfig();
     }
 
     @Test

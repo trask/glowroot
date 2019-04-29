@@ -33,7 +33,7 @@ import org.rauschig.jarchivelib.Archiver;
 import org.rauschig.jarchivelib.ArchiverFactory;
 import org.rauschig.jarchivelib.CompressionType;
 
-import org.glowroot.agent.it.harness.util.TempDirs;
+import org.glowroot.xyzzy.test.harness.util.TempDirs;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;

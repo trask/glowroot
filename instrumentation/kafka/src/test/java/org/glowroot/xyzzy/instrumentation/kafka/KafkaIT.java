@@ -37,10 +37,10 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.agent.it.harness.AppUnderTest;
-import org.glowroot.agent.it.harness.Container;
-import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.model.ServerSpan;
+import org.glowroot.xyzzy.test.harness.AppUnderTest;
+import org.glowroot.xyzzy.test.harness.Container;
+import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -61,7 +61,7 @@ public class KafkaIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.resetConfig();
+        container.resetInstrumentationConfig();
     }
 
     @Test

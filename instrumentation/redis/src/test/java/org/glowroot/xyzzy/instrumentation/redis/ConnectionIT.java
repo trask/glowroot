@@ -21,13 +21,13 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import redis.clients.jedis.Jedis;
 
-import org.glowroot.agent.it.harness.AppUnderTest;
-import org.glowroot.agent.it.harness.Container;
-import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.model.ServerSpan;
+import org.glowroot.xyzzy.test.harness.AppUnderTest;
+import org.glowroot.xyzzy.test.harness.Container;
+import org.glowroot.xyzzy.test.harness.Containers;
+import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
-import static org.glowroot.agent.it.harness.validation.HarnessAssertions.assertSingleClientSpanMessage;
+import static org.glowroot.xyzzy.test.harness.util.HarnessAssertions.assertSingleClientSpanMessage;
 
 public class ConnectionIT {
 
@@ -45,7 +45,7 @@ public class ConnectionIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.resetConfig();
+        container.resetInstrumentationConfig();
     }
 
     @Test

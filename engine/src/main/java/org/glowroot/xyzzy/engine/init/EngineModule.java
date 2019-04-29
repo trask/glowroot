@@ -77,16 +77,27 @@ public class EngineModule {
 
     private volatile @MonotonicNonNull LazyPlatformMBeanServer lazyPlatformMBeanServer;
 
-    public static EngineModule createWithManyDefaults(@Nullable Instrumentation instrumentation,
+    public static EngineModule createWithSomeDefaults(@Nullable Instrumentation instrumentation,
             File tmpDir, ThreadContextThreadLocal threadContextThreadLocal,
             GlowrootServiceSPI glowrootServiceSPI, AgentSPI agentSPI, @Nullable File agentJarFile)
             throws Exception {
         List<InstrumentationDescriptor> instrumentationDescriptors =
-                InstrumentationDescriptors.readInstrumentationList();
+                InstrumentationDescriptors.read();
+        return createWithSomeDefaults(instrumentation, tmpDir, threadContextThreadLocal,
+                glowrootServiceSPI, instrumentationDescriptors,
+                new SimpleConfigServiceFactory(instrumentationDescriptors), agentSPI, agentJarFile);
+    }
+
+    public static EngineModule createWithSomeDefaults(@Nullable Instrumentation instrumentation,
+            File tmpDir, ThreadContextThreadLocal threadContextThreadLocal,
+            GlowrootServiceSPI glowrootServiceSPI,
+            List<InstrumentationDescriptor> instrumentationDescriptors,
+            ConfigServiceFactory configServiceFactory, AgentSPI agentSPI,
+            @Nullable File agentJarFile) throws Exception {
         return new EngineModule(instrumentation, tmpDir, Ticker.systemTicker(),
                 instrumentationDescriptors, Collections.<AdviceConfig>emptyList(),
                 threadContextThreadLocal, new TimerNameCache(), glowrootServiceSPI,
-                new SimpleConfigServiceFactory(instrumentationDescriptors), agentSPI, null,
+                configServiceFactory, agentSPI, null,
                 new Class<?>[0], agentJarFile);
     }
 

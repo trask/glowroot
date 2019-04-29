@@ -23,7 +23,7 @@ import org.apache.catalina.loader.WebappLoader;
 import org.apache.catalina.startup.Tomcat;
 import org.apache.naming.resources.VirtualDirContext;
 
-import org.glowroot.agent.it.harness.AppUnderTest;
+import org.glowroot.xyzzy.test.harness.AppUnderTest;
 
 abstract class InvokeServletInTomcat implements AppUnderTest {
 

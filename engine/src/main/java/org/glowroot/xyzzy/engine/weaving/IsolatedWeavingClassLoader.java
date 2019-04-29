@@ -34,6 +34,7 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.glowroot.xyzzy.engine.bytecode.api.Bytecode;
 import org.glowroot.xyzzy.instrumentation.api.Agent;
 
@@ -223,9 +224,12 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         }
         if (name.equals(Agent.class.getName())
                 || name.equals(Bytecode.class.getName())
-                || name.equals(org.glowroot.xyzzy.instrumentation.api.util.ImmutableList.class.getName())
-                || name.equals(org.glowroot.xyzzy.instrumentation.api.util.ImmutableMap.class.getName())
-                || name.equals(org.glowroot.xyzzy.instrumentation.api.util.ImmutableSet.class.getName())
+                || name.equals(
+                        org.glowroot.xyzzy.instrumentation.api.util.ImmutableList.class.getName())
+                || name.equals(
+                        org.glowroot.xyzzy.instrumentation.api.util.ImmutableMap.class.getName())
+                || name.equals(
+                        org.glowroot.xyzzy.instrumentation.api.util.ImmutableSet.class.getName())
                 || name.equals(Beans.class.getName())) {
             return false;
         }

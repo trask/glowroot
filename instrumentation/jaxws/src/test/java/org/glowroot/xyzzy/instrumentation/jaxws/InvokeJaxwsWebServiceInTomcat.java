@@ -30,7 +30,7 @@ import org.apache.cxf.jaxws.JaxWsProxyFactoryBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.it.harness.AppUnderTest;
+import org.glowroot.xyzzy.test.harness.AppUnderTest;
 
 abstract class InvokeJaxwsWebServiceInTomcat implements AppUnderTest {
 

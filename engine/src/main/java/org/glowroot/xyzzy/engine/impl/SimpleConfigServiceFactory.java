@@ -19,13 +19,10 @@ import java.util.List;
 import java.util.Map;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.MoreObjects;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import org.glowroot.xyzzy.engine.config.InstrumentationDescriptor;
 import org.glowroot.xyzzy.engine.config.PropertyDescriptor;
 import org.glowroot.xyzzy.engine.impl.InstrumentationServiceImpl.ConfigServiceFactory;
@@ -39,8 +36,6 @@ import org.glowroot.xyzzy.instrumentation.api.util.ImmutableMap;
 
 public class SimpleConfigServiceFactory implements ConfigServiceFactory {
 
-    private static final Logger logger = LoggerFactory.getLogger(SimpleConfigServiceFactory.class);
-
     private final List<InstrumentationDescriptor> instrumentationDescriptors;
 
     public SimpleConfigServiceFactory(List<InstrumentationDescriptor> instrumentationDescriptors) {
@@ -51,14 +46,10 @@ public class SimpleConfigServiceFactory implements ConfigServiceFactory {
     public ConfigService create(String instrumentationId) {
         InstrumentationDescriptor descriptor =
                 getDescriptor(instrumentationId, instrumentationDescriptors);
-        if (descriptor == null) {
-            return new ConfigServiceImpl(ImmutableList.<PropertyDescriptor>of());
-        } else {
-            return new ConfigServiceImpl(descriptor.properties());
-        }
+        return new ConfigServiceImpl(descriptor.properties());
     }
 
-    private static @Nullable InstrumentationDescriptor getDescriptor(String id,
+    private static InstrumentationDescriptor getDescriptor(String id,
             List<InstrumentationDescriptor> descriptors) {
         for (InstrumentationDescriptor descriptor : descriptors) {
             if (id.equals(descriptor.id())) {
@@ -66,17 +57,16 @@ public class SimpleConfigServiceFactory implements ConfigServiceFactory {
             }
         }
         if (descriptors.isEmpty()) {
-            logger.warn("unexpected instrumentation id: {} (there is no available instrumentation)",
-                    id);
+            throw new IllegalStateException("Unexpected instrumentation id: " + id
+                    + " (there is no available instrumentation)");
         } else {
             List<String> ids = Lists.newArrayList();
             for (InstrumentationDescriptor descriptor : descriptors) {
                 ids.add(descriptor.id());
             }
-            logger.warn("unexpected instrumentation id: {} (available instrumentation ids are {})",
-                    id, Joiner.on(", ").join(ids));
+            throw new IllegalStateException("Unexpected instrumentation id: " + id
+                    + " (available instrumentation ids are " + Joiner.on(", ").join(ids) + ")");
         }
-        return null;
     }
 
     private static class ConfigServiceImpl implements ConfigService {
@@ -85,12 +75,6 @@ public class SimpleConfigServiceFactory implements ConfigServiceFactory {
         private final Map<String, BooleanProperty> booleanProperties;
         private final Map<String, DoubleProperty> doubleProperties;
         private final Map<String, ListProperty> listProperties;
-
-        private final StringProperty defaultStringProperty = new StringPropertyImpl("");
-        private final BooleanProperty defaultBooleanProperty = new BooleanPropertyImpl(false);
-        private final DoubleProperty defaultDoubleProperty = new DoublePropertyImpl(null);
-        private final ListProperty defaultListProperty =
-                new ListPropertyImpl(Lists.<String>newArrayList());
 
         private ConfigServiceImpl(List<PropertyDescriptor> propertyDescriptors) {
             Map<String, StringProperty> stringProperties = Maps.newHashMap();
@@ -105,37 +89,41 @@ public class SimpleConfigServiceFactory implements ConfigServiceFactory {
                         if (value instanceof String) {
                             stringProperties.put(name, new StringPropertyImpl((String) value));
                         } else {
-                            logUnexpectedValueType(name, String.class, value);
+                            throw unexpectedValueType(name, "string", value);
                         }
                         break;
                     case BOOLEAN:
                         if (value instanceof Boolean) {
                             booleanProperties.put(name, new BooleanPropertyImpl((Boolean) value));
                         } else {
-                            logUnexpectedValueType(name, Boolean.class, value);
+                            throw unexpectedValueType(name, "boolean", value);
                         }
                         break;
                     case DOUBLE:
                         if (value == null || value instanceof Double) {
                             doubleProperties.put(name, new DoublePropertyImpl((Double) value));
                         } else {
-                            logUnexpectedValueType(name, Double.class, value);
+                            throw unexpectedValueType(name, "number", value);
                         }
                         break;
                     case LIST:
                         if (value instanceof List) {
-                            List<String> list = Lists.newArrayList();
+                            List<String> stringList = Lists.newArrayList();
                             for (Object val : (List<?>) value) {
                                 if (val instanceof String) {
-                                    list.add((String) val);
+                                    stringList.add((String) val);
+                                } else {
+                                    throw unexpectedValueTypeForList(name, val);
                                 }
                             }
-                            listProperties.put(name, new ListPropertyImpl(list));
+                            listProperties.put(name, new ListPropertyImpl(stringList));
                         } else {
-                            logUnexpectedValueType(name, List.class, value);
+                            throw unexpectedValueType(name, "list", value);
                         }
                         break;
                     default:
+                        throw new IllegalStateException("Unexpected property descriptor type: "
+                                + propertyDescriptor.type());
                 }
             }
 
@@ -150,29 +138,52 @@ public class SimpleConfigServiceFactory implements ConfigServiceFactory {
 
         @Override
         public StringProperty getStringProperty(String name) {
-            return MoreObjects.firstNonNull(stringProperties.get(name), defaultStringProperty);
+            StringProperty stringProperty = stringProperties.get(name);
+            if (stringProperty == null) {
+                throw new IllegalStateException("No such string property: " + name);
+            }
+            return stringProperty;
         }
 
         @Override
         public BooleanProperty getBooleanProperty(String name) {
-            return MoreObjects.firstNonNull(booleanProperties.get(name), defaultBooleanProperty);
+            BooleanProperty booleanProperty = booleanProperties.get(name);
+            if (booleanProperty == null) {
+                throw new IllegalStateException("No such boolean property: " + name);
+            }
+            return booleanProperty;
         }
 
         @Override
         public DoubleProperty getDoubleProperty(String name) {
-            return MoreObjects.firstNonNull(doubleProperties.get(name), defaultDoubleProperty);
+            DoubleProperty doubleProperty = doubleProperties.get(name);
+            if (doubleProperty == null) {
+                throw new IllegalStateException("No such double property: " + name);
+            }
+            return doubleProperty;
         }
 
         @Override
         public ListProperty getListProperty(String name) {
-            return MoreObjects.firstNonNull(listProperties.get(name), defaultListProperty);
+            ListProperty listProperty = listProperties.get(name);
+            if (listProperty == null) {
+                throw new IllegalStateException("No such list property: " + name);
+            }
+            return listProperty;
         }
 
-        private static void logUnexpectedValueType(String name, Class<?> expectedType,
+        private static RuntimeException unexpectedValueType(String propertyName,
+                String propertyType, @Nullable Object value) {
+            String found = value == null ? "null" : value.getClass().getSimpleName();
+            return new IllegalStateException("Unexpected value for " + propertyType + " property "
+                    + propertyName + ": " + found);
+        }
+
+        private static RuntimeException unexpectedValueTypeForList(String propertyName,
                 @Nullable Object value) {
-            logger.error("unexpected value for property \"{}\", expected \"{}\" but found: \"{}\"",
-                    name, expectedType.getName(),
-                    value == null ? "null" : value.getClass().getName());
+            String found = value == null ? "null" : value.getClass().getSimpleName();
+            return new IllegalStateException(
+                    "Unexpected value for element of list property " + propertyName + ": " + found);
         }
     }
 

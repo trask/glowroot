@@ -20,7 +20,7 @@ import java.io.IOException;
 import com.sun.net.httpserver.Filter;
 import com.sun.net.httpserver.HttpExchange;
 
-import org.glowroot.agent.it.harness.AppUnderTest;
+import org.glowroot.xyzzy.test.harness.AppUnderTest;
 
 @SuppressWarnings("restriction")
 class TestFilter extends Filter implements AppUnderTest {

@@ -22,6 +22,8 @@ import java.util.Locale;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
 import com.google.gson.Gson;
@@ -33,10 +35,7 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.glowroot.xyzzy.engine.config.GsonAdaptersAdviceConfig;
-import org.glowroot.xyzzy.engine.config.GsonAdaptersInstrumentationDescriptor;
-import org.glowroot.xyzzy.engine.config.GsonAdaptersPropertyDescriptor;
-import org.glowroot.xyzzy.engine.config.ImmutableInstrumentationDescriptor;
+
 import org.glowroot.xyzzy.engine.config.DefaultValue.PropertyValueTypeAdapter;
 
 import static com.google.common.base.Charsets.ISO_8859_1;
@@ -56,21 +55,38 @@ public class InstrumentationDescriptors {
         gson = gsonBuilder.create();
     }
 
-    public static List<InstrumentationDescriptor> readInstrumentationList() throws IOException {
-        URL url = InstrumentationDescriptors.class
-                .getResource("/META-INF/xyzzy.instrumentation-list.json");
-        if (url == null) {
-            return ImmutableList.of();
-        } else {
-            String json = Resources.toString(url, ISO_8859_1);
-            List<InstrumentationDescriptor> descriptors = gson.fromJson(json,
-                    new TypeToken<List<ImmutableInstrumentationDescriptor>>() {}.getType());
-            return checkNotNull(descriptors);
+    public static List<InstrumentationDescriptor> read() throws IOException {
+        List<URL> resources = getResources("META-INF/xyzzy.instrumentation.list");
+        List<InstrumentationDescriptor> descriptors = Lists.newArrayList();
+        for (URL resource : resources) {
+            List<String> jsonFiles = Resources.readLines(resource, ISO_8859_1);
+            for (String jsonFile : jsonFiles) {
+                if (jsonFile.isEmpty()) {
+                    continue;
+                }
+                URL url = InstrumentationDescriptors.class.getResource("/META-INF/" + jsonFile);
+                String json = Resources.toString(url, ISO_8859_1);
+                InstrumentationDescriptor descriptor =
+                        gson.fromJson(json, ImmutableInstrumentationDescriptor.class);
+                descriptors.add(checkNotNull(descriptor));
+            }
         }
+        return checkNotNull(descriptors);
     }
 
     public static Gson getGson() {
         return gson;
+    }
+
+    private static List<URL> getResources(String resourceName) throws IOException {
+        ClassLoader loader = InstrumentationDescriptors.class.getClassLoader();
+        if (loader == null) {
+            return ImmutableList
+                    .copyOf(Iterators.forEnumeration(ClassLoader.getSystemResources(resourceName)));
+        } else {
+            return ImmutableList
+                    .copyOf(Iterators.forEnumeration(loader.getResources(resourceName)));
+        }
     }
 
     private static class EnumTypeAdapterFactory implements TypeAdapterFactory {

@@ -1,0 +1,24 @@
+{
+  "name": "Test Harness",
+  "id": "xyzzy-test-harness",
+  "advice": [
+    {
+      "className": "org.glowroot.xyzzy.test.harness.TransactionMarker",
+      "methodName": "transactionMarker",
+      "methodParameterTypes": [ ],
+      "captureKind": "transaction",
+      "transactionType": "Test harness",
+      "transactionNameTemplate": "trace marker / {{this.class.simpleName}}",
+      "alreadyInTransactionBehavior": "capture-trace-entry",
+      "timerName": "mock trace marker"
+    },
+    {
+      "className": "org.glowroot.xyzzy.test.harness.TraceEntryMarker",
+      "methodName": "traceEntryMarker",
+      "methodParameterTypes": [ ],
+      "captureKind": "trace-entry",
+      "timerName": "mock trace entry marker",
+      "traceEntryMessageTemplate": "trace entry marker / {{this.class.simpleName}}"
+    }
+  ]
+}

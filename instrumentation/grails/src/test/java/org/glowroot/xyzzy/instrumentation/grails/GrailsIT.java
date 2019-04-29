@@ -40,14 +40,14 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.web.WebApplicationInitializer;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
-import org.glowroot.agent.it.harness.AppUnderTest;
-import org.glowroot.agent.it.harness.Container;
-import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.agent.it.harness.model.ServerSpan;
+import org.glowroot.xyzzy.test.harness.AppUnderTest;
+import org.glowroot.xyzzy.test.harness.Container;
+import org.glowroot.xyzzy.test.harness.Containers;
+import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.glowroot.agent.it.harness.validation.HarnessAssertions.assertSingleLocalSpanMessage;
+import static org.glowroot.xyzzy.test.harness.util.HarnessAssertions.assertSingleLocalSpanMessage;
 
 public class GrailsIT {
 
@@ -73,7 +73,7 @@ public class GrailsIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.resetConfig();
+        container.resetInstrumentationConfig();
     }
 
     @Test

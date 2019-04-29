@@ -19,8 +19,8 @@ import org.junit.runner.Description;
 import org.junit.runner.Result;
 import org.junit.runner.notification.RunListener;
 
-import org.glowroot.agent.it.harness.Container;
-import org.glowroot.agent.it.harness.Containers;
+import org.glowroot.xyzzy.test.harness.Container;
+import org.glowroot.xyzzy.test.harness.Containers;
 
 public class SharedSetupRunListener extends RunListener {
 

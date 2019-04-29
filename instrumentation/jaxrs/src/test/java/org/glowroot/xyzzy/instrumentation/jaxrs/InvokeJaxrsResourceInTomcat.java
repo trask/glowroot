@@ -23,7 +23,7 @@ import org.apache.catalina.Context;
 import org.apache.catalina.loader.WebappLoader;
 import org.apache.catalina.startup.Tomcat;
 
-import org.glowroot.agent.it.harness.AppUnderTest;
+import org.glowroot.xyzzy.test.harness.AppUnderTest;
 
 abstract class InvokeJaxrsResourceInTomcat implements AppUnderTest {
 

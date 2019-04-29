@@ -27,7 +27,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
-import org.glowroot.agent.it.harness.AppUnderTest;
+import org.glowroot.xyzzy.test.harness.AppUnderTest;
 
 @SuppressWarnings("serial")
 class TestServlet extends HttpServlet implements AppUnderTest {

@@ -27,7 +27,7 @@ import javax.servlet.ServletResponse;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
-import org.glowroot.agent.it.harness.AppUnderTest;
+import org.glowroot.xyzzy.test.harness.AppUnderTest;
 
 class TestFilter implements Filter, AppUnderTest {
 

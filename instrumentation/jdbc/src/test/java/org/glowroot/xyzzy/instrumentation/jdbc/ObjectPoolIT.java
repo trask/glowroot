@@ -25,17 +25,17 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.agent.it.harness.AppUnderTest;
-import org.glowroot.agent.it.harness.Container;
-import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.agent.it.harness.model.LocalSpan;
-import org.glowroot.agent.it.harness.model.ServerSpan;
-import org.glowroot.agent.it.harness.model.Span;
 import org.glowroot.xyzzy.instrumentation.jdbc.Connections.ConnectionType;
+import org.glowroot.xyzzy.test.harness.AppUnderTest;
+import org.glowroot.xyzzy.test.harness.Container;
+import org.glowroot.xyzzy.test.harness.LocalSpan;
+import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.Span;
+import org.glowroot.xyzzy.test.harness.TransactionMarker;
+import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.glowroot.agent.it.harness.validation.HarnessAssertions.assertSingleLocalSpanMessage;
+import static org.glowroot.xyzzy.test.harness.util.HarnessAssertions.assertSingleLocalSpanMessage;
 import static org.junit.Assume.assumeTrue;
 
 public class ObjectPoolIT {
@@ -56,7 +56,7 @@ public class ObjectPoolIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.resetConfig();
+        container.resetInstrumentationConfig();
     }
 
     @Test

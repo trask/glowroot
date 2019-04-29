@@ -31,13 +31,13 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.agent.it.harness.Container;
-import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.model.ClientSpan;
-import org.glowroot.agent.it.harness.model.ServerSpan;
-import org.glowroot.agent.it.harness.model.ServerSpan.Timer;
-import org.glowroot.agent.it.harness.model.Span;
-import org.glowroot.agent.it.harness.util.ExecuteHttpBase;
+import org.glowroot.xyzzy.test.harness.ClientSpan;
+import org.glowroot.xyzzy.test.harness.Container;
+import org.glowroot.xyzzy.test.harness.Containers;
+import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.Span;
+import org.glowroot.xyzzy.test.harness.ServerSpan.Timer;
+import org.glowroot.xyzzy.test.harness.util.ExecuteHttpBase;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -58,7 +58,7 @@ public class AsyncHttpClientIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.resetConfig();
+        container.resetInstrumentationConfig();
     }
 
     @Test

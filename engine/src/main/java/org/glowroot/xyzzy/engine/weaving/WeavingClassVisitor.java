@@ -48,9 +48,9 @@ import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.glowroot.xyzzy.engine.bytecode.api.Bytecode;
 import org.glowroot.xyzzy.engine.bytecode.api.Util;
-import org.glowroot.xyzzy.engine.weaving.ImmutableMethodMetaGroup;
 import org.glowroot.xyzzy.instrumentation.api.ClassInfo;
 import org.glowroot.xyzzy.instrumentation.api.MethodInfo;
 import org.glowroot.xyzzy.instrumentation.api.weaving.Shim;
@@ -563,7 +563,8 @@ class WeavingClassVisitor extends ClassVisitor {
         if ((!classMetaTypes.isEmpty() || !methodMetaTypes.isEmpty())
                 && metaHolderInternalName == null) {
             metaHolderInternalName =
-                    "org/glowroot/xyzzy/engine/weaving/MetaHolder" + metaHolderCounter.incrementAndGet();
+                    "org/glowroot/xyzzy/engine/weaving/MetaHolder"
+                            + metaHolderCounter.incrementAndGet();
         }
         return methodMetaUniqueNum;
     }

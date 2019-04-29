@@ -26,13 +26,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Marker;
 
-import org.glowroot.agent.it.harness.AppUnderTest;
-import org.glowroot.agent.it.harness.Container;
-import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.model.LocalSpan;
-import org.glowroot.agent.it.harness.model.ServerSpan;
-import org.glowroot.agent.it.harness.model.Span;
+import org.glowroot.xyzzy.test.harness.AppUnderTest;
+import org.glowroot.xyzzy.test.harness.Container;
+import org.glowroot.xyzzy.test.harness.Containers;
+import org.glowroot.xyzzy.test.harness.LocalSpan;
+import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.Span;
+import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -67,7 +67,7 @@ public class LogbackMarkerIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.resetConfig();
+        container.resetInstrumentationConfig();
     }
 
     @Test

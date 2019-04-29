@@ -31,18 +31,18 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.agent.it.harness.Container;
-import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.TraceEntryMarker;
-import org.glowroot.agent.it.harness.model.ClientSpan;
-import org.glowroot.agent.it.harness.model.LocalSpan;
-import org.glowroot.agent.it.harness.model.ServerSpan;
-import org.glowroot.agent.it.harness.model.Span;
-import org.glowroot.agent.it.harness.util.ExecuteHttpBase;
+import org.glowroot.xyzzy.test.harness.ClientSpan;
+import org.glowroot.xyzzy.test.harness.Container;
+import org.glowroot.xyzzy.test.harness.Containers;
+import org.glowroot.xyzzy.test.harness.LocalSpan;
+import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.Span;
+import org.glowroot.xyzzy.test.harness.TraceEntryMarker;
+import org.glowroot.xyzzy.test.harness.util.ExecuteHttpBase;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.glowroot.agent.it.harness.validation.HarnessAssertions.assertSingleClientSpanMessage;
+import static org.glowroot.xyzzy.test.harness.util.HarnessAssertions.assertSingleClientSpanMessage;
 
 public class OkHttpClient2xIT {
 
@@ -60,7 +60,7 @@ public class OkHttpClient2xIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.resetConfig();
+        container.resetInstrumentationConfig();
     }
 
     @Test
