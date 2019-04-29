@@ -35,7 +35,7 @@ import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
 import org.glowroot.xyzzy.test.harness.LocalSpan;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -103,7 +103,7 @@ public class ServletDispatcherIT {
     private void testForwardServlet(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        ServerSpan trace = container.execute(appUnderTestClass, "Web");
+        IncomingSpan trace = container.execute(appUnderTestClass, "Web");
 
         // then
         assertThat(trace.getMessage()).isEqualTo(contextPath + "/first-forward");
@@ -115,7 +115,7 @@ public class ServletDispatcherIT {
     private void testForwardServletUsingContext(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        ServerSpan trace = container.execute(appUnderTestClass, "Web");
+        IncomingSpan trace = container.execute(appUnderTestClass, "Web");
 
         // then
         assertThat(trace.getMessage()).isEqualTo(contextPath + "/first-forward-using-context");
@@ -128,7 +128,7 @@ public class ServletDispatcherIT {
     private void testForwardServletUsingNamed(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        ServerSpan trace = container.execute(appUnderTestClass, "Web");
+        IncomingSpan trace = container.execute(appUnderTestClass, "Web");
 
         // then
         assertThat(trace.getMessage()).isEqualTo(contextPath + "/first-forward-using-named");
@@ -141,7 +141,7 @@ public class ServletDispatcherIT {
     private void testIncludeServlet(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        ServerSpan trace = container.execute(appUnderTestClass, "Web");
+        IncomingSpan trace = container.execute(appUnderTestClass, "Web");
 
         // then
         assertThat(trace.getMessage()).isEqualTo(contextPath + "/first-include");

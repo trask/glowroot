@@ -40,10 +40,10 @@ import org.junit.Test;
 
 import org.glowroot.xyzzy.instrumentation.jdbc.Connections.ConnectionType;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
-import org.glowroot.xyzzy.test.harness.ClientSpan;
+import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
@@ -77,18 +77,18 @@ public class PreparedStatementIT {
     @Test
     public void testPreparedStatement() throws Exception {
         // when
-        ServerSpan serverSpan =
+        IncomingSpan incomingSpan =
                 container.execute(ExecutePreparedStatementAndIterateOverResults.class);
 
         // then
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage())
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage())
                 .isEqualTo("select * from employee where name like ?");
-        assertThat(clientSpan.getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(clientSpan.getSuffix()).isEqualTo(" ['john%'] => 1 row");
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(outgoingSpan.getSuffix()).isEqualTo(" ['john%'] => 1 row");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -96,18 +96,18 @@ public class PreparedStatementIT {
     @Test
     public void testPreparedStatementQuery() throws Exception {
         // when
-        ServerSpan serverSpan =
+        IncomingSpan incomingSpan =
                 container.execute(ExecutePreparedStatementQueryAndIterateOverResults.class);
 
         // then
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage())
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage())
                 .isEqualTo("select * from employee where name like ?");
-        assertThat(clientSpan.getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(clientSpan.getSuffix()).isEqualTo(" ['john%'] => 1 row");
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(outgoingSpan.getSuffix()).isEqualTo(" ['john%'] => 1 row");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -115,17 +115,17 @@ public class PreparedStatementIT {
     @Test
     public void testPreparedStatementUpdate() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecutePreparedStatementUpdate.class);
+        IncomingSpan incomingSpan = container.execute(ExecutePreparedStatementUpdate.class);
 
         // then
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage())
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage())
                 .isEqualTo("update employee set name = ?");
-        assertThat(clientSpan.getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(clientSpan.getSuffix()).isEqualTo(" ['nobody'] => 3 rows");
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(outgoingSpan.getSuffix()).isEqualTo(" ['nobody'] => 3 rows");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -133,18 +133,18 @@ public class PreparedStatementIT {
     @Test
     public void testPreparedStatementInsertWithGeneratedKeys() throws Exception {
         // when
-        ServerSpan serverSpan =
+        IncomingSpan incomingSpan =
                 container.execute(ExecutePreparedStatementInsertWithGeneratedKeys.class);
 
         // then
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage())
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage())
                 .isEqualTo("insert into employee (name) values (?)");
-        assertThat(clientSpan.getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(clientSpan.getSuffix()).isEqualTo(" ['nobody'] => 1 row");
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(outgoingSpan.getSuffix()).isEqualTo(" ['nobody'] => 1 row");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -152,18 +152,18 @@ public class PreparedStatementIT {
     @Test
     public void testPreparedStatementLargeParamSetFirst() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecutePreparedStatementLargeParamSetFirst.class);
+        IncomingSpan incomingSpan = container.execute(ExecutePreparedStatementLargeParamSetFirst.class);
 
         // then
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage())
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage())
                 .startsWith("select * from employee where name like ? and name like ? ");
-        assertThat(clientSpan.getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(clientSpan.getSuffix()).startsWith(" ['john%', 'john%', ");
-        assertThat(clientSpan.getSuffix())
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(outgoingSpan.getSuffix()).startsWith(" ['john%', 'john%', ");
+        assertThat(outgoingSpan.getSuffix())
                 .endsWith(", 'john%', 'john%'] => 1 row");
 
         assertThat(i.hasNext()).isFalse();
@@ -172,26 +172,26 @@ public class PreparedStatementIT {
     @Test
     public void testPreparedStatementNullSql() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(PreparedStatementNullSql.class);
+        IncomingSpan incomingSpan = container.execute(PreparedStatementNullSql.class);
         // then
-        assertThat(serverSpan.childSpans()).isEmpty();
+        assertThat(incomingSpan.childSpans()).isEmpty();
     }
 
     @Test
     public void testPreparedStatementThrowing() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecutePreparedStatementThrowing.class);
+        IncomingSpan incomingSpan = container.execute(ExecutePreparedStatementThrowing.class);
 
         // then
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage())
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage())
                 .isEqualTo("select * from employee where name like ?");
-        assertThat(clientSpan.getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(clientSpan.getSuffix()).isEqualTo(" ['john%']");
-        assertThat(clientSpan.getError().message())
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(outgoingSpan.getSuffix()).isEqualTo(" ['john%']");
+        assertThat(outgoingSpan.getError().message())
                 .isEqualTo("java.sql.SQLException: An execute failure");
 
         assertThat(i.hasNext()).isFalse();
@@ -200,13 +200,13 @@ public class PreparedStatementIT {
     @Test
     public void testPreparedStatementWithTonsOfBindParameters() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(
+        IncomingSpan incomingSpan = container.execute(
                 ExecutePreparedStatementWithTonsOfBindParametersAndIterateOverResults.class);
 
         // then
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
         StringBuilder sql = new StringBuilder("select * from employee where name like ?");
         for (int j = 0; j < 200; j++) {
             sql.append(" and name like ?");
@@ -217,10 +217,10 @@ public class PreparedStatementIT {
         }
         suffix.append("] => 1 row");
 
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage()).isEqualTo(sql.toString());
-        assertThat(clientSpan.getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(clientSpan.getSuffix()).isEqualTo(suffix.toString());
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage()).isEqualTo(sql.toString());
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(outgoingSpan.getSuffix()).isEqualTo(suffix.toString());
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -232,18 +232,18 @@ public class PreparedStatementIT {
                 ImmutableList.<String>of());
 
         // when
-        ServerSpan serverSpan =
+        IncomingSpan incomingSpan =
                 container.execute(ExecutePreparedStatementAndIterateOverResults.class);
 
         // then
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage())
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage())
                 .isEqualTo("select * from employee where name like ?");
-        assertThat(clientSpan.getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(clientSpan.getSuffix()).isEqualTo(" => 1 row");
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(outgoingSpan.getSuffix()).isEqualTo(" => 1 row");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -255,17 +255,17 @@ public class PreparedStatementIT {
                 ImmutableList.of(".*"));
 
         // whens
-        ServerSpan serverSpan = container.execute(ExecutePreparedStatementWithSetNull.class);
+        IncomingSpan incomingSpan = container.execute(ExecutePreparedStatementWithSetNull.class);
 
         // then
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage())
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage())
                 .isEqualTo("insert into employee (name, misc) values (?, ?)");
-        assertThat(clientSpan.getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(clientSpan.getSuffix()).isEqualTo(" [NULL, NULL]");
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(outgoingSpan.getSuffix()).isEqualTo(" [NULL, NULL]");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -277,25 +277,25 @@ public class PreparedStatementIT {
                 ImmutableList.of(".*"));
 
         // when
-        ServerSpan serverSpan = container.execute(ExecutePreparedStatementWithBinary.class);
+        IncomingSpan incomingSpan = container.execute(ExecutePreparedStatementWithBinary.class);
 
         // then
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage())
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage())
                 .isEqualTo("insert into employee (name, misc) values (?, ?)");
-        assertThat(clientSpan.getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(clientSpan.getSuffix())
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(outgoingSpan.getSuffix())
                 .isEqualTo(" ['jane', 0x00010203040506070809]");
 
-        clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage())
+        outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage())
                 .isEqualTo("insert /**/ into employee (name, misc) values (?, ?)");
-        assertThat(clientSpan.getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(clientSpan.getSuffix()).isEqualTo(" ['jane', {10 bytes}]");
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(outgoingSpan.getSuffix()).isEqualTo(" ['jane', {10 bytes}]");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -307,26 +307,26 @@ public class PreparedStatementIT {
                 ImmutableList.of(".*"));
 
         // when
-        ServerSpan serverSpan =
+        IncomingSpan incomingSpan =
                 container.execute(ExecutePreparedStatementWithBinaryUsingSetObject.class);
 
         // then
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage())
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage())
                 .isEqualTo("insert into employee (name, misc) values (?, ?)");
-        assertThat(clientSpan.getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(clientSpan.getSuffix())
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(outgoingSpan.getSuffix())
                 .isEqualTo(" ['jane', 0x00010203040506070809]");
 
-        clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage())
+        outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage())
                 .isEqualTo("insert /**/ into employee (name, misc) values (?, ?)");
-        assertThat(clientSpan.getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(clientSpan.getSuffix()).isEqualTo(" ['jane', {10 bytes}]");
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(outgoingSpan.getSuffix()).isEqualTo(" ['jane', {10 bytes}]");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -350,17 +350,17 @@ public class PreparedStatementIT {
                 ImmutableList.of(".*"));
 
         // when
-        ServerSpan serverSpan = container.execute(ExecutePreparedStatementWithBinaryStream.class);
+        IncomingSpan incomingSpan = container.execute(ExecutePreparedStatementWithBinaryStream.class);
 
         // then
-        Iterator<Span> i = getTraceEntriesWithoutH2ExtraLobQueries(serverSpan).iterator();
+        Iterator<Span> i = getTraceEntriesWithoutH2ExtraLobQueries(incomingSpan).iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage())
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage())
                 .isEqualTo("insert into employee (name, misc) values (?, ?)");
-        assertThat(clientSpan.getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(clientSpan.getSuffix())
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(outgoingSpan.getSuffix())
                 .isEqualTo(" ['jane', {stream:ByteArrayInputStream}]");
 
         assertThat(i.hasNext()).isFalse();
@@ -385,26 +385,26 @@ public class PreparedStatementIT {
                 ImmutableList.of(".*"));
 
         // when
-        ServerSpan serverSpan =
+        IncomingSpan incomingSpan =
                 container.execute(ExecutePreparedStatementWithCharacterStream.class);
 
         // then
-        Iterator<Span> i = getTraceEntriesWithoutH2ExtraLobQueries(serverSpan).iterator();
+        Iterator<Span> i = getTraceEntriesWithoutH2ExtraLobQueries(incomingSpan).iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage())
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage())
                 .isEqualTo("insert into employee (name, misc2) values (?, ?)");
-        assertThat(clientSpan.getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(clientSpan.getSuffix())
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(outgoingSpan.getSuffix())
                 .isEqualTo(" ['jane', {stream:StringReader}]");
 
         assertThat(i.hasNext()).isFalse();
     }
 
-    private List<Span> getTraceEntriesWithoutH2ExtraLobQueries(ServerSpan serverSpan) {
+    private List<Span> getTraceEntriesWithoutH2ExtraLobQueries(IncomingSpan incomingSpan) {
         List<Span> filtered = Lists.newArrayList();
-        for (Span span : serverSpan.childSpans()) {
+        for (Span span : incomingSpan.childSpans()) {
             if (!H2_EXTRA_LOB_QUERIES.contains(span.getMessage())) {
                 filtered.add(span);
             }
@@ -419,17 +419,17 @@ public class PreparedStatementIT {
                 ImmutableList.of(".*"));
 
         // when
-        ServerSpan serverSpan = container.execute(ExecutePreparedStatementWithClear.class);
+        IncomingSpan incomingSpan = container.execute(ExecutePreparedStatementWithClear.class);
 
         // then
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage())
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage())
                 .isEqualTo("select * from employee where name like ?");
-        assertThat(clientSpan.getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(clientSpan.getSuffix()).isEqualTo(" ['john%'] => 1 row");
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(outgoingSpan.getSuffix()).isEqualTo(" ['john%'] => 1 row");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -437,18 +437,18 @@ public class PreparedStatementIT {
     @Test
     public void testPreparedStatementThatHasInternalGlowrootToken() throws Exception {
         // when
-        ServerSpan serverSpan =
+        IncomingSpan incomingSpan =
                 container.execute(ExecutePreparedStatementThatHasInternalGlowrootToken.class);
 
         // then
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage())
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage())
                 .isEqualTo("select * from employee where name like ?");
-        assertThat(clientSpan.getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(clientSpan.getSuffix()).isEqualTo(" ['{}'] => 0 rows");
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(outgoingSpan.getSuffix()).isEqualTo(" ['{}'] => 0 rows");
 
         assertThat(i.hasNext()).isFalse();
     }

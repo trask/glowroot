@@ -38,7 +38,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -67,7 +67,7 @@ public class RequestParameterIT {
     @Test
     public void testRequestParameters() throws Exception {
         // when
-        ServerSpan trace = container.execute(GetParameter.class, "Web");
+        IncomingSpan trace = container.execute(GetParameter.class, "Web");
 
         // then
         Map<String, Object> requestParameters =
@@ -85,7 +85,7 @@ public class RequestParameterIT {
     @Test
     public void testRequestParametersWithoutMaskedQueryString() throws Exception {
         // when
-        ServerSpan trace = container.execute(GetParameterWithoutMaskedQueryString.class, "Web");
+        IncomingSpan trace = container.execute(GetParameterWithoutMaskedQueryString.class, "Web");
 
         // then
         Map<String, Object> requestParameters =
@@ -106,7 +106,7 @@ public class RequestParameterIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureRequestParameters",
                 ImmutableList.<String>of());
         // when
-        ServerSpan trace = container.execute(GetParameter.class, "Web");
+        IncomingSpan trace = container.execute(GetParameter.class, "Web");
         // then
         assertThat(trace.getDetails()).hasSize(3);
         assertThat(trace.getDetails()).containsKey("Request http method");
@@ -124,7 +124,7 @@ public class RequestParameterIT {
     @Test
     public void testBadRequestParameterMap() throws Exception {
         // when
-        ServerSpan trace = container.execute(GetBadParameterMap.class, "Web");
+        IncomingSpan trace = container.execute(GetBadParameterMap.class, "Web");
 
         // then
         Map<String, Object> requestParameters =
@@ -136,7 +136,7 @@ public class RequestParameterIT {
     @Test
     public void testExtraBadRequestParameterMap() throws Exception {
         // when
-        ServerSpan trace = container.execute(GetExtraBadParameterMap.class, "Web");
+        IncomingSpan trace = container.execute(GetExtraBadParameterMap.class, "Web");
 
         // then
         Map<String, Object> requestParameters =
@@ -148,7 +148,7 @@ public class RequestParameterIT {
     @Test
     public void testAnotherBadRequestParameterMap() throws Exception {
         // when
-        ServerSpan trace = container.execute(GetAnotherBadParameterMap.class, "Web");
+        IncomingSpan trace = container.execute(GetAnotherBadParameterMap.class, "Web");
 
         // then
         Map<String, Object> requestParameters =
@@ -160,7 +160,7 @@ public class RequestParameterIT {
     @Test
     public void testLargeRequestParameters() throws Exception {
         // when
-        ServerSpan trace = container.execute(GetLargeParameter.class, "Web");
+        IncomingSpan trace = container.execute(GetLargeParameter.class, "Web");
 
         // then
         Map<String, Object> requestParameters =

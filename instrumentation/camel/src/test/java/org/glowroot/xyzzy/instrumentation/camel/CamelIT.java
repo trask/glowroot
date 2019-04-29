@@ -33,7 +33,7 @@ import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
 import org.glowroot.xyzzy.test.harness.LocalSpan;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TraceEntryMarker;
 
@@ -63,14 +63,14 @@ public class CamelIT {
     @Test
     public void shouldRoute() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(Route.class);
+        IncomingSpan incomingSpan = container.execute(Route.class);
 
         // then
-        List<ServerSpan.Timer> nestedTimers = serverSpan.mainThreadRootTimer().childTimers();
+        List<IncomingSpan.Timer> nestedTimers = incomingSpan.mainThreadRootTimer().childTimers();
         assertThat(nestedTimers).hasSize(1);
         assertThat(nestedTimers.get(0).name()).isEqualTo("mock trace entry marker");
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");

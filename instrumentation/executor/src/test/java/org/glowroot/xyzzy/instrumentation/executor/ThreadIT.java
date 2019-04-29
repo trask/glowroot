@@ -24,7 +24,7 @@ import org.junit.Test;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TraceEntryMarker;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
@@ -57,95 +57,95 @@ public class ThreadIT {
     @Test
     public void shouldCaptureThread() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(DoExecuteThread.class);
+        IncomingSpan incomingSpan = container.execute(DoExecuteThread.class);
 
         // then
-        checkTrace(serverSpan, false, false);
+        checkTrace(incomingSpan, false, false);
     }
 
     @Test
     public void shouldCaptureThreadWithName() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(DoExecuteThreadWithName.class);
+        IncomingSpan incomingSpan = container.execute(DoExecuteThreadWithName.class);
 
         // then
-        checkTrace(serverSpan, false, false);
+        checkTrace(incomingSpan, false, false);
     }
 
     @Test
     public void shouldCaptureThreadWithThreadGroup() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(DoExecuteThreadWithThreadGroup.class);
+        IncomingSpan incomingSpan = container.execute(DoExecuteThreadWithThreadGroup.class);
 
         // then
-        checkTrace(serverSpan, false, false);
+        checkTrace(incomingSpan, false, false);
     }
 
     @Test
     public void shouldCaptureThreadWithThreadGroupAndName() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(DoExecuteThreadWithThreadGroupAndName.class);
+        IncomingSpan incomingSpan = container.execute(DoExecuteThreadWithThreadGroupAndName.class);
 
         // then
-        checkTrace(serverSpan, false, false);
+        checkTrace(incomingSpan, false, false);
     }
 
     @Test
     public void shouldCaptureThreadSubclassed() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(DoExecuteThreadSubclassed.class);
+        IncomingSpan incomingSpan = container.execute(DoExecuteThreadSubclassed.class);
 
         // then
-        checkTrace(serverSpan, false, false);
+        checkTrace(incomingSpan, false, false);
     }
 
     @Test
     public void shouldCaptureThreadSubSubclassed() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(DoExecuteThreadSubSubclassed.class);
+        IncomingSpan incomingSpan = container.execute(DoExecuteThreadSubSubclassed.class);
 
         // then
-        checkTrace(serverSpan, false, false);
+        checkTrace(incomingSpan, false, false);
     }
 
     @Test
     public void shouldCaptureThreadSubSubclassedWithRunnable() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(DoExecuteThreadSubSubclassedWithRunnable.class);
+        IncomingSpan incomingSpan = container.execute(DoExecuteThreadSubSubclassedWithRunnable.class);
 
         // then
-        checkTrace(serverSpan, false, false);
+        checkTrace(incomingSpan, false, false);
     }
 
-    private static void checkTrace(ServerSpan serverSpan, boolean isAny, boolean withFuture) {
+    private static void checkTrace(IncomingSpan incomingSpan, boolean isAny, boolean withFuture) {
         if (withFuture) {
-            assertThat(serverSpan.mainThreadRootTimer().childTimers().size()).isEqualTo(1);
-            assertThat(serverSpan.mainThreadRootTimer().childTimers().get(0).name())
+            assertThat(incomingSpan.mainThreadRootTimer().childTimers().size()).isEqualTo(1);
+            assertThat(incomingSpan.mainThreadRootTimer().childTimers().get(0).name())
                     .isEqualTo("wait on future");
-            assertThat(serverSpan.mainThreadRootTimer().childTimers().get(0).count())
+            assertThat(incomingSpan.mainThreadRootTimer().childTimers().get(0).count())
                     .isGreaterThanOrEqualTo(1);
-            assertThat(serverSpan.mainThreadRootTimer().childTimers().get(0).count())
+            assertThat(incomingSpan.mainThreadRootTimer().childTimers().get(0).count())
                     .isLessThanOrEqualTo(3);
         }
-        assertThat(serverSpan.auxThreadRootTimer()).isNotNull();
-        assertThat(serverSpan.asyncTimers()).isEmpty();
-        assertThat(serverSpan.auxThreadRootTimer().name()).isEqualTo("auxiliary thread");
+        assertThat(incomingSpan.auxThreadRootTimer()).isNotNull();
+        assertThat(incomingSpan.asyncTimers()).isEmpty();
+        assertThat(incomingSpan.auxThreadRootTimer().name()).isEqualTo("auxiliary thread");
         if (isAny) {
-            assertThat(serverSpan.auxThreadRootTimer().count()).isBetween(1L, 3L);
+            assertThat(incomingSpan.auxThreadRootTimer().count()).isBetween(1L, 3L);
             // should be 100-300ms, but margin of error, esp. in travis builds is high
-            assertThat(serverSpan.auxThreadRootTimer().totalNanos())
+            assertThat(incomingSpan.auxThreadRootTimer().totalNanos())
                     .isGreaterThanOrEqualTo(MILLISECONDS.toNanos(50));
         } else {
-            assertThat(serverSpan.auxThreadRootTimer().count()).isEqualTo(3);
+            assertThat(incomingSpan.auxThreadRootTimer().count()).isEqualTo(3);
             // should be 300ms, but margin of error, esp. in travis builds is high
-            assertThat(serverSpan.auxThreadRootTimer().totalNanos())
+            assertThat(incomingSpan.auxThreadRootTimer().totalNanos())
                     .isGreaterThanOrEqualTo(MILLISECONDS.toNanos(250));
         }
-        assertThat(serverSpan.auxThreadRootTimer().childTimers().size()).isEqualTo(1);
-        assertThat(serverSpan.auxThreadRootTimer().childTimers().get(0).name())
+        assertThat(incomingSpan.auxThreadRootTimer().childTimers().size()).isEqualTo(1);
+        assertThat(incomingSpan.auxThreadRootTimer().childTimers().get(0).name())
                 .isEqualTo("mock trace entry marker");
 
-        List<Span> spans = serverSpan.childSpans();
+        List<Span> spans = incomingSpan.childSpans();
 
         if (isAny) {
             assertThat(spans.size()).isBetween(1, 3);

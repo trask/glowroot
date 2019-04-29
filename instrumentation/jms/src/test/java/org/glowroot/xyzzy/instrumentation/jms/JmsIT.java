@@ -34,7 +34,7 @@ import org.junit.Test;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
@@ -62,17 +62,17 @@ public class JmsIT {
 
     @Test
     public void shouldReceiveMessage() throws Exception {
-        ServerSpan serverSpan = container.execute(ReceiveMessage.class);
-        assertThat(serverSpan.transactionType()).isEqualTo("Background");
-        assertThat(serverSpan.transactionName()).isEqualTo("JMS Message: TestMessageListener");
-        assertThat(serverSpan.getMessage()).isEqualTo("JMS Message: TestMessageListener");
-        assertThat(serverSpan.childSpans()).isEmpty();
+        IncomingSpan incomingSpan = container.execute(ReceiveMessage.class);
+        assertThat(incomingSpan.transactionType()).isEqualTo("Background");
+        assertThat(incomingSpan.transactionName()).isEqualTo("JMS Message: TestMessageListener");
+        assertThat(incomingSpan.getMessage()).isEqualTo("JMS Message: TestMessageListener");
+        assertThat(incomingSpan.childSpans()).isEmpty();
     }
 
     @Test
     public void shouldSendMessage() throws Exception {
-        ServerSpan serverSpan = container.execute(SendMessage.class);
-        List<ServerSpan.Timer> nestedTimers = serverSpan.mainThreadRootTimer().childTimers();
+        IncomingSpan incomingSpan = container.execute(SendMessage.class);
+        List<IncomingSpan.Timer> nestedTimers = incomingSpan.mainThreadRootTimer().childTimers();
         assertThat(nestedTimers).hasSize(1);
         assertThat(nestedTimers.get(0).name()).isEqualTo("jms send message");
 

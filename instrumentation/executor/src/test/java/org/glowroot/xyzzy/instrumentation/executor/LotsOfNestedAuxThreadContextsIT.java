@@ -28,7 +28,7 @@ import org.junit.Test;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.TraceEntryMarker;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
@@ -66,17 +66,17 @@ public class LotsOfNestedAuxThreadContextsIT {
     @Test
     public void shouldCaptureSubmitCallable() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(DoSubmitCallable.class);
+        IncomingSpan incomingSpan = container.execute(DoSubmitCallable.class);
 
         // then
-        assertThat(serverSpan.auxThreadRootTimer()).isNotNull();
-        ServerSpan.Timer auxThreadRootTimer = serverSpan.auxThreadRootTimer();
+        assertThat(incomingSpan.auxThreadRootTimer()).isNotNull();
+        IncomingSpan.Timer auxThreadRootTimer = incomingSpan.auxThreadRootTimer();
         assertThat(auxThreadRootTimer.count()).isEqualTo(100000);
         assertThat(auxThreadRootTimer.childTimers().size()).isEqualTo(1);
         assertThat(auxThreadRootTimer.childTimers().get(0).name())
                 .isEqualTo("mock trace entry marker");
 
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     public static class DoSubmitCallable implements AppUnderTest, TransactionMarker {

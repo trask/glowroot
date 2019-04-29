@@ -15,15 +15,33 @@
  */
 package org.glowroot.xyzzy.test.harness.agent;
 
+import org.glowroot.xyzzy.engine.impl.TimerNameImpl;
 import org.glowroot.xyzzy.instrumentation.api.Timer;
 import org.glowroot.xyzzy.test.harness.ImmutableTimer;
 
 public class TimerImpl implements Timer {
 
+    private final TimerNameImpl timerName;
+    private final long startNanoTime;
+    private volatile long totalNanos;
+
+    public TimerImpl(TimerNameImpl timerName) {
+        this.timerName = timerName;
+        startNanoTime = System.nanoTime();
+    }
+
     @Override
-    public void stop() {}
+    public void stop() {
+        totalNanos = System.nanoTime() - startNanoTime;
+    }
 
     public ImmutableTimer toImmutable() {
-        return ImmutableTimer.builder().build();
+        return ImmutableTimer.builder()
+                .name(timerName.name())
+                .extended(false)
+                .totalNanos(totalNanos)
+                .count(1)
+                // childTimers
+                .build();
     }
 }

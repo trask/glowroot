@@ -35,7 +35,7 @@ import org.junit.Test;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
 import static org.glowroot.xyzzy.test.harness.util.HarnessAssertions.assertSingleClientSpanMessage;
@@ -62,10 +62,10 @@ public class AxisClientIT {
     @Test
     public void shouldCaptureAxisCall() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecuteSoapRequest.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteSoapRequest.class);
 
         // then
-        assertSingleClientSpanMessage(serverSpan).matches("http client request:"
+        assertSingleClientSpanMessage(incomingSpan).matches("http client request:"
                 + " POST http://localhost:\\d+/cxf/helloWorld");
     }
 

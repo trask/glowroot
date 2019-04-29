@@ -26,7 +26,7 @@ import org.junit.Test;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -53,131 +53,131 @@ public class EjbRemoteIT {
 
     @Test
     public void shouldCaptureARemoteBeanOne() throws Exception {
-        ServerSpan serverSpan = container.execute(ExecuteARemoteBeanOne.class);
-        assertThat(serverSpan.transactionType()).isEqualTo("Web");
-        assertThat(serverSpan.transactionName()).isEqualTo("EJB remote: ARemoteOne#one");
-        assertThat(serverSpan.getMessage()).isEqualTo(
+        IncomingSpan incomingSpan = container.execute(ExecuteARemoteBeanOne.class);
+        assertThat(incomingSpan.transactionType()).isEqualTo("Web");
+        assertThat(incomingSpan.transactionName()).isEqualTo("EJB remote: ARemoteOne#one");
+        assertThat(incomingSpan.getMessage()).isEqualTo(
                 "EJB remote: org.glowroot.xyzzy.instrumentation.ejb.EjbRemoteIT$ARemoteOne.one()");
-        assertThat(serverSpan.childSpans()).isEmpty();
+        assertThat(incomingSpan.childSpans()).isEmpty();
     }
 
     @Test
     public void shouldCaptureARemoteBeanTwo() throws Exception {
-        ServerSpan serverSpan = container.execute(ExecuteARemoteBeanTwo.class);
-        assertThat(serverSpan.transactionType()).isEqualTo("Web");
-        assertThat(serverSpan.transactionName()).isEqualTo("EJB remote: ARemoteTwo#two");
-        assertThat(serverSpan.getMessage()).isEqualTo(
+        IncomingSpan incomingSpan = container.execute(ExecuteARemoteBeanTwo.class);
+        assertThat(incomingSpan.transactionType()).isEqualTo("Web");
+        assertThat(incomingSpan.transactionName()).isEqualTo("EJB remote: ARemoteTwo#two");
+        assertThat(incomingSpan.getMessage()).isEqualTo(
                 "EJB remote: org.glowroot.xyzzy.instrumentation.ejb.EjbRemoteIT$ARemoteTwo.two()");
     }
 
     @Test
     public void shouldCaptureA2RemoteBeanOne() throws Exception {
-        ServerSpan serverSpan = container.execute(ExecuteA2RemoteBeanOne.class);
-        assertThat(serverSpan.transactionType()).isEqualTo("Web");
-        assertThat(serverSpan.transactionName()).isEqualTo("EJB remote: ARemoteOne#one");
-        assertThat(serverSpan.getMessage()).isEqualTo(
+        IncomingSpan incomingSpan = container.execute(ExecuteA2RemoteBeanOne.class);
+        assertThat(incomingSpan.transactionType()).isEqualTo("Web");
+        assertThat(incomingSpan.transactionName()).isEqualTo("EJB remote: ARemoteOne#one");
+        assertThat(incomingSpan.getMessage()).isEqualTo(
                 "EJB remote: org.glowroot.xyzzy.instrumentation.ejb.EjbRemoteIT$ARemoteOne.one()");
-        assertThat(serverSpan.childSpans()).isEmpty();
+        assertThat(incomingSpan.childSpans()).isEmpty();
     }
 
     @Test
     public void shouldCaptureA2RemoteBeanTwo() throws Exception {
-        ServerSpan serverSpan = container.execute(ExecuteA2RemoteBeanTwo.class);
-        assertThat(serverSpan.transactionType()).isEqualTo("Web");
-        assertThat(serverSpan.transactionName()).isEqualTo("EJB remote: ARemoteTwo#two");
-        assertThat(serverSpan.getMessage()).isEqualTo(
+        IncomingSpan incomingSpan = container.execute(ExecuteA2RemoteBeanTwo.class);
+        assertThat(incomingSpan.transactionType()).isEqualTo("Web");
+        assertThat(incomingSpan.transactionName()).isEqualTo("EJB remote: ARemoteTwo#two");
+        assertThat(incomingSpan.getMessage()).isEqualTo(
                 "EJB remote: org.glowroot.xyzzy.instrumentation.ejb.EjbRemoteIT$ARemoteTwo.two()");
-        assertThat(serverSpan.childSpans()).isEmpty();
+        assertThat(incomingSpan.childSpans()).isEmpty();
     }
 
     @Test
     public void shouldCaptureA3RemoteBeanOne() throws Exception {
-        ServerSpan serverSpan = container.execute(ExecuteA3RemoteBeanOne.class);
-        assertThat(serverSpan.transactionType()).isEqualTo("Web");
-        assertThat(serverSpan.transactionName()).isEqualTo("EJB remote: ARemoteOne#one");
-        assertThat(serverSpan.getMessage()).isEqualTo(
+        IncomingSpan incomingSpan = container.execute(ExecuteA3RemoteBeanOne.class);
+        assertThat(incomingSpan.transactionType()).isEqualTo("Web");
+        assertThat(incomingSpan.transactionName()).isEqualTo("EJB remote: ARemoteOne#one");
+        assertThat(incomingSpan.getMessage()).isEqualTo(
                 "EJB remote: org.glowroot.xyzzy.instrumentation.ejb.EjbRemoteIT$ARemoteOne.one()");
-        assertThat(serverSpan.childSpans()).isEmpty();
+        assertThat(incomingSpan.childSpans()).isEmpty();
     }
 
     @Test
     public void shouldCaptureA3RemoteBeanTwo() throws Exception {
-        ServerSpan serverSpan = container.execute(ExecuteA3RemoteBeanTwo.class);
-        assertThat(serverSpan.transactionType()).isEqualTo("Web");
-        assertThat(serverSpan.transactionName()).isEqualTo("EJB remote: ARemoteTwo#two");
-        assertThat(serverSpan.getMessage()).isEqualTo(
+        IncomingSpan incomingSpan = container.execute(ExecuteA3RemoteBeanTwo.class);
+        assertThat(incomingSpan.transactionType()).isEqualTo("Web");
+        assertThat(incomingSpan.transactionName()).isEqualTo("EJB remote: ARemoteTwo#two");
+        assertThat(incomingSpan.getMessage()).isEqualTo(
                 "EJB remote: org.glowroot.xyzzy.instrumentation.ejb.EjbRemoteIT$ARemoteTwo.two()");
-        assertThat(serverSpan.childSpans()).isEmpty();
+        assertThat(incomingSpan.childSpans()).isEmpty();
     }
 
     @Test
     public void shouldCaptureBRemoteBeanOne() throws Exception {
-        ServerSpan serverSpan = container.execute(ExecuteBRemoteBeanOne.class);
-        assertThat(serverSpan.transactionType()).isEqualTo("Web");
-        assertThat(serverSpan.transactionName()).isEqualTo("EJB remote: BRemoteOne#one");
-        assertThat(serverSpan.getMessage()).isEqualTo(
+        IncomingSpan incomingSpan = container.execute(ExecuteBRemoteBeanOne.class);
+        assertThat(incomingSpan.transactionType()).isEqualTo("Web");
+        assertThat(incomingSpan.transactionName()).isEqualTo("EJB remote: BRemoteOne#one");
+        assertThat(incomingSpan.getMessage()).isEqualTo(
                 "EJB remote: org.glowroot.xyzzy.instrumentation.ejb.EjbRemoteIT$BRemoteOne.one()");
-        assertThat(serverSpan.childSpans()).isEmpty();
+        assertThat(incomingSpan.childSpans()).isEmpty();
     }
 
     @Test
     public void shouldCaptureBRemoteBeanTwo() throws Exception {
-        ServerSpan serverSpan = container.execute(ExecuteBRemoteBeanTwo.class);
-        assertThat(serverSpan.transactionType()).isEqualTo("Web");
-        assertThat(serverSpan.transactionName()).isEqualTo("EJB remote: BRemoteTwo#two");
-        assertThat(serverSpan.getMessage()).isEqualTo(
+        IncomingSpan incomingSpan = container.execute(ExecuteBRemoteBeanTwo.class);
+        assertThat(incomingSpan.transactionType()).isEqualTo("Web");
+        assertThat(incomingSpan.transactionName()).isEqualTo("EJB remote: BRemoteTwo#two");
+        assertThat(incomingSpan.getMessage()).isEqualTo(
                 "EJB remote: org.glowroot.xyzzy.instrumentation.ejb.EjbRemoteIT$BRemoteTwo.two()");
-        assertThat(serverSpan.childSpans()).isEmpty();
+        assertThat(incomingSpan.childSpans()).isEmpty();
     }
 
     @Test
     public void shouldCaptureB2RemoteBeanOne() throws Exception {
-        ServerSpan serverSpan = container.execute(ExecuteB2RemoteBeanOne.class);
-        assertThat(serverSpan.transactionType()).isEqualTo("Web");
-        assertThat(serverSpan.transactionName()).isEqualTo("EJB remote: BRemoteOne#one");
-        assertThat(serverSpan.getMessage()).isEqualTo(
+        IncomingSpan incomingSpan = container.execute(ExecuteB2RemoteBeanOne.class);
+        assertThat(incomingSpan.transactionType()).isEqualTo("Web");
+        assertThat(incomingSpan.transactionName()).isEqualTo("EJB remote: BRemoteOne#one");
+        assertThat(incomingSpan.getMessage()).isEqualTo(
                 "EJB remote: org.glowroot.xyzzy.instrumentation.ejb.EjbRemoteIT$BRemoteOne.one()");
-        assertThat(serverSpan.childSpans()).isEmpty();
+        assertThat(incomingSpan.childSpans()).isEmpty();
     }
 
     @Test
     public void shouldCaptureB2RemoteBeanTwo() throws Exception {
-        ServerSpan serverSpan = container.execute(ExecuteB2RemoteBeanTwo.class);
-        assertThat(serverSpan.transactionType()).isEqualTo("Web");
-        assertThat(serverSpan.transactionName()).isEqualTo("EJB remote: BRemoteTwo#two");
-        assertThat(serverSpan.getMessage()).isEqualTo(
+        IncomingSpan incomingSpan = container.execute(ExecuteB2RemoteBeanTwo.class);
+        assertThat(incomingSpan.transactionType()).isEqualTo("Web");
+        assertThat(incomingSpan.transactionName()).isEqualTo("EJB remote: BRemoteTwo#two");
+        assertThat(incomingSpan.getMessage()).isEqualTo(
                 "EJB remote: org.glowroot.xyzzy.instrumentation.ejb.EjbRemoteIT$BRemoteTwo.two()");
-        assertThat(serverSpan.childSpans()).isEmpty();
+        assertThat(incomingSpan.childSpans()).isEmpty();
     }
 
     @Test
     public void shouldCaptureB3RemoteBeanOne() throws Exception {
-        ServerSpan serverSpan = container.execute(ExecuteB3RemoteBeanOne.class);
-        assertThat(serverSpan.transactionType()).isEqualTo("Web");
-        assertThat(serverSpan.transactionName()).isEqualTo("EJB remote: BRemoteOne#one");
-        assertThat(serverSpan.getMessage()).isEqualTo(
+        IncomingSpan incomingSpan = container.execute(ExecuteB3RemoteBeanOne.class);
+        assertThat(incomingSpan.transactionType()).isEqualTo("Web");
+        assertThat(incomingSpan.transactionName()).isEqualTo("EJB remote: BRemoteOne#one");
+        assertThat(incomingSpan.getMessage()).isEqualTo(
                 "EJB remote: org.glowroot.xyzzy.instrumentation.ejb.EjbRemoteIT$BRemoteOne.one()");
-        assertThat(serverSpan.childSpans()).isEmpty();
+        assertThat(incomingSpan.childSpans()).isEmpty();
     }
 
     @Test
     public void shouldCaptureB3RemoteBeanTwo() throws Exception {
-        ServerSpan serverSpan = container.execute(ExecuteB3RemoteBeanTwo.class);
-        assertThat(serverSpan.transactionType()).isEqualTo("Web");
-        assertThat(serverSpan.transactionName()).isEqualTo("EJB remote: BRemoteTwo#two");
-        assertThat(serverSpan.getMessage()).isEqualTo(
+        IncomingSpan incomingSpan = container.execute(ExecuteB3RemoteBeanTwo.class);
+        assertThat(incomingSpan.transactionType()).isEqualTo("Web");
+        assertThat(incomingSpan.transactionName()).isEqualTo("EJB remote: BRemoteTwo#two");
+        assertThat(incomingSpan.getMessage()).isEqualTo(
                 "EJB remote: org.glowroot.xyzzy.instrumentation.ejb.EjbRemoteIT$BRemoteTwo.two()");
-        assertThat(serverSpan.childSpans()).isEmpty();
+        assertThat(incomingSpan.childSpans()).isEmpty();
     }
 
     @Test
     public void shouldCaptureCRemoteSessionBeanOne() throws Exception {
-        ServerSpan serverSpan = container.execute(ExecuteCRemoteSessionBeanOne.class);
-        assertThat(serverSpan.transactionType()).isEqualTo("Web");
-        assertThat(serverSpan.transactionName()).isEqualTo("EJB remote: CRemoteSessionOne#one");
-        assertThat(serverSpan.getMessage()).isEqualTo("EJB remote:"
+        IncomingSpan incomingSpan = container.execute(ExecuteCRemoteSessionBeanOne.class);
+        assertThat(incomingSpan.transactionType()).isEqualTo("Web");
+        assertThat(incomingSpan.transactionName()).isEqualTo("EJB remote: CRemoteSessionOne#one");
+        assertThat(incomingSpan.getMessage()).isEqualTo("EJB remote:"
                 + " org.glowroot.xyzzy.instrumentation.ejb.EjbRemoteIT$CRemoteSessionOne.one()");
-        assertThat(serverSpan.childSpans()).isEmpty();
+        assertThat(incomingSpan.childSpans()).isEmpty();
     }
 
     public static class ExecuteARemoteBeanOne implements AppUnderTest {

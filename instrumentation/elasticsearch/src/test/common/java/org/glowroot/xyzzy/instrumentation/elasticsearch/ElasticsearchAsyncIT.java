@@ -32,9 +32,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
-import org.glowroot.xyzzy.test.harness.ClientSpan;
+import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Container;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
@@ -62,18 +62,18 @@ public class ElasticsearchAsyncIT {
     @Test
     public void shouldCaptureDocumentPut() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecuteDocumentPut.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteDocumentPut.class);
 
         // then
-        checkTimers(serverSpan, 1);
+        checkTimers(incomingSpan, 1);
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage()).isEqualTo("PUT testindex/testtype");
-        assertThat(clientSpan.getPrefix()).isEqualTo("elasticsearch query: ");
-        assertThat(clientSpan.getSuffix()).isEmpty();
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage()).isEqualTo("PUT testindex/testtype");
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("elasticsearch query: ");
+        assertThat(outgoingSpan.getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -81,18 +81,18 @@ public class ElasticsearchAsyncIT {
     @Test
     public void shouldCaptureDocumentGet() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecuteDocumentGet.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteDocumentGet.class);
 
         // then
-        checkTimers(serverSpan, 1);
+        checkTimers(incomingSpan, 1);
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage()).isEqualTo("GET testindex/testtype");
-        assertThat(clientSpan.getPrefix()).isEqualTo("elasticsearch query: ");
-        assertThat(clientSpan.getSuffix()).startsWith(" [");
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage()).isEqualTo("GET testindex/testtype");
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("elasticsearch query: ");
+        assertThat(outgoingSpan.getSuffix()).startsWith(" [");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -100,21 +100,21 @@ public class ElasticsearchAsyncIT {
     @Test
     public void shouldConcurrentlyAsyncExecuteSameStatement() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ConcurrentlyExecuteSameAsyncStatement.class);
+        IncomingSpan incomingSpan = container.execute(ConcurrentlyExecuteSameAsyncStatement.class);
 
         // then
-        checkTimers(serverSpan, 100);
+        checkTimers(incomingSpan, 100);
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         for (int j = 0; j < 100; j++) {
-            ClientSpan clientSpan = (ClientSpan) i.next();
-            assertThat(clientSpan.getMessage()).isEmpty();
-            assertThat(clientSpan.getMessage())
+            OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+            assertThat(outgoingSpan.getMessage()).isEmpty();
+            assertThat(outgoingSpan.getMessage())
                     .isEqualTo("GET testindex/testtype");
-            assertThat(clientSpan.getPrefix())
+            assertThat(outgoingSpan.getPrefix())
                     .isEqualTo("elasticsearch query: ");
-            assertThat(clientSpan.getSuffix()).startsWith(" [");
+            assertThat(outgoingSpan.getSuffix()).startsWith(" [");
         }
         assertThat(i.hasNext()).isFalse();
     }
@@ -122,18 +122,18 @@ public class ElasticsearchAsyncIT {
     @Test
     public void shouldCaptureDocumentUpdate() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecuteDocumentUpdate.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteDocumentUpdate.class);
 
         // then
-        checkTimers(serverSpan, 1);
+        checkTimers(incomingSpan, 1);
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage()).isEqualTo("PUT testindex/testtype");
-        assertThat(clientSpan.getPrefix()).isEqualTo("elasticsearch query: ");
-        assertThat(clientSpan.getSuffix()).startsWith(" [");
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage()).isEqualTo("PUT testindex/testtype");
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("elasticsearch query: ");
+        assertThat(outgoingSpan.getSuffix()).startsWith(" [");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -141,19 +141,19 @@ public class ElasticsearchAsyncIT {
     @Test
     public void shouldCaptureDocumentDelete() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecuteDocumentDelete.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteDocumentDelete.class);
 
         // then
-        checkTimers(serverSpan, 1);
+        checkTimers(incomingSpan, 1);
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage())
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage())
                 .isEqualTo("DELETE testindex/testtype");
-        assertThat(clientSpan.getPrefix()).isEqualTo("elasticsearch query: ");
-        assertThat(clientSpan.getSuffix()).startsWith(" [");
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("elasticsearch query: ");
+        assertThat(outgoingSpan.getSuffix()).startsWith(" [");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -161,19 +161,19 @@ public class ElasticsearchAsyncIT {
     @Test
     public void shouldCaptureDocumentSearchWithoutSource() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecuteDocumentSearchWithoutSource.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteDocumentSearchWithoutSource.class);
 
         // then
-        checkTimers(serverSpan, 1);
+        checkTimers(incomingSpan, 1);
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage())
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage())
                 .startsWith("SEARCH testindex/testtype {");
-        assertThat(clientSpan.getPrefix()).isEqualTo("elasticsearch query: ");
-        assertThat(clientSpan.getSuffix()).isEmpty();
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("elasticsearch query: ");
+        assertThat(outgoingSpan.getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -181,20 +181,20 @@ public class ElasticsearchAsyncIT {
     @Test
     public void shouldCaptureDocumentSearchWithoutIndexesWithoutSource() throws Exception {
         // when
-        ServerSpan serverSpan =
+        IncomingSpan incomingSpan =
                 container.execute(ExecuteDocumentSearchWithoutIndexesWithoutSource.class);
 
         // then
-        checkTimers(serverSpan, 1);
+        checkTimers(incomingSpan, 1);
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage())
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage())
                 .startsWith("SEARCH _any/testtype {");
-        assertThat(clientSpan.getPrefix()).isEqualTo("elasticsearch query: ");
-        assertThat(clientSpan.getSuffix()).isEmpty();
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("elasticsearch query: ");
+        assertThat(outgoingSpan.getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -203,19 +203,19 @@ public class ElasticsearchAsyncIT {
     public void shouldCaptureDocumentSearchWithoutIndexesWithoutTypesWithoutSource()
             throws Exception {
         // when
-        ServerSpan serverSpan = container
+        IncomingSpan incomingSpan = container
                 .execute(ExecuteDocumentSearchWithoutIndexesWithoutTypesWithoutSource.class);
 
         // then
-        checkTimers(serverSpan, 1);
+        checkTimers(incomingSpan, 1);
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage()).startsWith("SEARCH / {");
-        assertThat(clientSpan.getPrefix()).isEqualTo("elasticsearch query: ");
-        assertThat(clientSpan.getSuffix()).isEmpty();
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage()).startsWith("SEARCH / {");
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("elasticsearch query: ");
+        assertThat(outgoingSpan.getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -224,19 +224,19 @@ public class ElasticsearchAsyncIT {
     public void shouldCaptureDocumentSearchWithMultipleIndexesWithMultipleTypesWithoutSource()
             throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(
+        IncomingSpan incomingSpan = container.execute(
                 ExecuteDocumentSearchWithMultipleIndexesWithMultipleTypesWithoutSource.class);
 
         // then
-        checkTimers(serverSpan, 1);
+        checkTimers(incomingSpan, 1);
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage())
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage())
                 .startsWith("SEARCH testindex,testindex2/testtype,testtype2 {");
-        assertThat(clientSpan.getPrefix()).isEqualTo("elasticsearch query: ");
-        assertThat(clientSpan.getSuffix()).isEmpty();
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("elasticsearch query: ");
+        assertThat(outgoingSpan.getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -244,34 +244,34 @@ public class ElasticsearchAsyncIT {
     @Test
     public void shouldCaptureDocumentSearchWithSource() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecuteDocumentSearchWithSource.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteDocumentSearchWithSource.class);
 
         // then
-        checkTimers(serverSpan, 1);
+        checkTimers(incomingSpan, 1);
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).startsWith("SEARCH testindex/testtype {");
-        assertThat(clientSpan.getPrefix()).isEqualTo("elasticsearch query: ");
-        assertThat(clientSpan.getSuffix()).isEmpty();
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).startsWith("SEARCH testindex/testtype {");
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("elasticsearch query: ");
+        assertThat(outgoingSpan.getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }
 
-    private static void checkTimers(ServerSpan serverSpan, int count) {
-        ServerSpan.Timer rootTimer = serverSpan.mainThreadRootTimer();
+    private static void checkTimers(IncomingSpan incomingSpan, int count) {
+        IncomingSpan.Timer rootTimer = incomingSpan.mainThreadRootTimer();
         List<String> timerNames = Lists.newArrayList();
-        for (ServerSpan.Timer timer : rootTimer.childTimers()) {
+        for (IncomingSpan.Timer timer : rootTimer.childTimers()) {
             timerNames.add(timer.name());
         }
         Collections.sort(timerNames);
         assertThat(timerNames).containsExactly("elasticsearch query");
-        for (ServerSpan.Timer timer : rootTimer.childTimers()) {
+        for (IncomingSpan.Timer timer : rootTimer.childTimers()) {
             assertThat(timer.childTimers()).isEmpty();
         }
-        assertThat(serverSpan.asyncTimers().size()).isEqualTo(1);
-        ServerSpan.Timer asyncTimer = serverSpan.asyncTimers().get(0);
+        assertThat(incomingSpan.asyncTimers().size()).isEqualTo(1);
+        IncomingSpan.Timer asyncTimer = incomingSpan.asyncTimers().get(0);
         assertThat(asyncTimer.childTimers()).isEmpty();
         assertThat(asyncTimer.name()).isEqualTo("elasticsearch query");
         assertThat(asyncTimer.count()).isEqualTo(count);

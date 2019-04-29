@@ -39,7 +39,7 @@ import org.junit.Test;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.LocalSpan;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
@@ -70,10 +70,10 @@ public class JspRenderIT {
     @Test
     public void shouldCaptureJspRendering() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(RenderJsp.class);
+        IncomingSpan incomingSpan = container.execute(RenderJsp.class);
 
         // then
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage()).isEqualTo("jsp render: /WEB-INF/jsp/index.jsp");
@@ -85,10 +85,10 @@ public class JspRenderIT {
     @Test
     public void shouldCaptureJspRenderingInTomcat() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(RenderJspInTomcat.class);
+        IncomingSpan incomingSpan = container.execute(RenderJspInTomcat.class);
 
         // then
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage()).isEqualTo("jsp render: /WEB-INF/jsp/index.jsp");

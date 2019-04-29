@@ -29,7 +29,7 @@ import org.junit.Test;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.TraceEntryMarker;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
@@ -63,21 +63,21 @@ public class ExecutorWithProxiesIT {
     @Test
     public void shouldCaptureExecute() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(DoExecuteRunnableWithProxy.class);
+        IncomingSpan incomingSpan = container.execute(DoExecuteRunnableWithProxy.class);
 
         // then
-        assertThat(serverSpan.auxThreadRootTimer()).isNotNull();
-        assertThat(serverSpan.asyncTimers()).isEmpty();
-        assertThat(serverSpan.auxThreadRootTimer().name()).isEqualTo("auxiliary thread");
-        assertThat(serverSpan.auxThreadRootTimer().count()).isEqualTo(1);
+        assertThat(incomingSpan.auxThreadRootTimer()).isNotNull();
+        assertThat(incomingSpan.asyncTimers()).isEmpty();
+        assertThat(incomingSpan.auxThreadRootTimer().name()).isEqualTo("auxiliary thread");
+        assertThat(incomingSpan.auxThreadRootTimer().count()).isEqualTo(1);
         // should be 100ms, but margin of error, esp. in travis builds is high
-        assertThat(serverSpan.auxThreadRootTimer().totalNanos())
+        assertThat(incomingSpan.auxThreadRootTimer().totalNanos())
                 .isGreaterThanOrEqualTo(MILLISECONDS.toNanos(50));
-        assertThat(serverSpan.auxThreadRootTimer().childTimers().size()).isEqualTo(1);
-        assertThat(serverSpan.auxThreadRootTimer().childTimers().get(0).name())
+        assertThat(incomingSpan.auxThreadRootTimer().childTimers().size()).isEqualTo(1);
+        assertThat(incomingSpan.auxThreadRootTimer().childTimers().get(0).name())
                 .isEqualTo("mock trace entry marker");
 
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     private static ExecutorService createExecutorService() {

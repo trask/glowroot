@@ -30,10 +30,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
-import org.glowroot.xyzzy.test.harness.ClientSpan;
+import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TraceEntryMarker;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
@@ -68,12 +68,12 @@ public class OtherIT {
                 ImmutableList.of(".*"));
 
         // when
-        ServerSpan serverSpan = container.execute(ExecuteCallableStatement.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteCallableStatement.class);
 
         // then
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan entry = (ClientSpan) i.next();
+        OutgoingSpan entry = (OutgoingSpan) i.next();
         assertThat(entry.getMessage()).isEmpty();
         assertThat(entry.getMessage()).isEqualTo("insert into employee (name, misc) values (?, ?)");
         assertThat(entry.getPrefix()).isEqualTo("jdbc query: ");
@@ -85,10 +85,10 @@ public class OtherIT {
     @Test
     public void testWithoutResultSetValueTimerNormal() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecuteStatementAndIterateOverResults.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteStatementAndIterateOverResults.class);
 
         // then
-        boolean found = findExtendedTimerName(serverSpan.mainThreadRootTimer(), "jdbc query");
+        boolean found = findExtendedTimerName(incomingSpan.mainThreadRootTimer(), "jdbc query");
         assertThat(found).isFalse();
     }
 
@@ -98,20 +98,20 @@ public class OtherIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResultSetGet", true);
 
         // when
-        ServerSpan serverSpan = container.execute(ExecuteStatementAndIterateOverResults.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteStatementAndIterateOverResults.class);
 
         // then
-        boolean found = findExtendedTimerName(serverSpan, "jdbc query");
+        boolean found = findExtendedTimerName(incomingSpan, "jdbc query");
         assertThat(found).isFalse();
     }
 
     @Test
     public void testWithoutResultSetValueTimerUnderSeparateTraceEntry() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(GetResultSetValueUnderSeparateTraceEntry.class);
+        IncomingSpan incomingSpan = container.execute(GetResultSetValueUnderSeparateTraceEntry.class);
 
         // then
-        boolean found = findExtendedTimerName(serverSpan, "jdbc query");
+        boolean found = findExtendedTimerName(incomingSpan, "jdbc query");
         assertThat(found).isFalse();
     }
 
@@ -121,10 +121,10 @@ public class OtherIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResultSetGet", true);
 
         // when
-        ServerSpan serverSpan = container.execute(GetResultSetValueUnderSeparateTraceEntry.class);
+        IncomingSpan incomingSpan = container.execute(GetResultSetValueUnderSeparateTraceEntry.class);
 
         // then
-        boolean found = findExtendedTimerName(serverSpan, "jdbc query");
+        boolean found = findExtendedTimerName(incomingSpan, "jdbc query");
         assertThat(found).isTrue();
     }
 
@@ -134,11 +134,11 @@ public class OtherIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResultSetGet", true);
 
         // when
-        ServerSpan serverSpan =
+        IncomingSpan incomingSpan =
                 container.execute(ExecuteStatementAndIterateOverResultsUsingColumnName.class);
 
         // then
-        boolean found = findExtendedTimerName(serverSpan, "jdbc query");
+        boolean found = findExtendedTimerName(incomingSpan, "jdbc query");
         assertThat(found).isFalse();
     }
 
@@ -148,31 +148,31 @@ public class OtherIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResultSetGet", true);
 
         // when
-        ServerSpan serverSpan = container.execute(
+        IncomingSpan incomingSpan = container.execute(
                 ExecuteStatementAndIterateOverResultsUsingColumnNameUnderSeparateTraceEntry.class);
 
         // then
-        boolean found = findExtendedTimerName(serverSpan, "jdbc query");
+        boolean found = findExtendedTimerName(incomingSpan, "jdbc query");
         assertThat(found).isTrue();
     }
 
     @Test
     public void testWithResultSetNavigateTimerNormal() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecuteStatementAndIterateOverResults.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteStatementAndIterateOverResults.class);
 
         // then
-        boolean found = findExtendedTimerName(serverSpan, "jdbc query");
+        boolean found = findExtendedTimerName(incomingSpan, "jdbc query");
         assertThat(found).isFalse();
     }
 
     @Test
     public void testWithResultSetNavigateTimerUnderSeparateTraceEntry() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(IterateOverResultsUnderSeparateTraceEntry.class);
+        IncomingSpan incomingSpan = container.execute(IterateOverResultsUnderSeparateTraceEntry.class);
 
         // then
-        boolean found = findExtendedTimerName(serverSpan, "jdbc query");
+        boolean found = findExtendedTimerName(incomingSpan, "jdbc query");
         assertThat(found).isTrue();
     }
 
@@ -182,27 +182,27 @@ public class OtherIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResultSetNavigate", false);
 
         // when
-        ServerSpan serverSpan = container.execute(IterateOverResultsUnderSeparateTraceEntry.class);
+        IncomingSpan incomingSpan = container.execute(IterateOverResultsUnderSeparateTraceEntry.class);
 
         // then
-        boolean found = findExtendedTimerName(serverSpan, "jdbc query");
+        boolean found = findExtendedTimerName(incomingSpan, "jdbc query");
         assertThat(found).isFalse();
     }
 
     @Test
     public void testDefaultStackTraceThreshold() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecuteStatementAndIterateOverResults.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteStatementAndIterateOverResults.class);
 
         // then
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage()).isEqualTo("select * from employee");
-        assertThat(clientSpan.getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(clientSpan.getSuffix()).isEqualTo(" => 3 rows");
-        assertThat(clientSpan.getLocationStackTraceMillis()).isNull();
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage()).isEqualTo("select * from employee");
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(outgoingSpan.getSuffix()).isEqualTo(" => 3 rows");
+        assertThat(outgoingSpan.getLocationStackTraceMillis()).isNull();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -213,17 +213,17 @@ public class OtherIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "stackTraceThresholdMillis", 0.0);
 
         // when
-        ServerSpan serverSpan = container.execute(ExecuteStatementAndIterateOverResults.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteStatementAndIterateOverResults.class);
 
         // then
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage()).isEqualTo("select * from employee");
-        assertThat(clientSpan.getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(clientSpan.getSuffix()).isEqualTo(" => 3 rows");
-        assertThat(clientSpan.getLocationStackTraceMillis()).isZero();
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage()).isEqualTo("select * from employee");
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(outgoingSpan.getSuffix()).isEqualTo(" => 3 rows");
+        assertThat(outgoingSpan.getLocationStackTraceMillis()).isZero();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -235,30 +235,30 @@ public class OtherIT {
                 (Double) null);
 
         // when
-        ServerSpan serverSpan = container.execute(ExecuteStatementAndIterateOverResults.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteStatementAndIterateOverResults.class);
 
         // then
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage()).isEqualTo("select * from employee");
-        assertThat(clientSpan.getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(clientSpan.getSuffix()).isEqualTo(" => 3 rows");
-        assertThat(clientSpan.getLocationStackTraceMillis()).isNull();
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage()).isEqualTo("select * from employee");
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(outgoingSpan.getSuffix()).isEqualTo(" => 3 rows");
+        assertThat(outgoingSpan.getLocationStackTraceMillis()).isNull();
 
         assertThat(i.hasNext()).isFalse();
     }
 
-    private static boolean findExtendedTimerName(ServerSpan serverSpan, String timerName) {
-        return findExtendedTimerName(serverSpan.mainThreadRootTimer(), timerName);
+    private static boolean findExtendedTimerName(IncomingSpan incomingSpan, String timerName) {
+        return findExtendedTimerName(incomingSpan.mainThreadRootTimer(), timerName);
     }
 
-    private static boolean findExtendedTimerName(ServerSpan.Timer timer, String timerName) {
+    private static boolean findExtendedTimerName(IncomingSpan.Timer timer, String timerName) {
         if (timer.name().equals(timerName) && timer.extended()) {
             return true;
         }
-        for (ServerSpan.Timer nestedTimer : timer.childTimers()) {
+        for (IncomingSpan.Timer nestedTimer : timer.childTimers()) {
             if (findExtendedTimerName(nestedTimer, timerName)) {
                 return true;
             }

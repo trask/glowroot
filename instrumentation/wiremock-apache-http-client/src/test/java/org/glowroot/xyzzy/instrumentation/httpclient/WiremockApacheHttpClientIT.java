@@ -31,7 +31,7 @@ import wiremock.org.apache.http.impl.client.HttpClients;
 
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.util.ExecuteHttpBase;
 
 import static org.glowroot.xyzzy.test.harness.util.HarnessAssertions.assertSingleClientSpanMessage;
@@ -58,40 +58,40 @@ public class WiremockApacheHttpClientIT {
     @Test
     public void shouldCaptureHttpGet() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecuteHttpGet.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteHttpGet.class);
 
         // then
-        assertSingleClientSpanMessage(serverSpan)
+        assertSingleClientSpanMessage(incomingSpan)
                 .matches("http client request: GET http://localhost:\\d+/hello1");
     }
 
     @Test
     public void shouldCaptureHttpGetUsingHttpHostArg() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecuteHttpGetUsingHttpHostArg.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteHttpGetUsingHttpHostArg.class);
 
         // then
-        assertSingleClientSpanMessage(serverSpan)
+        assertSingleClientSpanMessage(incomingSpan)
                 .matches("http client request: GET http://localhost:\\d+/hello2");
     }
 
     @Test
     public void shouldCaptureHttpPost() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecuteHttpPost.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteHttpPost.class);
 
         // then
-        assertSingleClientSpanMessage(serverSpan)
+        assertSingleClientSpanMessage(incomingSpan)
                 .matches("http client request: POST http://localhost:\\d+/hello3");
     }
 
     @Test
     public void shouldCaptureHttpPostUsingHttpHostArg() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecuteHttpPostUsingHttpHostArg.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteHttpPostUsingHttpHostArg.class);
 
         // then
-        assertSingleClientSpanMessage(serverSpan)
+        assertSingleClientSpanMessage(incomingSpan)
                 .matches("http client request: POST http://localhost:\\d+/hello4");
     }
 

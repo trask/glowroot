@@ -29,7 +29,7 @@ import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
 import org.glowroot.xyzzy.test.harness.LocalSpan;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -82,23 +82,23 @@ public class RestControllerIT {
     private void shouldCaptureTransactionNameWithNormalServletMappingHittingRest(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(appUnderTestClass, "Web");
+        IncomingSpan incomingSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(serverSpan.transactionName()).isEqualTo(contextPath + "/rest");
+        assertThat(incomingSpan.transactionName()).isEqualTo(contextPath + "/rest");
 
-        validateSpans(serverSpan.childSpans(), TestRestController.class, "rest");
+        validateSpans(incomingSpan.childSpans(), TestRestController.class, "rest");
     }
 
     private void shouldCaptureTransactionNameWithNormalServletMappingHittingAbc(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(appUnderTestClass, "Web");
+        IncomingSpan incomingSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(serverSpan.transactionName()).isEqualTo(contextPath + "/abc");
+        assertThat(incomingSpan.transactionName()).isEqualTo(contextPath + "/abc");
 
-        validateSpans(serverSpan.childSpans(), TestRestWithPropertyController.class, "abc");
+        validateSpans(incomingSpan.childSpans(), TestRestWithPropertyController.class, "abc");
     }
 
     private void validateSpans(List<Span> spans, Class<?> clazz, String methodName) {

@@ -29,11 +29,11 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
-import org.glowroot.xyzzy.test.harness.ClientSpan;
+import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
 import org.glowroot.xyzzy.test.harness.LocalSpan;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
@@ -61,10 +61,10 @@ public class CommitRollbackIT {
     @Test
     public void testCommit() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecuteJdbcCommit.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteJdbcCommit.class);
 
         // then
-        ServerSpan.Timer rootTimer = serverSpan.mainThreadRootTimer();
+        IncomingSpan.Timer rootTimer = incomingSpan.mainThreadRootTimer();
         assertThat(rootTimer.name()).isEqualTo("mock trace marker");
         assertThat(rootTimer.childTimers()).hasSize(2);
         // ordering is by total desc, so order is not fixed
@@ -73,14 +73,14 @@ public class CommitRollbackIT {
         childTimerNames.add(rootTimer.childTimers().get(1).name());
         assertThat(childTimerNames).containsOnly("jdbc query", "jdbc commit");
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage())
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage())
                 .isEqualTo("insert into employee (name) values ('john doe')");
-        assertThat(clientSpan.getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(clientSpan.getSuffix()).isEmpty();
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(outgoingSpan.getSuffix()).isEmpty();
 
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage()).isEqualTo("jdbc commit");
@@ -92,10 +92,10 @@ public class CommitRollbackIT {
     @Test
     public void testCommitThrowing() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecuteJdbcCommitThrowing.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteJdbcCommitThrowing.class);
 
         // then
-        ServerSpan.Timer rootTimer = serverSpan.mainThreadRootTimer();
+        IncomingSpan.Timer rootTimer = incomingSpan.mainThreadRootTimer();
         assertThat(rootTimer.name()).isEqualTo("mock trace marker");
         assertThat(rootTimer.childTimers()).hasSize(2);
         // ordering is by total desc, so order is not fixed
@@ -104,20 +104,20 @@ public class CommitRollbackIT {
         childTimerNames.add(rootTimer.childTimers().get(1).name());
         assertThat(childTimerNames).containsOnly("jdbc query", "jdbc commit");
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage())
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage())
                 .isEqualTo("insert into employee (name) values ('john doe')");
-        assertThat(clientSpan.getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(clientSpan.getSuffix()).isEmpty();
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(outgoingSpan.getSuffix()).isEmpty();
 
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage()).isEqualTo("jdbc commit");
         assertThat(localSpan.childSpans()).isEmpty();
 
-        assertThat(clientSpan.getError().message())
+        assertThat(outgoingSpan.getError().message())
                 .isEqualTo("java.sql.SQLException: A commit failure");
 
         assertThat(i.hasNext()).isFalse();
@@ -126,10 +126,10 @@ public class CommitRollbackIT {
     @Test
     public void testRollback() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecuteJdbcRollback.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteJdbcRollback.class);
 
         // then
-        ServerSpan.Timer rootTimer = serverSpan.mainThreadRootTimer();
+        IncomingSpan.Timer rootTimer = incomingSpan.mainThreadRootTimer();
         assertThat(rootTimer.name()).isEqualTo("mock trace marker");
         assertThat(rootTimer.childTimers()).hasSize(2);
         // ordering is by total desc, so order is not fixed
@@ -138,14 +138,14 @@ public class CommitRollbackIT {
         childTimerNames.add(rootTimer.childTimers().get(1).name());
         assertThat(childTimerNames).containsOnly("jdbc query", "jdbc rollback");
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage())
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage())
                 .isEqualTo("insert into employee (name) values ('john doe')");
-        assertThat(clientSpan.getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(clientSpan.getSuffix()).isEmpty();
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(outgoingSpan.getSuffix()).isEmpty();
 
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage()).isEqualTo("jdbc rollback");
@@ -157,10 +157,10 @@ public class CommitRollbackIT {
     @Test
     public void testRollbackThrowing() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecuteJdbcRollbackThrowing.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteJdbcRollbackThrowing.class);
 
         // then
-        ServerSpan.Timer rootTimer = serverSpan.mainThreadRootTimer();
+        IncomingSpan.Timer rootTimer = incomingSpan.mainThreadRootTimer();
         assertThat(rootTimer.childTimers()).hasSize(2);
         // ordering is by total desc, so order is not fixed
         Set<String> childTimerNames = Sets.newHashSet();
@@ -168,14 +168,14 @@ public class CommitRollbackIT {
         childTimerNames.add(rootTimer.childTimers().get(1).name());
         assertThat(childTimerNames).containsOnly("jdbc query", "jdbc rollback");
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage())
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage())
                 .isEqualTo("insert into employee (name) values ('john doe')");
-        assertThat(clientSpan.getPrefix()).isEqualTo("jdbc query: ");
-        assertThat(clientSpan.getSuffix()).isEmpty();
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(outgoingSpan.getSuffix()).isEmpty();
 
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage()).isEqualTo("jdbc rollback");

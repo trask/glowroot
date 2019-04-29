@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.xyzzy.test.harness.agent;
+package org.glowroot.xyzzy.test.harness.agent.spans;
 
 import java.util.concurrent.TimeUnit;
 
@@ -25,54 +25,76 @@ import org.glowroot.xyzzy.instrumentation.api.QueryMessageSupplier;
 import org.glowroot.xyzzy.instrumentation.api.ThreadContext;
 import org.glowroot.xyzzy.instrumentation.api.Timer;
 import org.glowroot.xyzzy.instrumentation.api.internal.ReadableQueryMessage;
-import org.glowroot.xyzzy.test.harness.ImmutableClientSpan;
 import org.glowroot.xyzzy.test.harness.ImmutableError;
+import org.glowroot.xyzzy.test.harness.ImmutableOutgoingSpan;
+import org.glowroot.xyzzy.test.harness.Span;
+import org.glowroot.xyzzy.test.harness.agent.TimerImpl;
 
-public class QuerySpanImpl extends SpanImpl implements AsyncQueryEntry {
+public class AsyncQuerySpanImpl implements AsyncQueryEntry, SpanImpl {
 
     private final String queryText;
     private final QueryMessageSupplier queryMessageSupplier;
 
-    public QuerySpanImpl(String queryText, QueryMessageSupplier queryMessageSupplier) {
+    private final TimerImpl syncTimer;
+    private final TimerImpl asyncTimer;
+
+    private final long startTimeNanos;
+
+    private volatile long totalNanos;
+    private volatile @Nullable Span.Error error;
+    private volatile @Nullable Long locationStackTraceMillis;
+
+    public AsyncQuerySpanImpl(String queryText, QueryMessageSupplier queryMessageSupplier,
+            TimerImpl syncTimer, TimerImpl asyncTimer, long startTimeNanos) {
         this.queryText = queryText;
         this.queryMessageSupplier = queryMessageSupplier;
+        this.syncTimer = syncTimer;
+        this.asyncTimer = asyncTimer;
+        this.startTimeNanos = startTimeNanos;
     }
 
     @Override
-    public void end() {}
+    public void end() {
+        endInternal();
+    }
 
     @Override
     public void endWithLocationStackTrace(long threshold, TimeUnit unit) {
-        setLocationStackTraceMillis(unit.toMillis(threshold));
+        locationStackTraceMillis = unit.toMillis(threshold);
+        endInternal();
     }
 
     @Override
     public void endWithError(Throwable t) {
-        setError(ImmutableError.builder()
+        error = ImmutableError.builder()
                 .exception(t)
-                .build());
+                .build();
+        endInternal();
     }
 
     @Override
     public void endWithError(String message) {
-        setError(ImmutableError.builder()
+        error = ImmutableError.builder()
                 .message(message)
-                .build());
+                .build();
+        endInternal();
     }
 
     @Override
     public void endWithError(String message, Throwable t) {
-        setError(ImmutableError.builder()
+        error = ImmutableError.builder()
                 .message(message)
                 .exception(t)
-                .build());
+                .build();
+        endInternal();
     }
 
     @Override
     public void endWithInfo(Throwable t) {
-        setError(ImmutableError.builder()
+        error = ImmutableError.builder()
                 .exception(t)
-                .build());
+                .build();
+        endInternal();
     }
 
     @Override
@@ -103,15 +125,19 @@ public class QuerySpanImpl extends SpanImpl implements AsyncQueryEntry {
     }
 
     @Override
-    public ImmutableClientSpan toImmutable() {
+    public ImmutableOutgoingSpan toImmutable() {
         ReadableQueryMessage message = (ReadableQueryMessage) queryMessageSupplier.get();
-        return ImmutableClientSpan.builder()
+        return ImmutableOutgoingSpan.builder()
                 .message(queryText)
                 .prefix(message.getPrefix())
                 .suffix(message.getSuffix())
-                .details(getDetails())
-                .error(getError())
-                .locationStackTraceMillis(getLocationStackTraceMillis())
+                .details(message.getDetail())
+                .error(error)
+                .locationStackTraceMillis(locationStackTraceMillis)
                 .build();
+    }
+
+    private void endInternal() {
+        totalNanos = System.nanoTime() - startTimeNanos;
     }
 }

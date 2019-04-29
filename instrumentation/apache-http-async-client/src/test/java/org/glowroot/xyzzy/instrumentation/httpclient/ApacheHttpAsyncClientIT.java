@@ -31,11 +31,11 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.xyzzy.test.harness.ClientSpan;
+import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
 import org.glowroot.xyzzy.test.harness.LocalSpan;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TraceEntryMarker;
 import org.glowroot.xyzzy.test.harness.util.ExecuteHttpBase;
@@ -64,13 +64,13 @@ public class ApacheHttpAsyncClientIT {
     @Test
     public void shouldCaptureAsyncHttpGet() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecuteAsyncHttpGet.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteAsyncHttpGet.class);
 
         // then
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage())
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage())
                 .matches("http client request: GET http://localhost:\\d+/hello1");
 
         LocalSpan localSpan = (LocalSpan) i.next();
@@ -83,13 +83,13 @@ public class ApacheHttpAsyncClientIT {
     @Test
     public void shouldCaptureAsyncHttpGetUsingHttpHostArg() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecuteAsyncHttpGetUsingHttpHostArg.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteAsyncHttpGetUsingHttpHostArg.class);
 
         // then
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage())
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage())
                 .matches("http client request: GET http://localhost:\\d+/hello2");
 
         LocalSpan localSpan = (LocalSpan) i.next();
@@ -102,13 +102,13 @@ public class ApacheHttpAsyncClientIT {
     @Test
     public void shouldCaptureAsyncHttpPost() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecuteAsyncHttpPost.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteAsyncHttpPost.class);
 
         // then
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage())
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage())
                 .matches("http client request: POST http://localhost:\\d+/hello3");
 
         LocalSpan localSpan = (LocalSpan) i.next();
@@ -121,13 +121,13 @@ public class ApacheHttpAsyncClientIT {
     @Test
     public void shouldCaptureAsyncHttpPostUsingHttpHostArg() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecuteAsyncHttpPostUsingHttpHostArg.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteAsyncHttpPostUsingHttpHostArg.class);
 
         // then
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage())
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage())
                 .matches("http client request: POST http://localhost:\\d+/hello4");
 
         LocalSpan localSpan = (LocalSpan) i.next();

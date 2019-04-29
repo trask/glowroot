@@ -28,7 +28,7 @@ import org.junit.Test;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.glowroot.xyzzy.test.harness.util.HarnessAssertions.assertSingleLocalSpanMessage;
@@ -147,125 +147,125 @@ public class ResourceIT {
         container.setInstrumentationProperty("jaxrs", "useAltTransactionNaming", true);
 
         // when
-        ServerSpan serverSpan = container.execute(WithNormalServletMapping.class, "Web");
+        IncomingSpan incomingSpan = container.execute(WithNormalServletMapping.class, "Web");
 
         // then
-        assertThat(serverSpan.transactionName()).isEqualTo("HelloResource#echo");
+        assertThat(incomingSpan.transactionName()).isEqualTo("HelloResource#echo");
 
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("jaxrs resource:"
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("jaxrs resource:"
                 + " org.glowroot.xyzzy.instrumentation.jaxrs.ResourceIT$HelloResource.echo()");
     }
 
     private void shouldCaptureTransactionNameWithSimpleServletMapping(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(appUnderTestClass, "Web");
+        IncomingSpan incomingSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(serverSpan.transactionName()).isEqualTo("GET " + contextPath + "/simple");
+        assertThat(incomingSpan.transactionName()).isEqualTo("GET " + contextPath + "/simple");
 
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("jaxrs resource:"
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("jaxrs resource:"
                 + " org.glowroot.xyzzy.instrumentation.jaxrs.ResourceIT$SimpleResource.echo()");
     }
 
     private void shouldCaptureTransactionNameWithNormalServletMapping(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(appUnderTestClass, "Web");
+        IncomingSpan incomingSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(serverSpan.transactionName()).isEqualTo("GET " + contextPath + "/hello/*");
+        assertThat(incomingSpan.transactionName()).isEqualTo("GET " + contextPath + "/hello/*");
 
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("jaxrs resource:"
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("jaxrs resource:"
                 + " org.glowroot.xyzzy.instrumentation.jaxrs.ResourceIT$HelloResource.echo()");
     }
 
     private void shouldCaptureTransactionNameWithNormalServletMappingHittingRoot(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(appUnderTestClass, "Web");
+        IncomingSpan incomingSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(serverSpan.transactionName()).isEqualTo("GET " + contextPath + "/");
+        assertThat(incomingSpan.transactionName()).isEqualTo("GET " + contextPath + "/");
 
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("jaxrs resource:"
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("jaxrs resource:"
                 + " org.glowroot.xyzzy.instrumentation.jaxrs.ResourceIT$RootResource.echo()");
     }
 
     private void shouldCaptureTransactionNameWithNestedServletMapping(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(appUnderTestClass, "Web");
+        IncomingSpan incomingSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(serverSpan.transactionName()).isEqualTo("GET " + contextPath + "/rest/hello/*");
+        assertThat(incomingSpan.transactionName()).isEqualTo("GET " + contextPath + "/rest/hello/*");
 
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("jaxrs resource:"
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("jaxrs resource:"
                 + " org.glowroot.xyzzy.instrumentation.jaxrs.ResourceIT$HelloResource.echo()");
     }
 
     private void shouldCaptureTransactionNameWithNestedServletMappingHittingRoot(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(appUnderTestClass, "Web");
+        IncomingSpan incomingSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(serverSpan.transactionName()).isEqualTo("GET " + contextPath + "/rest/");
+        assertThat(incomingSpan.transactionName()).isEqualTo("GET " + contextPath + "/rest/");
 
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("jaxrs resource:"
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("jaxrs resource:"
                 + " org.glowroot.xyzzy.instrumentation.jaxrs.ResourceIT$RootResource.echo()");
     }
 
     private void shouldCaptureTransactionNameWithLessNormalServletMapping(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(appUnderTestClass, "Web");
+        IncomingSpan incomingSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        if (!serverSpan.transactionName().equals("GET " + contextPath + "/hello/*")) {
+        if (!incomingSpan.transactionName().equals("GET " + contextPath + "/hello/*")) {
             // Jersey (2.5 and above) doesn't like this "less than normal" servlet mapping, and ends
             // up mapping everything to RootResource
-            assertThat(serverSpan.transactionName())
+            assertThat(incomingSpan.transactionName())
                     .isEqualTo("GET " + contextPath + "/");
         }
 
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("jaxrs resource:"
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("jaxrs resource:"
                 + " org.glowroot.xyzzy.instrumentation.jaxrs.ResourceIT$RootResource.echo()");
     }
 
     private void shouldCaptureTransactionNameWithLessNormalServletMappingHittingRoot(
             String contextPath, Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(appUnderTestClass, "Web");
+        IncomingSpan incomingSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(serverSpan.transactionName()).isEqualTo("GET " + contextPath + "/");
+        assertThat(incomingSpan.transactionName()).isEqualTo("GET " + contextPath + "/");
 
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("jaxrs resource:"
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("jaxrs resource:"
                 + " org.glowroot.xyzzy.instrumentation.jaxrs.ResourceIT$RootResource.echo()");
     }
 
     @Test
     public void shouldCaptureWhenInterfaceAnnotated() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(WithInterfaceAnnotated.class, "Web");
+        IncomingSpan incomingSpan = container.execute(WithInterfaceAnnotated.class, "Web");
 
         // then
-        assertThat(serverSpan.transactionName()).isEqualTo("GET /another/*");
+        assertThat(incomingSpan.transactionName()).isEqualTo("GET /another/*");
 
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("jaxrs resource:"
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("jaxrs resource:"
                 + " org.glowroot.xyzzy.instrumentation.jaxrs.ResourceIT$AnotherResourceImpl.echo()");
     }
 
     @Test
     public void shouldCaptureSubResource() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(WithSubResource.class, "Web");
+        IncomingSpan incomingSpan = container.execute(WithSubResource.class, "Web");
 
         // then
-        assertThat(serverSpan.transactionName()).isEqualTo("GET /parent/child/grandchild/*");
+        assertThat(incomingSpan.transactionName()).isEqualTo("GET /parent/child/grandchild/*");
 
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("jaxrs resource:"
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("jaxrs resource:"
                 + " org.glowroot.xyzzy.instrumentation.jaxrs.ResourceIT$GrandchildResourceImpl"
                 + ".echo()");
     }

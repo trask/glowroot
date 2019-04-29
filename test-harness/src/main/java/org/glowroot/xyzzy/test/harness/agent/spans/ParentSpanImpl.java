@@ -13,21 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.xyzzy.test.harness.agent;
+package org.glowroot.xyzzy.test.harness.agent.spans;
 
-import java.util.List;
+public interface ParentSpanImpl extends SpanImpl {
 
-import org.assertj.core.util.Lists;
-
-public abstract class ParentSpanImpl extends SpanImpl {
-
-    private final List<SpanImpl> childSpans = Lists.newArrayList();
-
-    public void addChildSpan(SpanImpl span) {
-        childSpans.add(span);
-    }
-
-    List<SpanImpl> getChildSpans() {
-        return childSpans;
-    }
+    void addChildSpan(SpanImpl span);
 }

@@ -16,25 +16,26 @@
 package org.glowroot.xyzzy.test.harness.agent;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 
 public class TraceReporter {
 
     private final Socket socket;
     private final ObjectOutputStream out;
-    // private final ObjectInputStream in;
+    private final ObjectInputStream in;
 
     TraceReporter(int port) throws IOException {
         socket = new Socket("localhost", port);
         out = new ObjectOutputStream(socket.getOutputStream());
-        // in = new ObjectInputStream(socket.getInputStream());
+        in = new ObjectInputStream(socket.getInputStream());
     }
 
-    public void send(ServerSpan trace) throws Exception {
+    public void send(IncomingSpan trace) throws Exception {
         out.writeObject(trace);
-        // in.readObject();
+        in.readObject();
     }
 }

@@ -30,12 +30,12 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.xyzzy.test.harness.ClientSpan;
+import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
-import org.glowroot.xyzzy.test.harness.ServerSpan.Timer;
+import org.glowroot.xyzzy.test.harness.IncomingSpan.Timer;
 import org.glowroot.xyzzy.test.harness.util.ExecuteHttpBase;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -63,26 +63,26 @@ public class AsyncHttpClientIT {
     @Test
     public void shouldCaptureHttpGet() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecuteHttpGet.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteHttpGet.class);
 
         // then
-        ServerSpan.Timer rootTimer = serverSpan.mainThreadRootTimer();
+        IncomingSpan.Timer rootTimer = incomingSpan.mainThreadRootTimer();
         assertThat(rootTimer.childTimers().size()).isEqualTo(1);
         assertThat(rootTimer.childTimers().get(0).name()).isEqualTo("http client request");
         assertThat(rootTimer.childTimers().get(0).count()).isEqualTo(1);
 
-        List<Timer> asyncTimers = serverSpan.asyncTimers();
+        List<Timer> asyncTimers = incomingSpan.asyncTimers();
         assertThat(asyncTimers.size()).isEqualTo(1);
 
-        ServerSpan.Timer asyncTimer = asyncTimers.get(0);
+        IncomingSpan.Timer asyncTimer = asyncTimers.get(0);
         assertThat(asyncTimer.childTimers()).isEmpty();
         assertThat(asyncTimer.name()).isEqualTo("http client request");
         assertThat(asyncTimer.count()).isEqualTo(1);
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage())
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage())
                 .matches("http client request: GET http://localhost:\\d+/hello1/");
 
         assertThat(i.hasNext()).isFalse();
@@ -91,26 +91,26 @@ public class AsyncHttpClientIT {
     @Test
     public void shouldCaptureHttpPost() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecuteHttpPost.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteHttpPost.class);
 
         // then
-        ServerSpan.Timer rootTimer = serverSpan.mainThreadRootTimer();
+        IncomingSpan.Timer rootTimer = incomingSpan.mainThreadRootTimer();
         assertThat(rootTimer.childTimers().size()).isEqualTo(1);
         assertThat(rootTimer.childTimers().get(0).name()).isEqualTo("http client request");
         assertThat(rootTimer.childTimers().get(0).count()).isEqualTo(1);
 
-        List<Timer> asyncTimers = serverSpan.asyncTimers();
+        List<Timer> asyncTimers = incomingSpan.asyncTimers();
         assertThat(asyncTimers.size()).isEqualTo(1);
 
-        ServerSpan.Timer asyncTimer = asyncTimers.get(0);
+        IncomingSpan.Timer asyncTimer = asyncTimers.get(0);
         assertThat(asyncTimer.childTimers()).isEmpty();
         assertThat(asyncTimer.name()).isEqualTo("http client request");
         assertThat(asyncTimer.count()).isEqualTo(1);
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage())
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage())
                 .matches("http client request: POST http://localhost:\\d+/hello2");
 
         assertThat(i.hasNext()).isFalse();
@@ -119,26 +119,26 @@ public class AsyncHttpClientIT {
     @Test
     public void shouldCaptureHttpGetWithAsyncHandler() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecuteHttpGetWithAsyncHandler.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteHttpGetWithAsyncHandler.class);
 
         // then
-        ServerSpan.Timer rootTimer = serverSpan.mainThreadRootTimer();
+        IncomingSpan.Timer rootTimer = incomingSpan.mainThreadRootTimer();
         assertThat(rootTimer.childTimers().size()).isEqualTo(1);
         assertThat(rootTimer.childTimers().get(0).name()).isEqualTo("http client request");
         assertThat(rootTimer.childTimers().get(0).count()).isEqualTo(1);
 
-        List<Timer> asyncTimers = serverSpan.asyncTimers();
+        List<Timer> asyncTimers = incomingSpan.asyncTimers();
         assertThat(asyncTimers.size()).isEqualTo(1);
 
-        ServerSpan.Timer asyncTimer = asyncTimers.get(0);
+        IncomingSpan.Timer asyncTimer = asyncTimers.get(0);
         assertThat(asyncTimer.childTimers()).isEmpty();
         assertThat(asyncTimer.name()).isEqualTo("http client request");
         assertThat(asyncTimer.count()).isEqualTo(1);
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage())
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage())
                 .matches("http client request: GET http://localhost:\\d+/hello3/");
 
         assertThat(i.hasNext()).isFalse();

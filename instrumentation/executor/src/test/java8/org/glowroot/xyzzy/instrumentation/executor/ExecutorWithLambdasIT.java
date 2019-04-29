@@ -28,7 +28,7 @@ import org.junit.Test;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TraceEntryMarker;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
@@ -63,7 +63,7 @@ public class ExecutorWithLambdasIT {
     @Test
     public void shouldCaptureExecute() throws Exception {
         // when
-        ServerSpan trace = container.execute(DoExecuteRunnableWithLambda.class);
+        IncomingSpan trace = container.execute(DoExecuteRunnableWithLambda.class);
         // then
         checkTrace(trace);
     }
@@ -71,12 +71,12 @@ public class ExecutorWithLambdasIT {
     @Test
     public void shouldCaptureNestedExecute() throws Exception {
         // when
-        ServerSpan trace = container.execute(DoNestedExecuteRunnableWithLambda.class);
+        IncomingSpan trace = container.execute(DoNestedExecuteRunnableWithLambda.class);
         // then
         checkTrace(trace);
     }
 
-    private static void checkTrace(ServerSpan trace) {
+    private static void checkTrace(IncomingSpan trace) {
         assertThat(trace.auxThreadRootTimer()).isNotNull();
         assertThat(trace.asyncTimers()).isEmpty();
         assertThat(trace.auxThreadRootTimer().name()).isEqualTo("auxiliary thread");

@@ -27,7 +27,7 @@ import org.junit.Test;
 
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.LocalSpan;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
@@ -60,99 +60,99 @@ public class JavaHttpServerIT {
     @Test
     public void testHandler() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecuteHandler.class, "Web");
+        IncomingSpan incomingSpan = container.execute(ExecuteHandler.class, "Web");
 
         // then
-        assertThat(serverSpan.getMessage()).isEqualTo("/testhandler");
-        assertThat(serverSpan.transactionName()).isEqualTo("/testhandler");
-        assertThat(getDetailValue(serverSpan, "Request http method")).isEqualTo("GET");
-        assertThat(serverSpan.childSpans()).isEmpty();
+        assertThat(incomingSpan.getMessage()).isEqualTo("/testhandler");
+        assertThat(incomingSpan.transactionName()).isEqualTo("/testhandler");
+        assertThat(getDetailValue(incomingSpan, "Request http method")).isEqualTo("GET");
+        assertThat(incomingSpan.childSpans()).isEmpty();
     }
 
     @Test
     public void testFilter() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecuteFilter.class, "Web");
+        IncomingSpan incomingSpan = container.execute(ExecuteFilter.class, "Web");
 
         // then
-        assertThat(serverSpan.getMessage()).isEqualTo("/testfilter");
-        assertThat(serverSpan.transactionName()).isEqualTo("/testfilter");
-        assertThat(getDetailValue(serverSpan, "Request http method")).isEqualTo("GET");
-        assertThat(serverSpan.childSpans()).isEmpty();
+        assertThat(incomingSpan.getMessage()).isEqualTo("/testfilter");
+        assertThat(incomingSpan.transactionName()).isEqualTo("/testfilter");
+        assertThat(getDetailValue(incomingSpan, "Request http method")).isEqualTo("GET");
+        assertThat(incomingSpan.childSpans()).isEmpty();
     }
 
     @Test
     public void testCombination() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecuteFilterWithNestedHandler.class, "Web");
+        IncomingSpan incomingSpan = container.execute(ExecuteFilterWithNestedHandler.class, "Web");
 
         // then
-        assertThat(serverSpan.getMessage()).isEqualTo("/testfilter");
-        assertThat(serverSpan.transactionName()).isEqualTo("/testfilter");
-        assertThat(getDetailValue(serverSpan, "Request http method")).isEqualTo("GET");
-        assertThat(serverSpan.childSpans()).isEmpty();
+        assertThat(incomingSpan.getMessage()).isEqualTo("/testfilter");
+        assertThat(incomingSpan.transactionName()).isEqualTo("/testfilter");
+        assertThat(getDetailValue(incomingSpan, "Request http method")).isEqualTo("GET");
+        assertThat(incomingSpan.childSpans()).isEmpty();
     }
 
     @Test
     public void testNoQueryString() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(TestNoQueryString.class, "Web");
+        IncomingSpan incomingSpan = container.execute(TestNoQueryString.class, "Web");
         // then
-        assertThat(getDetailValue(serverSpan, "Request query string")).isNull();
-        assertThat(serverSpan.childSpans()).isEmpty();
+        assertThat(getDetailValue(incomingSpan, "Request query string")).isNull();
+        assertThat(incomingSpan.childSpans()).isEmpty();
     }
 
     @Test
     public void testEmptyQueryString() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(TestEmptyQueryString.class, "Web");
+        IncomingSpan incomingSpan = container.execute(TestEmptyQueryString.class, "Web");
         // then
-        assertThat(getDetailValue(serverSpan, "Request query string")).isEqualTo("");
-        assertThat(serverSpan.childSpans()).isEmpty();
+        assertThat(getDetailValue(incomingSpan, "Request query string")).isEqualTo("");
+        assertThat(incomingSpan.childSpans()).isEmpty();
     }
 
     @Test
     public void testNonEmptyQueryString() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(TestNonEmptyQueryString.class, "Web");
+        IncomingSpan incomingSpan = container.execute(TestNonEmptyQueryString.class, "Web");
         // then
-        assertThat(getDetailValue(serverSpan, "Request query string")).isEqualTo("a=b&c=d");
-        assertThat(serverSpan.childSpans()).isEmpty();
+        assertThat(getDetailValue(incomingSpan, "Request query string")).isEqualTo("a=b&c=d");
+        assertThat(incomingSpan.childSpans()).isEmpty();
     }
 
     @Test
     public void testHandlerThrowsException() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(HandlerThrowsException.class, "Web");
+        IncomingSpan incomingSpan = container.execute(HandlerThrowsException.class, "Web");
 
         // then
-        assertThat(serverSpan.getError().message()).isNotEmpty();
-        assertThat(serverSpan.getError().exception()).isNotNull();
-        assertThat(serverSpan.childSpans()).isEmpty();
+        assertThat(incomingSpan.getError().message()).isNotEmpty();
+        assertThat(incomingSpan.getError().exception()).isNotNull();
+        assertThat(incomingSpan.childSpans()).isEmpty();
     }
 
     @Test
     public void testFilterThrowsException() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(FilterThrowsException.class, "Web");
+        IncomingSpan incomingSpan = container.execute(FilterThrowsException.class, "Web");
 
         // then
-        assertThat(serverSpan.getError().message()).isNotEmpty();
-        assertThat(serverSpan.getError().exception()).isNotNull();
-        assertThat(serverSpan.childSpans()).isEmpty();
+        assertThat(incomingSpan.getError().message()).isNotEmpty();
+        assertThat(incomingSpan.getError().exception()).isNotNull();
+        assertThat(incomingSpan.childSpans()).isEmpty();
     }
 
     @Test
     public void testSend500Error() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(Send500Error.class, "Web");
+        IncomingSpan incomingSpan = container.execute(Send500Error.class, "Web");
 
         // then
-        assertThat(serverSpan.getError().message())
+        assertThat(incomingSpan.getError().message())
                 .isEqualTo("sendResponseHeaders, HTTP status code 500");
-        assertThat(serverSpan.getError().exception()).isNull();
+        assertThat(incomingSpan.getError().exception()).isNull();
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan entry = (LocalSpan) i.next();
         assertThat(entry.getError().message())
@@ -165,11 +165,11 @@ public class JavaHttpServerIT {
     @Test
     public void testSend400Error() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(Send400Error.class, "Web");
+        IncomingSpan incomingSpan = container.execute(Send400Error.class, "Web");
 
         // then
-        assertThat(serverSpan.getError()).isNull();
-        assertThat(serverSpan.childSpans()).isEmpty();
+        assertThat(incomingSpan.getError()).isNull();
+        assertThat(incomingSpan.childSpans()).isEmpty();
     }
 
     @Test
@@ -179,14 +179,14 @@ public class JavaHttpServerIT {
                 true);
 
         // when
-        ServerSpan serverSpan = container.execute(Send400Error.class, "Web");
+        IncomingSpan incomingSpan = container.execute(Send400Error.class, "Web");
 
         // then
-        assertThat(serverSpan.getError().message())
+        assertThat(incomingSpan.getError().message())
                 .isEqualTo("sendResponseHeaders, HTTP status code 400");
-        assertThat(serverSpan.getError().exception()).isNull();
+        assertThat(incomingSpan.getError().exception()).isNull();
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan entry = (LocalSpan) i.next();
         assertThat(entry.getError().message())
@@ -196,8 +196,8 @@ public class JavaHttpServerIT {
         assertThat(i.hasNext()).isFalse();
     }
 
-    private static String getDetailValue(ServerSpan serverSpan, String name) {
-        for (Map.Entry<String, ?> entry : serverSpan.getDetails().entrySet()) {
+    private static String getDetailValue(IncomingSpan incomingSpan, String name) {
+        for (Map.Entry<String, ?> entry : incomingSpan.getDetails().entrySet()) {
             if (entry.getKey().equals(name)) {
                 return (String) entry.getValue();
             }

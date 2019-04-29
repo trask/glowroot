@@ -44,7 +44,7 @@ import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
 import org.glowroot.xyzzy.test.harness.LocalSpan;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
@@ -72,40 +72,40 @@ public class StartupIT {
     @Test
     public void testServletContextInitialized() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(TestServletContextListener.class);
+        IncomingSpan incomingSpan = container.execute(TestServletContextListener.class);
 
         // then
-        validateSingleLocalSpan(serverSpan.childSpans(),
+        validateSingleLocalSpan(incomingSpan.childSpans(),
                 "Listener init: " + TestServletContextListener.class.getName());
     }
 
     @Test
     public void testServletInit() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(TestServletInit.class);
+        IncomingSpan incomingSpan = container.execute(TestServletInit.class);
 
         // then
-        validateSingleLocalSpan(serverSpan.childSpans(),
+        validateSingleLocalSpan(incomingSpan.childSpans(),
                 "Servlet init: " + TestServletInit.class.getName());
     }
 
     @Test
     public void testFilterInit() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(TestFilterInit.class);
+        IncomingSpan incomingSpan = container.execute(TestFilterInit.class);
 
         // then
-        validateSingleLocalSpan(serverSpan.childSpans(),
+        validateSingleLocalSpan(incomingSpan.childSpans(),
                 "Filter init: " + TestFilterInit.class.getName());
     }
 
     @Test
     public void testContainerInitializer() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(TestServletContainerInitializer.class);
+        IncomingSpan incomingSpan = container.execute(TestServletContainerInitializer.class);
 
         // then
-        validateSingleLocalSpan(serverSpan.childSpans(),
+        validateSingleLocalSpan(incomingSpan.childSpans(),
                 "Container initializer: " + TestServletContainerInitializer.class.getName());
     }
 

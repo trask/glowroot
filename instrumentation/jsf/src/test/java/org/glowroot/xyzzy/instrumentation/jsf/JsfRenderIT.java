@@ -36,7 +36,7 @@ import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
 import org.glowroot.xyzzy.test.harness.LocalSpan;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -64,10 +64,10 @@ public class JsfRenderIT {
     @Test
     public void shouldCaptureJsfRendering() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(GetHello.class, "Web");
+        IncomingSpan incomingSpan = container.execute(GetHello.class, "Web");
 
         // then
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage()).isEqualTo("jsf render: /hello.xhtml");
@@ -79,10 +79,10 @@ public class JsfRenderIT {
     @Test
     public void shouldCaptureJsfAction() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(PostHello.class, "Web", "/hello.xhtml;xyz");
+        IncomingSpan incomingSpan = container.execute(PostHello.class, "Web", "/hello.xhtml;xyz");
 
         // then
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage())

@@ -31,6 +31,11 @@ import org.glowroot.xyzzy.instrumentation.api.QueryMessageSupplier;
 import org.glowroot.xyzzy.instrumentation.api.Timer;
 import org.glowroot.xyzzy.instrumentation.api.TimerName;
 import org.glowroot.xyzzy.instrumentation.api.TraceEntry;
+import org.glowroot.xyzzy.test.harness.agent.spans.AsyncOutgoingSpanImpl;
+import org.glowroot.xyzzy.test.harness.agent.spans.AsyncQuerySpanImpl;
+import org.glowroot.xyzzy.test.harness.agent.spans.OutgoingSpanImpl;
+import org.glowroot.xyzzy.test.harness.agent.spans.ParentSpanImpl;
+import org.glowroot.xyzzy.test.harness.agent.spans.QuerySpanImpl;
 
 public class ThreadContextImpl implements ThreadContextPlus {
 
@@ -104,21 +109,23 @@ public class ThreadContextImpl implements ThreadContextPlus {
     public AsyncQueryEntry startAsyncQueryEntry(String queryType, String queryText,
             QueryMessageSupplier queryMessageSupplier, TimerName timerName) {
         // TODO pass along queryType
-        return startQuerySpanInternal(queryText, queryMessageSupplier);
+        return startAsyncQuerySpanInternal(queryText, queryMessageSupplier);
     }
 
     @Override
     public TraceEntry startServiceCallEntry(String type, String text,
             MessageSupplier messageSupplier, TimerName timerName) {
         // TODO pass along type
-        return startClientSpanInternal(text, messageSupplier);
+        // TODO revisit the point of text
+        return startOutgoingSpanInternal(messageSupplier);
     }
 
     @Override
     public AsyncTraceEntry startAsyncServiceCallEntry(String type, String text,
             MessageSupplier messageSupplier, TimerName timerName) {
         // TODO pass along type
-        return startClientSpanInternal(text, messageSupplier);
+        // TODO revisit the point of text
+        return startAsyncOutgoingSpanInternal(messageSupplier);
     }
 
     @Override
@@ -209,16 +216,32 @@ public class ThreadContextImpl implements ThreadContextPlus {
         this.currentSuppressionKeyId = suppressionKeyId;
     }
 
+    private OutgoingSpanImpl startOutgoingSpanInternal(MessageSupplier messageSupplier) {
+        OutgoingSpanImpl outgoingSpan = new OutgoingSpanImpl(messageSupplier, System.nanoTime());
+        parentSpan.addChildSpan(outgoingSpan);
+        return outgoingSpan;
+    }
+
+    private AsyncOutgoingSpanImpl startAsyncOutgoingSpanInternal(MessageSupplier messageSupplier) {
+        AsyncOutgoingSpanImpl asyncOutgoingSpan =
+                new AsyncOutgoingSpanImpl(messageSupplier, null, null, System.nanoTime());
+        parentSpan.addChildSpan(asyncOutgoingSpan);
+        return asyncOutgoingSpan;
+    }
+
     private QuerySpanImpl startQuerySpanInternal(String queryText,
             QueryMessageSupplier queryMessageSupplier) {
-        QuerySpanImpl querySpan = new QuerySpanImpl(queryText, queryMessageSupplier);
+        QuerySpanImpl querySpan =
+                new QuerySpanImpl(queryText, queryMessageSupplier, System.nanoTime());
         parentSpan.addChildSpan(querySpan);
         return querySpan;
     }
 
-    private ClientSpanImpl startClientSpanInternal(String text, MessageSupplier messageSupplier) {
-        ClientSpanImpl serviceCallEntry = new ClientSpanImpl(text, messageSupplier);
-        parentSpan.addChildSpan(serviceCallEntry);
-        return serviceCallEntry;
+    private AsyncQuerySpanImpl startAsyncQuerySpanInternal(String text,
+            QueryMessageSupplier queryMessageSupplier) {
+        AsyncQuerySpanImpl asyncQuerySpan =
+                new AsyncQuerySpanImpl(text, queryMessageSupplier, null, null, System.nanoTime());
+        parentSpan.addChildSpan(asyncQuerySpan);
+        return asyncQuerySpan;
     }
 }

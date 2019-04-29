@@ -33,7 +33,7 @@ import org.springframework.web.context.request.async.DeferredResult;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.LocalSpan;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TraceEntryMarker;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
@@ -85,13 +85,13 @@ public class AsyncControllerIT {
     private void shouldCaptureCallableAsyncController(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(appUnderTestClass, "Web");
+        IncomingSpan incomingSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(serverSpan.async()).isTrue();
-        assertThat(serverSpan.transactionName()).isEqualTo(contextPath + "/async");
+        assertThat(incomingSpan.async()).isTrue();
+        assertThat(incomingSpan.transactionName()).isEqualTo(contextPath + "/async");
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage()).isEqualTo("spring controller: org.glowroot.xyzzy"
@@ -113,13 +113,13 @@ public class AsyncControllerIT {
     private void shouldCaptureDeferredResultAsyncController(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(appUnderTestClass, "Web");
+        IncomingSpan incomingSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(serverSpan.async()).isTrue();
-        assertThat(serverSpan.transactionName()).isEqualTo(contextPath + "/async2");
+        assertThat(incomingSpan.async()).isTrue();
+        assertThat(incomingSpan.transactionName()).isEqualTo(contextPath + "/async2");
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage()).isEqualTo("spring controller: org.glowroot.xyzzy"

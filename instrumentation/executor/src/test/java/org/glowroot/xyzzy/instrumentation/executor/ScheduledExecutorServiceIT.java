@@ -27,7 +27,7 @@ import org.junit.Test;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.TraceEntryMarker;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
@@ -60,19 +60,19 @@ public class ScheduledExecutorServiceIT {
     @Test
     public void shouldCaptureScheduledRunnable() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(DoScheduledRunnable.class);
+        IncomingSpan incomingSpan = container.execute(DoScheduledRunnable.class);
 
         // then
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     @Test
     public void shouldCaptureScheduledCallable() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(DoScheduledCallable.class);
+        IncomingSpan incomingSpan = container.execute(DoScheduledCallable.class);
 
         // then
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     private static ScheduledExecutorService createScheduledExecutorService() {

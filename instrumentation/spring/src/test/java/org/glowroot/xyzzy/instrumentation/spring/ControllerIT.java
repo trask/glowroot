@@ -30,7 +30,7 @@ import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
 import org.glowroot.xyzzy.test.harness.LocalSpan;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -137,78 +137,78 @@ public class ControllerIT {
         container.setInstrumentationProperty("spring", "useAltTransactionNaming", true);
 
         // when
-        ServerSpan serverSpan = container.execute(WithNormalServletMapping.class, "Web");
+        IncomingSpan incomingSpan = container.execute(WithNormalServletMapping.class, "Web");
 
         // then
-        assertThat(serverSpan.transactionName()).isEqualTo("TestController#echo");
+        assertThat(incomingSpan.transactionName()).isEqualTo("TestController#echo");
 
-        validateSpans(serverSpan.childSpans(), TestController.class, "echo");
+        validateSpans(incomingSpan.childSpans(), TestController.class, "echo");
     }
 
     private void shouldCaptureTransactionNameWithNormalServletMapping(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(appUnderTestClass, "Web");
+        IncomingSpan incomingSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(serverSpan.transactionName()).isEqualTo(contextPath + "/hello/echo/*");
+        assertThat(incomingSpan.transactionName()).isEqualTo(contextPath + "/hello/echo/*");
 
-        validateSpans(serverSpan.childSpans(), TestController.class, "echo");
+        validateSpans(incomingSpan.childSpans(), TestController.class, "echo");
     }
 
     private void shouldCaptureTransactionNameWithNormalServletMappingHittingRoot(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(appUnderTestClass, "Web");
+        IncomingSpan incomingSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(serverSpan.transactionName()).isEqualTo(contextPath + "/");
+        assertThat(incomingSpan.transactionName()).isEqualTo(contextPath + "/");
 
-        validateSpans(serverSpan.childSpans(), RootController.class, "echo");
+        validateSpans(incomingSpan.childSpans(), RootController.class, "echo");
     }
 
     private void shouldCaptureTransactionNameWithNestedServletMapping(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(appUnderTestClass, "Web");
+        IncomingSpan incomingSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(serverSpan.transactionName()).isEqualTo(contextPath + "/spring/hello/echo/*");
+        assertThat(incomingSpan.transactionName()).isEqualTo(contextPath + "/spring/hello/echo/*");
 
-        validateSpans(serverSpan.childSpans(), TestController.class, "echo");
+        validateSpans(incomingSpan.childSpans(), TestController.class, "echo");
     }
 
     private void shouldCaptureTransactionNameWithNestedServletMappingHittingRoot(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(appUnderTestClass, "Web");
+        IncomingSpan incomingSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(serverSpan.transactionName()).isEqualTo(contextPath + "/spring/");
+        assertThat(incomingSpan.transactionName()).isEqualTo(contextPath + "/spring/");
 
-        validateSpans(serverSpan.childSpans(), RootController.class, "echo");
+        validateSpans(incomingSpan.childSpans(), RootController.class, "echo");
     }
 
     private void shouldCaptureTransactionNameWithLessNormalServletMapping(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(appUnderTestClass, "Web");
+        IncomingSpan incomingSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(serverSpan.transactionName()).isEqualTo(contextPath + "/hello/echo/*");
+        assertThat(incomingSpan.transactionName()).isEqualTo(contextPath + "/hello/echo/*");
 
-        validateSpans(serverSpan.childSpans(), TestController.class, "echo");
+        validateSpans(incomingSpan.childSpans(), TestController.class, "echo");
     }
 
     private void shouldCaptureTransactionNameWithLessNormalServletMappingHittingRoot(
             String contextPath, Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(appUnderTestClass, "Web");
+        IncomingSpan incomingSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(serverSpan.transactionName()).isEqualTo(contextPath + "/");
+        assertThat(incomingSpan.transactionName()).isEqualTo(contextPath + "/");
 
-        validateSpans(serverSpan.childSpans(), RootController.class, "echo");
+        validateSpans(incomingSpan.childSpans(), RootController.class, "echo");
     }
 
     private void validateSpans(List<Span> spans, Class<?> clazz, String methodName) {

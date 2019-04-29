@@ -30,7 +30,7 @@ import org.junit.Test;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TraceEntryMarker;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
@@ -64,101 +64,101 @@ public class ForkJoinPoolIT {
     @Test
     public void shouldCaptureSubmitCallable() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(DoPoolSubmitCallable.class);
+        IncomingSpan incomingSpan = container.execute(DoPoolSubmitCallable.class);
 
         // then
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     @Test
     public void shouldCaptureSubmitRunnable() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(DoPoolSubmitRunnable.class);
+        IncomingSpan incomingSpan = container.execute(DoPoolSubmitRunnable.class);
 
         // then
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     @Test
     public void shouldCaptureSubmitRunnableWithReturnValue() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(DoPoolSubmitRunnableWithReturnValue.class);
+        IncomingSpan incomingSpan = container.execute(DoPoolSubmitRunnableWithReturnValue.class);
 
         // then
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     @Test
     public void shouldCaptureSubmitForkJoinTask() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(DoPoolSubmitForkJoinTask.class);
+        IncomingSpan incomingSpan = container.execute(DoPoolSubmitForkJoinTask.class);
 
         // then
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     @Test
     public void shouldCaptureSubmitCallableAsForkJoinTask() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(DoPoolSubmitCallableAsForkJoinTask.class);
+        IncomingSpan incomingSpan = container.execute(DoPoolSubmitCallableAsForkJoinTask.class);
 
         // then
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     @Test
     public void shouldCaptureSubmitRunnableAsForkJoinTask() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(DoPoolSubmitRunnableAsForkJoinTask.class);
+        IncomingSpan incomingSpan = container.execute(DoPoolSubmitRunnableAsForkJoinTask.class);
 
         // then
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     @Test
     public void shouldCaptureSubmitRunnableAsForkJoinTaskWithReturnValue() throws Exception {
         // when
-        ServerSpan serverSpan =
+        IncomingSpan incomingSpan =
                 container.execute(DoPoolSubmitRunnableAsForkJoinTaskWithReturnValue.class);
 
         // then
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     @Test
     public void shouldCaptureExecuteRunnable() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(DoPoolExecuteRunnable.class);
+        IncomingSpan incomingSpan = container.execute(DoPoolExecuteRunnable.class);
 
         // then
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     @Test
     public void shouldCaptureExecuteForkJoinTask() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(DoPoolExecuteForkJoinTask.class);
+        IncomingSpan incomingSpan = container.execute(DoPoolExecuteForkJoinTask.class);
 
         // then
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     @Test
     public void shouldCaptureInvokeForkJoinTask() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(DoPoolInvokeForkJoinTask.class);
+        IncomingSpan incomingSpan = container.execute(DoPoolInvokeForkJoinTask.class);
 
         // then
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     @Test
     public void shouldCaptureInvokeAll() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(DoPoolInvokeAll.class);
+        IncomingSpan incomingSpan = container.execute(DoPoolInvokeAll.class);
 
         // then
-        List<Span> spans = serverSpan.childSpans();
+        List<Span> spans = incomingSpan.childSpans();
         assertThat(spans.size()).isEqualTo(3);
         for (Span span : spans) {
             assertSingleLocalSpanMessage(span).isEqualTo("trace entry marker / CreateTraceEntry");

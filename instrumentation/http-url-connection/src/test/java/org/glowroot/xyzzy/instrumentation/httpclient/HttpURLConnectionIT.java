@@ -27,7 +27,7 @@ import org.junit.Test;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 import org.glowroot.xyzzy.test.harness.util.ExecuteHttpBase;
 
@@ -86,30 +86,30 @@ public class HttpURLConnectionIT {
     private void shouldCaptureHttpGet(Class<? extends AppUnderTest> appUnderTestClass,
             String protocol) throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(appUnderTestClass);
+        IncomingSpan incomingSpan = container.execute(appUnderTestClass);
 
         // then
-        assertSingleClientSpanMessage(serverSpan)
+        assertSingleClientSpanMessage(incomingSpan)
                 .matches("http client request: GET " + protocol + "://localhost:\\d+/hello1/");
     }
 
     private void shouldCaptureHttpGetWithQueryString(
             Class<? extends AppUnderTest> appUnderTestClass, String protocol) throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(appUnderTestClass);
+        IncomingSpan incomingSpan = container.execute(appUnderTestClass);
 
         // then
-        assertSingleClientSpanMessage(serverSpan).matches("http client request: GET " + protocol
+        assertSingleClientSpanMessage(incomingSpan).matches("http client request: GET " + protocol
                 + "http client request: GET " + protocol + "://localhost:\\d+/hello1\\?abc=xyz");
     }
 
     private void shouldCaptureHttpPost(Class<? extends AppUnderTest> appUnderTestClass,
             String protocol) throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(appUnderTestClass);
+        IncomingSpan incomingSpan = container.execute(appUnderTestClass);
 
         // then
-        assertSingleClientSpanMessage(serverSpan)
+        assertSingleClientSpanMessage(incomingSpan)
                 .matches("http client request: POST " + protocol + "://localhost:\\d+/hello1/");
     }
 

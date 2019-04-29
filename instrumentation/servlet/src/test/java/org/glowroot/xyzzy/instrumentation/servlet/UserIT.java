@@ -31,7 +31,7 @@ import org.springframework.mock.web.MockHttpSession;
 
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -59,7 +59,7 @@ public class UserIT {
     @Test
     public void testHasRequestUserPrincipal() throws Exception {
         // when
-        ServerSpan trace = container.execute(HasRequestUserPrincipal.class, "Web");
+        IncomingSpan trace = container.execute(HasRequestUserPrincipal.class, "Web");
         // then
         assertThat(trace.user()).isEqualTo("my name is mock");
     }
@@ -77,7 +77,7 @@ public class UserIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute",
                 "userattr");
         // when
-        ServerSpan trace = container.execute(HasSessionUserAttribute.class, "Web");
+        IncomingSpan trace = container.execute(HasSessionUserAttribute.class, "Web");
         // then
         assertThat(trace.user()).isEqualTo("abc");
     }
@@ -88,7 +88,7 @@ public class UserIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute",
                 "userattr");
         // when
-        ServerSpan trace = container.execute(SetSessionUserAttribute.class, "Web");
+        IncomingSpan trace = container.execute(SetSessionUserAttribute.class, "Web");
         // then
         assertThat(trace.user()).isEqualTo("abc");
     }
@@ -99,7 +99,7 @@ public class UserIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute",
                 "userattr");
         // when
-        ServerSpan trace = container.execute(SetSessionUserAttributeNull.class, "Web");
+        IncomingSpan trace = container.execute(SetSessionUserAttributeNull.class, "Web");
         // then
         // this is intentional, setting user attribute to null shouldn't clear out user for
         // that particular request (since the request was in fact, originally, for that user)
@@ -112,7 +112,7 @@ public class UserIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute",
                 "userone.two");
         // when
-        ServerSpan trace = container.execute(HasNestedSessionUserAttribute.class, "Web");
+        IncomingSpan trace = container.execute(HasNestedSessionUserAttribute.class, "Web");
         // then
         assertThat(trace.user()).isEqualTo("xyz");
     }
@@ -123,7 +123,7 @@ public class UserIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute",
                 "userone.two");
         // when
-        ServerSpan trace = container.execute(SetNestedSessionUserAttribute.class, "Web");
+        IncomingSpan trace = container.execute(SetNestedSessionUserAttribute.class, "Web");
         // then
         assertThat(trace.user()).isEqualTo("xyz");
     }
@@ -134,7 +134,7 @@ public class UserIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute",
                 "missinguserattr");
         // when
-        ServerSpan trace = container.execute(HasSessionUserAttribute.class, "Web");
+        IncomingSpan trace = container.execute(HasSessionUserAttribute.class, "Web");
         // then
         assertThat(trace.user()).isEmpty();
     }
@@ -145,7 +145,7 @@ public class UserIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute",
                 "userone.missingtwo");
         // when
-        ServerSpan trace = container.execute(HasNestedSessionUserAttribute.class, "Web");
+        IncomingSpan trace = container.execute(HasNestedSessionUserAttribute.class, "Web");
         // then
         assertThat(trace.user()).isEmpty();
     }
@@ -155,7 +155,7 @@ public class UserIT {
         // given
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute", "::id");
         // when
-        ServerSpan trace = container.execute(HasHttpSession.class, "Web");
+        IncomingSpan trace = container.execute(HasHttpSession.class, "Web");
         // then
         assertThat(trace.user()).isEqualTo("123456789");
     }
@@ -165,7 +165,7 @@ public class UserIT {
         // given
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute", "::id");
         // when
-        ServerSpan trace = container.execute(HasNoHttpSession.class, "Web");
+        IncomingSpan trace = container.execute(HasNoHttpSession.class, "Web");
         // then
         assertThat(trace.user()).isEmpty();
     }
@@ -175,7 +175,7 @@ public class UserIT {
         // given
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute", "::id");
         // when
-        ServerSpan trace = container.execute(CreateHttpSession.class, "Web");
+        IncomingSpan trace = container.execute(CreateHttpSession.class, "Web");
         // then
         assertThat(trace.user()).isEqualTo("123456789");
     }
@@ -185,7 +185,7 @@ public class UserIT {
         // given
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute", "::id");
         // when
-        ServerSpan trace = container.execute(CreateHttpSessionTrue.class, "Web");
+        IncomingSpan trace = container.execute(CreateHttpSessionTrue.class, "Web");
         // then
         assertThat(trace.user()).isEqualTo("123456789");
     }
@@ -195,7 +195,7 @@ public class UserIT {
         // given
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute", "::id");
         // when
-        ServerSpan trace = container.execute(CreateHttpSessionFalse.class, "Web");
+        IncomingSpan trace = container.execute(CreateHttpSessionFalse.class, "Web");
         // then
         assertThat(trace.user()).isEmpty();
     }
@@ -205,7 +205,7 @@ public class UserIT {
         // given
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute", "::id");
         // when
-        ServerSpan trace = container.execute(ChangeHttpSession.class, "Web");
+        IncomingSpan trace = container.execute(ChangeHttpSession.class, "Web");
         // then
         assertThat(trace.user()).isEqualTo("123456789");
     }
@@ -215,7 +215,7 @@ public class UserIT {
         // given
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute", "::id");
         // when
-        ServerSpan trace = container.execute(CreateAndChangeHttpSession.class, "Web");
+        IncomingSpan trace = container.execute(CreateAndChangeHttpSession.class, "Web");
         // then
         assertThat(trace.user()).isEqualTo("123456789");
     }

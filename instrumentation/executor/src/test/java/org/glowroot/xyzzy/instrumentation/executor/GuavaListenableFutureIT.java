@@ -30,7 +30,7 @@ import org.junit.Test;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.TraceEntryMarker;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
@@ -66,37 +66,37 @@ public class GuavaListenableFutureIT {
     @Test
     public void shouldCaptureListenerAddedBeforeComplete() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(AddListenerBeforeComplete.class);
+        IncomingSpan incomingSpan = container.execute(AddListenerBeforeComplete.class);
 
         // then
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     @Test
     public void shouldCaptureListenerAddedAfterComplete() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(AddListenerAfterComplete.class);
+        IncomingSpan incomingSpan = container.execute(AddListenerAfterComplete.class);
 
         // then
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     @Test
     public void shouldCaptureSameExecutorListenerAddedBeforeComplete() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(AddSameExecutorListenerBeforeComplete.class);
+        IncomingSpan incomingSpan = container.execute(AddSameExecutorListenerBeforeComplete.class);
 
         // then
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     @Test
     public void shouldCaptureSameExecutorListenerAddedAfterComplete() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(AddSameExecutorListenerAfterComplete.class);
+        IncomingSpan incomingSpan = container.execute(AddSameExecutorListenerAfterComplete.class);
 
         // then
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     public static class AddListenerBeforeComplete implements AppUnderTest, TransactionMarker {

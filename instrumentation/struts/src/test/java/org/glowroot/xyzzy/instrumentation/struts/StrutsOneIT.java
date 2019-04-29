@@ -37,7 +37,7 @@ import org.junit.Test;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.glowroot.xyzzy.test.harness.util.HarnessAssertions.assertSingleLocalSpanMessage;
@@ -64,12 +64,12 @@ public class StrutsOneIT {
     @Test
     public void shouldCaptureAction() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecuteActionInTomcat.class, "Web");
+        IncomingSpan incomingSpan = container.execute(ExecuteActionInTomcat.class, "Web");
 
         // then
-        assertThat(serverSpan.transactionName()).isEqualTo("HelloWorldAction#execute");
+        assertThat(incomingSpan.transactionName()).isEqualTo("HelloWorldAction#execute");
 
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("struts action: org.glowroot.xyzzy"
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("struts action: org.glowroot.xyzzy"
                 + ".instrumentation.struts.StrutsOneIT$HelloWorldAction.execute()");
     }
 

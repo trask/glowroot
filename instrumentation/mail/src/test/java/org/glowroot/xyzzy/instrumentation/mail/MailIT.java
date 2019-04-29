@@ -25,10 +25,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
-import org.glowroot.xyzzy.test.harness.ClientSpan;
+import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
@@ -56,16 +56,16 @@ public class MailIT {
     @Test
     public void shouldSendMessage() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecuteSend.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteSend.class);
 
         // then
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).startsWith("mail connect smtp://");
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).startsWith("mail connect smtp://");
 
-        clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEqualTo("mail send message");
+        outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEqualTo("mail send message");
 
         assertThat(i.hasNext()).isFalse();
     }

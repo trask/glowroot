@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.agent.Premain;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -95,6 +95,7 @@ public class JavaagentContainer implements Container {
 
         int traceCollectorPort = LocalContainer.getAvailablePort();
         traceCollector = new TraceCollector(traceCollectorPort);
+        traceCollector.start();
         int javaagentServerPort = LocalContainer.getAvailablePort();
         List<String> command = buildCommand(heartbeatListenerSocket.getLocalPort(),
                 traceCollectorPort, javaagentServerPort, extraJvmArgs);
@@ -161,18 +162,18 @@ public class JavaagentContainer implements Container {
     }
 
     @Override
-    public ServerSpan execute(Class<? extends AppUnderTest> appClass) throws Exception {
+    public IncomingSpan execute(Class<? extends AppUnderTest> appClass) throws Exception {
         return executeInternal(appClass, null, null);
     }
 
     @Override
-    public ServerSpan execute(Class<? extends AppUnderTest> appClass, String transactionType)
+    public IncomingSpan execute(Class<? extends AppUnderTest> appClass, String transactionType)
             throws Exception {
         return executeInternal(appClass, transactionType, null);
     }
 
     @Override
-    public ServerSpan execute(Class<? extends AppUnderTest> appClass, String transactionType,
+    public IncomingSpan execute(Class<? extends AppUnderTest> appClass, String transactionType,
             String transactionName) throws Exception {
         return executeInternal(appClass, transactionType, transactionName);
     }
@@ -210,13 +211,13 @@ public class JavaagentContainer implements Container {
         Runtime.getRuntime().removeShutdownHook(shutdownHook);
     }
 
-    private ServerSpan executeInternal(Class<? extends AppUnderTest> appClass,
+    private IncomingSpan executeInternal(Class<? extends AppUnderTest> appClass,
             @Nullable String transactionType, @Nullable String transactionName) throws Exception {
         checkNotNull(traceCollector);
         executeInternal(appClass);
         // extra long wait time is needed for StackOverflowOOMIT on slow travis ci machines since it
         // can sometimes take a long time for that large trace to be serialized and transferred
-        ServerSpan trace =
+        IncomingSpan trace =
                 traceCollector.getCompletedTrace(transactionType, transactionName, 20, SECONDS);
         traceCollector.clearTrace();
         return trace;

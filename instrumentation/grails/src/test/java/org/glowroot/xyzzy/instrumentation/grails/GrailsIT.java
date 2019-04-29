@@ -43,7 +43,7 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -79,24 +79,24 @@ public class GrailsIT {
     @Test
     public void shouldCaptureNonDefaultAction() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(GetHelloAbc.class, "Web");
+        IncomingSpan incomingSpan = container.execute(GetHelloAbc.class, "Web");
 
         // then
-        assertThat(serverSpan.transactionName()).isEqualTo("Hello#abc");
+        assertThat(incomingSpan.transactionName()).isEqualTo("Hello#abc");
 
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo(
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo(
                 "grails controller: org.glowroot.xyzzy.instrumentation.grails.HelloController.abc()");
     }
 
     @Test
     public void shouldCaptureDefaultAction() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(GetHello.class, "Web");
+        IncomingSpan incomingSpan = container.execute(GetHello.class, "Web");
 
         // then
-        assertThat(serverSpan.transactionName()).isEqualTo("Hello#index");
+        assertThat(incomingSpan.transactionName()).isEqualTo("Hello#index");
 
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("grails controller:"
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("grails controller:"
                 + " org.glowroot.xyzzy.instrumentation.grails.HelloController.index()");
     }
 

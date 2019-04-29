@@ -15,32 +15,13 @@
  */
 package org.glowroot.xyzzy.test.harness;
 
-import java.util.List;
+import java.io.Serializable;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
 @Value.Immutable
-public interface ServerSpan extends Span {
+public interface OutgoingSpan extends Span, Serializable {
 
-    boolean async();
-    String transactionType();
-    String transactionName();
-    String user();
-
-    Timer mainThreadRootTimer();
-    @Nullable
-    Timer auxThreadRootTimer();
-    List<Timer> asyncTimers();
-
-    List<Span> childSpans();
-
-    @Value.Immutable
-    public interface Timer {
-        String name();
-        boolean extended();
-        long totalNanos();
-        long count();
-        List<Timer> childTimers();
-    }
+    String getPrefix();
+    String getSuffix();
 }

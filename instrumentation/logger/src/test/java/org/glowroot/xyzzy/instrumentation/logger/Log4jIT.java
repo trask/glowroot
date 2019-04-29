@@ -28,7 +28,7 @@ import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
 import org.glowroot.xyzzy.test.harness.LocalSpan;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
@@ -62,12 +62,12 @@ public class Log4jIT {
                 "traceErrorOnErrorWithoutThrowable", true);
 
         // when
-        ServerSpan serverSpan = container.execute(ShouldLog.class);
+        IncomingSpan incomingSpan = container.execute(ShouldLog.class);
 
         // then
-        assertThat(serverSpan.getError().message()).isEqualTo("efg");
+        assertThat(incomingSpan.getError().message()).isEqualTo("efg");
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage())
@@ -89,13 +89,13 @@ public class Log4jIT {
                 "traceErrorOnErrorWithoutThrowable", true);
 
         // when
-        ServerSpan serverSpan = container.execute(ShouldLogWithThrowable.class);
+        IncomingSpan incomingSpan = container.execute(ShouldLogWithThrowable.class);
 
         // then
-        assertThat(serverSpan.getError().message())
+        assertThat(incomingSpan.getError().message())
                 .isEqualTo("java.lang.IllegalStateException: 567");
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage())
@@ -123,12 +123,12 @@ public class Log4jIT {
                 "traceErrorOnErrorWithoutThrowable", true);
 
         // when
-        ServerSpan serverSpan = container.execute(ShouldLogWithNullThrowable.class);
+        IncomingSpan incomingSpan = container.execute(ShouldLogWithNullThrowable.class);
 
         // then
-        assertThat(serverSpan.getError().message()).isEqualTo("efg_tnull");
+        assertThat(incomingSpan.getError().message()).isEqualTo("efg_tnull");
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage()).isEqualTo(
@@ -148,10 +148,10 @@ public class Log4jIT {
     @Test
     public void testLogWithOneParameter() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ShouldLogWithOneParameter.class);
+        IncomingSpan incomingSpan = container.execute(ShouldLogWithOneParameter.class);
 
         // then
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage()).isEqualTo(
@@ -169,13 +169,13 @@ public class Log4jIT {
     @Test
     public void testLogWithOneParameterAndThrowable() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ShouldLogWithOneParameterAndThrowable.class);
+        IncomingSpan incomingSpan = container.execute(ShouldLogWithOneParameterAndThrowable.class);
 
         // then
-        assertThat(serverSpan.getError().message())
+        assertThat(incomingSpan.getError().message())
                 .isEqualTo("java.lang.IllegalStateException: 567");
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage()).isEqualTo("log warn: "
@@ -199,10 +199,10 @@ public class Log4jIT {
     @Test
     public void testLogWithTwoParameters() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ShouldLogWithTwoParameters.class);
+        IncomingSpan incomingSpan = container.execute(ShouldLogWithTwoParameters.class);
 
         // then
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage()).isEqualTo(
@@ -220,10 +220,10 @@ public class Log4jIT {
     @Test
     public void testLogWithMoreThanTwoParameters() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ShouldLogWithMoreThanTwoParameters.class);
+        IncomingSpan incomingSpan = container.execute(ShouldLogWithMoreThanTwoParameters.class);
 
         // then
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage()).isEqualTo("log warn: "
@@ -241,10 +241,10 @@ public class Log4jIT {
     @Test
     public void testLogWithParametersAndThrowable() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ShouldLogWithParametersAndThrowable.class);
+        IncomingSpan incomingSpan = container.execute(ShouldLogWithParametersAndThrowable.class);
 
         // then
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage()).isEqualTo("log warn: "

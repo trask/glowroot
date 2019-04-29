@@ -29,7 +29,7 @@ import org.quartz.impl.StdSchedulerFactory;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -55,10 +55,10 @@ public class QuartzIT {
 
     @Test
     public void shouldCaptureJobExecution() throws Exception {
-        ServerSpan serverSpan = container.execute(ExecuteJob.class);
-        assertThat(serverSpan.transactionType()).isEqualTo("Background");
-        assertThat(serverSpan.transactionName()).isEqualTo("Quartz job: ajob");
-        assertThat(serverSpan.getMessage()).isEqualTo("Quartz job: ajob");
+        IncomingSpan incomingSpan = container.execute(ExecuteJob.class);
+        assertThat(incomingSpan.transactionType()).isEqualTo("Background");
+        assertThat(incomingSpan.transactionName()).isEqualTo("Quartz job: ajob");
+        assertThat(incomingSpan.getMessage()).isEqualTo("Quartz job: ajob");
     }
 
     private static JobDetail createJob1x() throws Exception {

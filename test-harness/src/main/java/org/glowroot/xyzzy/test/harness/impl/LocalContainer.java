@@ -25,7 +25,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glowroot.xyzzy.engine.weaving.IsolatedWeavingClassLoader;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.agent.MainEntryPoint;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -47,6 +47,7 @@ public class LocalContainer implements Container {
     private LocalContainer() throws Exception {
         int collectorPort = getAvailablePort();
         traceCollector = new TraceCollector(collectorPort);
+        traceCollector.start();
         tmpDir = Files.createTempDir();
         isolatedWeavingClassLoader = new IsolatedWeavingClassLoader(AppUnderTest.class);
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
@@ -84,18 +85,18 @@ public class LocalContainer implements Container {
     }
 
     @Override
-    public ServerSpan execute(Class<? extends AppUnderTest> appClass) throws Exception {
+    public IncomingSpan execute(Class<? extends AppUnderTest> appClass) throws Exception {
         return executeInternal(appClass, null, null);
     }
 
     @Override
-    public ServerSpan execute(Class<? extends AppUnderTest> appClass, String transactionType)
+    public IncomingSpan execute(Class<? extends AppUnderTest> appClass, String transactionType)
             throws Exception {
         return executeInternal(appClass, transactionType, null);
     }
 
     @Override
-    public ServerSpan execute(Class<? extends AppUnderTest> appClass, String transactionType,
+    public IncomingSpan execute(Class<? extends AppUnderTest> appClass, String transactionType,
             String transactionName) throws Exception {
         return executeInternal(appClass, transactionType, transactionName);
     }
@@ -119,11 +120,11 @@ public class LocalContainer implements Container {
         traceCollector.close();
     }
 
-    public ServerSpan executeInternal(Class<? extends AppUnderTest> appClass,
+    public IncomingSpan executeInternal(Class<? extends AppUnderTest> appClass,
             @Nullable String transactionType, @Nullable String transactionName) throws Exception {
         checkNotNull(traceCollector);
         executeInternal(appClass);
-        ServerSpan trace =
+        IncomingSpan trace =
                 traceCollector.getCompletedTrace(transactionType, transactionName, 10, SECONDS);
         traceCollector.clearTrace();
         return trace;

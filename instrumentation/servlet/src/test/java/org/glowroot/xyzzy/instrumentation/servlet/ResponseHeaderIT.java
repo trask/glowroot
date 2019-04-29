@@ -33,7 +33,7 @@ import org.glowroot.xyzzy.instrumentation.servlet.TestServlet.PatchedMockHttpSer
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -65,7 +65,7 @@ public class ResponseHeaderIT {
                 ImmutableList.of("Content-Type", " Content-Length", " Content-Language"));
 
         // when
-        ServerSpan trace = container.execute(SetStandardResponseHeaders.class, "Web");
+        IncomingSpan trace = container.execute(SetStandardResponseHeaders.class, "Web");
 
         // then
         Map<String, Object> responseHeaders = getResponseHeaders(trace);
@@ -82,7 +82,7 @@ public class ResponseHeaderIT {
                 ImmutableList.of("Content-Type", " Content-Length", " Content-Language"));
 
         // when
-        ServerSpan trace = container.execute(SetStandardResponseHeadersUsingSetHeader.class, "Web");
+        IncomingSpan trace = container.execute(SetStandardResponseHeadersUsingSetHeader.class, "Web");
 
         // then
         Map<String, Object> responseHeaders = getResponseHeaders(trace);
@@ -99,7 +99,7 @@ public class ResponseHeaderIT {
                 ImmutableList.of("Content-Type", " Content-Length", " Content-Language"));
 
         // when
-        ServerSpan trace = container.execute(SetStandardResponseHeadersUsingAddHeader.class, "Web");
+        IncomingSpan trace = container.execute(SetStandardResponseHeadersUsingAddHeader.class, "Web");
 
         // then
         Map<String, Object> responseHeaders = getResponseHeaders(trace);
@@ -116,7 +116,7 @@ public class ResponseHeaderIT {
                 ImmutableList.of("Content-Type", " Content-Length"));
 
         // when
-        ServerSpan trace = container.execute(SetStandardResponseHeadersLowercase.class, "Web");
+        IncomingSpan trace = container.execute(SetStandardResponseHeadersLowercase.class, "Web");
 
         // then
         Map<String, Object> responseHeaders = getResponseHeaders(trace);
@@ -131,7 +131,7 @@ public class ResponseHeaderIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResponseHeaders",
                 ImmutableList.<String>of());
         // when
-        ServerSpan trace = container.execute(SetStandardResponseHeaders.class, "Web");
+        IncomingSpan trace = container.execute(SetStandardResponseHeaders.class, "Web");
         // then
         assertThat(getResponseHeaders(trace)).isNull();
     }
@@ -142,7 +142,7 @@ public class ResponseHeaderIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResponseHeaders",
                 ImmutableList.of("ABC"));
         // when
-        ServerSpan trace = container.execute(SetStandardResponseHeaders.class, "Web");
+        IncomingSpan trace = container.execute(SetStandardResponseHeaders.class, "Web");
         // then
         assertThat(getResponseHeaders(trace)).isNull();
     }
@@ -153,7 +153,7 @@ public class ResponseHeaderIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResponseHeaders",
                 ImmutableList.<String>of());
         // when
-        ServerSpan trace = container.execute(SetStandardResponseHeadersUsingSetHeader.class, "Web");
+        IncomingSpan trace = container.execute(SetStandardResponseHeadersUsingSetHeader.class, "Web");
         // then
         assertThat(getResponseHeaders(trace)).isNull();
     }
@@ -164,7 +164,7 @@ public class ResponseHeaderIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResponseHeaders",
                 ImmutableList.<String>of());
         // when
-        ServerSpan trace = container.execute(SetStandardResponseHeadersUsingAddHeader.class, "Web");
+        IncomingSpan trace = container.execute(SetStandardResponseHeadersUsingAddHeader.class, "Web");
         // then
         assertThat(getResponseHeaders(trace)).isNull();
     }
@@ -177,7 +177,7 @@ public class ResponseHeaderIT {
                         "X-One"));
 
         // when
-        ServerSpan trace = container.execute(SetLotsOfResponseHeaders.class, "Web");
+        IncomingSpan trace = container.execute(SetLotsOfResponseHeaders.class, "Web");
 
         // then
         Map<String, Object> responseHeaders = getResponseHeaders(trace);
@@ -214,11 +214,11 @@ public class ResponseHeaderIT {
     }
 
     @SuppressWarnings("unchecked")
-    static Map<String, Object> getDetailMap(ServerSpan trace, String name) {
+    static Map<String, Object> getDetailMap(IncomingSpan trace, String name) {
         return (Map<String, Object>) trace.getDetails().get(name);
     }
 
-    static Map<String, Object> getResponseHeaders(ServerSpan trace) {
+    static Map<String, Object> getResponseHeaders(IncomingSpan trace) {
         return getDetailMap(trace, "Response headers");
     }
 

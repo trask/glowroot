@@ -19,9 +19,9 @@ import java.util.List;
 
 import org.assertj.core.api.AbstractCharSequenceAssert;
 
-import org.glowroot.xyzzy.test.harness.ClientSpan;
+import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.LocalSpan;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,22 +29,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class HarnessAssertions {
 
     public static AbstractCharSequenceAssert<?, String> assertSingleClientSpanMessage(
-            ServerSpan serverSpan) {
+            IncomingSpan incomingSpan) {
 
-        List<Span> spans = serverSpan.childSpans();
+        List<Span> spans = incomingSpan.childSpans();
 
         assertThat(spans).hasSize(1);
 
         Span span = spans.get(0);
-        assertThat(span).isInstanceOf(ClientSpan.class);
+        assertThat(span).isInstanceOf(OutgoingSpan.class);
 
         return assertThat(span.getMessage());
     }
 
     public static AbstractCharSequenceAssert<?, String> assertSingleLocalSpanMessage(
-            ServerSpan serverSpan) {
+            IncomingSpan incomingSpan) {
 
-        List<Span> spans = serverSpan.childSpans();
+        List<Span> spans = incomingSpan.childSpans();
 
         assertThat(spans).hasSize(1);
 

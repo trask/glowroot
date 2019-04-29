@@ -13,13 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.xyzzy.test.harness;
+package org.glowroot.xyzzy.test.harness.agent.spans;
 
-import org.immutables.value.Value;
+import org.glowroot.xyzzy.test.harness.Span;
 
-@Value.Immutable
-public interface ClientSpan extends Span {
+public interface SpanImpl {
 
-    String getPrefix();
-    String getSuffix();
+    Span toImmutable();
 }

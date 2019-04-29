@@ -16,10 +16,12 @@
 package org.glowroot.xyzzy.test.harness.agent;
 
 import org.glowroot.xyzzy.engine.bytecode.api.ThreadContextThreadLocal;
+import org.glowroot.xyzzy.engine.impl.TimerNameImpl;
 import org.glowroot.xyzzy.engine.weaving.AgentSPI;
 import org.glowroot.xyzzy.instrumentation.api.MessageSupplier;
 import org.glowroot.xyzzy.instrumentation.api.TimerName;
 import org.glowroot.xyzzy.instrumentation.api.TraceEntry;
+import org.glowroot.xyzzy.test.harness.agent.spans.IncomingSpanImpl;
 
 class AgentImpl implements AgentSPI {
 
@@ -33,11 +35,12 @@ class AgentImpl implements AgentSPI {
             ThreadContextThreadLocal.Holder threadContextHolder, int rootNestingGroupId,
             int rootSuppressionKeyId) {
 
-        ServerSpanImpl serverSpan = new ServerSpanImpl(messageSupplier, threadContextHolder);
-        ThreadContextImpl threadContext = new ThreadContextImpl(threadContextHolder, serverSpan,
+        IncomingSpanImpl incomingSpan = new IncomingSpanImpl(transactionType, transactionName,
+                messageSupplier, threadContextHolder, (TimerNameImpl) timerName, System.nanoTime());
+        ThreadContextImpl threadContext = new ThreadContextImpl(threadContextHolder, incomingSpan,
                 null, rootNestingGroupId, rootSuppressionKeyId);
         threadContextHolder.set(threadContext);
 
-        return serverSpan;
+        return incomingSpan;
     }
 }

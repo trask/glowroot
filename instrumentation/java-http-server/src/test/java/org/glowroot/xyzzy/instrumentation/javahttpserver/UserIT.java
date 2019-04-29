@@ -25,7 +25,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.xyzzy.test.harness.Container;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -57,7 +57,7 @@ public class UserIT {
     @Test
     public void testHasExchangePrincipal() throws Exception {
         // when
-        ServerSpan trace = container.execute(HasExchangePrincipal.class, "Web");
+        IncomingSpan trace = container.execute(HasExchangePrincipal.class, "Web");
         // then
         assertThat(trace.user()).isEqualTo(PRINCIPAL_NAME);
     }

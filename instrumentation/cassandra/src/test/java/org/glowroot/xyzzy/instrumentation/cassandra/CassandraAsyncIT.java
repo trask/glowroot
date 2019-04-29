@@ -34,9 +34,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
-import org.glowroot.xyzzy.test.harness.ClientSpan;
+import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Container;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
@@ -64,18 +64,18 @@ public class CassandraAsyncIT {
     @Test
     public void shouldAsyncExecuteStatement() throws Exception {
         // when
-        ServerSpan trace = container.execute(ExecuteAsyncStatement.class);
+        IncomingSpan trace = container.execute(ExecuteAsyncStatement.class);
 
         // then
         checkTimers(trace, false, 1);
 
         Iterator<Span> i = trace.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage()).isEqualTo("SELECT * FROM test.users");
-        assertThat(clientSpan.getPrefix()).isEqualTo("cassandra query: ");
-        assertThat(clientSpan.getSuffix()).isEqualTo(" => 10 rows");
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage()).isEqualTo("SELECT * FROM test.users");
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("cassandra query: ");
+        assertThat(outgoingSpan.getSuffix()).isEqualTo(" => 10 rows");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -83,7 +83,7 @@ public class CassandraAsyncIT {
     @Test
     public void shouldConcurrentlyAsyncExecuteSameStatement() throws Exception {
         // when
-        ServerSpan trace = container.execute(ConcurrentlyExecuteSameAsyncStatement.class);
+        IncomingSpan trace = container.execute(ConcurrentlyExecuteSameAsyncStatement.class);
 
         // then
         checkTimers(trace, false, 100);
@@ -91,11 +91,11 @@ public class CassandraAsyncIT {
         Iterator<Span> i = trace.childSpans().iterator();
 
         for (int j = 0; j < 100; j++) {
-            ClientSpan clientSpan = (ClientSpan) i.next();
-            assertThat(clientSpan.getMessage()).isEmpty();
-            assertThat(clientSpan.getMessage()).isEqualTo("SELECT * FROM test.users");
-            assertThat(clientSpan.getPrefix()).isEqualTo("cassandra query: ");
-            assertThat(clientSpan.getSuffix()).isEqualTo(" => 10 rows");
+            OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+            assertThat(outgoingSpan.getMessage()).isEmpty();
+            assertThat(outgoingSpan.getMessage()).isEqualTo("SELECT * FROM test.users");
+            assertThat(outgoingSpan.getPrefix()).isEqualTo("cassandra query: ");
+            assertThat(outgoingSpan.getSuffix()).isEqualTo(" => 10 rows");
         }
         assertThat(i.hasNext()).isFalse();
     }
@@ -103,18 +103,18 @@ public class CassandraAsyncIT {
     @Test
     public void shouldAsyncExecuteStatementReturningNoRecords() throws Exception {
         // when
-        ServerSpan trace = container.execute(ExecuteAsyncStatementReturningNoRecords.class);
+        IncomingSpan trace = container.execute(ExecuteAsyncStatementReturningNoRecords.class);
 
         // then
         checkTimers(trace, false, 1);
 
         Iterator<Span> i = trace.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage()).isEqualTo("SELECT * FROM test.users where id = 12345");
-        assertThat(clientSpan.getPrefix()).isEqualTo("cassandra query: ");
-        assertThat(clientSpan.getSuffix()).isEqualTo(" => 0 rows");
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage()).isEqualTo("SELECT * FROM test.users where id = 12345");
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("cassandra query: ");
+        assertThat(outgoingSpan.getSuffix()).isEqualTo(" => 0 rows");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -122,18 +122,18 @@ public class CassandraAsyncIT {
     @Test
     public void shouldAsyncIterateUsingOneAndAll() throws Exception {
         // when
-        ServerSpan trace = container.execute(AsyncIterateUsingOneAndAll.class);
+        IncomingSpan trace = container.execute(AsyncIterateUsingOneAndAll.class);
 
         // then
         checkTimers(trace, false, 1);
 
         Iterator<Span> i = trace.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage()).isEqualTo("SELECT * FROM test.users");
-        assertThat(clientSpan.getPrefix()).isEqualTo("cassandra query: ");
-        assertThat(clientSpan.getSuffix()).isEqualTo(" => 10 rows");
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage()).isEqualTo("SELECT * FROM test.users");
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("cassandra query: ");
+        assertThat(outgoingSpan.getSuffix()).isEqualTo(" => 10 rows");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -141,19 +141,19 @@ public class CassandraAsyncIT {
     @Test
     public void shouldAsyncExecuteBoundStatement() throws Exception {
         // when
-        ServerSpan trace = container.execute(AsyncExecuteBoundStatement.class);
+        IncomingSpan trace = container.execute(AsyncExecuteBoundStatement.class);
 
         // then
         checkTimers(trace, true, 1);
 
         Iterator<Span> i = trace.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage())
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage())
                 .isEqualTo("INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
-        assertThat(clientSpan.getPrefix()).isEqualTo("cassandra query: ");
-        assertThat(clientSpan.getSuffix()).isEmpty();
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("cassandra query: ");
+        assertThat(outgoingSpan.getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -161,16 +161,16 @@ public class CassandraAsyncIT {
     @Test
     public void shouldAsyncExecuteBatchStatement() throws Exception {
         // when
-        ServerSpan trace = container.execute(AsyncExecuteBatchStatement.class);
+        IncomingSpan trace = container.execute(AsyncExecuteBatchStatement.class);
 
         // then
         checkTimers(trace, true, 1);
 
         Iterator<Span> i = trace.childSpans().iterator();
 
-        ClientSpan clientSpan = (ClientSpan) i.next();
-        assertThat(clientSpan.getMessage()).isEmpty();
-        assertThat(clientSpan.getMessage())
+        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
+        assertThat(outgoingSpan.getMessage()).isEmpty();
+        assertThat(outgoingSpan.getMessage())
                 .isEqualTo("[batch] INSERT INTO test.users (id,  fname, lname)"
                         + " VALUES (100, 'f100', 'l100'),"
                         + " INSERT INTO test.users (id,  fname, lname)"
@@ -178,16 +178,16 @@ public class CassandraAsyncIT {
                         + " 10 x INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?),"
                         + " INSERT INTO test.users (id,  fname, lname)"
                         + " VALUES (300, 'f300', 'l300')");
-        assertThat(clientSpan.getPrefix()).isEqualTo("cassandra query: ");
-        assertThat(clientSpan.getSuffix()).isEmpty();
+        assertThat(outgoingSpan.getPrefix()).isEqualTo("cassandra query: ");
+        assertThat(outgoingSpan.getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }
 
-    private static void checkTimers(ServerSpan trace, boolean prepared, int count) {
-        ServerSpan.Timer rootTimer = trace.mainThreadRootTimer();
+    private static void checkTimers(IncomingSpan trace, boolean prepared, int count) {
+        IncomingSpan.Timer rootTimer = trace.mainThreadRootTimer();
         List<String> timerNames = Lists.newArrayList();
-        for (ServerSpan.Timer timer : rootTimer.childTimers()) {
+        for (IncomingSpan.Timer timer : rootTimer.childTimers()) {
             timerNames.add(timer.name());
         }
         Collections.sort(timerNames);
@@ -196,11 +196,11 @@ public class CassandraAsyncIT {
         } else {
             assertThat(timerNames).containsExactly("cassandra query");
         }
-        for (ServerSpan.Timer timer : rootTimer.childTimers()) {
+        for (IncomingSpan.Timer timer : rootTimer.childTimers()) {
             assertThat(timer.childTimers()).isEmpty();
         }
         assertThat(trace.asyncTimers().size()).isEqualTo(1);
-        ServerSpan.Timer asyncTimer = trace.asyncTimers().get(0);
+        IncomingSpan.Timer asyncTimer = trace.asyncTimers().get(0);
         assertThat(asyncTimer.childTimers()).isEmpty();
         assertThat(asyncTimer.name()).isEqualTo("cassandra query");
         assertThat(asyncTimer.count()).isEqualTo(count);

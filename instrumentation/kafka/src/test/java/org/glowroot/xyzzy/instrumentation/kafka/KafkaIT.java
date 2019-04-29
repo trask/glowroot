@@ -39,7 +39,7 @@ import org.junit.Test;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -66,16 +66,16 @@ public class KafkaIT {
 
     @Test
     public void shouldSend() throws Exception {
-        ServerSpan trace = container.execute(SendRecord.class);
-        List<ServerSpan.Timer> nestedTimers = trace.mainThreadRootTimer().childTimers();
+        IncomingSpan trace = container.execute(SendRecord.class);
+        List<IncomingSpan.Timer> nestedTimers = trace.mainThreadRootTimer().childTimers();
         assertThat(nestedTimers).hasSize(1);
         assertThat(nestedTimers.get(0).name()).isEqualTo("kafka send");
     }
 
     @Test
     public void shouldPoll() throws Exception {
-        ServerSpan trace = container.execute(PollRecord.class);
-        List<ServerSpan.Timer> nestedTimers = trace.mainThreadRootTimer().childTimers();
+        IncomingSpan trace = container.execute(PollRecord.class);
+        List<IncomingSpan.Timer> nestedTimers = trace.mainThreadRootTimer().childTimers();
         assertThat(nestedTimers).hasSize(1);
         assertThat(nestedTimers.get(0).name()).isEqualTo("kafka poll");
     }

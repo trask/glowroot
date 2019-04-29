@@ -24,6 +24,7 @@ import org.glowroot.xyzzy.engine.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.xyzzy.engine.impl.NopTransactionService;
 import org.glowroot.xyzzy.instrumentation.api.AuxThreadContext;
 import org.glowroot.xyzzy.instrumentation.api.ThreadContext.ServletRequestInfo;
+import org.glowroot.xyzzy.test.harness.agent.spans.ParentSpanImpl;
 import org.glowroot.xyzzy.instrumentation.api.Timer;
 import org.glowroot.xyzzy.instrumentation.api.TraceEntry;
 

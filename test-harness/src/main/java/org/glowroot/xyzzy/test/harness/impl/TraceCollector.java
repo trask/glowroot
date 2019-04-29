@@ -31,7 +31,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -40,7 +40,7 @@ class TraceCollector {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceCollector.class);
 
-    private final List<ServerSpan> traces = Lists.newCopyOnWriteArrayList();
+    private final List<IncomingSpan> traces = Lists.newCopyOnWriteArrayList();
 
     private final ExecutorService executor;
     private final ServerSocket serverSocket;
@@ -59,7 +59,7 @@ class TraceCollector {
                     ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
                     ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
                     while (true) {
-                        traces.add((ServerSpan) in.readObject());
+                        traces.add((IncomingSpan) in.readObject());
                         out.writeObject("ok");
                     }
                 } catch (Throwable t) {
@@ -74,14 +74,14 @@ class TraceCollector {
         executor.shutdown();
     }
 
-    ServerSpan getCompletedTrace(@Nullable String transactionType, @Nullable String transactionName,
+    IncomingSpan getCompletedTrace(@Nullable String transactionType, @Nullable String transactionName,
             int timeout, TimeUnit unit) throws InterruptedException {
         if (transactionName != null) {
             checkNotNull(transactionType);
         }
         Stopwatch stopwatch = Stopwatch.createStarted();
         while (stopwatch.elapsed(unit) < timeout) {
-            for (ServerSpan trace : traces) {
+            for (IncomingSpan trace : traces) {
                 if ((transactionType == null || trace.transactionType().equals(transactionType))
                         && (transactionName == null
                                 || trace.transactionName().equals(transactionName))) {

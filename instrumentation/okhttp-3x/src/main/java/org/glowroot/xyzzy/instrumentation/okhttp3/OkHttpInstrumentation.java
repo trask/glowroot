@@ -47,7 +47,6 @@ public class OkHttpInstrumentation {
         @OnBefore
         public static @Nullable TraceEntry onBefore(ThreadContext context,
                 @BindReceiver Call call) {
-            System.out.println("execute");
             Request request = call.request();
             if (request == null) {
                 return null;
@@ -91,7 +90,6 @@ public class OkHttpInstrumentation {
         @OnBefore
         public static @Nullable AsyncTraceEntry onBefore(ThreadContext context,
                 @BindReceiver Call call, @BindParameter ParameterHolder<Callback> callback) {
-            System.out.println("enqueue");
             Request request = call.request();
             if (request == null) {
                 return null;

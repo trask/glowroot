@@ -34,7 +34,7 @@ import org.junit.Test;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -60,7 +60,7 @@ public class JettyHandlerIT {
     @Test
     public void testJettyHandler() throws Exception {
         // when
-        ServerSpan trace = container.execute(ExecuteJettyHandler.class, "Web");
+        IncomingSpan trace = container.execute(ExecuteJettyHandler.class, "Web");
 
         // then
         assertThat(trace.getMessage()).isEqualTo("/hello");

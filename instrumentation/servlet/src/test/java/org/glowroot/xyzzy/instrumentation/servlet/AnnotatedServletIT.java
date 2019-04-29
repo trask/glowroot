@@ -31,7 +31,7 @@ import org.junit.Test;
 
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -57,31 +57,31 @@ public class AnnotatedServletIT {
     @Test
     public void testServlet() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(InvokeServlet.class, "Web");
+        IncomingSpan incomingSpan = container.execute(InvokeServlet.class, "Web");
 
         // then
-        assertThat(serverSpan.getMessage()).isEqualTo("/hello/5");
+        assertThat(incomingSpan.getMessage()).isEqualTo("/hello/5");
 
         // TODO the transaction name should ideally be /hello/*, but taking safe route for now
         // because servlet could be mapped to another path via web.xml, in future would be good to
         // get use actual servlet mapping, probably need to instrument tomcat/other web containers
         // to capture this
-        assertThat(serverSpan.transactionName()).isEqualTo("/hello/5");
+        assertThat(incomingSpan.transactionName()).isEqualTo("/hello/5");
     }
 
     @Test
     public void testServletWithContextPath() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(InvokeServletWithContextPath.class, "Web");
+        IncomingSpan incomingSpan = container.execute(InvokeServletWithContextPath.class, "Web");
 
         // then
-        assertThat(serverSpan.getMessage()).isEqualTo("/zzz/hello/5");
+        assertThat(incomingSpan.getMessage()).isEqualTo("/zzz/hello/5");
 
         // TODO the transaction name should ideally be /hello/*, but taking safe route for now
         // because servlet could be mapped to another path via web.xml, in future would be good to
         // get use actual servlet mapping, probably need to instrument tomcat/other web containers
         // to capture this
-        assertThat(serverSpan.transactionName()).isEqualTo("/zzz/hello/5");
+        assertThat(incomingSpan.transactionName()).isEqualTo("/zzz/hello/5");
     }
 
     public static class InvokeServlet extends InvokeServletInTomcat {

@@ -15,12 +15,13 @@
  */
 package org.glowroot.xyzzy.test.harness;
 
+import java.io.Serializable;
 import java.util.List;
 
 import org.immutables.value.Value;
 
 @Value.Immutable
-public interface LocalSpan extends Span {
+public interface LocalSpan extends Span, Serializable {
 
     List<Span> childSpans();
 }

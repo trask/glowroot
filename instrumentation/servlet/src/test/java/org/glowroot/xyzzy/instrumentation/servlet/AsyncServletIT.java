@@ -36,7 +36,7 @@ import org.junit.Test;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.LocalSpan;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TraceEntryMarker;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
@@ -103,22 +103,22 @@ public class AsyncServletIT {
                 ImmutableList.of("*"));
 
         // when
-        ServerSpan serverSpan = container.execute(appUnderTestClass, "Web");
+        IncomingSpan incomingSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(serverSpan.async()).isTrue();
-        assertThat(serverSpan.getMessage()).isEqualTo(contextPath + "/async");
-        assertThat(serverSpan.transactionName()).isEqualTo(contextPath + "/async");
+        assertThat(incomingSpan.async()).isTrue();
+        assertThat(incomingSpan.getMessage()).isEqualTo(contextPath + "/async");
+        assertThat(incomingSpan.transactionName()).isEqualTo(contextPath + "/async");
 
         // check session attributes set across async boundary
-        assertThat(SessionAttributeIT.getSessionAttributes(serverSpan)).isNull();
-        assertThat(SessionAttributeIT.getInitialSessionAttributes(serverSpan)).isNull();
-        assertThat(SessionAttributeIT.getUpdatedSessionAttributes(serverSpan).get("sync"))
+        assertThat(SessionAttributeIT.getSessionAttributes(incomingSpan)).isNull();
+        assertThat(SessionAttributeIT.getInitialSessionAttributes(incomingSpan)).isNull();
+        assertThat(SessionAttributeIT.getUpdatedSessionAttributes(incomingSpan).get("sync"))
                 .isEqualTo("a");
-        assertThat(SessionAttributeIT.getUpdatedSessionAttributes(serverSpan).get("async"))
+        assertThat(SessionAttributeIT.getUpdatedSessionAttributes(incomingSpan).get("async"))
                 .isEqualTo("b");
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
@@ -138,22 +138,22 @@ public class AsyncServletIT {
                 ImmutableList.of("*"));
 
         // when
-        ServerSpan serverSpan = container.execute(appUnderTestClass, "Web");
+        IncomingSpan incomingSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(serverSpan.async()).isTrue();
-        assertThat(serverSpan.getMessage()).isEqualTo(contextPath + "/async2");
-        assertThat(serverSpan.transactionName()).isEqualTo(contextPath + "/async2");
+        assertThat(incomingSpan.async()).isTrue();
+        assertThat(incomingSpan.getMessage()).isEqualTo(contextPath + "/async2");
+        assertThat(incomingSpan.transactionName()).isEqualTo(contextPath + "/async2");
 
         // check session attributes set across async boundary
-        assertThat(SessionAttributeIT.getSessionAttributes(serverSpan)).isNull();
-        assertThat(SessionAttributeIT.getInitialSessionAttributes(serverSpan)).isNull();
-        assertThat(SessionAttributeIT.getUpdatedSessionAttributes(serverSpan).get("sync"))
+        assertThat(SessionAttributeIT.getSessionAttributes(incomingSpan)).isNull();
+        assertThat(SessionAttributeIT.getInitialSessionAttributes(incomingSpan)).isNull();
+        assertThat(SessionAttributeIT.getUpdatedSessionAttributes(incomingSpan).get("sync"))
                 .isEqualTo("a");
-        assertThat(SessionAttributeIT.getUpdatedSessionAttributes(serverSpan).get("async"))
+        assertThat(SessionAttributeIT.getUpdatedSessionAttributes(incomingSpan).get("async"))
                 .isEqualTo("b");
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
@@ -173,24 +173,24 @@ public class AsyncServletIT {
                 ImmutableList.of("*"));
 
         // when
-        ServerSpan serverSpan = container.execute(appUnderTestClass, "Web");
+        IncomingSpan incomingSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(serverSpan.async()).isTrue();
-        assertThat(serverSpan.getMessage()).isEqualTo(contextPath + "/async3");
-        assertThat(serverSpan.transactionName()).isEqualTo(contextPath + "/async3");
+        assertThat(incomingSpan.async()).isTrue();
+        assertThat(incomingSpan.getMessage()).isEqualTo(contextPath + "/async3");
+        assertThat(incomingSpan.transactionName()).isEqualTo(contextPath + "/async3");
 
         // and check session attributes set across async and dispatch boundary
-        assertThat(SessionAttributeIT.getSessionAttributes(serverSpan)).isNull();
-        assertThat(SessionAttributeIT.getInitialSessionAttributes(serverSpan)).isNull();
-        assertThat(SessionAttributeIT.getUpdatedSessionAttributes(serverSpan).get("sync"))
+        assertThat(SessionAttributeIT.getSessionAttributes(incomingSpan)).isNull();
+        assertThat(SessionAttributeIT.getInitialSessionAttributes(incomingSpan)).isNull();
+        assertThat(SessionAttributeIT.getUpdatedSessionAttributes(incomingSpan).get("sync"))
                 .isEqualTo("a");
-        assertThat(SessionAttributeIT.getUpdatedSessionAttributes(serverSpan).get("async"))
+        assertThat(SessionAttributeIT.getUpdatedSessionAttributes(incomingSpan).get("async"))
                 .isEqualTo("b");
-        assertThat(SessionAttributeIT.getUpdatedSessionAttributes(serverSpan).get("async-dispatch"))
+        assertThat(SessionAttributeIT.getUpdatedSessionAttributes(incomingSpan).get("async-dispatch"))
                 .isEqualTo("c");
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");

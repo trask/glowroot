@@ -27,7 +27,7 @@ import org.junit.Test;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -55,15 +55,15 @@ public class SessionIT {
     @Test
     public void shouldCaptureCriteriaQuery() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(CriteriaQuery.class);
+        IncomingSpan incomingSpan = container.execute(CriteriaQuery.class);
 
         // then
-        ServerSpan.Timer mainThreadRootTimer = serverSpan.mainThreadRootTimer();
+        IncomingSpan.Timer mainThreadRootTimer = incomingSpan.mainThreadRootTimer();
         assertThat(mainThreadRootTimer.childTimers().size()).isEqualTo(1);
         assertThat(mainThreadRootTimer.childTimers().get(0).name())
                 .isEqualTo("hibernate query");
         assertThat(mainThreadRootTimer.childTimers().get(0).childTimers()).isEmpty();
-        assertThat(serverSpan.childSpans()).isEmpty();
+        assertThat(incomingSpan.childSpans()).isEmpty();
     }
 
     // TODO add unit test for jpa criteria query
@@ -71,10 +71,10 @@ public class SessionIT {
     @Test
     public void shouldCaptureSave() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(SessionSave.class);
+        IncomingSpan incomingSpan = container.execute(SessionSave.class);
 
         // then
-        List<ServerSpan.Timer> timers = serverSpan.mainThreadRootTimer().childTimers();
+        List<IncomingSpan.Timer> timers = incomingSpan.mainThreadRootTimer().childTimers();
         assertThat(timers).hasSize(1);
         assertThat(timers.get(0).name()).isEqualTo("hibernate save");
     }
@@ -82,10 +82,10 @@ public class SessionIT {
     @Test
     public void shouldCaptureSaveTwoArg() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(SessionSaveTwoArg.class);
+        IncomingSpan incomingSpan = container.execute(SessionSaveTwoArg.class);
 
         // then
-        List<ServerSpan.Timer> timers = serverSpan.mainThreadRootTimer().childTimers();
+        List<IncomingSpan.Timer> timers = incomingSpan.mainThreadRootTimer().childTimers();
         assertThat(timers).hasSize(1);
         assertThat(timers.get(0).name()).isEqualTo("hibernate save");
     }
@@ -93,10 +93,10 @@ public class SessionIT {
     @Test
     public void shouldCaptureSaveOrUpdate() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(SessionSaveOrUpdate.class);
+        IncomingSpan incomingSpan = container.execute(SessionSaveOrUpdate.class);
 
         // then
-        List<ServerSpan.Timer> timers = serverSpan.mainThreadRootTimer().childTimers();
+        List<IncomingSpan.Timer> timers = incomingSpan.mainThreadRootTimer().childTimers();
         assertThat(timers).hasSize(1);
         assertThat(timers.get(0).name()).isEqualTo("hibernate saveOrUpdate");
     }
@@ -104,10 +104,10 @@ public class SessionIT {
     @Test
     public void shouldCaptureSaveOrUpdateTwoArg() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(SessionSaveOrUpdateTwoArg.class);
+        IncomingSpan incomingSpan = container.execute(SessionSaveOrUpdateTwoArg.class);
 
         // then
-        List<ServerSpan.Timer> timers = serverSpan.mainThreadRootTimer().childTimers();
+        List<IncomingSpan.Timer> timers = incomingSpan.mainThreadRootTimer().childTimers();
         assertThat(timers).hasSize(1);
         assertThat(timers.get(0).name()).isEqualTo("hibernate saveOrUpdate");
     }
@@ -115,10 +115,10 @@ public class SessionIT {
     @Test
     public void shouldCaptureUpdate() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(SessionUpdate.class);
+        IncomingSpan incomingSpan = container.execute(SessionUpdate.class);
 
         // then
-        List<ServerSpan.Timer> timers = serverSpan.mainThreadRootTimer().childTimers();
+        List<IncomingSpan.Timer> timers = incomingSpan.mainThreadRootTimer().childTimers();
         assertThat(timers).hasSize(1);
         assertThat(timers.get(0).name()).isEqualTo("hibernate update");
     }
@@ -126,10 +126,10 @@ public class SessionIT {
     @Test
     public void shouldCaptureUpdateTwoArg() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(SessionUpdateTwoArg.class);
+        IncomingSpan incomingSpan = container.execute(SessionUpdateTwoArg.class);
 
         // then
-        List<ServerSpan.Timer> timers = serverSpan.mainThreadRootTimer().childTimers();
+        List<IncomingSpan.Timer> timers = incomingSpan.mainThreadRootTimer().childTimers();
         assertThat(timers).hasSize(1);
         assertThat(timers.get(0).name()).isEqualTo("hibernate update");
     }
@@ -137,10 +137,10 @@ public class SessionIT {
     @Test
     public void shouldCaptureMergeCommand() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(SessionMerge.class);
+        IncomingSpan incomingSpan = container.execute(SessionMerge.class);
 
         // then
-        List<ServerSpan.Timer> timers = serverSpan.mainThreadRootTimer().childTimers();
+        List<IncomingSpan.Timer> timers = incomingSpan.mainThreadRootTimer().childTimers();
         assertThat(timers).hasSize(1);
         assertThat(timers.get(0).name()).isEqualTo("hibernate merge");
     }
@@ -148,10 +148,10 @@ public class SessionIT {
     @Test
     public void shouldCaptureMergeCommandTwoArg() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(SessionMergeTwoArg.class);
+        IncomingSpan incomingSpan = container.execute(SessionMergeTwoArg.class);
 
         // then
-        List<ServerSpan.Timer> timers = serverSpan.mainThreadRootTimer().childTimers();
+        List<IncomingSpan.Timer> timers = incomingSpan.mainThreadRootTimer().childTimers();
         assertThat(timers).hasSize(1);
         assertThat(timers.get(0).name()).isEqualTo("hibernate merge");
     }
@@ -159,10 +159,10 @@ public class SessionIT {
     @Test
     public void shouldCapturePersistCommand() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(SessionPersist.class);
+        IncomingSpan incomingSpan = container.execute(SessionPersist.class);
 
         // then
-        List<ServerSpan.Timer> timers = serverSpan.mainThreadRootTimer().childTimers();
+        List<IncomingSpan.Timer> timers = incomingSpan.mainThreadRootTimer().childTimers();
         assertThat(timers).hasSize(1);
         assertThat(timers.get(0).name()).isEqualTo("hibernate persist");
     }
@@ -170,10 +170,10 @@ public class SessionIT {
     @Test
     public void shouldCapturePersistCommandTwoArg() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(SessionPersistTwoArg.class);
+        IncomingSpan incomingSpan = container.execute(SessionPersistTwoArg.class);
 
         // then
-        List<ServerSpan.Timer> timers = serverSpan.mainThreadRootTimer().childTimers();
+        List<IncomingSpan.Timer> timers = incomingSpan.mainThreadRootTimer().childTimers();
         assertThat(timers).hasSize(1);
         assertThat(timers.get(0).name()).isEqualTo("hibernate persist");
     }
@@ -181,10 +181,10 @@ public class SessionIT {
     @Test
     public void shouldCaptureDelete() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(SessionDelete.class);
+        IncomingSpan incomingSpan = container.execute(SessionDelete.class);
 
         // then
-        List<ServerSpan.Timer> timers = serverSpan.mainThreadRootTimer().childTimers();
+        List<IncomingSpan.Timer> timers = incomingSpan.mainThreadRootTimer().childTimers();
         assertThat(timers).hasSize(1);
         assertThat(timers.get(0).name()).isEqualTo("hibernate delete");
     }
@@ -192,10 +192,10 @@ public class SessionIT {
     @Test
     public void shouldCaptureDeleteTwoArg() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(SessionDeleteTwoArg.class);
+        IncomingSpan incomingSpan = container.execute(SessionDeleteTwoArg.class);
 
         // then
-        List<ServerSpan.Timer> timers = serverSpan.mainThreadRootTimer().childTimers();
+        List<IncomingSpan.Timer> timers = incomingSpan.mainThreadRootTimer().childTimers();
         assertThat(timers).hasSize(1);
         assertThat(timers.get(0).name()).isEqualTo("hibernate delete");
     }
@@ -203,28 +203,28 @@ public class SessionIT {
     @Test
     public void shouldCaptureSessionFlush() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(SessionFlush.class);
+        IncomingSpan incomingSpan = container.execute(SessionFlush.class);
 
         // then
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("hibernate flush");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("hibernate flush");
     }
 
     @Test
     public void shouldCaptureTransactionCommit() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(TransactionCommit.class);
+        IncomingSpan incomingSpan = container.execute(TransactionCommit.class);
 
         // then
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("hibernate commit");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("hibernate commit");
     }
 
     @Test
     public void shouldCaptureTransactionRollback() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(TransactionRollback.class);
+        IncomingSpan incomingSpan = container.execute(TransactionRollback.class);
 
         // then
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("hibernate rollback");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("hibernate rollback");
     }
 
     public abstract static class DoWithSession implements AppUnderTest, TransactionMarker {

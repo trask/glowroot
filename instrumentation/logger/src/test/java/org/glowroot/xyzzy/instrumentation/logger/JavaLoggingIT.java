@@ -31,7 +31,7 @@ import org.junit.Test;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.LocalSpan;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
@@ -95,12 +95,12 @@ public class JavaLoggingIT {
                 "traceErrorOnErrorWithoutThrowable", true);
 
         // when
-        ServerSpan serverSpan = container.execute(ShouldLog.class);
+        IncomingSpan incomingSpan = container.execute(ShouldLog.class);
 
         // then
-        assertThat(serverSpan.getError().message()).isEqualTo("efg");
+        assertThat(incomingSpan.getError().message()).isEqualTo("efg");
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage())
@@ -127,12 +127,12 @@ public class JavaLoggingIT {
                 "traceErrorOnErrorWithoutThrowable", true);
 
         // when
-        ServerSpan serverSpan = container.execute(ShouldLogWithThrowable.class);
+        IncomingSpan incomingSpan = container.execute(ShouldLogWithThrowable.class);
 
         // then
-        assertThat(serverSpan.getError().message()).isEqualTo("java.lang.IllegalStateException: 567");
+        assertThat(incomingSpan.getError().message()).isEqualTo("java.lang.IllegalStateException: 567");
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage())
@@ -168,12 +168,12 @@ public class JavaLoggingIT {
                 "traceErrorOnErrorWithoutThrowable", true);
 
         // when
-        ServerSpan serverSpan = container.execute(ShouldLogWithNullThrowable.class);
+        IncomingSpan incomingSpan = container.execute(ShouldLogWithNullThrowable.class);
 
         // then
-        assertThat(serverSpan.getError().message()).isEqualTo("efg_");
+        assertThat(incomingSpan.getError().message()).isEqualTo("efg_");
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage())
@@ -203,12 +203,12 @@ public class JavaLoggingIT {
                 "traceErrorOnErrorWithoutThrowable", true);
 
         // when
-        ServerSpan serverSpan = container.execute(ShouldLogWithLogRecord.class);
+        IncomingSpan incomingSpan = container.execute(ShouldLogWithLogRecord.class);
 
         // then
-        assertThat(serverSpan.getError().message()).isEqualTo("efg__");
+        assertThat(incomingSpan.getError().message()).isEqualTo("efg__");
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage()).isEqualTo("log info: null - cde__");
@@ -233,12 +233,12 @@ public class JavaLoggingIT {
                 "traceErrorOnErrorWithoutThrowable", true);
 
         // when
-        ServerSpan serverSpan = container.execute(ShouldLogWithPriority.class);
+        IncomingSpan incomingSpan = container.execute(ShouldLogWithPriority.class);
 
         // then
-        assertThat(serverSpan.getError().message()).isEqualTo("efg__");
+        assertThat(incomingSpan.getError().message()).isEqualTo("efg__");
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage())
@@ -261,13 +261,13 @@ public class JavaLoggingIT {
     @Test
     public void testLogWithPriorityAndThrowable() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ShouldLogWithPriorityAndThrowable.class);
+        IncomingSpan incomingSpan = container.execute(ShouldLogWithPriorityAndThrowable.class);
 
         // then
-        assertThat(serverSpan.getError().message())
+        assertThat(incomingSpan.getError().message())
                 .isEqualTo("java.lang.IllegalStateException: 567_");
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage()).isEqualTo(
@@ -306,12 +306,12 @@ public class JavaLoggingIT {
                 "traceErrorOnErrorWithoutThrowable", true);
 
         // when
-        ServerSpan serverSpan = container.execute(ShouldLogWithPriorityAndNullThrowable.class);
+        IncomingSpan incomingSpan = container.execute(ShouldLogWithPriorityAndNullThrowable.class);
 
         // then
-        assertThat(serverSpan.getError().message()).isEqualTo("efg___null");
+        assertThat(incomingSpan.getError().message()).isEqualTo("efg___null");
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage()).isEqualTo("log info: o.g.x.i.l.JavaLoggingIT"
@@ -341,12 +341,12 @@ public class JavaLoggingIT {
                 "traceErrorOnErrorWithoutThrowable", true);
 
         // when
-        ServerSpan serverSpan = container.execute(ShouldLogWithParameters.class);
+        IncomingSpan incomingSpan = container.execute(ShouldLogWithParameters.class);
 
         // then
-        assertThat(serverSpan.getError().message()).isEqualTo("ghi_78_89");
+        assertThat(incomingSpan.getError().message()).isEqualTo("ghi_78_89");
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage())
@@ -373,12 +373,12 @@ public class JavaLoggingIT {
                 "traceErrorOnErrorWithoutThrowable", true);
 
         // when
-        ServerSpan serverSpan = container.execute(ShouldLocalizedLogWithParameters.class);
+        IncomingSpan incomingSpan = container.execute(ShouldLocalizedLogWithParameters.class);
 
         // then
-        assertThat(serverSpan.getError().message()).isEqualTo("abc_78_89");
+        assertThat(incomingSpan.getError().message()).isEqualTo("abc_78_89");
 
-        Iterator<Span> i = serverSpan.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage()).isEqualTo("log info: o.g.x.i.l.JavaLoggingIT"

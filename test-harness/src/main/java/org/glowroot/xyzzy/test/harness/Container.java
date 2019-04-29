@@ -31,12 +31,12 @@ public interface Container {
     void setInstrumentationProperty(String instrumentationId, String propertyName,
             List<String> propertyValue) throws Exception;
 
-    ServerSpan execute(Class<? extends AppUnderTest> appUnderTestClass) throws Exception;
+    IncomingSpan execute(Class<? extends AppUnderTest> appUnderTestClass) throws Exception;
 
-    ServerSpan execute(Class<? extends AppUnderTest> appUnderTestClass, String transactionType)
+    IncomingSpan execute(Class<? extends AppUnderTest> appUnderTestClass, String transactionType)
             throws Exception;
 
-    ServerSpan execute(Class<? extends AppUnderTest> appUnderTestClass, String transactionType,
+    IncomingSpan execute(Class<? extends AppUnderTest> appUnderTestClass, String transactionType,
             String transactionName) throws Exception;
 
     void executeNoExpectedTrace(Class<? extends AppUnderTest> appUnderTestClass) throws Exception;

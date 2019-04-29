@@ -29,7 +29,7 @@ import org.junit.Test;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -57,12 +57,12 @@ public class StrutsTwoIT {
     @Test
     public void shouldCaptureAction() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(ExecuteActionInTomcat.class, "Web");
+        IncomingSpan incomingSpan = container.execute(ExecuteActionInTomcat.class, "Web");
 
         // then
-        assertThat(serverSpan.transactionName()).isEqualTo("HelloAction#helloAction");
+        assertThat(incomingSpan.transactionName()).isEqualTo("HelloAction#helloAction");
 
-        assertSingleLocalSpanMessage(serverSpan).isEqualTo("struts action: org.glowroot.xyzzy"
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("struts action: org.glowroot.xyzzy"
                 + ".instrumentation.struts.StrutsTwoIT$HelloAction.helloAction()");
     }
 

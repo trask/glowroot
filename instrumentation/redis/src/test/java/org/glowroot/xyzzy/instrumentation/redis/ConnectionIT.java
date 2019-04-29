@@ -24,7 +24,7 @@ import redis.clients.jedis.Jedis;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
 import static org.glowroot.xyzzy.test.harness.util.HarnessAssertions.assertSingleClientSpanMessage;
@@ -51,28 +51,28 @@ public class ConnectionIT {
     @Test
     public void shouldTraceSet() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(JedisSet.class);
+        IncomingSpan incomingSpan = container.execute(JedisSet.class);
 
         // then
-        assertSingleClientSpanMessage(serverSpan).matches("redis localhost:\\d+ SET");
+        assertSingleClientSpanMessage(incomingSpan).matches("redis localhost:\\d+ SET");
     }
 
     @Test
     public void shouldTraceGet() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(JedisGet.class);
+        IncomingSpan incomingSpan = container.execute(JedisGet.class);
 
         // then
-        assertSingleClientSpanMessage(serverSpan).matches("redis localhost:\\d+ GET");
+        assertSingleClientSpanMessage(incomingSpan).matches("redis localhost:\\d+ GET");
     }
 
     @Test
     public void shouldTracePing() throws Exception {
         // when
-        ServerSpan serverSpan = container.execute(JedisPing.class);
+        IncomingSpan incomingSpan = container.execute(JedisPing.class);
 
         // then
-        assertSingleClientSpanMessage(serverSpan).matches("redis localhost:\\d+ PING");
+        assertSingleClientSpanMessage(incomingSpan).matches("redis localhost:\\d+ PING");
     }
 
     private abstract static class JedisBase implements AppUnderTest, TransactionMarker {

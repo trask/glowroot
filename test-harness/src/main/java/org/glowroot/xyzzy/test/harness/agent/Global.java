@@ -15,10 +15,11 @@
  */
 package org.glowroot.xyzzy.test.harness.agent;
 
+import com.google.common.base.Throwables;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.xyzzy.engine.bytecode.api.ThreadContextThreadLocal;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -39,8 +40,13 @@ public class Global {
         return threadContextThreadLocal.getHolder();
     }
 
-    public static void report(ServerSpan trace) throws Exception {
-        checkNotNull(traceReporter).send(trace);
+    public static void report(IncomingSpan trace) {
+        try {
+            checkNotNull(traceReporter).send(trace);
+        } catch (Throwable t) {
+            Throwables.propagateIfPossible(t, RuntimeException.class);
+            throw new RuntimeException(t);
+        }
     }
 
     public static void setTraceReporter(TraceReporter traceReporter) {

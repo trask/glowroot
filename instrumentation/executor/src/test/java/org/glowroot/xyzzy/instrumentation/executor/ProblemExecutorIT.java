@@ -30,7 +30,7 @@ import org.junit.Test;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
-import org.glowroot.xyzzy.test.harness.ServerSpan;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TraceEntryMarker;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
@@ -66,7 +66,7 @@ public class ProblemExecutorIT {
     @Test
     public void shouldCaptureSubmit() throws Exception {
         // when
-        ServerSpan trace = container.execute(DoSubmitRunnable.class);
+        IncomingSpan trace = container.execute(DoSubmitRunnable.class);
 
         // then
         assertThat(trace.auxThreadRootTimer()).isNotNull();
