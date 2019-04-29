@@ -17,8 +17,8 @@
       "methodName": "traceEntryMarker",
       "methodParameterTypes": [ ],
       "captureKind": "trace-entry",
-      "timerName": "mock trace entry marker",
-      "traceEntryMessageTemplate": "trace entry marker / {{this.class.simpleName}}"
+      "timerName": "test local span",
+      "traceEntryMessageTemplate": "test local span / {{this.class.simpleName}}"
     }
   ]
 }

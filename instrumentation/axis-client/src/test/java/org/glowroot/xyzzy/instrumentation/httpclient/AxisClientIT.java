@@ -38,7 +38,7 @@ import org.glowroot.xyzzy.test.harness.Containers;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
-import static org.glowroot.xyzzy.test.harness.util.HarnessAssertions.assertSingleClientSpanMessage;
+import static org.glowroot.xyzzy.test.harness.util.HarnessAssertions.assertSingleOutgoingSpanMessage;
 
 public class AxisClientIT {
 
@@ -65,7 +65,7 @@ public class AxisClientIT {
         IncomingSpan incomingSpan = container.execute(ExecuteSoapRequest.class);
 
         // then
-        assertSingleClientSpanMessage(incomingSpan).matches("http client request:"
+        assertSingleOutgoingSpanMessage(incomingSpan).matches("http client request:"
                 + " POST http://localhost:\\d+/cxf/helloWorld");
     }
 

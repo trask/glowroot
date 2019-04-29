@@ -16,7 +16,6 @@
 package org.glowroot.xyzzy.instrumentation.asynchttpclient1x;
 
 import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -39,6 +38,7 @@ import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.util.ExecuteHttpBase;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.glowroot.xyzzy.test.harness.util.HarnessAssertions.assertSingleOutgoingSpanMessage;
 
 // TODO test against AsyncHttpClient providers jdk and grizzly (in addition to the default netty)
 public class AsyncHttpClientIT {
@@ -66,19 +66,6 @@ public class AsyncHttpClientIT {
         IncomingSpan incomingSpan = container.execute(ExecuteHttpGet.class);
 
         // then
-        IncomingSpan.Timer rootTimer = incomingSpan.mainThreadRootTimer();
-        assertThat(rootTimer.childTimers().size()).isEqualTo(1);
-        assertThat(rootTimer.childTimers().get(0).name()).isEqualTo("http client request");
-        assertThat(rootTimer.childTimers().get(0).count()).isEqualTo(1);
-
-        List<IncomingSpan.Timer> asyncTimers = incomingSpan.asyncTimers();
-        assertThat(asyncTimers.size()).isEqualTo(1);
-
-        IncomingSpan.Timer asyncTimer = asyncTimers.get(0);
-        assertThat(asyncTimer.childTimers()).isEmpty();
-        assertThat(asyncTimer.name()).isEqualTo("http client request");
-        assertThat(asyncTimer.count()).isEqualTo(1);
-
         Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         OutgoingSpan span = (OutgoingSpan) i.next();
@@ -91,29 +78,11 @@ public class AsyncHttpClientIT {
     @Test
     public void shouldCaptureHttpPost() throws Exception {
         // when
-        IncomingSpan trace = container.execute(ExecuteHttpPost.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteHttpPost.class);
 
         // then
-        IncomingSpan.Timer rootTimer = trace.mainThreadRootTimer();
-        assertThat(rootTimer.childTimers().size()).isEqualTo(1);
-        assertThat(rootTimer.childTimers().get(0).name()).isEqualTo("http client request");
-        assertThat(rootTimer.childTimers().get(0).count()).isEqualTo(1);
-
-        List<IncomingSpan.Timer> asyncTimers = trace.asyncTimers();
-        assertThat(asyncTimers.size()).isEqualTo(1);
-
-        IncomingSpan.Timer asyncTimer = asyncTimers.get(0);
-        assertThat(asyncTimer.childTimers()).isEmpty();
-        assertThat(asyncTimer.name()).isEqualTo("http client request");
-        assertThat(asyncTimer.count()).isEqualTo(1);
-
-        Iterator<Span> i = trace.childSpans().iterator();
-
-        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
-        assertThat(outgoingSpan.getMessage())
+        assertSingleOutgoingSpanMessage(incomingSpan)
                 .matches("http client request: POST http://localhost:\\d+/hello2");
-
-        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
@@ -122,26 +91,8 @@ public class AsyncHttpClientIT {
         IncomingSpan incomingSpan = container.execute(ExecuteHttpGetWithAsyncHandler.class);
 
         // then
-        IncomingSpan.Timer rootTimer = incomingSpan.mainThreadRootTimer();
-        assertThat(rootTimer.childTimers().size()).isEqualTo(1);
-        assertThat(rootTimer.childTimers().get(0).name()).isEqualTo("http client request");
-        assertThat(rootTimer.childTimers().get(0).count()).isEqualTo(1);
-
-        List<IncomingSpan.Timer> asyncTimers = incomingSpan.asyncTimers();
-        assertThat(asyncTimers.size()).isEqualTo(1);
-
-        IncomingSpan.Timer asyncTimer = asyncTimers.get(0);
-        assertThat(asyncTimer.childTimers()).isEmpty();
-        assertThat(asyncTimer.name()).isEqualTo("http client request");
-        assertThat(asyncTimer.count()).isEqualTo(1);
-
-        Iterator<Span> i = incomingSpan.childSpans().iterator();
-
-        OutgoingSpan span = (OutgoingSpan) i.next();
-        assertThat(span.getMessage())
+        assertSingleOutgoingSpanMessage(incomingSpan)
                 .matches("http client request: GET http://localhost:\\d+/hello3/");
-
-        assertThat(i.hasNext()).isFalse();
     }
 
     public static class ExecuteHttpGet extends ExecuteHttpBase {

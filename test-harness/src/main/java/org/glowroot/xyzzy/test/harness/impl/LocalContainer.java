@@ -105,7 +105,7 @@ public class LocalContainer implements Container {
     public void executeNoExpectedTrace(Class<? extends AppUnderTest> appClass) throws Exception {
         executeInternal(appClass);
         MILLISECONDS.sleep(10);
-        if (traceCollector != null && traceCollector.hasTrace()) {
+        if (traceCollector != null && traceCollector.hasIncomingSpan()) {
             throw new IllegalStateException("Trace was collected when none was expected");
         }
     }
@@ -124,10 +124,10 @@ public class LocalContainer implements Container {
             @Nullable String transactionType, @Nullable String transactionName) throws Exception {
         checkNotNull(traceCollector);
         executeInternal(appClass);
-        IncomingSpan trace =
-                traceCollector.getCompletedTrace(transactionType, transactionName, 10, SECONDS);
-        traceCollector.clearTrace();
-        return trace;
+        IncomingSpan incomingSpan =
+                traceCollector.getCompletedIncomingSpan(transactionType, transactionName, 10, SECONDS);
+        traceCollector.clearIncomingSpans();
+        return incomingSpan;
     }
 
     private void executeInternal(Class<? extends AppUnderTest> appClass) throws Exception {

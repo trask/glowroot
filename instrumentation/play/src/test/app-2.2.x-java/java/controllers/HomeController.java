@@ -25,11 +25,11 @@ import org.glowroot.agent.it.harness.TraceEntryMarker;
 public class HomeController extends Controller {
 
     public static Result index() {
-        new CreateTraceEntry().traceEntryMarker();
+        new CreateLocalSpan().traceEntryMarker();
         return ok(index.render("Your new application is ready."));
     }
 
-    private static class CreateTraceEntry implements TraceEntryMarker {
+    private static class CreateLocalSpan implements TraceEntryMarker {
         @Override
         public void traceEntryMarker() {}
     }

@@ -23,11 +23,11 @@ import org.glowroot.agent.it.harness.TraceEntryMarker;
 public class BadController extends Controller {
 
     public static Result bad() {
-        new CreateTraceEntry().traceEntryMarker();
+        new CreateLocalSpan().traceEntryMarker();
         throw new RuntimeException("Bad");
     }
 
-    private static class CreateTraceEntry implements TraceEntryMarker {
+    private static class CreateLocalSpan implements TraceEntryMarker {
         @Override
         public void traceEntryMarker() {}
     }

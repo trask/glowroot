@@ -32,10 +32,10 @@ import org.springframework.web.context.request.async.DeferredResult;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
-import org.glowroot.xyzzy.test.harness.LocalSpan;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
+import org.glowroot.xyzzy.test.harness.LocalSpan;
+import org.glowroot.xyzzy.test.harness.LocalSpans;
 import org.glowroot.xyzzy.test.harness.Span;
-import org.glowroot.xyzzy.test.harness.TraceEntryMarker;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -101,11 +101,11 @@ public class AsyncRestControllerIT {
         assertThat(nestedSpans).hasSize(1);
 
         LocalSpan nestedLocalSpan = (LocalSpan) nestedSpans.get(0);
-        assertThat(nestedLocalSpan.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(nestedLocalSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
         assertThat(nestedLocalSpan.childSpans()).isEmpty();
 
         localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(localSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -130,14 +130,14 @@ public class AsyncRestControllerIT {
         assertThat(nestedSpans).hasSize(1);
 
         LocalSpan nestedLocalSpan = (LocalSpan) nestedSpans.get(0);
-        assertThat(nestedLocalSpan.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(nestedLocalSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
         assertThat(nestedLocalSpan.childSpans()).isEmpty();
 
         localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(localSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
 
         localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(localSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -177,11 +177,11 @@ public class AsyncRestControllerIT {
 
         @RequestMapping("rest-async")
         public @ResponseBody Callable<String> test() throws InterruptedException {
-            new CreateTraceEntry().traceEntryMarker();
+            LocalSpans.createTestSpan();
             return new Callable<String>() {
                 @Override
                 public String call() throws Exception {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan();
                     return "async world";
                 }
             };
@@ -193,23 +193,18 @@ public class AsyncRestControllerIT {
 
         @RequestMapping("rest-async2")
         public @ResponseBody DeferredResult<String> test() throws InterruptedException {
-            new CreateTraceEntry().traceEntryMarker();
+            LocalSpans.createTestSpan();
             final DeferredResult<String> result = new DeferredResult<String>();
             final ExecutorService executor = Executors.newCachedThreadPool();
             executor.execute(new Runnable() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan();
                     result.setResult("async2 world");
                     executor.shutdown();
                 }
             });
             return result;
         }
-    }
-
-    private static class CreateTraceEntry implements TraceEntryMarker {
-        @Override
-        public void traceEntryMarker() {}
     }
 }

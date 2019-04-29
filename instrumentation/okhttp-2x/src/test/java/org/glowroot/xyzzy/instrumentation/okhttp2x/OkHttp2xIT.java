@@ -31,18 +31,18 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
-import org.glowroot.xyzzy.test.harness.LocalSpan;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
+import org.glowroot.xyzzy.test.harness.LocalSpan;
+import org.glowroot.xyzzy.test.harness.LocalSpans;
+import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
-import org.glowroot.xyzzy.test.harness.TraceEntryMarker;
 import org.glowroot.xyzzy.test.harness.util.ExecuteHttpBase;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.glowroot.xyzzy.test.harness.util.HarnessAssertions.assertSingleClientSpanMessage;
+import static org.glowroot.xyzzy.test.harness.util.HarnessAssertions.assertSingleOutgoingSpanMessage;
 
 public class OkHttp2xIT {
 
@@ -69,7 +69,7 @@ public class OkHttp2xIT {
         IncomingSpan incomingSpan = container.execute(ExecuteHttpGet.class);
 
         // then
-        assertSingleClientSpanMessage(incomingSpan)
+        assertSingleOutgoingSpanMessage(incomingSpan)
                 .matches("http client request: GET http://localhost:\\d+/hello1/");
     }
 
@@ -79,7 +79,7 @@ public class OkHttp2xIT {
         IncomingSpan incomingSpan = container.execute(ExecuteHttpPost.class);
 
         // then
-        assertSingleClientSpanMessage(incomingSpan)
+        assertSingleOutgoingSpanMessage(incomingSpan)
                 .matches("http client request: POST http://localhost:\\d+/hello2");
     }
 
@@ -98,7 +98,7 @@ public class OkHttp2xIT {
                 .matches("http client request: GET http://localhost:\\d+/hello1/");
 
         LocalSpan localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).matches("trace entry marker / CreateTraceEntry");
+        assertThat(localSpan.getMessage()).matches("test local span / CreateLocalSpan");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -118,7 +118,7 @@ public class OkHttp2xIT {
                 .matches("http client request: POST http://localhost:\\d+/hello2");
 
         LocalSpan localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).matches("trace entry marker / CreateTraceEntry");
+        assertThat(localSpan.getMessage()).matches("test local span / CreateLocalSpan");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -170,14 +170,14 @@ public class OkHttp2xIT {
             client.newCall(request).enqueue(new Callback() {
                 @Override
                 public void onResponse(Response response) throws IOException {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan();
                     responseStatusCode.set(response.code());
                     response.body().close();
                     latch.countDown();
                 }
                 @Override
                 public void onFailure(Request request, IOException e) {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan();
                     latch.countDown();
                 }
             });
@@ -206,14 +206,14 @@ public class OkHttp2xIT {
             client.newCall(request).enqueue(new Callback() {
                 @Override
                 public void onResponse(Response response) throws IOException {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan();
                     responseStatusCode.set(response.code());
                     response.body().close();
                     latch.countDown();
                 }
                 @Override
                 public void onFailure(Request request, IOException e) {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan();
                     latch.countDown();
                 }
             });
@@ -225,10 +225,5 @@ public class OkHttp2xIT {
             // need to wait just a bit longer to ensure auxiliary thread capture completes
             MILLISECONDS.sleep(100);
         }
-    }
-
-    private static class CreateTraceEntry implements TraceEntryMarker {
-        @Override
-        public void traceEntryMarker() {}
     }
 }

@@ -29,7 +29,7 @@ import org.junit.Test;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
-import org.glowroot.xyzzy.test.harness.TraceEntryMarker;
+import org.glowroot.xyzzy.test.harness.LocalSpans;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
@@ -74,9 +74,9 @@ public class LotsOfNestedAuxThreadContextsIT {
         assertThat(auxThreadRootTimer.count()).isEqualTo(100000);
         assertThat(auxThreadRootTimer.childTimers().size()).isEqualTo(1);
         assertThat(auxThreadRootTimer.childTimers().get(0).name())
-                .isEqualTo("mock trace entry marker");
+                .isEqualTo("test local span");
 
-        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span / CreateLocalSpan");
     }
 
     public static class DoSubmitCallable implements AppUnderTest, TransactionMarker {
@@ -101,7 +101,7 @@ public class LotsOfNestedAuxThreadContextsIT {
 
         private void passOnToAnotherThread(final int depth) throws Exception {
             if (depth == 100000) {
-                new CreateTraceEntry().traceEntryMarker();
+                LocalSpans.createTestSpan(100);
                 latch.countDown();
                 return;
             }
@@ -117,17 +117,6 @@ public class LotsOfNestedAuxThreadContextsIT {
                     return null;
                 }
             });
-        }
-    }
-
-    private static class CreateTraceEntry implements TraceEntryMarker {
-
-        @Override
-        public void traceEntryMarker() {
-            try {
-                MILLISECONDS.sleep(100);
-            } catch (InterruptedException e) {
-            }
         }
     }
 }

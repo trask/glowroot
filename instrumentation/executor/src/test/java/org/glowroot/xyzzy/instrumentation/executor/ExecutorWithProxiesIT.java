@@ -30,7 +30,7 @@ import org.junit.Test;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
-import org.glowroot.xyzzy.test.harness.TraceEntryMarker;
+import org.glowroot.xyzzy.test.harness.LocalSpans;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
@@ -75,9 +75,9 @@ public class ExecutorWithProxiesIT {
                 .isGreaterThanOrEqualTo(MILLISECONDS.toNanos(50));
         assertThat(incomingSpan.auxThreadRootTimer().childTimers().size()).isEqualTo(1);
         assertThat(incomingSpan.auxThreadRootTimer().childTimers().get(0).name())
-                .isEqualTo("mock trace entry marker");
+                .isEqualTo("test local span");
 
-        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span / CreateLocalSpan");
     }
 
     private static ExecutorService createExecutorService() {
@@ -98,7 +98,7 @@ public class ExecutorWithProxiesIT {
             executor.execute(wrap(new Runnable() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                     latch.countDown();
                 }
             }));
@@ -125,17 +125,6 @@ public class ExecutorWithProxiesIT {
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             return method.invoke(delegate, args);
-        }
-    }
-
-    private static class CreateTraceEntry implements TraceEntryMarker {
-
-        @Override
-        public void traceEntryMarker() {
-            try {
-                MILLISECONDS.sleep(100);
-            } catch (InterruptedException e) {
-            }
         }
     }
 }

@@ -66,16 +66,16 @@ public class KafkaIT {
 
     @Test
     public void shouldSend() throws Exception {
-        IncomingSpan trace = container.execute(SendRecord.class);
-        List<IncomingSpan.Timer> nestedTimers = trace.mainThreadRootTimer().childTimers();
+        IncomingSpan incomingSpan = container.execute(SendRecord.class);
+        List<IncomingSpan.Timer> nestedTimers = incomingSpan.mainThreadRootTimer().childTimers();
         assertThat(nestedTimers).hasSize(1);
         assertThat(nestedTimers.get(0).name()).isEqualTo("kafka send");
     }
 
     @Test
     public void shouldPoll() throws Exception {
-        IncomingSpan trace = container.execute(PollRecord.class);
-        List<IncomingSpan.Timer> nestedTimers = trace.mainThreadRootTimer().childTimers();
+        IncomingSpan incomingSpan = container.execute(PollRecord.class);
+        List<IncomingSpan.Timer> nestedTimers = incomingSpan.mainThreadRootTimer().childTimers();
         assertThat(nestedTimers).hasSize(1);
         assertThat(nestedTimers.get(0).name()).isEqualTo("kafka poll");
     }

@@ -34,10 +34,10 @@ import org.junit.Test;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
-import org.glowroot.xyzzy.test.harness.LocalSpan;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
+import org.glowroot.xyzzy.test.harness.LocalSpan;
+import org.glowroot.xyzzy.test.harness.LocalSpans;
 import org.glowroot.xyzzy.test.harness.Span;
-import org.glowroot.xyzzy.test.harness.TraceEntryMarker;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
@@ -127,16 +127,16 @@ public class ExecutorIT {
     @Test
     public void shouldCaptureNestedFutureGet() throws Exception {
         // when
-        IncomingSpan trace = container.execute(CallFutureGetOnNestedFuture.class);
+        IncomingSpan incomingSpan = container.execute(CallFutureGetOnNestedFuture.class);
 
         // then
-        Iterator<Span> i = trace.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(localSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
 
         localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(localSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -144,60 +144,61 @@ public class ExecutorIT {
     @Test
     public void shouldCaptureInvokeAll() throws Exception {
         // when
-        IncomingSpan trace = container.execute(DoInvokeAll.class);
+        IncomingSpan incomingSpan = container.execute(DoInvokeAll.class);
         // then
-        checkServerSpan(trace, false, true);
+        checkServerSpan(incomingSpan, false, true);
     }
 
     @Test
     public void shouldCaptureInvokeAllWithTimeout() throws Exception {
         // when
-        IncomingSpan trace = container.execute(DoInvokeAllWithTimeout.class);
+        IncomingSpan incomingSpan = container.execute(DoInvokeAllWithTimeout.class);
         // then
-        checkServerSpan(trace, false, true);
+        checkServerSpan(incomingSpan, false, true);
     }
 
     @Test
     public void shouldCaptureInvokeAny() throws Exception {
         // when
-        IncomingSpan trace = container.execute(DoInvokeAny.class);
+        IncomingSpan incomingSpan = container.execute(DoInvokeAny.class);
         // then
-        checkServerSpan(trace, true, false);
+        checkServerSpan(incomingSpan, true, false);
     }
 
     @Test
     public void shouldCaptureInvokeAnyWithTimeout() throws Exception {
         // when
-        IncomingSpan trace = container.execute(DoInvokeAnyWithTimeout.class);
+        IncomingSpan incomingSpan = container.execute(DoInvokeAnyWithTimeout.class);
         // then
-        checkServerSpan(trace, true, false);
+        checkServerSpan(incomingSpan, true, false);
     }
 
     @Test
     public void shouldCaptureNestedExecute() throws Exception {
         // when
-        IncomingSpan trace = container.execute(DoNestedExecuteRunnable.class);
+        IncomingSpan incomingSpan = container.execute(DoNestedExecuteRunnable.class);
         // then
-        checkServerSpan(trace, false, false);
+        checkServerSpan(incomingSpan, false, false);
     }
 
     @Test
     public void shouldCaptureNestedSubmit() throws Exception {
         // when
-        IncomingSpan trace = container.execute(DoNestedSubmitCallable.class);
+        IncomingSpan incomingSpan = container.execute(DoNestedSubmitCallable.class);
         // then
-        checkServerSpan(trace, false, false);
+        checkServerSpan(incomingSpan, false, false);
     }
 
     @Test
     public void shouldCaptureDelegatingExecutor() throws Exception {
         // when
-        IncomingSpan trace = container.execute(DoDelegatingExecutor.class);
+        IncomingSpan incomingSpan = container.execute(DoDelegatingExecutor.class);
         // then
-        checkServerSpan(trace, false, false);
+        checkServerSpan(incomingSpan, false, false);
     }
 
-    private static void checkServerSpan(IncomingSpan incomingSpan, boolean isAny, boolean withFuture) {
+    private static void checkServerSpan(IncomingSpan incomingSpan, boolean isAny,
+            boolean withFuture) {
         if (withFuture) {
             assertThat(incomingSpan.mainThreadRootTimer().childTimers().size()).isEqualTo(1);
             assertThat(incomingSpan.mainThreadRootTimer().childTimers().get(0).name())
@@ -223,7 +224,7 @@ public class ExecutorIT {
         }
         assertThat(incomingSpan.auxThreadRootTimer().childTimers().size()).isEqualTo(1);
         assertThat(incomingSpan.auxThreadRootTimer().childTimers().get(0).name())
-                .isEqualTo("mock trace entry marker");
+                .isEqualTo("test local span");
 
         List<Span> spans = incomingSpan.childSpans();
         if (isAny) {
@@ -232,7 +233,7 @@ public class ExecutorIT {
             assertThat(spans).hasSize(3);
         }
         for (Span span : spans) {
-            assertSingleLocalSpanMessage(span).isEqualTo("trace entry marker / CreateTraceEntry");
+            assertSingleLocalSpanMessage(span).isEqualTo("test local span / CreateLocalSpan");
         }
     }
 
@@ -254,21 +255,21 @@ public class ExecutorIT {
             executor.execute(new Runnable() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                     latch.countDown();
                 }
             });
             executor.execute(new Runnable() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                     latch.countDown();
                 }
             });
             executor.execute(new Runnable() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                     latch.countDown();
                 }
             });
@@ -292,7 +293,7 @@ public class ExecutorIT {
             executor.execute(new FutureTask<Void>(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                     latch.countDown();
                     return null;
                 }
@@ -300,7 +301,7 @@ public class ExecutorIT {
             executor.submit(new FutureTask<Void>(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                     latch.countDown();
                     return null;
                 }
@@ -308,7 +309,7 @@ public class ExecutorIT {
             executor.submit(new FutureTask<Void>(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                     latch.countDown();
                     return null;
                 }
@@ -332,21 +333,21 @@ public class ExecutorIT {
             Future<Void> future1 = executor.submit(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                     return null;
                 }
             });
             Future<Void> future2 = executor.submit(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                     return null;
                 }
             });
             Future<Void> future3 = executor.submit(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                     return null;
                 }
             });
@@ -455,11 +456,11 @@ public class ExecutorIT {
             Future<Void> future = executor.submit(new Callable<Void>() {
                 @Override
                 public Void call() throws Exception {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                     Future<Void> future = executor.submit(new Callable<Void>() {
                         @Override
                         public Void call() {
-                            new CreateTraceEntry().traceEntryMarker();
+                            LocalSpans.createTestSpan(100);
                             return null;
                         }
                     });
@@ -485,21 +486,21 @@ public class ExecutorIT {
             callables.add(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                     return null;
                 }
             });
             callables.add(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                     return null;
                 }
             });
             callables.add(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                     return null;
                 }
             });
@@ -523,21 +524,21 @@ public class ExecutorIT {
             callables.add(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                     return null;
                 }
             });
             callables.add(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                     return null;
                 }
             });
             callables.add(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                     return null;
                 }
             });
@@ -561,21 +562,21 @@ public class ExecutorIT {
             callables.add(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                     return null;
                 }
             });
             callables.add(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                     return null;
                 }
             });
             callables.add(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                     return null;
                 }
             });
@@ -597,21 +598,21 @@ public class ExecutorIT {
             callables.add(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                     return null;
                 }
             });
             callables.add(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                     return null;
                 }
             });
             callables.add(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                     return null;
                 }
             });
@@ -636,21 +637,21 @@ public class ExecutorIT {
                     executor.execute(new Runnable() {
                         @Override
                         public void run() {
-                            new CreateTraceEntry().traceEntryMarker();
+                            LocalSpans.createTestSpan(100);
                             latch.countDown();
                         }
                     });
                     executor.execute(new Runnable() {
                         @Override
                         public void run() {
-                            new CreateTraceEntry().traceEntryMarker();
+                            LocalSpans.createTestSpan(100);
                             latch.countDown();
                         }
                     });
                     executor.execute(new Runnable() {
                         @Override
                         public void run() {
-                            new CreateTraceEntry().traceEntryMarker();
+                            LocalSpans.createTestSpan(100);
                             latch.countDown();
                         }
                     });
@@ -687,7 +688,7 @@ public class ExecutorIT {
                     executor.submit(new Callable<Void>() {
                         @Override
                         public Void call() {
-                            new CreateTraceEntry().traceEntryMarker();
+                            LocalSpans.createTestSpan(100);
                             latch.countDown();
                             return null;
                         }
@@ -695,7 +696,7 @@ public class ExecutorIT {
                     executor.submit(new Callable<Void>() {
                         @Override
                         public Void call() {
-                            new CreateTraceEntry().traceEntryMarker();
+                            LocalSpans.createTestSpan(100);
                             latch.countDown();
                             return null;
                         }
@@ -703,7 +704,7 @@ public class ExecutorIT {
                     executor.submit(new Callable<Void>() {
                         @Override
                         public Void call() {
-                            new CreateTraceEntry().traceEntryMarker();
+                            LocalSpans.createTestSpan(100);
                             latch.countDown();
                             return null;
                         }
@@ -732,21 +733,21 @@ public class ExecutorIT {
             delegatingExecutor.execute(new Runnable() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                     latch.countDown();
                 }
             });
             delegatingExecutor.execute(new Runnable() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                     latch.countDown();
                 }
             });
             delegatingExecutor.execute(new Runnable() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                     latch.countDown();
                 }
             });
@@ -760,24 +761,13 @@ public class ExecutorIT {
 
         @Override
         public Void call() {
-            new CreateTraceEntry().traceEntryMarker();
+            LocalSpans.createTestSpan(100);
             return null;
         }
 
         @Override
         public void run() {
-            new CreateTraceEntry().traceEntryMarker();
-        }
-    }
-
-    private static class CreateTraceEntry implements TraceEntryMarker {
-
-        @Override
-        public void traceEntryMarker() {
-            try {
-                MILLISECONDS.sleep(100);
-            } catch (InterruptedException e) {
-            }
+            LocalSpans.createTestSpan(100);
         }
     }
 

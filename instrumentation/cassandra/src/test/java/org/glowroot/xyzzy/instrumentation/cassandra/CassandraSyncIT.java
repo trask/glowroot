@@ -60,10 +60,10 @@ public class CassandraSyncIT {
     @Test
     public void shouldExecuteStatement() throws Exception {
         // when
-        IncomingSpan trace = container.execute(ExecuteStatement.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteStatement.class);
 
         // then
-        Iterator<Span> i = trace.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
         assertThat(outgoingSpan.getMessage()).isEmpty();
@@ -77,10 +77,10 @@ public class CassandraSyncIT {
     @Test
     public void shouldExecuteStatementReturningNoRecords() throws Exception {
         // when
-        IncomingSpan trace = container.execute(ExecuteStatementReturningNoRecords.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteStatementReturningNoRecords.class);
 
         // then
-        Iterator<Span> i = trace.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
         assertThat(outgoingSpan.getMessage()).isEmpty();
@@ -94,11 +94,11 @@ public class CassandraSyncIT {
     @Test
     public void shouldExecuteStatementReturningNoRecordsCheckIsExhausted() throws Exception {
         // when
-        IncomingSpan trace =
+        IncomingSpan incomingSpan =
                 container.execute(ExecuteStatementReturningNoRecordsCheckIsExhausted.class);
 
         // then
-        Iterator<Span> i = trace.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
         assertThat(outgoingSpan.getMessage()).isEmpty();
@@ -112,10 +112,10 @@ public class CassandraSyncIT {
     @Test
     public void shouldIterateUsingOneAndAll() throws Exception {
         // when
-        IncomingSpan trace = container.execute(IterateUsingOneAndAll.class);
+        IncomingSpan incomingSpan = container.execute(IterateUsingOneAndAll.class);
 
         // then
-        Iterator<Span> i = trace.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
         assertThat(outgoingSpan.getMessage()).isEmpty();
@@ -129,10 +129,10 @@ public class CassandraSyncIT {
     @Test
     public void shouldExecuteBoundStatement() throws Exception {
         // when
-        IncomingSpan trace = container.execute(ExecuteBoundStatement.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteBoundStatement.class);
 
         // then
-        Iterator<Span> i = trace.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
         assertThat(outgoingSpan.getMessage()).isEmpty();
@@ -147,10 +147,10 @@ public class CassandraSyncIT {
     @Test
     public void shouldExecuteBatchStatement() throws Exception {
         // when
-        IncomingSpan trace = container.execute(ExecuteBatchStatement.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteBatchStatement.class);
 
         // then
-        Iterator<Span> i = trace.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
         assertThat(outgoingSpan.getMessage()).isEmpty();

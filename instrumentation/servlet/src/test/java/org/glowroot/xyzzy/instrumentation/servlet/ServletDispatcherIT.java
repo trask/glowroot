@@ -103,51 +103,51 @@ public class ServletDispatcherIT {
     private void testForwardServlet(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        IncomingSpan trace = container.execute(appUnderTestClass, "Web");
+        IncomingSpan incomingSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.getMessage()).isEqualTo(contextPath + "/first-forward");
-        assertThat(trace.transactionName()).isEqualTo(contextPath + "/first-forward");
+        assertThat(incomingSpan.getMessage()).isEqualTo(contextPath + "/first-forward");
+        assertThat(incomingSpan.transactionName()).isEqualTo(contextPath + "/first-forward");
 
-        validateSingleLocalSpan(trace.childSpans(), "servlet dispatch: /second");
+        validateSingleLocalSpan(incomingSpan.childSpans(), "servlet dispatch: /second");
     }
 
     private void testForwardServletUsingContext(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        IncomingSpan trace = container.execute(appUnderTestClass, "Web");
+        IncomingSpan incomingSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.getMessage()).isEqualTo(contextPath + "/first-forward-using-context");
-        assertThat(trace.transactionName())
+        assertThat(incomingSpan.getMessage()).isEqualTo(contextPath + "/first-forward-using-context");
+        assertThat(incomingSpan.transactionName())
                 .isEqualTo(contextPath + "/first-forward-using-context");
 
-        validateSingleLocalSpan(trace.childSpans(), "servlet dispatch: /second");
+        validateSingleLocalSpan(incomingSpan.childSpans(), "servlet dispatch: /second");
     }
 
     private void testForwardServletUsingNamed(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        IncomingSpan trace = container.execute(appUnderTestClass, "Web");
+        IncomingSpan incomingSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.getMessage()).isEqualTo(contextPath + "/first-forward-using-named");
-        assertThat(trace.transactionName())
+        assertThat(incomingSpan.getMessage()).isEqualTo(contextPath + "/first-forward-using-named");
+        assertThat(incomingSpan.transactionName())
                 .isEqualTo(contextPath + "/first-forward-using-named");
 
-        validateSingleLocalSpan(trace.childSpans(), "servlet dispatch: yyy");
+        validateSingleLocalSpan(incomingSpan.childSpans(), "servlet dispatch: yyy");
     }
 
     private void testIncludeServlet(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        IncomingSpan trace = container.execute(appUnderTestClass, "Web");
+        IncomingSpan incomingSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(trace.getMessage()).isEqualTo(contextPath + "/first-include");
-        assertThat(trace.transactionName()).isEqualTo(contextPath + "/first-include");
+        assertThat(incomingSpan.getMessage()).isEqualTo(contextPath + "/first-include");
+        assertThat(incomingSpan.transactionName()).isEqualTo(contextPath + "/first-include");
 
-        validateSingleLocalSpan(trace.childSpans(), "servlet dispatch: /second");
+        validateSingleLocalSpan(incomingSpan.childSpans(), "servlet dispatch: /second");
     }
 
     private void validateSingleLocalSpan(List<Span> spans, String message) {

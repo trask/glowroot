@@ -39,11 +39,11 @@ public class StreamController extends Controller {
         }
         out.write("foo");
         out.write("bar");
-        new CreateTraceEntry().traceEntryMarker();
+        new CreateLocalSpan().traceEntryMarker();
         out.close();
     }
 
-    private static class CreateTraceEntry implements TraceEntryMarker {
+    private static class CreateLocalSpan implements TraceEntryMarker {
         @Override
         public void traceEntryMarker() {}
     }

@@ -31,7 +31,7 @@ import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
-import org.glowroot.xyzzy.test.harness.TraceEntryMarker;
+import org.glowroot.xyzzy.test.harness.LocalSpans;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -69,7 +69,7 @@ public class GuavaListenableFutureIT {
         IncomingSpan incomingSpan = container.execute(AddListenerBeforeComplete.class);
 
         // then
-        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span / CreateLocalSpan");
     }
 
     @Test
@@ -78,7 +78,7 @@ public class GuavaListenableFutureIT {
         IncomingSpan incomingSpan = container.execute(AddListenerAfterComplete.class);
 
         // then
-        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span / CreateLocalSpan");
     }
 
     @Test
@@ -87,7 +87,7 @@ public class GuavaListenableFutureIT {
         IncomingSpan incomingSpan = container.execute(AddSameExecutorListenerBeforeComplete.class);
 
         // then
-        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span / CreateLocalSpan");
     }
 
     @Test
@@ -96,7 +96,7 @@ public class GuavaListenableFutureIT {
         IncomingSpan incomingSpan = container.execute(AddSameExecutorListenerAfterComplete.class);
 
         // then
-        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span / CreateLocalSpan");
     }
 
     public static class AddListenerBeforeComplete implements AppUnderTest, TransactionMarker {
@@ -120,7 +120,7 @@ public class GuavaListenableFutureIT {
             future1.addListener(new Runnable() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan();
                 }
             }, executor);
             MILLISECONDS.sleep(200);
@@ -150,7 +150,7 @@ public class GuavaListenableFutureIT {
             future1.addListener(new Runnable() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan();
                 }
             }, executor);
             MILLISECONDS.sleep(100);
@@ -181,7 +181,7 @@ public class GuavaListenableFutureIT {
             future1.addListener(new Runnable() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan();
                 }
             }, executor);
             MILLISECONDS.sleep(200);
@@ -212,18 +212,13 @@ public class GuavaListenableFutureIT {
             future1.addListener(new Runnable() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan();
                 }
             }, executor);
             MILLISECONDS.sleep(100);
             executor.shutdown();
             executor.awaitTermination(10, SECONDS);
         }
-    }
-
-    private static class CreateTraceEntry implements TraceEntryMarker {
-        @Override
-        public void traceEntryMarker() {}
     }
 
     static boolean isShaded() {

@@ -15,7 +15,23 @@
  */
 package org.glowroot.xyzzy.test.harness;
 
-public interface TraceEntryMarker {
+public class LocalSpans {
 
-    void traceEntryMarker() throws Exception;
+    public static void createTestSpan() {}
+
+    public static void createTestSpan(long sleepTimeMillis) {
+        try {
+            Thread.sleep(sleepTimeMillis);
+        } catch (InterruptedException e) {
+            Thread.interrupted();
+        }
+    }
+
+    public static void createTestSpan(DoInLocalSpan runnable) throws Exception {
+        runnable.doInLocalSpan();
+    }
+
+    public interface DoInLocalSpan {
+        void doInLocalSpan() throws Exception;
+    }
 }

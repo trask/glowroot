@@ -31,7 +31,7 @@ import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 import org.glowroot.xyzzy.test.harness.util.ExecuteHttpBase;
 
-import static org.glowroot.xyzzy.test.harness.util.HarnessAssertions.assertSingleClientSpanMessage;
+import static org.glowroot.xyzzy.test.harness.util.HarnessAssertions.assertSingleOutgoingSpanMessage;
 
 public class HttpURLConnectionIT {
 
@@ -89,7 +89,7 @@ public class HttpURLConnectionIT {
         IncomingSpan incomingSpan = container.execute(appUnderTestClass);
 
         // then
-        assertSingleClientSpanMessage(incomingSpan)
+        assertSingleOutgoingSpanMessage(incomingSpan)
                 .matches("http client request: GET " + protocol + "://localhost:\\d+/hello1/");
     }
 
@@ -99,7 +99,7 @@ public class HttpURLConnectionIT {
         IncomingSpan incomingSpan = container.execute(appUnderTestClass);
 
         // then
-        assertSingleClientSpanMessage(incomingSpan).matches("http client request: GET " + protocol
+        assertSingleOutgoingSpanMessage(incomingSpan).matches("http client request: GET " + protocol
                 + "http client request: GET " + protocol + "://localhost:\\d+/hello1\\?abc=xyz");
     }
 
@@ -109,7 +109,7 @@ public class HttpURLConnectionIT {
         IncomingSpan incomingSpan = container.execute(appUnderTestClass);
 
         // then
-        assertSingleClientSpanMessage(incomingSpan)
+        assertSingleOutgoingSpanMessage(incomingSpan)
                 .matches("http client request: POST " + protocol + "://localhost:\\d+/hello1/");
     }
 

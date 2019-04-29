@@ -68,11 +68,11 @@ public class RequestHeaderIT {
                 ImmutableList.of("Content-Type", " Content-Length"));
 
         // when
-        IncomingSpan trace = container.execute(SetStandardRequestHeaders.class, "Web");
+        IncomingSpan incomingSpan = container.execute(SetStandardRequestHeaders.class, "Web");
 
         // then
         Map<String, Object> requestHeaders =
-                ResponseHeaderIT.getDetailMap(trace, "Request headers");
+                ResponseHeaderIT.getDetailMap(incomingSpan, "Request headers");
         assertThat(requestHeaders.get("Content-Type")).isEqualTo("text/plain;charset=UTF-8");
         assertThat(requestHeaders.get("Content-Length")).isEqualTo("1");
         assertThat(requestHeaders.get("Extra")).isNull();
@@ -85,11 +85,12 @@ public class RequestHeaderIT {
                 ImmutableList.of("Content-Type", " Content-Length"));
 
         // when
-        IncomingSpan trace = container.execute(SetStandardRequestHeadersLowercase.class, "Web");
+        IncomingSpan incomingSpan =
+                container.execute(SetStandardRequestHeadersLowercase.class, "Web");
 
         // then
         Map<String, Object> requestHeaders =
-                ResponseHeaderIT.getDetailMap(trace, "Request headers");
+                ResponseHeaderIT.getDetailMap(incomingSpan, "Request headers");
         assertThat(requestHeaders.get("Content-Type")).isEqualTo("text/plain;charset=UTF-8");
         assertThat(requestHeaders.get("content-length")).isEqualTo("1");
         assertThat(requestHeaders.get("extra")).isNull();
@@ -102,11 +103,11 @@ public class RequestHeaderIT {
                 ImmutableList.of("One", "Two"));
 
         // when
-        IncomingSpan trace = container.execute(SetOtherRequestHeaders.class, "Web");
+        IncomingSpan incomingSpan = container.execute(SetOtherRequestHeaders.class, "Web");
 
         // then
         Map<String, Object> requestHeaders =
-                ResponseHeaderIT.getDetailMap(trace, "Request headers");
+                ResponseHeaderIT.getDetailMap(incomingSpan, "Request headers");
         @SuppressWarnings("unchecked")
         List<String> one = (List<String>) requestHeaders.get("One");
         assertThat(one).containsExactly("ab", "xy");
@@ -121,11 +122,11 @@ public class RequestHeaderIT {
                 ImmutableList.of("Content-Type", " Content-Length"));
 
         // when
-        IncomingSpan trace = container.execute(GetBadRequestHeaders.class, "Web");
+        IncomingSpan incomingSpan = container.execute(GetBadRequestHeaders.class, "Web");
 
         // then
         Map<String, Object> requestHeaders =
-                ResponseHeaderIT.getDetailMap(trace, "Request headers");
+                ResponseHeaderIT.getDetailMap(incomingSpan, "Request headers");
         assertThat(requestHeaders).isNull();
     }
 
@@ -136,11 +137,11 @@ public class RequestHeaderIT {
                 ImmutableList.of("Content-Type", " Content-Length", " h1"));
 
         // when
-        IncomingSpan trace = container.execute(GetBadRequestHeaders2.class, "Web");
+        IncomingSpan incomingSpan = container.execute(GetBadRequestHeaders2.class, "Web");
 
         // then
         Map<String, Object> requestHeaders =
-                ResponseHeaderIT.getDetailMap(trace, "Request headers");
+                ResponseHeaderIT.getDetailMap(incomingSpan, "Request headers");
         assertThat(requestHeaders).hasSize(1);
         assertThat(requestHeaders.get("h1")).isEqualTo("");
     }

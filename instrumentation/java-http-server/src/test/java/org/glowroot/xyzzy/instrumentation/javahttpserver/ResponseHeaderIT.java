@@ -64,10 +64,11 @@ public class ResponseHeaderIT {
                 ImmutableList.of("Content-Type", " Content-Length", " Content-Language"));
 
         // when
-        IncomingSpan trace = container.execute(SetStandardResponseHeadersUsingSetHeader.class, "Web");
+        IncomingSpan incomingSpan =
+                container.execute(SetStandardResponseHeadersUsingSetHeader.class, "Web");
 
         // then
-        Map<String, Object> responseHeaders = getResponseHeaders(trace);
+        Map<String, Object> responseHeaders = getResponseHeaders(incomingSpan);
         assertThat(responseHeaders.get("Content-type")).isEqualTo("text/plain;charset=UTF-8");
         assertThat(responseHeaders.get("Content-length")).isEqualTo("1");
         assertThat(responseHeaders.get("Content-language")).isEqualTo("en");
@@ -81,10 +82,11 @@ public class ResponseHeaderIT {
                 ImmutableList.of("Content-Type", " Content-Length", " Content-Language"));
 
         // when
-        IncomingSpan trace = container.execute(SetStandardResponseHeadersUsingAddHeader.class, "Web");
+        IncomingSpan incomingSpan =
+                container.execute(SetStandardResponseHeadersUsingAddHeader.class, "Web");
 
         // then
-        Map<String, Object> responseHeaders = getResponseHeaders(trace);
+        Map<String, Object> responseHeaders = getResponseHeaders(incomingSpan);
         assertThat(responseHeaders.get("Content-type")).isEqualTo("text/plain;charset=UTF-8");
         assertThat(responseHeaders.get("Content-length")).isEqualTo("1");
         assertThat(responseHeaders.get("Content-language")).isEqualTo("en");
@@ -98,10 +100,11 @@ public class ResponseHeaderIT {
                 ImmutableList.of("Content-Type", " Content-Length"));
 
         // when
-        IncomingSpan trace = container.execute(SetStandardResponseHeadersLowercase.class, "Web");
+        IncomingSpan incomingSpan =
+                container.execute(SetStandardResponseHeadersLowercase.class, "Web");
 
         // then
-        Map<String, Object> responseHeaders = getResponseHeaders(trace);
+        Map<String, Object> responseHeaders = getResponseHeaders(incomingSpan);
         assertThat(responseHeaders.get("Content-type")).isEqualTo("text/plain;charset=UTF-8");
         assertThat(responseHeaders.get("Content-length")).isEqualTo("1");
         assertThat(responseHeaders.get("Extra")).isNull();
@@ -113,9 +116,10 @@ public class ResponseHeaderIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResponseHeaders",
                 ImmutableList.<String>of());
         // when
-        IncomingSpan trace = container.execute(SetStandardResponseHeadersUsingSetHeader.class, "Web");
+        IncomingSpan incomingSpan =
+                container.execute(SetStandardResponseHeadersUsingSetHeader.class, "Web");
         // then
-        assertThat(getResponseHeaders(trace)).isNull();
+        assertThat(getResponseHeaders(incomingSpan)).isNull();
     }
 
     @Test
@@ -124,9 +128,10 @@ public class ResponseHeaderIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResponseHeaders",
                 ImmutableList.<String>of());
         // when
-        IncomingSpan trace = container.execute(SetStandardResponseHeadersUsingAddHeader.class, "Web");
+        IncomingSpan incomingSpan =
+                container.execute(SetStandardResponseHeadersUsingAddHeader.class, "Web");
         // then
-        assertThat(getResponseHeaders(trace)).isNull();
+        assertThat(getResponseHeaders(incomingSpan)).isNull();
     }
 
     @Test
@@ -137,10 +142,10 @@ public class ResponseHeaderIT {
                         "X-One"));
 
         // when
-        IncomingSpan trace = container.execute(SetLotsOfResponseHeaders.class, "Web");
+        IncomingSpan incomingSpan = container.execute(SetLotsOfResponseHeaders.class, "Web");
 
         // then
-        Map<String, Object> responseHeaders = getResponseHeaders(trace);
+        Map<String, Object> responseHeaders = getResponseHeaders(incomingSpan);
         @SuppressWarnings("unchecked")
         List<String> one = (List<String>) responseHeaders.get("One");
         @SuppressWarnings("unchecked")
@@ -174,22 +179,23 @@ public class ResponseHeaderIT {
                 ImmutableList.of("content-Len*"));
 
         // when
-        IncomingSpan trace = container.execute(SetStandardResponseHeadersLowercase.class, "Web");
+        IncomingSpan incomingSpan =
+                container.execute(SetStandardResponseHeadersLowercase.class, "Web");
 
         // then
-        Map<String, Object> responseHeaders = getResponseHeaders(trace);
+        Map<String, Object> responseHeaders = getResponseHeaders(incomingSpan);
         assertThat(responseHeaders.get("Content-type")).isEqualTo("text/plain;charset=UTF-8");
         assertThat(responseHeaders.get("Content-length")).isEqualTo("1");
         assertThat(responseHeaders.get("Extra")).isNull();
     }
 
     @SuppressWarnings("unchecked")
-    static Map<String, Object> getDetailMap(IncomingSpan trace, String name) {
-        return (Map<String, Object>) trace.getDetails().get(name);
+    static Map<String, Object> getDetailMap(IncomingSpan incomingSpan, String name) {
+        return (Map<String, Object>) incomingSpan.getDetails().get(name);
     }
 
-    private static Map<String, Object> getResponseHeaders(IncomingSpan trace) {
-        return getDetailMap(trace, "Response headers");
+    private static Map<String, Object> getResponseHeaders(IncomingSpan incomingSpan) {
+        return getDetailMap(incomingSpan, "Response headers");
     }
 
     public static class SetStandardResponseHeadersUsingSetHeader extends TestHandler {

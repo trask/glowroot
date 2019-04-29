@@ -40,7 +40,7 @@ class TraceCollector {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceCollector.class);
 
-    private final List<IncomingSpan> traces = Lists.newCopyOnWriteArrayList();
+    private final List<IncomingSpan> incomingSpans = Lists.newCopyOnWriteArrayList();
 
     private final ExecutorService executor;
     private final ServerSocket serverSocket;
@@ -59,7 +59,7 @@ class TraceCollector {
                     ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
                     ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
                     while (true) {
-                        traces.add((IncomingSpan) in.readObject());
+                        incomingSpans.add((IncomingSpan) in.readObject());
                         out.writeObject("ok");
                     }
                 } catch (Throwable t) {
@@ -74,18 +74,20 @@ class TraceCollector {
         executor.shutdown();
     }
 
-    IncomingSpan getCompletedTrace(@Nullable String transactionType, @Nullable String transactionName,
-            int timeout, TimeUnit unit) throws InterruptedException {
+    IncomingSpan getCompletedIncomingSpan(@Nullable String transactionType,
+            @Nullable String transactionName, int timeout, TimeUnit unit)
+            throws InterruptedException {
         if (transactionName != null) {
             checkNotNull(transactionType);
         }
         Stopwatch stopwatch = Stopwatch.createStarted();
         while (stopwatch.elapsed(unit) < timeout) {
-            for (IncomingSpan trace : traces) {
-                if ((transactionType == null || trace.transactionType().equals(transactionType))
+            for (IncomingSpan incomingSpan : incomingSpans) {
+                if ((transactionType == null
+                        || incomingSpan.transactionType().equals(transactionType))
                         && (transactionName == null
-                                || trace.transactionName().equals(transactionName))) {
-                    return trace;
+                                || incomingSpan.transactionName().equals(transactionName))) {
+                    return incomingSpan;
                 }
             }
             MILLISECONDS.sleep(10);
@@ -101,11 +103,11 @@ class TraceCollector {
         }
     }
 
-    boolean hasTrace() {
-        return !traces.isEmpty();
+    boolean hasIncomingSpan() {
+        return !incomingSpans.isEmpty();
     }
 
-    void clearTrace() {
-        traces.clear();
+    void clearIncomingSpans() {
+        incomingSpans.clear();
     }
 }

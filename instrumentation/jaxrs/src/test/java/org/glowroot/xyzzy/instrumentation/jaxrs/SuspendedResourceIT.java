@@ -31,10 +31,10 @@ import org.junit.Test;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
-import org.glowroot.xyzzy.test.harness.LocalSpan;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
+import org.glowroot.xyzzy.test.harness.LocalSpan;
+import org.glowroot.xyzzy.test.harness.LocalSpans;
 import org.glowroot.xyzzy.test.harness.Span;
-import org.glowroot.xyzzy.test.harness.TraceEntryMarker;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -89,7 +89,7 @@ public class SuspendedResourceIT {
         assertThat(localSpan.childSpans()).isEmpty();
 
         localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(localSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
         assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
@@ -126,16 +126,11 @@ public class SuspendedResourceIT {
                     } catch (InterruptedException e) {
                         // ignore
                     }
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan();
                     asyncResponse.resume("hido");
                     executor.shutdown();
                 }
             });
         }
-    }
-
-    private static class CreateTraceEntry implements TraceEntryMarker {
-        @Override
-        public void traceEntryMarker() {}
     }
 }

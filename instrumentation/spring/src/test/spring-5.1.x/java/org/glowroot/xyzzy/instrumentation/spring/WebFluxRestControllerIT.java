@@ -74,7 +74,7 @@ public class WebFluxRestControllerIT {
 
         entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(1);
-        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(entry.getMessage()).isEqualTo("test local span / CreateLocalSpan");
 
         entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(1);
@@ -82,7 +82,7 @@ public class WebFluxRestControllerIT {
 
         entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(2);
-        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(entry.getMessage()).isEqualTo("test local span / CreateLocalSpan");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -105,7 +105,7 @@ public class WebFluxRestControllerIT {
 
         entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(1);
-        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(entry.getMessage()).isEqualTo("test local span / CreateLocalSpan");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -133,7 +133,7 @@ public class WebFluxRestControllerIT {
 
         @RequestMapping("webflux1")
         public Mono<String> webflux1() {
-            new CreateTraceEntry().traceEntryMarker();
+            new CreateLocalSpan().traceEntryMarker();
             CompletableFuture<String> completableFuture = new CompletableFuture<>();
             Executors.newSingleThreadExecutor().execute(new Runnable() {
                 @Override
@@ -142,7 +142,7 @@ public class WebFluxRestControllerIT {
                         Thread.sleep(500);
                     } catch (InterruptedException e) {
                     }
-                    new CreateTraceEntry().traceEntryMarker();
+                    new CreateLocalSpan().traceEntryMarker();
                     completableFuture.complete("1");
                 }
             });
@@ -153,12 +153,12 @@ public class WebFluxRestControllerIT {
         public Flux<Long> webflux2() {
             System.out.println("WHATO");
             new Exception().printStackTrace();
-            new CreateTraceEntry().traceEntryMarker();
+            new CreateLocalSpan().traceEntryMarker();
             return Flux.interval(Duration.ofSeconds(1));
         }
     }
 
-    private static class CreateTraceEntry implements TraceEntryMarker {
+    private static class CreateLocalSpan implements TraceEntryMarker {
         @Override
         public void traceEntryMarker() {}
     }

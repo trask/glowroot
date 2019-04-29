@@ -28,7 +28,7 @@ import org.junit.Test;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
-import org.glowroot.xyzzy.test.harness.TraceEntryMarker;
+import org.glowroot.xyzzy.test.harness.LocalSpans;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
@@ -63,7 +63,7 @@ public class ScheduledExecutorServiceIT {
         IncomingSpan incomingSpan = container.execute(DoScheduledRunnable.class);
 
         // then
-        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span / CreateLocalSpan");
     }
 
     @Test
@@ -72,7 +72,7 @@ public class ScheduledExecutorServiceIT {
         IncomingSpan incomingSpan = container.execute(DoScheduledCallable.class);
 
         // then
-        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span / CreateLocalSpan");
     }
 
     private static ScheduledExecutorService createScheduledExecutorService() {
@@ -93,7 +93,7 @@ public class ScheduledExecutorServiceIT {
             executor.schedule(new Runnable() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                     latch.countDown();
                 }
             }, 100, MILLISECONDS);
@@ -117,7 +117,7 @@ public class ScheduledExecutorServiceIT {
             executor.schedule(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                     latch.countDown();
                     return null;
                 }
@@ -125,17 +125,6 @@ public class ScheduledExecutorServiceIT {
             latch.await();
             executor.shutdown();
             executor.awaitTermination(10, SECONDS);
-        }
-    }
-
-    private static class CreateTraceEntry implements TraceEntryMarker {
-
-        @Override
-        public void traceEntryMarker() {
-            try {
-                MILLISECONDS.sleep(100);
-            } catch (InterruptedException e) {
-            }
         }
     }
 }

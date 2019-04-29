@@ -25,8 +25,8 @@ import org.junit.Test;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
+import org.glowroot.xyzzy.test.harness.LocalSpans;
 import org.glowroot.xyzzy.test.harness.Span;
-import org.glowroot.xyzzy.test.harness.TraceEntryMarker;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
@@ -111,7 +111,8 @@ public class ThreadIT {
     @Test
     public void shouldCaptureThreadSubSubclassedWithRunnable() throws Exception {
         // when
-        IncomingSpan incomingSpan = container.execute(DoExecuteThreadSubSubclassedWithRunnable.class);
+        IncomingSpan incomingSpan =
+                container.execute(DoExecuteThreadSubSubclassedWithRunnable.class);
 
         // then
         checkTrace(incomingSpan, false, false);
@@ -143,7 +144,7 @@ public class ThreadIT {
         }
         assertThat(incomingSpan.auxThreadRootTimer().childTimers().size()).isEqualTo(1);
         assertThat(incomingSpan.auxThreadRootTimer().childTimers().get(0).name())
-                .isEqualTo("mock trace entry marker");
+                .isEqualTo("test local span");
 
         List<Span> spans = incomingSpan.childSpans();
 
@@ -153,7 +154,7 @@ public class ThreadIT {
             assertThat(spans).hasSize(3);
         }
         for (Span span : spans) {
-            assertSingleLocalSpanMessage(span).isEqualTo("trace entry marker / CreateTraceEntry");
+            assertSingleLocalSpanMessage(span).isEqualTo("test local span / CreateLocalSpan");
         }
     }
 
@@ -169,19 +170,19 @@ public class ThreadIT {
             Thread thread1 = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                 }
             });
             Thread thread2 = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                 }
             });
             Thread thread3 = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                 }
             });
             thread1.start();
@@ -205,19 +206,19 @@ public class ThreadIT {
             Thread thread1 = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                 }
             }, "one");
             Thread thread2 = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                 }
             }, "two");
             Thread thread3 = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                 }
             }, "three");
             thread1.start();
@@ -241,19 +242,19 @@ public class ThreadIT {
             Thread thread1 = new Thread(Thread.currentThread().getThreadGroup(), new Runnable() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                 }
             });
             Thread thread2 = new Thread(Thread.currentThread().getThreadGroup(), new Runnable() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                 }
             });
             Thread thread3 = new Thread(Thread.currentThread().getThreadGroup(), new Runnable() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                 }
             });
             thread1.start();
@@ -278,19 +279,19 @@ public class ThreadIT {
             Thread thread1 = new Thread(Thread.currentThread().getThreadGroup(), new Runnable() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                 }
             }, "one");
             Thread thread2 = new Thread(Thread.currentThread().getThreadGroup(), new Runnable() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                 }
             }, "two");
             Thread thread3 = new Thread(Thread.currentThread().getThreadGroup(), new Runnable() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                 }
             }, "three");
             thread1.start();
@@ -314,19 +315,19 @@ public class ThreadIT {
             Thread thread1 = new Thread() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                 }
             };
             Thread thread2 = new Thread() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                 }
             };
             Thread thread3 = new Thread() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                 }
             };
             thread1.start();
@@ -350,19 +351,19 @@ public class ThreadIT {
             Thread thread1 = new TraceEntryMarkerThread() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                 }
             };
             Thread thread2 = new TraceEntryMarkerThread() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                 }
             };
             Thread thread3 = new TraceEntryMarkerThread() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                 }
             };
             thread1.start();
@@ -387,19 +388,19 @@ public class ThreadIT {
             Thread thread1 = new TraceEntryMarkerThreadWithRunnable() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                 }
             };
             Thread thread2 = new TraceEntryMarkerThreadWithRunnable() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                 }
             };
             Thread thread3 = new TraceEntryMarkerThreadWithRunnable() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                 }
             };
             thread1.start();
@@ -414,15 +415,4 @@ public class ThreadIT {
     private static class TraceEntryMarkerThread extends Thread {}
 
     private static class TraceEntryMarkerThreadWithRunnable extends Thread implements Runnable {}
-
-    private static class CreateTraceEntry implements TraceEntryMarker {
-
-        @Override
-        public void traceEntryMarker() {
-            try {
-                MILLISECONDS.sleep(100);
-            } catch (InterruptedException e) {
-            }
-        }
-    }
 }

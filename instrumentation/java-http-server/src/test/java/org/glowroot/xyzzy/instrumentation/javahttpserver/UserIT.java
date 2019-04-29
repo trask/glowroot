@@ -57,9 +57,9 @@ public class UserIT {
     @Test
     public void testHasExchangePrincipal() throws Exception {
         // when
-        IncomingSpan trace = container.execute(HasExchangePrincipal.class, "Web");
+        IncomingSpan incomingSpan = container.execute(HasExchangePrincipal.class, "Web");
         // then
-        assertThat(trace.user()).isEqualTo(PRINCIPAL_NAME);
+        assertThat(incomingSpan.user()).isEqualTo(PRINCIPAL_NAME);
     }
 
     @Test

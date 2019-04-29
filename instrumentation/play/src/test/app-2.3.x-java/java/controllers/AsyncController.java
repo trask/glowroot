@@ -36,7 +36,7 @@ public class AsyncController extends Controller {
                 Duration.create(1, SECONDS),
                 new Runnable() {
                     public void run() {
-                        new CreateTraceEntry().traceEntryMarker();
+                        new CreateLocalSpan().traceEntryMarker();
                         promise.success(Results.ok("Hi!"));
                     }
                 },
@@ -44,7 +44,7 @@ public class AsyncController extends Controller {
         return promise;
     }
 
-    private static class CreateTraceEntry implements TraceEntryMarker {
+    private static class CreateLocalSpan implements TraceEntryMarker {
         @Override
         public void traceEntryMarker() {}
     }

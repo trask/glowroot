@@ -31,13 +31,13 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
-import org.glowroot.xyzzy.test.harness.LocalSpan;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
+import org.glowroot.xyzzy.test.harness.LocalSpan;
+import org.glowroot.xyzzy.test.harness.LocalSpans;
+import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
-import org.glowroot.xyzzy.test.harness.TraceEntryMarker;
 import org.glowroot.xyzzy.test.harness.util.ExecuteHttpBase;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -74,7 +74,7 @@ public class ApacheHttpAsyncClientIT {
                 .matches("http client request: GET http://localhost:\\d+/hello1");
 
         LocalSpan localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).matches("trace entry marker / CreateTraceEntry");
+        assertThat(localSpan.getMessage()).matches("test local span / CreateLocalSpan");
         assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
@@ -93,7 +93,7 @@ public class ApacheHttpAsyncClientIT {
                 .matches("http client request: GET http://localhost:\\d+/hello2");
 
         LocalSpan localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).matches("trace entry marker / CreateTraceEntry");
+        assertThat(localSpan.getMessage()).matches("test local span / CreateLocalSpan");
         assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
@@ -112,7 +112,7 @@ public class ApacheHttpAsyncClientIT {
                 .matches("http client request: POST http://localhost:\\d+/hello3");
 
         LocalSpan localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).matches("trace entry marker / CreateTraceEntry");
+        assertThat(localSpan.getMessage()).matches("test local span / CreateLocalSpan");
         assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
@@ -131,7 +131,7 @@ public class ApacheHttpAsyncClientIT {
                 .matches("http client request: POST http://localhost:\\d+/hello4");
 
         LocalSpan localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).matches("trace entry marker / CreateTraceEntry");
+        assertThat(localSpan.getMessage()).matches("test local span / CreateLocalSpan");
         assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
@@ -222,7 +222,7 @@ public class ApacheHttpAsyncClientIT {
 
         @Override
         public void completed(HttpResponse response) {
-            new CreateTraceEntry().traceEntryMarker();
+            LocalSpans.createTestSpan();
             latch.countDown();
         }
 
@@ -230,10 +230,5 @@ public class ApacheHttpAsyncClientIT {
         public void failed(Exception e) {
             latch.countDown();
         }
-    }
-
-    private static class CreateTraceEntry implements TraceEntryMarker {
-        @Override
-        public void traceEntryMarker() {}
     }
 }

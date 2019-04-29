@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class HarnessAssertions {
 
-    public static AbstractCharSequenceAssert<?, String> assertSingleClientSpanMessage(
+    public static AbstractCharSequenceAssert<?, String> assertSingleOutgoingSpanMessage(
             IncomingSpan incomingSpan) {
 
         List<Span> spans = incomingSpan.childSpans();

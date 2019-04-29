@@ -64,12 +64,12 @@ public class CassandraAsyncIT {
     @Test
     public void shouldAsyncExecuteStatement() throws Exception {
         // when
-        IncomingSpan trace = container.execute(ExecuteAsyncStatement.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteAsyncStatement.class);
 
         // then
-        checkTimers(trace, false, 1);
+        checkTimers(incomingSpan, false, 1);
 
-        Iterator<Span> i = trace.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
         assertThat(outgoingSpan.getMessage()).isEmpty();
@@ -83,12 +83,12 @@ public class CassandraAsyncIT {
     @Test
     public void shouldConcurrentlyAsyncExecuteSameStatement() throws Exception {
         // when
-        IncomingSpan trace = container.execute(ConcurrentlyExecuteSameAsyncStatement.class);
+        IncomingSpan incomingSpan = container.execute(ConcurrentlyExecuteSameAsyncStatement.class);
 
         // then
-        checkTimers(trace, false, 100);
+        checkTimers(incomingSpan, false, 100);
 
-        Iterator<Span> i = trace.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         for (int j = 0; j < 100; j++) {
             OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
@@ -103,12 +103,12 @@ public class CassandraAsyncIT {
     @Test
     public void shouldAsyncExecuteStatementReturningNoRecords() throws Exception {
         // when
-        IncomingSpan trace = container.execute(ExecuteAsyncStatementReturningNoRecords.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteAsyncStatementReturningNoRecords.class);
 
         // then
-        checkTimers(trace, false, 1);
+        checkTimers(incomingSpan, false, 1);
 
-        Iterator<Span> i = trace.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
         assertThat(outgoingSpan.getMessage()).isEmpty();
@@ -122,12 +122,12 @@ public class CassandraAsyncIT {
     @Test
     public void shouldAsyncIterateUsingOneAndAll() throws Exception {
         // when
-        IncomingSpan trace = container.execute(AsyncIterateUsingOneAndAll.class);
+        IncomingSpan incomingSpan = container.execute(AsyncIterateUsingOneAndAll.class);
 
         // then
-        checkTimers(trace, false, 1);
+        checkTimers(incomingSpan, false, 1);
 
-        Iterator<Span> i = trace.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
         assertThat(outgoingSpan.getMessage()).isEmpty();
@@ -141,12 +141,12 @@ public class CassandraAsyncIT {
     @Test
     public void shouldAsyncExecuteBoundStatement() throws Exception {
         // when
-        IncomingSpan trace = container.execute(AsyncExecuteBoundStatement.class);
+        IncomingSpan incomingSpan = container.execute(AsyncExecuteBoundStatement.class);
 
         // then
-        checkTimers(trace, true, 1);
+        checkTimers(incomingSpan, true, 1);
 
-        Iterator<Span> i = trace.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
         assertThat(outgoingSpan.getMessage()).isEmpty();
@@ -161,12 +161,12 @@ public class CassandraAsyncIT {
     @Test
     public void shouldAsyncExecuteBatchStatement() throws Exception {
         // when
-        IncomingSpan trace = container.execute(AsyncExecuteBatchStatement.class);
+        IncomingSpan incomingSpan = container.execute(AsyncExecuteBatchStatement.class);
 
         // then
-        checkTimers(trace, true, 1);
+        checkTimers(incomingSpan, true, 1);
 
-        Iterator<Span> i = trace.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
         assertThat(outgoingSpan.getMessage()).isEmpty();
@@ -184,8 +184,8 @@ public class CassandraAsyncIT {
         assertThat(i.hasNext()).isFalse();
     }
 
-    private static void checkTimers(IncomingSpan trace, boolean prepared, int count) {
-        IncomingSpan.Timer rootTimer = trace.mainThreadRootTimer();
+    private static void checkTimers(IncomingSpan incomingSpan, boolean prepared, int count) {
+        IncomingSpan.Timer rootTimer = incomingSpan.mainThreadRootTimer();
         List<String> timerNames = Lists.newArrayList();
         for (IncomingSpan.Timer timer : rootTimer.childTimers()) {
             timerNames.add(timer.name());
@@ -199,8 +199,8 @@ public class CassandraAsyncIT {
         for (IncomingSpan.Timer timer : rootTimer.childTimers()) {
             assertThat(timer.childTimers()).isEmpty();
         }
-        assertThat(trace.asyncTimers().size()).isEqualTo(1);
-        IncomingSpan.Timer asyncTimer = trace.asyncTimers().get(0);
+        assertThat(incomingSpan.asyncTimers().size()).isEqualTo(1);
+        IncomingSpan.Timer asyncTimer = incomingSpan.asyncTimers().get(0);
         assertThat(asyncTimer.childTimers()).isEmpty();
         assertThat(asyncTimer.name()).isEqualTo("cassandra query");
         assertThat(asyncTimer.count()).isEqualTo(count);

@@ -30,13 +30,13 @@ public class AsyncController extends Controller {
     public static Promise<Result> message() {
         return Promise.delayed(new Function0<Result>() {
             public Result apply() {
-                new CreateTraceEntry().traceEntryMarker();
+                new CreateLocalSpan().traceEntryMarker();
                 return Results.ok("Hi!");
             }
         }, 1, SECONDS);
     }
 
-    private static class CreateTraceEntry implements TraceEntryMarker {
+    private static class CreateLocalSpan implements TraceEntryMarker {
         @Override
         public void traceEntryMarker() {}
     }

@@ -37,13 +37,13 @@ public class AsyncController extends Controller {
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
-                new CreateTraceEntry().traceEntryMarker();
+                new CreateLocalSpan().traceEntryMarker();
                 return Results.ok("Hi!");
             }
         }));
     }
 
-    private static class CreateTraceEntry implements TraceEntryMarker {
+    private static class CreateLocalSpan implements TraceEntryMarker {
         @Override
         public void traceEntryMarker() {}
     }

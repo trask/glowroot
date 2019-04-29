@@ -32,12 +32,11 @@ import org.junit.Test;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
-import org.glowroot.xyzzy.test.harness.LocalSpan;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
+import org.glowroot.xyzzy.test.harness.LocalSpan;
+import org.glowroot.xyzzy.test.harness.LocalSpans;
 import org.glowroot.xyzzy.test.harness.Span;
-import org.glowroot.xyzzy.test.harness.TraceEntryMarker;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -68,16 +67,16 @@ public class CamelIT {
         // then
         List<IncomingSpan.Timer> nestedTimers = incomingSpan.mainThreadRootTimer().childTimers();
         assertThat(nestedTimers).hasSize(1);
-        assertThat(nestedTimers.get(0).name()).isEqualTo("mock trace entry marker");
+        assertThat(nestedTimers.get(0).name()).isEqualTo("test local span");
 
         Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(localSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
         assertThat(localSpan.childSpans()).isEmpty();
 
         localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(localSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
         assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
@@ -100,7 +99,7 @@ public class CamelIT {
                             .process(new Processor() {
                                 @Override
                                 public void process(Exchange exchange) throws Exception {
-                                    new CreateTraceEntry().traceEntryMarker();
+                                    LocalSpans.createTestSpan();
                                     String body = exchange.getIn().getBody(String.class);
                                     exchange.getIn().setBody(body + ".");
                                 }
@@ -108,7 +107,7 @@ public class CamelIT {
                             .process(new Processor() {
                                 @Override
                                 public void process(Exchange exchange) throws Exception {
-                                    new CreateTraceEntry().traceEntryMarker();
+                                    LocalSpans.createTestSpan();
                                     String body = exchange.getIn().getBody(String.class);
                                     exchange.getIn().setBody(body + ".");
                                 }
@@ -127,17 +126,6 @@ public class CamelIT {
         public static class SomeBean {
             public void someMethod(@SuppressWarnings("unused") String body) {
                 latch.countDown();
-            }
-        }
-    }
-
-    private static class CreateTraceEntry implements TraceEntryMarker {
-
-        @Override
-        public void traceEntryMarker() {
-            try {
-                MILLISECONDS.sleep(100);
-            } catch (InterruptedException e) {
             }
         }
     }

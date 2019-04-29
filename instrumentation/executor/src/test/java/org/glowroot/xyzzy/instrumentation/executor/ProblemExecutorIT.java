@@ -31,8 +31,8 @@ import org.junit.Test;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
+import org.glowroot.xyzzy.test.harness.LocalSpans;
 import org.glowroot.xyzzy.test.harness.Span;
-import org.glowroot.xyzzy.test.harness.TraceEntryMarker;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
@@ -66,24 +66,24 @@ public class ProblemExecutorIT {
     @Test
     public void shouldCaptureSubmit() throws Exception {
         // when
-        IncomingSpan trace = container.execute(DoSubmitRunnable.class);
+        IncomingSpan incomingSpan = container.execute(DoSubmitRunnable.class);
 
         // then
-        assertThat(trace.auxThreadRootTimer()).isNotNull();
-        assertThat(trace.asyncTimers()).isEmpty();
-        assertThat(trace.auxThreadRootTimer().name()).isEqualTo("auxiliary thread");
-        assertThat(trace.auxThreadRootTimer().count()).isEqualTo(3);
+        assertThat(incomingSpan.auxThreadRootTimer()).isNotNull();
+        assertThat(incomingSpan.asyncTimers()).isEmpty();
+        assertThat(incomingSpan.auxThreadRootTimer().name()).isEqualTo("auxiliary thread");
+        assertThat(incomingSpan.auxThreadRootTimer().count()).isEqualTo(3);
         // should be 300ms, but margin of error, esp. in travis builds is high
-        assertThat(trace.auxThreadRootTimer().totalNanos())
+        assertThat(incomingSpan.auxThreadRootTimer().totalNanos())
                 .isGreaterThanOrEqualTo(MILLISECONDS.toNanos(250));
-        assertThat(trace.auxThreadRootTimer().childTimers().size()).isEqualTo(1);
-        assertThat(trace.auxThreadRootTimer().childTimers().get(0).name())
-                .isEqualTo("mock trace entry marker");
+        assertThat(incomingSpan.auxThreadRootTimer().childTimers().size()).isEqualTo(1);
+        assertThat(incomingSpan.auxThreadRootTimer().childTimers().get(0).name())
+                .isEqualTo("test local span");
 
-        List<Span> spans = trace.childSpans();
+        List<Span> spans = incomingSpan.childSpans();
         assertThat(spans).hasSize(3);
         for (Span span : spans) {
-            assertSingleLocalSpanMessage(span).isEqualTo("trace entry marker / CreateTraceEntry");
+            assertSingleLocalSpanMessage(span).isEqualTo("test local span / CreateLocalSpan");
         }
     }
 
@@ -111,21 +111,21 @@ public class ProblemExecutorIT {
             executor.submit(new ProblemRunnable() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                     latch.countDown();
                 }
             });
             executor.submit(new ProblemRunnable() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                     latch.countDown();
                 }
             });
             executor.submit(new ProblemRunnable() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan(100);
                     latch.countDown();
                 }
             });
@@ -145,17 +145,6 @@ public class ProblemExecutorIT {
 
         public ProblemFutureTask(ProblemRunnable runnable, V result) {
             super(runnable, result);
-        }
-    }
-
-    private static class CreateTraceEntry implements TraceEntryMarker {
-
-        @Override
-        public void traceEntryMarker() {
-            try {
-                MILLISECONDS.sleep(100);
-            } catch (InterruptedException e) {
-            }
         }
     }
 }

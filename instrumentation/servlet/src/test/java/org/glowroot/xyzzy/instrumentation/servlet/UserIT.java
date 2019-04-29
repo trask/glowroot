@@ -59,9 +59,9 @@ public class UserIT {
     @Test
     public void testHasRequestUserPrincipal() throws Exception {
         // when
-        IncomingSpan trace = container.execute(HasRequestUserPrincipal.class, "Web");
+        IncomingSpan incomingSpan = container.execute(HasRequestUserPrincipal.class, "Web");
         // then
-        assertThat(trace.user()).isEqualTo("my name is mock");
+        assertThat(incomingSpan.user()).isEqualTo("my name is mock");
     }
 
     @Test
@@ -77,9 +77,9 @@ public class UserIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute",
                 "userattr");
         // when
-        IncomingSpan trace = container.execute(HasSessionUserAttribute.class, "Web");
+        IncomingSpan incomingSpan = container.execute(HasSessionUserAttribute.class, "Web");
         // then
-        assertThat(trace.user()).isEqualTo("abc");
+        assertThat(incomingSpan.user()).isEqualTo("abc");
     }
 
     @Test
@@ -88,9 +88,9 @@ public class UserIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute",
                 "userattr");
         // when
-        IncomingSpan trace = container.execute(SetSessionUserAttribute.class, "Web");
+        IncomingSpan incomingSpan = container.execute(SetSessionUserAttribute.class, "Web");
         // then
-        assertThat(trace.user()).isEqualTo("abc");
+        assertThat(incomingSpan.user()).isEqualTo("abc");
     }
 
     @Test
@@ -99,11 +99,11 @@ public class UserIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute",
                 "userattr");
         // when
-        IncomingSpan trace = container.execute(SetSessionUserAttributeNull.class, "Web");
+        IncomingSpan incomingSpan = container.execute(SetSessionUserAttributeNull.class, "Web");
         // then
         // this is intentional, setting user attribute to null shouldn't clear out user for
         // that particular request (since the request was in fact, originally, for that user)
-        assertThat(trace.user()).isEqualTo("something");
+        assertThat(incomingSpan.user()).isEqualTo("something");
     }
 
     @Test
@@ -112,9 +112,9 @@ public class UserIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute",
                 "userone.two");
         // when
-        IncomingSpan trace = container.execute(HasNestedSessionUserAttribute.class, "Web");
+        IncomingSpan incomingSpan = container.execute(HasNestedSessionUserAttribute.class, "Web");
         // then
-        assertThat(trace.user()).isEqualTo("xyz");
+        assertThat(incomingSpan.user()).isEqualTo("xyz");
     }
 
     @Test
@@ -123,9 +123,9 @@ public class UserIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute",
                 "userone.two");
         // when
-        IncomingSpan trace = container.execute(SetNestedSessionUserAttribute.class, "Web");
+        IncomingSpan incomingSpan = container.execute(SetNestedSessionUserAttribute.class, "Web");
         // then
-        assertThat(trace.user()).isEqualTo("xyz");
+        assertThat(incomingSpan.user()).isEqualTo("xyz");
     }
 
     @Test
@@ -134,9 +134,9 @@ public class UserIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute",
                 "missinguserattr");
         // when
-        IncomingSpan trace = container.execute(HasSessionUserAttribute.class, "Web");
+        IncomingSpan incomingSpan = container.execute(HasSessionUserAttribute.class, "Web");
         // then
-        assertThat(trace.user()).isEmpty();
+        assertThat(incomingSpan.user()).isEmpty();
     }
 
     @Test
@@ -145,9 +145,9 @@ public class UserIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute",
                 "userone.missingtwo");
         // when
-        IncomingSpan trace = container.execute(HasNestedSessionUserAttribute.class, "Web");
+        IncomingSpan incomingSpan = container.execute(HasNestedSessionUserAttribute.class, "Web");
         // then
-        assertThat(trace.user()).isEmpty();
+        assertThat(incomingSpan.user()).isEmpty();
     }
 
     @Test
@@ -155,9 +155,9 @@ public class UserIT {
         // given
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute", "::id");
         // when
-        IncomingSpan trace = container.execute(HasHttpSession.class, "Web");
+        IncomingSpan incomingSpan = container.execute(HasHttpSession.class, "Web");
         // then
-        assertThat(trace.user()).isEqualTo("123456789");
+        assertThat(incomingSpan.user()).isEqualTo("123456789");
     }
 
     @Test
@@ -165,9 +165,9 @@ public class UserIT {
         // given
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute", "::id");
         // when
-        IncomingSpan trace = container.execute(HasNoHttpSession.class, "Web");
+        IncomingSpan incomingSpan = container.execute(HasNoHttpSession.class, "Web");
         // then
-        assertThat(trace.user()).isEmpty();
+        assertThat(incomingSpan.user()).isEmpty();
     }
 
     @Test
@@ -175,9 +175,9 @@ public class UserIT {
         // given
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute", "::id");
         // when
-        IncomingSpan trace = container.execute(CreateHttpSession.class, "Web");
+        IncomingSpan incomingSpan = container.execute(CreateHttpSession.class, "Web");
         // then
-        assertThat(trace.user()).isEqualTo("123456789");
+        assertThat(incomingSpan.user()).isEqualTo("123456789");
     }
 
     @Test
@@ -185,9 +185,9 @@ public class UserIT {
         // given
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute", "::id");
         // when
-        IncomingSpan trace = container.execute(CreateHttpSessionTrue.class, "Web");
+        IncomingSpan incomingSpan = container.execute(CreateHttpSessionTrue.class, "Web");
         // then
-        assertThat(trace.user()).isEqualTo("123456789");
+        assertThat(incomingSpan.user()).isEqualTo("123456789");
     }
 
     @Test
@@ -195,9 +195,9 @@ public class UserIT {
         // given
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute", "::id");
         // when
-        IncomingSpan trace = container.execute(CreateHttpSessionFalse.class, "Web");
+        IncomingSpan incomingSpan = container.execute(CreateHttpSessionFalse.class, "Web");
         // then
-        assertThat(trace.user()).isEmpty();
+        assertThat(incomingSpan.user()).isEmpty();
     }
 
     @Test
@@ -205,9 +205,9 @@ public class UserIT {
         // given
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute", "::id");
         // when
-        IncomingSpan trace = container.execute(ChangeHttpSession.class, "Web");
+        IncomingSpan incomingSpan = container.execute(ChangeHttpSession.class, "Web");
         // then
-        assertThat(trace.user()).isEqualTo("123456789");
+        assertThat(incomingSpan.user()).isEqualTo("123456789");
     }
 
     @Test
@@ -215,9 +215,9 @@ public class UserIT {
         // given
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "sessionUserAttribute", "::id");
         // when
-        IncomingSpan trace = container.execute(CreateAndChangeHttpSession.class, "Web");
+        IncomingSpan incomingSpan = container.execute(CreateAndChangeHttpSession.class, "Web");
         // then
-        assertThat(trace.user()).isEqualTo("123456789");
+        assertThat(incomingSpan.user()).isEqualTo("123456789");
     }
 
     @SuppressWarnings("serial")

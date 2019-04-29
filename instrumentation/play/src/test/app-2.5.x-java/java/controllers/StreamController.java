@@ -41,13 +41,13 @@ public class StreamController extends Controller {
                     sourceActor.tell(ByteString.fromString("foo"), null);
                     sourceActor.tell(ByteString.fromString("bar"), null);
                     sourceActor.tell(new Status.Success(NotUsed.getInstance()), null);
-                    new CreateTraceEntry().traceEntryMarker();
+                    new CreateLocalSpan().traceEntryMarker();
                     return null;
                 });
         return ok().chunked(source);
     }
 
-    private static class CreateTraceEntry implements TraceEntryMarker {
+    private static class CreateLocalSpan implements TraceEntryMarker {
         @Override
         public void traceEntryMarker() {}
     }

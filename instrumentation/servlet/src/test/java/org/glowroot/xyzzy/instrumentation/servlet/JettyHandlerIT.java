@@ -60,11 +60,11 @@ public class JettyHandlerIT {
     @Test
     public void testJettyHandler() throws Exception {
         // when
-        IncomingSpan trace = container.execute(ExecuteJettyHandler.class, "Web");
+        IncomingSpan incomingSpan = container.execute(ExecuteJettyHandler.class, "Web");
 
         // then
-        assertThat(trace.getMessage()).isEqualTo("/hello");
-        assertThat(trace.transactionName()).isEqualTo("/hello");
+        assertThat(incomingSpan.getMessage()).isEqualTo("/hello");
+        assertThat(incomingSpan.transactionName()).isEqualTo("/hello");
     }
 
     public static class ExecuteJettyHandler implements AppUnderTest {

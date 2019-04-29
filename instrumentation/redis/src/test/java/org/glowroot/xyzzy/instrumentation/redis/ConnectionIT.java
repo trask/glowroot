@@ -27,7 +27,7 @@ import org.glowroot.xyzzy.test.harness.Containers;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
-import static org.glowroot.xyzzy.test.harness.util.HarnessAssertions.assertSingleClientSpanMessage;
+import static org.glowroot.xyzzy.test.harness.util.HarnessAssertions.assertSingleOutgoingSpanMessage;
 
 public class ConnectionIT {
 
@@ -54,7 +54,7 @@ public class ConnectionIT {
         IncomingSpan incomingSpan = container.execute(JedisSet.class);
 
         // then
-        assertSingleClientSpanMessage(incomingSpan).matches("redis localhost:\\d+ SET");
+        assertSingleOutgoingSpanMessage(incomingSpan).matches("redis localhost:\\d+ SET");
     }
 
     @Test
@@ -63,7 +63,7 @@ public class ConnectionIT {
         IncomingSpan incomingSpan = container.execute(JedisGet.class);
 
         // then
-        assertSingleClientSpanMessage(incomingSpan).matches("redis localhost:\\d+ GET");
+        assertSingleOutgoingSpanMessage(incomingSpan).matches("redis localhost:\\d+ GET");
     }
 
     @Test
@@ -72,7 +72,7 @@ public class ConnectionIT {
         IncomingSpan incomingSpan = container.execute(JedisPing.class);
 
         // then
-        assertSingleClientSpanMessage(incomingSpan).matches("redis localhost:\\d+ PING");
+        assertSingleOutgoingSpanMessage(incomingSpan).matches("redis localhost:\\d+ PING");
     }
 
     private abstract static class JedisBase implements AppUnderTest, TransactionMarker {

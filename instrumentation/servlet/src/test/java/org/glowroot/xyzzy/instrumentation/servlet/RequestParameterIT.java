@@ -67,36 +67,37 @@ public class RequestParameterIT {
     @Test
     public void testRequestParameters() throws Exception {
         // when
-        IncomingSpan trace = container.execute(GetParameter.class, "Web");
+        IncomingSpan incomingSpan = container.execute(GetParameter.class, "Web");
 
         // then
         Map<String, Object> requestParameters =
-                ResponseHeaderIT.getDetailMap(trace, "Request parameters");
+                ResponseHeaderIT.getDetailMap(incomingSpan, "Request parameters");
         assertThat(requestParameters).hasSize(3);
         assertThat(requestParameters.get("xYz")).isEqualTo("aBc");
         assertThat(requestParameters.get("jpassword1")).isEqualTo("****");
         @SuppressWarnings("unchecked")
         List<String> multi = (List<String>) requestParameters.get("multi");
         assertThat(multi).containsExactly("m1", "m2");
-        String queryString = (String) trace.getDetails().get("Request query string");
+        String queryString = (String) incomingSpan.getDetails().get("Request query string");
         assertThat(queryString).isEqualTo("xYz=aBc&jpassword1=****&multi=m1&multi=m2");
     }
 
     @Test
     public void testRequestParametersWithoutMaskedQueryString() throws Exception {
         // when
-        IncomingSpan trace = container.execute(GetParameterWithoutMaskedQueryString.class, "Web");
+        IncomingSpan incomingSpan =
+                container.execute(GetParameterWithoutMaskedQueryString.class, "Web");
 
         // then
         Map<String, Object> requestParameters =
-                ResponseHeaderIT.getDetailMap(trace, "Request parameters");
+                ResponseHeaderIT.getDetailMap(incomingSpan, "Request parameters");
         assertThat(requestParameters).hasSize(3);
         assertThat(requestParameters.get("xYz")).isEqualTo("aBc");
         assertThat(requestParameters.get("jpassword1")).isEqualTo("****");
         @SuppressWarnings("unchecked")
         List<String> multi = (List<String>) requestParameters.get("multi");
         assertThat(multi).containsExactly("m1", "m2");
-        String queryString = (String) trace.getDetails().get("Request query string");
+        String queryString = (String) incomingSpan.getDetails().get("Request query string");
         assertThat(queryString).isEqualTo("xYz=aBc&multi=m1&multi=m2");
     }
 
@@ -106,12 +107,12 @@ public class RequestParameterIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureRequestParameters",
                 ImmutableList.<String>of());
         // when
-        IncomingSpan trace = container.execute(GetParameter.class, "Web");
+        IncomingSpan incomingSpan = container.execute(GetParameter.class, "Web");
         // then
-        assertThat(trace.getDetails()).hasSize(3);
-        assertThat(trace.getDetails()).containsKey("Request http method");
-        assertThat(trace.getDetails()).containsKey("Request query string");
-        assertThat(trace.getDetails()).containsKey("Response code");
+        assertThat(incomingSpan.getDetails()).hasSize(3);
+        assertThat(incomingSpan.getDetails()).containsKey("Request http method");
+        assertThat(incomingSpan.getDetails()).containsKey("Request query string");
+        assertThat(incomingSpan.getDetails()).containsKey("Response code");
     }
 
     @Test
@@ -124,11 +125,11 @@ public class RequestParameterIT {
     @Test
     public void testBadRequestParameterMap() throws Exception {
         // when
-        IncomingSpan trace = container.execute(GetBadParameterMap.class, "Web");
+        IncomingSpan incomingSpan = container.execute(GetBadParameterMap.class, "Web");
 
         // then
         Map<String, Object> requestParameters =
-                ResponseHeaderIT.getDetailMap(trace, "Request parameters");
+                ResponseHeaderIT.getDetailMap(incomingSpan, "Request parameters");
         assertThat(requestParameters).hasSize(1);
         assertThat(requestParameters.get("n")).isEqualTo("x");
     }
@@ -136,11 +137,11 @@ public class RequestParameterIT {
     @Test
     public void testExtraBadRequestParameterMap() throws Exception {
         // when
-        IncomingSpan trace = container.execute(GetExtraBadParameterMap.class, "Web");
+        IncomingSpan incomingSpan = container.execute(GetExtraBadParameterMap.class, "Web");
 
         // then
         Map<String, Object> requestParameters =
-                ResponseHeaderIT.getDetailMap(trace, "Request parameters");
+                ResponseHeaderIT.getDetailMap(incomingSpan, "Request parameters");
         assertThat(requestParameters).hasSize(1);
         assertThat(requestParameters.get("n")).isEqualTo("x");
     }
@@ -148,11 +149,11 @@ public class RequestParameterIT {
     @Test
     public void testAnotherBadRequestParameterMap() throws Exception {
         // when
-        IncomingSpan trace = container.execute(GetAnotherBadParameterMap.class, "Web");
+        IncomingSpan incomingSpan = container.execute(GetAnotherBadParameterMap.class, "Web");
 
         // then
         Map<String, Object> requestParameters =
-                ResponseHeaderIT.getDetailMap(trace, "Request parameters");
+                ResponseHeaderIT.getDetailMap(incomingSpan, "Request parameters");
         assertThat(requestParameters).hasSize(1);
         assertThat(requestParameters.get("n")).isEqualTo("x");
     }
@@ -160,11 +161,11 @@ public class RequestParameterIT {
     @Test
     public void testLargeRequestParameters() throws Exception {
         // when
-        IncomingSpan trace = container.execute(GetLargeParameter.class, "Web");
+        IncomingSpan incomingSpan = container.execute(GetLargeParameter.class, "Web");
 
         // then
         Map<String, Object> requestParameters =
-                ResponseHeaderIT.getDetailMap(trace, "Request parameters");
+                ResponseHeaderIT.getDetailMap(incomingSpan, "Request parameters");
         assertThat(requestParameters).hasSize(1);
         assertThat(requestParameters.get("large")).isEqualTo(
                 Strings.repeat("0123456789", 1000) + " [truncated to 10000 characters]");

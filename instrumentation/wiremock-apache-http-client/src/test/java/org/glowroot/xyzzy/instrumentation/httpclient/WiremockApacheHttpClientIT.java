@@ -34,7 +34,7 @@ import org.glowroot.xyzzy.test.harness.Containers;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.util.ExecuteHttpBase;
 
-import static org.glowroot.xyzzy.test.harness.util.HarnessAssertions.assertSingleClientSpanMessage;
+import static org.glowroot.xyzzy.test.harness.util.HarnessAssertions.assertSingleOutgoingSpanMessage;
 
 public class WiremockApacheHttpClientIT {
 
@@ -61,7 +61,7 @@ public class WiremockApacheHttpClientIT {
         IncomingSpan incomingSpan = container.execute(ExecuteHttpGet.class);
 
         // then
-        assertSingleClientSpanMessage(incomingSpan)
+        assertSingleOutgoingSpanMessage(incomingSpan)
                 .matches("http client request: GET http://localhost:\\d+/hello1");
     }
 
@@ -71,7 +71,7 @@ public class WiremockApacheHttpClientIT {
         IncomingSpan incomingSpan = container.execute(ExecuteHttpGetUsingHttpHostArg.class);
 
         // then
-        assertSingleClientSpanMessage(incomingSpan)
+        assertSingleOutgoingSpanMessage(incomingSpan)
                 .matches("http client request: GET http://localhost:\\d+/hello2");
     }
 
@@ -81,7 +81,7 @@ public class WiremockApacheHttpClientIT {
         IncomingSpan incomingSpan = container.execute(ExecuteHttpPost.class);
 
         // then
-        assertSingleClientSpanMessage(incomingSpan)
+        assertSingleOutgoingSpanMessage(incomingSpan)
                 .matches("http client request: POST http://localhost:\\d+/hello3");
     }
 
@@ -91,7 +91,7 @@ public class WiremockApacheHttpClientIT {
         IncomingSpan incomingSpan = container.execute(ExecuteHttpPostUsingHttpHostArg.class);
 
         // then
-        assertSingleClientSpanMessage(incomingSpan)
+        assertSingleOutgoingSpanMessage(incomingSpan)
                 .matches("http client request: POST http://localhost:\\d+/hello4");
     }
 

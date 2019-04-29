@@ -48,14 +48,14 @@ public class AsyncController extends Controller {
         actorSystem.scheduler().scheduleOnce(
                 Duration.create(1, SECONDS),
                 () -> {
-                    new CreateTraceEntry().traceEntryMarker();
+                    new CreateLocalSpan().traceEntryMarker();
                     promise.success(Results.ok("Hi!"));
                 },
                 exec);
         return promise;
     }
 
-    private static class CreateTraceEntry implements TraceEntryMarker {
+    private static class CreateLocalSpan implements TraceEntryMarker {
         @Override
         public void traceEntryMarker() {}
     }

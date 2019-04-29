@@ -34,8 +34,8 @@ public class TraceReporter {
         in = new ObjectInputStream(socket.getInputStream());
     }
 
-    public void send(IncomingSpan trace) throws Exception {
-        out.writeObject(trace);
+    public void send(IncomingSpan incomingSpan) throws Exception {
+        out.writeObject(incomingSpan);
         in.readObject();
     }
 }

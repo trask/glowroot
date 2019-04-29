@@ -18,7 +18,6 @@ package org.glowroot.xyzzy.instrumentation.jdbc;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.Iterator;
@@ -30,12 +29,13 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
-import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
+import org.glowroot.xyzzy.test.harness.LocalSpans;
+import org.glowroot.xyzzy.test.harness.LocalSpans.DoInLocalSpan;
+import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
-import org.glowroot.xyzzy.test.harness.TraceEntryMarker;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -108,7 +108,8 @@ public class OtherIT {
     @Test
     public void testWithoutResultSetValueTimerUnderSeparateTraceEntry() throws Exception {
         // when
-        IncomingSpan incomingSpan = container.execute(GetResultSetValueUnderSeparateTraceEntry.class);
+        IncomingSpan incomingSpan =
+                container.execute(GetResultSetValueUnderSeparateTraceEntry.class);
 
         // then
         boolean found = findExtendedTimerName(incomingSpan, "jdbc query");
@@ -121,7 +122,8 @@ public class OtherIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResultSetGet", true);
 
         // when
-        IncomingSpan incomingSpan = container.execute(GetResultSetValueUnderSeparateTraceEntry.class);
+        IncomingSpan incomingSpan =
+                container.execute(GetResultSetValueUnderSeparateTraceEntry.class);
 
         // then
         boolean found = findExtendedTimerName(incomingSpan, "jdbc query");
@@ -169,7 +171,8 @@ public class OtherIT {
     @Test
     public void testWithResultSetNavigateTimerUnderSeparateTraceEntry() throws Exception {
         // when
-        IncomingSpan incomingSpan = container.execute(IterateOverResultsUnderSeparateTraceEntry.class);
+        IncomingSpan incomingSpan =
+                container.execute(IterateOverResultsUnderSeparateTraceEntry.class);
 
         // then
         boolean found = findExtendedTimerName(incomingSpan, "jdbc query");
@@ -182,7 +185,8 @@ public class OtherIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResultSetNavigate", false);
 
         // when
-        IncomingSpan incomingSpan = container.execute(IterateOverResultsUnderSeparateTraceEntry.class);
+        IncomingSpan incomingSpan =
+                container.execute(IterateOverResultsUnderSeparateTraceEntry.class);
 
         // then
         boolean found = findExtendedTimerName(incomingSpan, "jdbc query");
@@ -323,7 +327,7 @@ public class OtherIT {
     }
 
     public static class IterateOverResultsUnderSeparateTraceEntry
-            implements AppUnderTest, TransactionMarker, TraceEntryMarker {
+            implements AppUnderTest, TransactionMarker {
         private Connection connection;
         private Statement statement;
         @Override
@@ -340,22 +344,23 @@ public class OtherIT {
             statement = connection.createStatement();
             try {
                 statement.execute("select * from employee");
-                traceEntryMarker();
+                LocalSpans.createTestSpan(new DoInLocalSpan() {
+                    @Override
+                    public void doInLocalSpan() throws Exception {
+                        ResultSet rs = statement.getResultSet();
+                        while (rs.next()) {
+                            rs.getString(1);
+                        }
+                    }
+                });
             } finally {
                 statement.close();
-            }
-        }
-        @Override
-        public void traceEntryMarker() throws SQLException {
-            ResultSet rs = statement.getResultSet();
-            while (rs.next()) {
-                rs.getString(1);
             }
         }
     }
 
     public static class GetResultSetValueUnderSeparateTraceEntry
-            implements AppUnderTest, TransactionMarker, TraceEntryMarker {
+            implements AppUnderTest, TransactionMarker {
         private Connection connection;
         private ResultSet rs;
         @Override
@@ -374,15 +379,16 @@ public class OtherIT {
                 statement.execute("select * from employee");
                 rs = statement.getResultSet();
                 while (rs.next()) {
-                    traceEntryMarker();
+                    LocalSpans.createTestSpan(new DoInLocalSpan() {
+                        @Override
+                        public void doInLocalSpan() throws Exception {
+                            rs.getString(1);
+                        }
+                    });
                 }
             } finally {
                 statement.close();
             }
-        }
-        @Override
-        public void traceEntryMarker() throws SQLException {
-            rs.getString(1);
         }
     }
 
@@ -414,7 +420,7 @@ public class OtherIT {
     }
 
     public static class ExecuteStatementAndIterateOverResultsUsingColumnNameUnderSeparateTraceEntry
-            implements AppUnderTest, TransactionMarker, TraceEntryMarker {
+            implements AppUnderTest, TransactionMarker {
         private Connection connection;
         private Statement statement;
         @Override
@@ -431,16 +437,17 @@ public class OtherIT {
             statement = connection.createStatement();
             try {
                 statement.execute("select * from employee");
-                traceEntryMarker();
+                LocalSpans.createTestSpan(new DoInLocalSpan() {
+                    @Override
+                    public void doInLocalSpan() throws Exception {
+                        ResultSet rs = statement.getResultSet();
+                        while (rs.next()) {
+                            rs.getString("name");
+                        }
+                    }
+                });
             } finally {
                 statement.close();
-            }
-        }
-        @Override
-        public void traceEntryMarker() throws SQLException {
-            ResultSet rs = statement.getResultSet();
-            while (rs.next()) {
-                rs.getString("name");
             }
         }
     }

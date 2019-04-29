@@ -183,7 +183,7 @@ public class JavaagentContainer implements Container {
         executeInternal(appClass);
         // give a short time to see if trace gets collected
         MILLISECONDS.sleep(10);
-        if (traceCollector != null && traceCollector.hasTrace()) {
+        if (traceCollector != null && traceCollector.hasIncomingSpan()) {
             throw new IllegalStateException("Trace was collected when none was expected");
         }
     }
@@ -217,10 +217,10 @@ public class JavaagentContainer implements Container {
         executeInternal(appClass);
         // extra long wait time is needed for StackOverflowOOMIT on slow travis ci machines since it
         // can sometimes take a long time for that large trace to be serialized and transferred
-        IncomingSpan trace =
-                traceCollector.getCompletedTrace(transactionType, transactionName, 20, SECONDS);
-        traceCollector.clearTrace();
-        return trace;
+        IncomingSpan incomingSpan =
+                traceCollector.getCompletedIncomingSpan(transactionType, transactionName, 20, SECONDS);
+        traceCollector.clearIncomingSpans();
+        return incomingSpan;
     }
 
     private void executeInternal(Class<? extends AppUnderTest> appUnderTestClass) throws Exception {

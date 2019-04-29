@@ -87,7 +87,7 @@ public class Play2xIT {
 
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(entry.getMessage()).isEqualTo("test local span / CreateLocalSpan");
 
         entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
@@ -124,7 +124,7 @@ public class Play2xIT {
 
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(entry.getMessage()).isEqualTo("test local span / CreateLocalSpan");
 
         entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
@@ -156,7 +156,7 @@ public class Play2xIT {
 
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(entry.getMessage()).isEqualTo("test local span / CreateLocalSpan");
 
         if (i.hasNext()) {
             // TODO investigate why this happens sporadically on travis ci
@@ -189,7 +189,7 @@ public class Play2xIT {
 
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(entry.getMessage()).isEqualTo("test local span / CreateLocalSpan");
 
         if (i.hasNext()) {
             entry = i.next();

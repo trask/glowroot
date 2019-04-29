@@ -27,11 +27,10 @@ import org.junit.Test;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
-import org.glowroot.xyzzy.test.harness.TraceEntryMarker;
+import org.glowroot.xyzzy.test.harness.LocalSpans;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.glowroot.xyzzy.test.harness.util.HarnessAssertions.assertSingleLocalSpanMessage;
 
 public class TimerIT {
@@ -59,7 +58,7 @@ public class TimerIT {
         IncomingSpan incomingSpan = container.execute(DoScheduledTimerTask.class);
 
         // then
-        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span / CreateLocalSpan");
     }
 
     public static class DoScheduledTimerTask implements AppUnderTest, TransactionMarker {
@@ -75,22 +74,11 @@ public class TimerIT {
             new Timer().schedule(new TimerTask() {
                 @Override
                 public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
+                    LocalSpans.createTestSpan();
                     latch.countDown();
                 }
-            }, 100);
+            }, 10);
             latch.await();
-        }
-    }
-
-    private static class CreateTraceEntry implements TraceEntryMarker {
-
-        @Override
-        public void traceEntryMarker() {
-            try {
-                MILLISECONDS.sleep(100);
-            } catch (InterruptedException e) {
-            }
         }
     }
 }

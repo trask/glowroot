@@ -35,10 +35,10 @@ import org.junit.Test;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
-import org.glowroot.xyzzy.test.harness.LocalSpan;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
+import org.glowroot.xyzzy.test.harness.LocalSpan;
+import org.glowroot.xyzzy.test.harness.LocalSpans;
 import org.glowroot.xyzzy.test.harness.Span;
-import org.glowroot.xyzzy.test.harness.TraceEntryMarker;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -121,11 +121,11 @@ public class AsyncServletIT {
         Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(localSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
         assertThat(localSpan.childSpans()).isEmpty();
 
         localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(localSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
         assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
@@ -156,11 +156,11 @@ public class AsyncServletIT {
         Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(localSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
         assertThat(localSpan.childSpans()).isEmpty();
 
         localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(localSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
         assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
@@ -187,21 +187,22 @@ public class AsyncServletIT {
                 .isEqualTo("a");
         assertThat(SessionAttributeIT.getUpdatedSessionAttributes(incomingSpan).get("async"))
                 .isEqualTo("b");
-        assertThat(SessionAttributeIT.getUpdatedSessionAttributes(incomingSpan).get("async-dispatch"))
-                .isEqualTo("c");
+        assertThat(
+                SessionAttributeIT.getUpdatedSessionAttributes(incomingSpan).get("async-dispatch"))
+                        .isEqualTo("c");
 
         Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(localSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
         assertThat(localSpan.childSpans()).isEmpty();
 
         localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(localSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
         assertThat(localSpan.childSpans()).isEmpty();
 
         localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(localSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
         assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
@@ -314,7 +315,7 @@ public class AsyncServletIT {
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
             request.getSession().setAttribute("sync", "a");
-            new CreateTraceEntry().traceEntryMarker();
+            LocalSpans.createTestSpan();
             final AsyncContext asyncContext = request.startAsync();
             asyncContext.start(new Runnable() {
                 @Override
@@ -323,7 +324,7 @@ public class AsyncServletIT {
                         MILLISECONDS.sleep(200);
                         ((HttpServletRequest) asyncContext.getRequest()).getSession()
                                 .setAttribute("async", "b");
-                        new CreateTraceEntry().traceEntryMarker();
+                        LocalSpans.createTestSpan();
                         asyncContext.getResponse().getWriter().println("async response");
                         asyncContext.complete();
                     } catch (Exception e) {
@@ -348,7 +349,7 @@ public class AsyncServletIT {
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
             request.getSession().setAttribute("sync", "a");
-            new CreateTraceEntry().traceEntryMarker();
+            LocalSpans.createTestSpan();
             final AsyncContext asyncContext = request.startAsync(request, response);
             asyncContext.start(new Runnable() {
                 @Override
@@ -357,7 +358,7 @@ public class AsyncServletIT {
                         MILLISECONDS.sleep(200);
                         ((HttpServletRequest) asyncContext.getRequest()).getSession()
                                 .setAttribute("async", "b");
-                        new CreateTraceEntry().traceEntryMarker();
+                        LocalSpans.createTestSpan();
                         asyncContext.getResponse().getWriter().println("async response");
                         asyncContext.complete();
                     } catch (Exception e) {
@@ -382,7 +383,7 @@ public class AsyncServletIT {
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
             request.getSession().setAttribute("sync", "a");
-            new CreateTraceEntry().traceEntryMarker();
+            LocalSpans.createTestSpan();
             final AsyncContext asyncContext = request.startAsync();
             asyncContext.start(new Runnable() {
                 @Override
@@ -391,7 +392,7 @@ public class AsyncServletIT {
                         MILLISECONDS.sleep(200);
                         ((HttpServletRequest) asyncContext.getRequest()).getSession()
                                 .setAttribute("async", "b");
-                        new CreateTraceEntry().traceEntryMarker();
+                        LocalSpans.createTestSpan();
                         asyncContext.dispatch("/async-forward");
                     } catch (Exception e) {
                         throw new RuntimeException(e);
@@ -409,13 +410,8 @@ public class AsyncServletIT {
         protected void doGet(HttpServletRequest request, HttpServletResponse response)
                 throws IOException {
             request.getSession().setAttribute("async-dispatch", "c");
-            new CreateTraceEntry().traceEntryMarker();
+            LocalSpans.createTestSpan();
             response.getWriter().println("the response");
         }
-    }
-
-    private static class CreateTraceEntry implements TraceEntryMarker {
-        @Override
-        public void traceEntryMarker() {}
     }
 }

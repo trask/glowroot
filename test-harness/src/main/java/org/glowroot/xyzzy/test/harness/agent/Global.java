@@ -40,9 +40,9 @@ public class Global {
         return threadContextThreadLocal.getHolder();
     }
 
-    public static void report(IncomingSpan trace) {
+    public static void report(IncomingSpan incomingSpan) {
         try {
-            checkNotNull(traceReporter).send(trace);
+            checkNotNull(traceReporter).send(incomingSpan);
         } catch (Throwable t) {
             Throwables.propagateIfPossible(t, RuntimeException.class);
             throw new RuntimeException(t);

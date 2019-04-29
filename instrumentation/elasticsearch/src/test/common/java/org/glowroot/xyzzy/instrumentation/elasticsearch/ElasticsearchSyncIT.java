@@ -61,12 +61,12 @@ public class ElasticsearchSyncIT {
     @Test
     public void shouldCaptureDocumentPut() throws Exception {
         // when
-        IncomingSpan trace = container.execute(ExecuteDocumentPut.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteDocumentPut.class);
 
         // then
-        checkTimers(trace);
+        checkTimers(incomingSpan);
 
-        Iterator<Span> i = trace.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
         assertThat(outgoingSpan.getMessage()).isEmpty();
@@ -80,12 +80,12 @@ public class ElasticsearchSyncIT {
     @Test
     public void shouldCaptureDocumentGet() throws Exception {
         // when
-        IncomingSpan trace = container.execute(ExecuteDocumentGet.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteDocumentGet.class);
 
         // then
-        checkTimers(trace);
+        checkTimers(incomingSpan);
 
-        Iterator<Span> i = trace.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
         assertThat(outgoingSpan.getMessage()).isEmpty();
@@ -99,12 +99,12 @@ public class ElasticsearchSyncIT {
     @Test
     public void shouldCaptureDocumentUpdate() throws Exception {
         // when
-        IncomingSpan trace = container.execute(ExecuteDocumentUpdate.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteDocumentUpdate.class);
 
         // then
-        checkTimers(trace);
+        checkTimers(incomingSpan);
 
-        Iterator<Span> i = trace.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
         assertThat(outgoingSpan.getMessage()).isEmpty();
@@ -118,12 +118,12 @@ public class ElasticsearchSyncIT {
     @Test
     public void shouldCaptureDocumentDelete() throws Exception {
         // when
-        IncomingSpan trace = container.execute(ExecuteDocumentDelete.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteDocumentDelete.class);
 
         // then
-        checkTimers(trace);
+        checkTimers(incomingSpan);
 
-        Iterator<Span> i = trace.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
         assertThat(outgoingSpan.getMessage()).isEmpty();
@@ -138,12 +138,12 @@ public class ElasticsearchSyncIT {
     @Test
     public void shouldCaptureDocumentSearchWithoutSource() throws Exception {
         // when
-        IncomingSpan trace = container.execute(ExecuteDocumentSearchWithoutSource.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteDocumentSearchWithoutSource.class);
 
         // then
-        checkTimers(trace);
+        checkTimers(incomingSpan);
 
-        Iterator<Span> i = trace.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
         assertThat(outgoingSpan.getMessage()).isEmpty();
@@ -158,13 +158,13 @@ public class ElasticsearchSyncIT {
     @Test
     public void shouldCaptureDocumentSearchWithoutIndexesWithoutSource() throws Exception {
         // when
-        IncomingSpan trace =
+        IncomingSpan incomingSpan =
                 container.execute(ExecuteDocumentSearchWithoutIndexesWithoutSource.class);
 
         // then
-        checkTimers(trace);
+        checkTimers(incomingSpan);
 
-        Iterator<Span> i = trace.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
         assertThat(outgoingSpan.getMessage()).isEmpty();
@@ -180,13 +180,13 @@ public class ElasticsearchSyncIT {
     public void shouldCaptureDocumentSearchWithoutIndexesWithoutTypesWithoutSource()
             throws Exception {
         // when
-        IncomingSpan trace = container
+        IncomingSpan incomingSpan = container
                 .execute(ExecuteDocumentSearchWithoutIndexesWithoutTypesWithoutSource.class);
 
         // then
-        checkTimers(trace);
+        checkTimers(incomingSpan);
 
-        Iterator<Span> i = trace.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
         assertThat(outgoingSpan.getMessage()).isEmpty();
@@ -201,13 +201,13 @@ public class ElasticsearchSyncIT {
     public void shouldCaptureDocumentSearchWithMultipleIndexesWithMultipleTypesWithoutSource()
             throws Exception {
         // when
-        IncomingSpan trace = container.execute(
+        IncomingSpan incomingSpan = container.execute(
                 ExecuteDocumentSearchWithMultipleIndexesWithMultipleTypesWithoutSource.class);
 
         // then
-        checkTimers(trace);
+        checkTimers(incomingSpan);
 
-        Iterator<Span> i = trace.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
         assertThat(outgoingSpan.getMessage()).isEmpty();
@@ -222,12 +222,12 @@ public class ElasticsearchSyncIT {
     @Test
     public void shouldCaptureDocumentSearchWithQuery() throws Exception {
         // when
-        IncomingSpan trace = container.execute(ExecuteDocumentSearchWithQuery.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteDocumentSearchWithQuery.class);
 
         // then
-        checkTimers(trace);
+        checkTimers(incomingSpan);
 
-        Iterator<Span> i = trace.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
         assertThat(outgoingSpan.getMessage()).isEmpty();
@@ -242,12 +242,12 @@ public class ElasticsearchSyncIT {
     @Test
     public void shouldCaptureDocumentSearchWithQueryAndSort() throws Exception {
         // when
-        IncomingSpan trace = container.execute(ExecuteDocumentSearchWithQueryAndSort.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteDocumentSearchWithQueryAndSort.class);
 
         // then
-        checkTimers(trace);
+        checkTimers(incomingSpan);
 
-        Iterator<Span> i = trace.childSpans().iterator();
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
         assertThat(outgoingSpan.getMessage()).isEmpty();
@@ -259,8 +259,8 @@ public class ElasticsearchSyncIT {
         assertThat(i.hasNext()).isFalse();
     }
 
-    private static void checkTimers(IncomingSpan trace) {
-        IncomingSpan.Timer rootTimer = trace.mainThreadRootTimer();
+    private static void checkTimers(IncomingSpan incomingSpan) {
+        IncomingSpan.Timer rootTimer = incomingSpan.mainThreadRootTimer();
         List<String> timerNames = Lists.newArrayList();
         for (IncomingSpan.Timer timer : rootTimer.childTimers()) {
             timerNames.add(timer.name());
@@ -270,7 +270,7 @@ public class ElasticsearchSyncIT {
         for (IncomingSpan.Timer timer : rootTimer.childTimers()) {
             assertThat(timer.childTimers()).isEmpty();
         }
-        assertThat(trace.asyncTimers()).isEmpty();
+        assertThat(incomingSpan.asyncTimers()).isEmpty();
     }
 
     public static class ExecuteDocumentPut implements AppUnderTest, TransactionMarker {

@@ -71,7 +71,7 @@ public class WebFluxIT {
 
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).matches("trace entry marker / CreateTraceEntry");
+        assertThat(entry.getMessage()).matches("test local span / CreateLocalSpan");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -108,7 +108,7 @@ public class WebFluxIT {
     private static class MyHttpHandler implements HttpHandler {
         @Override
         public Mono<Void> handle(ServerHttpRequest request, ServerHttpResponse response) {
-            new CreateTraceEntry().traceEntryMarker();
+            new CreateLocalSpan().traceEntryMarker();
             HttpClient httpClient = HttpClient.create();
             return httpClient.baseUrl("http://example.org")
                     .get()
@@ -122,7 +122,7 @@ public class WebFluxIT {
         }
     }
 
-    private static class CreateTraceEntry implements TraceEntryMarker {
+    private static class CreateLocalSpan implements TraceEntryMarker {
         @Override
         public void traceEntryMarker() {}
     }
