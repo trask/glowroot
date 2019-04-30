@@ -39,6 +39,15 @@ class JavaagentClient {
         in.readObject();
     }
 
+    public void setInstrumentationProperty(String instrumentationId, String propertyName,
+            Object propertyValue) throws Exception {
+        out.writeObject(Command.SET_INSTRUMENTATION_PROPERTY);
+        out.writeObject(instrumentationId);
+        out.writeObject(propertyName);
+        out.writeObject(propertyValue);
+        in.readObject();
+    }
+
     public void executeApp(String name) throws Exception {
         out.writeObject(Command.EXECUTE_APP);
         out.writeObject(name);
@@ -48,8 +57,8 @@ class JavaagentClient {
         }
     }
 
-    public void resetConfig() throws Exception {
-        out.writeObject(Command.RESET_CONFIG);
+    public void resetInstrumentationProperties() throws Exception {
+        out.writeObject(Command.RESET_INSTRUMENTATION_PROPERTIES);
         in.readObject();
     }
 

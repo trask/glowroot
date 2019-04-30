@@ -53,6 +53,8 @@ public class ThreadContextImpl implements ThreadContextPlus {
     private int currentNestingGroupId;
     private int currentSuppressionKeyId;
 
+    private boolean completeAsyncOnEnd;
+
     public ThreadContextImpl(ThreadContextThreadLocal.Holder threadContextHolder,
             IncomingSpanImpl incomingSpan, ParentSpanImpl parentSpan,
             @Nullable ServletRequestInfo servletRequestInfo, int rootNestingGroupId,
@@ -77,14 +79,20 @@ public class ThreadContextImpl implements ThreadContextPlus {
     @Override
     public TraceEntry startTransaction(String transactionType, String transactionName,
             MessageSupplier messageSupplier, TimerName timerName) {
-        return NopTransactionService.TRACE_ENTRY;
+        return startLocalSpanInternal(messageSupplier, (TimerNameImpl) timerName);
     }
 
     @Override
     public TraceEntry startTransaction(String transactionType, String transactionName,
             MessageSupplier messageSupplier, TimerName timerName,
             AlreadyInTransactionBehavior alreadyInTransactionBehavior) {
-        return NopTransactionService.TRACE_ENTRY;
+        if (alreadyInTransactionBehavior == AlreadyInTransactionBehavior.CAPTURE_TRACE_ENTRY) {
+            return startLocalSpanInternal(messageSupplier, (TimerNameImpl) timerName);
+        } else if (alreadyInTransactionBehavior == AlreadyInTransactionBehavior.CAPTURE_NEW_TRANSACTION) {
+            throw new IllegalStateException("CAPTURE_NEW_TRANSACTION is not supported yet");
+        } else {
+            throw new IllegalStateException("Unexpected enum: " + alreadyInTransactionBehavior);
+        }
     }
 
     @Override
@@ -141,22 +149,32 @@ public class ThreadContextImpl implements ThreadContextPlus {
     }
 
     @Override
-    public void setTransactionAsync() {}
+    public void setTransactionAsync() {
+        incomingSpan.setAsync();
+    }
 
     @Override
-    public void setTransactionAsyncComplete() {}
+    public void setTransactionAsyncComplete() {
+        completeAsyncOnEnd = true;
+    }
 
     @Override
     public void setTransactionOuter() {}
 
     @Override
-    public void setTransactionType(String transactionType, int priority) {}
+    public void setTransactionType(String transactionType, int priority) {
+        incomingSpan.setTransactionType(transactionType, priority);
+    }
 
     @Override
-    public void setTransactionName(String transactionName, int priority) {}
+    public void setTransactionName(String transactionName, int priority) {
+        incomingSpan.setTransactionName(transactionName, priority);
+    }
 
     @Override
-    public void setTransactionUser(String user, int priority) {}
+    public void setTransactionUser(String user, int priority) {
+        incomingSpan.setUser(user, priority);
+    }
 
     @Override
     public void addTransactionAttribute(String name, String value) {}
@@ -223,6 +241,12 @@ public class ThreadContextImpl implements ThreadContextPlus {
     @Override
     public void setCurrentSuppressionKeyId(int suppressionKeyId) {
         this.currentSuppressionKeyId = suppressionKeyId;
+    }
+
+    public void endAuxThreadContext() {
+        if (completeAsyncOnEnd) {
+            incomingSpan.completeAsync();
+        }
     }
 
     private LocalSpanImpl startLocalSpanInternal(MessageSupplier messageSupplier,

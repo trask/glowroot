@@ -16,46 +16,19 @@
 package org.glowroot.xyzzy.test.harness.agent;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.instrument.Instrumentation;
-import java.lang.reflect.Method;
-import java.security.CodeSource;
-import java.util.jar.JarFile;
 
-// this class is registered as the Premain-Class in the MANIFEST.MF of the agent jar
-//
-// this class should have minimal dependencies since it will live in the system class loader while
-// the rest of the agent will live in the bootstrap class loader
+// this is only used via JavaagentContainer, with bootstrap class path already configured properly
 public class Premain {
 
     private Premain() {}
 
     public static void premain(@SuppressWarnings("unused") String agentArgs,
-            Instrumentation instrumentation) {
-        try {
-            CodeSource codeSource = Premain.class.getProtectionDomain().getCodeSource();
-            File agentJarFile = getAgentJarFile(codeSource);
-            instrumentation.appendToBootstrapClassLoaderSearch(new JarFile(agentJarFile));
-            Class<?> mainEntryPointClass = Class.forName("org.glowroot.zipkin.MainEntryPoint", true,
-                    Premain.class.getClassLoader());
-            Method premainMethod =
-                    mainEntryPointClass.getMethod("premain", Instrumentation.class, File.class);
-            premainMethod.invoke(null, instrumentation, agentJarFile);
-        } catch (Throwable t) {
-            // log error but don't re-throw which would prevent monitored app from starting
-            System.err.println("Glowroot failed to start: " + t.getMessage());
-            t.printStackTrace();
+            Instrumentation instrumentation) throws Exception {
+        String tmpDirPath = System.getProperty("xyzzy.test.tmpDir");
+        if (tmpDirPath == null) {
+            throw new IllegalStateException("Missing xyzzy.test.tmpDir");
         }
-    }
-
-    static File getAgentJarFile(CodeSource codeSource) throws Exception {
-        if (codeSource == null) {
-            throw new IOException("Could not determine glowroot jar location");
-        }
-        File codeSourceFile = new File(codeSource.getLocation().toURI());
-        if (codeSourceFile.getName().endsWith(".jar")) {
-            return codeSourceFile;
-        }
-        throw new IOException("Could not determine glowroot jar location");
+        MainEntryPoint.premain(instrumentation, new File(tmpDirPath));
     }
 }

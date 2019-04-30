@@ -24,9 +24,6 @@ import org.immutables.value.Value;
 @Value.Immutable
 public interface IncomingSpan extends Span, Serializable {
 
-    boolean async();
-    long totalNanos();
-
     String transactionType();
     String transactionName();
     String user();

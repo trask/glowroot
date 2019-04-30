@@ -24,7 +24,6 @@ import java.util.Map;
 import org.glowroot.xyzzy.instrumentation.api.checker.Nullable;
 import org.glowroot.xyzzy.instrumentation.api.checker.PolyNull;
 import org.glowroot.xyzzy.instrumentation.api.internal.ReadableMessage;
-import org.glowroot.xyzzy.instrumentation.api.util.Optional;
 
 /**
  * The detail map can contain only {@link String}, {@link Number}, {@link Boolean} and null values.
@@ -36,8 +35,9 @@ import org.glowroot.xyzzy.instrumentation.api.util.Optional;
  * Lists are supported to simulate multimaps, e.g. for http request parameters and http headers,
  * both of which can have multiple values for the same key.
  * 
- * As an extra bonus, detail map can also contain org.glowroot.xyzzy.instrumentation.api.util.Optional
- * values which is useful for Maps that do not allow null values, e.g. Maps created using
+ * As an extra bonus, detail map can also contain
+ * org.glowroot.xyzzy.instrumentation.api.util.Optional values which is useful for Maps that do not
+ * allow null values, e.g. Maps created using
  * {@link org.glowroot.xyzzy.instrumentation.api.util.ImmutableMap#copyOf(Map)}
  * 
  * The detail map does not need to be thread safe as long as it is only instantiated in response to
@@ -162,8 +162,6 @@ public abstract class Message {
                 return needsTruncateDetail((Map<?, ?>) value);
             } else if (value instanceof List) {
                 return needsTruncateDetail((List<?>) value);
-            } else if (value instanceof Optional<?>) {
-                return needsTruncateDetail((Optional<?>) value);
             } else if (value instanceof String) {
                 return needsTruncateDetail((String) value);
             } else {
@@ -178,14 +176,6 @@ public abstract class Message {
                 }
             }
             return false;
-        }
-
-        private static boolean needsTruncateDetail(Optional<?> optional) {
-            if (!optional.isPresent()) {
-                return false;
-            }
-            Object value = optional.get();
-            return value instanceof String && needsTruncateDetail((String) value);
         }
 
         private static boolean needsTruncateDetail(String value) {
@@ -208,8 +198,6 @@ public abstract class Message {
                 return truncateDetailNested((Map<?, ?>) value);
             } else if (value instanceof List) {
                 return truncateDetail((List<?>) value);
-            } else if (value instanceof Optional<?>) {
-                return truncateDetailIfNeeded((Optional<?>) value);
             } else if (value instanceof String) {
                 return truncateDetailIfNeeded((String) value);
             } else {
@@ -238,21 +226,6 @@ public abstract class Message {
                 truncatedDetail.add(truncate(value));
             }
             return truncatedDetail;
-        }
-
-        private static Optional<?> truncateDetailIfNeeded(Optional<?> optional) {
-            if (!optional.isPresent()) {
-                return optional;
-            }
-            Object value = optional.get();
-            if (!(value instanceof String)) {
-                return optional;
-            }
-            String val = (String) value;
-            if (needsTruncateDetail(val)) {
-                return Optional.of(truncateDetailIfNeeded(val));
-            }
-            return optional;
         }
 
         private static String truncateDetailIfNeeded(String s) {

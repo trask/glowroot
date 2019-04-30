@@ -80,32 +80,32 @@ public class AuxThreadContextImpl implements AuxThreadContext {
 
         @Override
         public void end() {
-            threadContextHolder.set(null);
+            endInternal();
         }
 
         @Override
         public void endWithLocationStackTrace(long threshold, TimeUnit unit) {
-            threadContextHolder.set(null);
+            endInternal();
         }
 
         @Override
         public void endWithError(Throwable t) {
-            threadContextHolder.set(null);
+            endInternal();
         }
 
         @Override
         public void endWithError(String message) {
-            threadContextHolder.set(null);
+            endInternal();
         }
 
         @Override
         public void endWithError(String message, Throwable t) {
-            threadContextHolder.set(null);
+            endInternal();
         }
 
         @Override
         public void endWithInfo(Throwable t) {
-            threadContextHolder.set(null);
+            endInternal();
         }
 
         @Override
@@ -116,6 +116,12 @@ public class AuxThreadContextImpl implements AuxThreadContext {
         @Override
         public @Nullable Object getMessageSupplier() {
             return null;
+        }
+
+        private void endInternal() {
+            ThreadContextImpl threadContext = (ThreadContextImpl) threadContextHolder.get();
+            threadContext.endAuxThreadContext();
+            threadContextHolder.set(null);
         }
     }
 }

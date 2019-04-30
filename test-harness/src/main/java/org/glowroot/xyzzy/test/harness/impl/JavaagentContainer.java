@@ -44,6 +44,7 @@ import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.agent.Premain;
+import org.glowroot.xyzzy.test.harness.util.TempDirs;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -57,6 +58,7 @@ public class JavaagentContainer implements Container {
 
     private final ServerSocket heartbeatListenerSocket;
     private final ExecutorService heartbeatListenerExecutor;
+    private final File tmpDir;
     private final TraceCollector traceCollector;
     private final JavaagentClient javaagentClient;
     private final ExecutorService consolePipeExecutor;
@@ -64,6 +66,8 @@ public class JavaagentContainer implements Container {
     private final Process process;
     private final ConsoleOutputPipe consoleOutputPipe;
     private final Thread shutdownHook;
+
+    private volatile boolean closed;
 
     public static JavaagentContainer create() throws Exception {
         return new JavaagentContainer(ImmutableList.<String>of());
@@ -88,17 +92,20 @@ public class JavaagentContainer implements Container {
                     InputStream socketIn = socket.getInputStream();
                     ByteStreams.exhaust(socketIn);
                 } catch (IOException e) {
-                    logger.error(e.getMessage(), e);
+                    if (!closed) {
+                        logger.error(e.getMessage(), e);
+                    }
                 }
             }
         });
 
-        int traceCollectorPort = LocalContainer.getAvailablePort();
-        traceCollector = new TraceCollector(traceCollectorPort);
+        int collectorPort = LocalContainer.getAvailablePort();
+        traceCollector = new TraceCollector(collectorPort);
         traceCollector.start();
         int javaagentServerPort = LocalContainer.getAvailablePort();
-        List<String> command = buildCommand(heartbeatListenerSocket.getLocalPort(),
-                traceCollectorPort, javaagentServerPort, extraJvmArgs);
+        tmpDir = TempDirs.createTempDir("glowroot-test-dir");
+        List<String> command = buildCommand(heartbeatListenerSocket.getLocalPort(), collectorPort,
+                javaagentServerPort, tmpDir, extraJvmArgs);
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.redirectErrorStream(true);
         Process process = processBuilder.start();
@@ -112,19 +119,8 @@ public class JavaagentContainer implements Container {
         this.process = process;
 
         Stopwatch stopwatch = Stopwatch.createStarted();
-        // this can take a while on slow travis ci build machines
-        while (stopwatch.elapsed(SECONDS) < 30) {
-            try {
-                JavaagentClient javaagentClient = new JavaagentClient(javaagentServerPort);
-                javaagentClient.ping();
-                break;
-            } catch (Exception e) {
-                logger.debug(e.getMessage(), e);
-            }
-            MILLISECONDS.sleep(100);
-        }
-        javaagentClient = new JavaagentClient(javaagentServerPort);
-        javaagentClient.resetConfig();
+        javaagentClient = connectToJavaagent(javaagentServerPort, stopwatch);
+        javaagentClient.resetInstrumentationProperties();
         shutdownHook = new ShutdownHookThread(javaagentClient);
         // unfortunately, ctrl-c during maven test will kill the maven process, but won't kill the
         // forked surefire jvm where the tests are being run
@@ -133,32 +129,44 @@ public class JavaagentContainer implements Container {
         Runtime.getRuntime().addShutdownHook(shutdownHook);
     }
 
+    private static JavaagentClient connectToJavaagent(int javaagentServerPort, Stopwatch stopwatch)
+            throws Exception {
+        // this can take a while on slow travis ci build machines
+        Exception lastException = null;
+        while (stopwatch.elapsed(SECONDS) < 30) {
+            try {
+                return new JavaagentClient(javaagentServerPort);
+            } catch (Exception e) {
+                logger.debug(e.getMessage(), e);
+                lastException = e;
+            }
+            MILLISECONDS.sleep(10);
+        }
+        throw checkNotNull(lastException);
+    }
+
     @Override
     public void setInstrumentationProperty(String instrumentationId, String propertyName,
             boolean propertyValue) throws Exception {
-        // TODO Auto-generated method stub
-
+        javaagentClient.setInstrumentationProperty(instrumentationId, propertyName, propertyValue);
     }
 
     @Override
     public void setInstrumentationProperty(String instrumentationId, String propertyName,
             Double propertyValue) throws Exception {
-        // TODO Auto-generated method stub
-
+        javaagentClient.setInstrumentationProperty(instrumentationId, propertyName, propertyValue);
     }
 
     @Override
     public void setInstrumentationProperty(String instrumentationId, String propertyName,
             String propertyValue) throws Exception {
-        // TODO Auto-generated method stub
-
+        javaagentClient.setInstrumentationProperty(instrumentationId, propertyName, propertyValue);
     }
 
     @Override
     public void setInstrumentationProperty(String instrumentationId, String propertyName,
             List<String> propertyValue) throws Exception {
-        // TODO Auto-generated method stub
-
+        javaagentClient.setInstrumentationProperty(instrumentationId, propertyName, propertyValue);
     }
 
     @Override
@@ -189,12 +197,13 @@ public class JavaagentContainer implements Container {
     }
 
     @Override
-    public void resetInstrumentationConfig() throws Exception {
-        javaagentClient.resetConfig();
+    public void resetInstrumentationProperties() throws Exception {
+        javaagentClient.resetInstrumentationProperties();
     }
 
     @Override
     public void close() throws Exception {
+        closed = true;
         javaagentClient.kill();
         traceCollector.close();
         process.waitFor();
@@ -209,6 +218,7 @@ public class JavaagentContainer implements Container {
         }
         heartbeatListenerSocket.close();
         Runtime.getRuntime().removeShutdownHook(shutdownHook);
+        TempDirs.deleteRecursively(tmpDir);
     }
 
     private IncomingSpan executeInternal(Class<? extends AppUnderTest> appClass,
@@ -218,7 +228,8 @@ public class JavaagentContainer implements Container {
         // extra long wait time is needed for StackOverflowOOMIT on slow travis ci machines since it
         // can sometimes take a long time for that large trace to be serialized and transferred
         IncomingSpan incomingSpan =
-                traceCollector.getCompletedIncomingSpan(transactionType, transactionName, 20, SECONDS);
+                traceCollector.getCompletedIncomingSpan(transactionType, transactionName, 20,
+                        SECONDS);
         traceCollector.clearIncomingSpans();
         return incomingSpan;
     }
@@ -227,8 +238,8 @@ public class JavaagentContainer implements Container {
         javaagentClient.executeApp(appUnderTestClass.getName());
     }
 
-    private static List<String> buildCommand(int heartbeatPort, int traceCollectorPort,
-            int javaagentServerPort, List<String> extraJvmArgs) throws Exception {
+    private static List<String> buildCommand(int heartbeatPort, int collectorPort,
+            int javaagentServerPort, File tmpDir, List<String> extraJvmArgs) throws Exception {
         List<String> command = Lists.newArrayList();
         String javaExecutable = StandardSystemProperty.JAVA_HOME.value() + File.separator + "bin"
                 + File.separator + "java";
@@ -247,7 +258,6 @@ public class JavaagentContainer implements Container {
         String classpath = Strings.nullToEmpty(StandardSystemProperty.JAVA_CLASS_PATH.value());
         List<String> bootPaths = Lists.newArrayList();
         List<String> paths = Lists.newArrayList();
-        List<String> maybeBootPaths = Lists.newArrayList();
         File javaagentJarFile = null;
         for (String path : Splitter.on(File.pathSeparatorChar).split(classpath)) {
             File file = new File(path);
@@ -257,7 +267,7 @@ public class JavaagentContainer implements Container {
                 javaagentJarFile = file;
             } else if (name.matches("xyzzy-instrumentation-api-[0-9.]+(-SNAPSHOT)?.jar")
                     || name.matches("xyzzy-engine-[0-9.]+(-SNAPSHOT)?.jar")) {
-                maybeBootPaths.add(path);
+                bootPaths.add(path);
             } else if (file.getAbsolutePath()
                     .endsWith(File.separator + "xyzzy-instrumentation-api" + targetClasses)
                     || file.getAbsolutePath()
@@ -266,7 +276,7 @@ public class JavaagentContainer implements Container {
                     || file.getAbsolutePath()
                             .endsWith(File.separator + "wire-api" + targetClasses)) {
                 // these are glowroot-agent-core-unshaded transitive dependencies
-                maybeBootPaths.add(path);
+                bootPaths.add(path);
             } else if (name.matches("xyzzy-annotation-api-[0-9.]+(-SNAPSHOT)?.jar")) {
                 // annotation-api lives with the application
                 paths.add(path);
@@ -286,7 +296,7 @@ public class JavaagentContainer implements Container {
                     || name.matches("error_prone_annotations-.*\\.jar")
                     || name.matches("jsr305-.*\\.jar")) {
                 // these are glowroot-agent-core-unshaded transitive dependencies
-                maybeBootPaths.add(path);
+                bootPaths.add(path);
             } else if (name.matches("glowroot-agent-it-harness-unshaded-[0-9.]+(-SNAPSHOT)?.jar")) {
                 // this is integration test harness, needs to be in bootstrap class loader when it
                 // it is shaded (because then it contains glowroot-agent-core), and for consistency
@@ -318,7 +328,6 @@ public class JavaagentContainer implements Container {
                 paths.add(path);
             }
         }
-        bootPaths.addAll(maybeBootPaths);
         command.add("-Xbootclasspath/a:" + Joiner.on(File.pathSeparatorChar).join(bootPaths));
         command.add("-classpath");
         command.add(Joiner.on(File.pathSeparatorChar).join(paths));
@@ -331,7 +340,8 @@ public class JavaagentContainer implements Container {
             throw new IllegalStateException("Could not find delegating-javaagent dependency");
         }
         command.add("-javaagent:" + javaagentJarFile + "=" + Premain.class.getName());
-        command.add("-Dxyzzy.test.collector=localhost:" + traceCollectorPort);
+        command.add("-Dxyzzy.test.tmpDir=" + tmpDir.getAbsolutePath());
+        command.add("-Dxyzzy.test.collectorPort=" + collectorPort);
         command.add("-Dxyzzy.debug.preCheckLoadedClasses=true");
         // this is used inside low-entropy docker containers
         String sourceOfRandomness = System.getProperty("java.security.egd");

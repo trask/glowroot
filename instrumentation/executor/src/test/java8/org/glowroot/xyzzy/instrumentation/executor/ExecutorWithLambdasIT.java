@@ -57,7 +57,7 @@ public class ExecutorWithLambdasIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.resetInstrumentationConfig();
+        container.resetInstrumentationProperties();
     }
 
     @Test

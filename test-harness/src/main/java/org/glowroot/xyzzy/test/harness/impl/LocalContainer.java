@@ -53,11 +53,11 @@ public class LocalContainer implements Container {
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(isolatedWeavingClassLoader);
         try {
-            MainEntryPoint.start(null, null, tmpDir, collectorPort);
+            MainEntryPoint.start(null, tmpDir, collectorPort);
         } finally {
             Thread.currentThread().setContextClassLoader(loader);
         }
-        MainEntryPoint.resetInstrumentationConfig();
+        MainEntryPoint.resetInstrumentationProperties();
     }
 
     @Override
@@ -111,8 +111,8 @@ public class LocalContainer implements Container {
     }
 
     @Override
-    public void resetInstrumentationConfig() throws Exception {
-        MainEntryPoint.resetInstrumentationConfig();
+    public void resetInstrumentationProperties() throws Exception {
+        MainEntryPoint.resetInstrumentationProperties();
     }
 
     @Override
@@ -125,7 +125,8 @@ public class LocalContainer implements Container {
         checkNotNull(traceCollector);
         executeInternal(appClass);
         IncomingSpan incomingSpan =
-                traceCollector.getCompletedIncomingSpan(transactionType, transactionName, 10, SECONDS);
+                traceCollector.getCompletedIncomingSpan(transactionType, transactionName, 10,
+                        SECONDS);
         traceCollector.clearIncomingSpans();
         return incomingSpan;
     }

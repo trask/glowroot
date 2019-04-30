@@ -33,8 +33,8 @@ import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.LocalSpan;
-import org.glowroot.xyzzy.test.harness.TestSpans;
 import org.glowroot.xyzzy.test.harness.Span;
+import org.glowroot.xyzzy.test.harness.TestSpans;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -57,7 +57,7 @@ public class SuspendedResourceIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.resetInstrumentationConfig();
+        container.resetInstrumentationProperties();
     }
 
     @Test
@@ -78,7 +78,6 @@ public class SuspendedResourceIT {
 
         // then
         assertThat(incomingSpan.transactionName()).isEqualTo("GET " + contextPath + "/suspended/*");
-        assertThat(incomingSpan.async()).isTrue();
 
         Iterator<Span> i = incomingSpan.childSpans().iterator();
 

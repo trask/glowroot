@@ -172,7 +172,7 @@
       </dependencies>
     </profile>
     <profile>
-      <id>java8-tests</id>
+      <id>test-java8</id>
       <build>
         <plugins>
           <plugin>

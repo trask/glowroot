@@ -52,7 +52,7 @@ public class Log4j1xIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.resetInstrumentationConfig();
+        container.resetInstrumentationProperties();
     }
 
     @Test

@@ -50,15 +50,19 @@ public class IncomingSpanImpl implements TraceEntry, ParentSpanImpl {
 
     private final Queue<SpanImpl> childSpans = Queues.newConcurrentLinkedQueue();
 
-    private volatile boolean async;
     private volatile String transactionType;
+    private volatile int transactionTypePriority = Integer.MIN_VALUE;
     private volatile String transactionName;
+    private volatile int transactionNamePriority = Integer.MIN_VALUE;
     private volatile @Nullable String user;
+    private volatile int userPriority = Integer.MIN_VALUE;
 
     private volatile long totalNanos;
 
     private volatile @Nullable Span.Error error;
     private volatile @Nullable Long locationStackTraceMillis;
+
+    private volatile boolean async;
 
     public IncomingSpanImpl(String transactionType, String transactionName,
             MessageSupplier messageSupplier, ThreadContextThreadLocal.Holder threadContextHolder,
@@ -133,7 +137,6 @@ public class IncomingSpanImpl implements TraceEntry, ParentSpanImpl {
     @Override
     public ImmutableIncomingSpan toImmutable() {
         ImmutableIncomingSpan.Builder builder = ImmutableIncomingSpan.builder()
-                .async(async)
                 .totalNanos(totalNanos)
                 .transactionType(transactionType)
                 .transactionName(transactionName)
@@ -156,20 +159,34 @@ public class IncomingSpanImpl implements TraceEntry, ParentSpanImpl {
         return builder.build();
     }
 
-    public void setAsync(boolean async) {
-        this.async = async;
+    public void setAsync() {
+        async = true;
     }
 
-    public void setTransactionType(String transactionType) {
-        this.transactionType = transactionType;
+    public void completeAsync() {
+        totalNanos = System.nanoTime() - startTimeNanos;
+        Global.report(toImmutable());
     }
 
-    public void setTransactionName(String transactionName) {
-        this.transactionName = transactionName;
+    public void setTransactionType(String transactionType, int priority) {
+        if (priority > transactionTypePriority && !transactionType.isEmpty()) {
+            this.transactionType = transactionType;
+            transactionTypePriority = priority;
+        }
     }
 
-    public void setUser(String user) {
-        this.user = user;
+    public void setTransactionName(String transactionName, int priority) {
+        if (priority > transactionNamePriority && !transactionName.isEmpty()) {
+            this.transactionName = transactionName;
+            transactionNamePriority = priority;
+        }
+    }
+
+    public void setUser(String user, int priority) {
+        if (priority > userPriority && !user.isEmpty()) {
+            this.user = user;
+            userPriority = priority;
+        }
     }
 
     public void addAuxThreadRootTimer(TimerImpl auxThreadRootTimer) {
@@ -182,7 +199,9 @@ public class IncomingSpanImpl implements TraceEntry, ParentSpanImpl {
 
     private void endInternal() {
         threadContextHolder.set(null);
-        totalNanos = System.nanoTime() - startTimeNanos;
-        Global.report(toImmutable());
+        if (!async) {
+            totalNanos = System.nanoTime() - startTimeNanos;
+            Global.report(toImmutable());
+        }
     }
 }

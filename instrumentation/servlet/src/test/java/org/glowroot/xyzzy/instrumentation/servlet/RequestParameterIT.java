@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.servlet;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
@@ -38,8 +39,8 @@ import org.springframework.mock.web.MockHttpServletResponse;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
+import org.glowroot.xyzzy.test.harness.Containers;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
-import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -51,7 +52,7 @@ public class RequestParameterIT {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = JavaagentContainer.create();
+        container = Containers.create();
     }
 
     @AfterClass
@@ -61,7 +62,7 @@ public class RequestParameterIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.resetInstrumentationConfig();
+        container.resetInstrumentationProperties();
     }
 
     @Test
@@ -131,7 +132,7 @@ public class RequestParameterIT {
         Map<String, Object> requestParameters =
                 ResponseHeaderIT.getDetailMap(incomingSpan, "Request parameters");
         assertThat(requestParameters).hasSize(1);
-        assertThat(requestParameters.get("n")).isEqualTo("x");
+        assertThat(requestParameters.get("n")).isEqualTo(Arrays.asList(null, "x"));
     }
 
     @Test
@@ -143,7 +144,7 @@ public class RequestParameterIT {
         Map<String, Object> requestParameters =
                 ResponseHeaderIT.getDetailMap(incomingSpan, "Request parameters");
         assertThat(requestParameters).hasSize(1);
-        assertThat(requestParameters.get("n")).isEqualTo("x");
+        assertThat(requestParameters.get("n")).isEqualTo(Arrays.asList(null, "x"));
     }
 
     @Test

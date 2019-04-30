@@ -32,7 +32,6 @@ import org.glowroot.xyzzy.instrumentation.api.ThreadContext.ServletRequestInfo;
 import org.glowroot.xyzzy.instrumentation.api.checker.MonotonicNonNull;
 import org.glowroot.xyzzy.instrumentation.api.checker.Nullable;
 import org.glowroot.xyzzy.instrumentation.api.checker.RequiresNonNull;
-import org.glowroot.xyzzy.instrumentation.api.util.Optional;
 import org.glowroot.xyzzy.instrumentation.servlet.DetailCapture;
 
 // this class is thread-safe (unlike other MessageSuppliers) since it gets passed around to
@@ -65,8 +64,7 @@ public class ServletMessageSupplier extends MessageSupplier implements ServletRe
     // of the request
     private final Map<String, String> sessionAttributeInitialValueMap;
 
-    // ConcurrentHashMap does not allow null values, so need to use Optional values
-    private volatile @MonotonicNonNull ConcurrentMap<String, Optional<String>> sessionAttributeUpdatedValueMap;
+    private volatile @MonotonicNonNull ConcurrentMap<String, String> sessionAttributeUpdatedValueMap;
 
     private @Nullable List<String> jaxRsParts;
 
@@ -222,9 +220,14 @@ public class ServletMessageSupplier extends MessageSupplier implements ServletRe
     public void putSessionAttributeChangedValue(String attributeName,
             @Nullable String attributeValue) {
         if (sessionAttributeUpdatedValueMap == null) {
-            sessionAttributeUpdatedValueMap = new ConcurrentHashMap<String, Optional<String>>();
+            sessionAttributeUpdatedValueMap = new ConcurrentHashMap<String, String>();
         }
-        sessionAttributeUpdatedValueMap.put(attributeName, Optional.fromNullable(attributeValue));
+        if (attributeValue == null) {
+            // ConcurrentHashMap does not allow null values
+            sessionAttributeUpdatedValueMap.remove(attributeName);
+        } else {
+            sessionAttributeUpdatedValueMap.put(attributeName, attributeValue);
+        }
     }
 
     private void addSessionAttributeDetail(Map<String, Object> detail) {
@@ -255,8 +258,7 @@ public class ServletMessageSupplier extends MessageSupplier implements ServletRe
         sessionAttributeInitialValuePlusMap.putAll(sessionAttributeInitialValueMap);
         // add empty values into initial values for any updated attributes that are not
         // already present in initial values nested detail map
-        for (Map.Entry<String, Optional<String>> entry : sessionAttributeUpdatedValueMap
-                .entrySet()) {
+        for (Map.Entry<String, String> entry : sessionAttributeUpdatedValueMap.entrySet()) {
             if (!sessionAttributeInitialValueMap.containsKey(entry.getKey())) {
                 sessionAttributeInitialValuePlusMap.put(entry.getKey(), null);
             }

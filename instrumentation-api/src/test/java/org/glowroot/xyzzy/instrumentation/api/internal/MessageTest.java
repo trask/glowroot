@@ -22,11 +22,9 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import org.junit.Test;
 
 import org.glowroot.xyzzy.instrumentation.api.Message;
-import org.glowroot.xyzzy.instrumentation.api.internal.ReadableMessage;
-import org.glowroot.xyzzy.instrumentation.api.util.Optional;
-import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -87,11 +85,7 @@ public class MessageTest {
         detail.put("a", longString + "a");
         detail.put("x" + longString, "x");
         detail.put("xx" + longString, "xx" + longString);
-        detail.put("list",
-                ImmutableList.of(longString, longString + "a", Optional.of("x" + longString)));
-        detail.put("absent", Optional.fromNullable(null));
-        detail.put("oa", Optional.of("a"));
-        detail.put("ox", Optional.of("x" + longString));
+        detail.put("list", ImmutableList.of(longString, longString + "a", "x" + longString));
         detail.put("nested", ImmutableMap.of(longString + "a", longString + "a"));
 
         ReadableMessage message = (ReadableMessage) Message.create("", detail);
@@ -102,11 +96,7 @@ public class MessageTest {
         assertThat(truncatedDetail.get("xx" + Strings.repeat("a", 9998) + suffix))
                 .isEqualTo("xx" + Strings.repeat("a", 9998) + suffix);
         assertThat((List<?>) truncatedDetail.get("list")).containsExactly(longString,
-                longString + suffix, Optional.of("x" + Strings.repeat("a", 9999) + suffix));
-        assertThat(truncatedDetail.get("absent")).isEqualTo(Optional.fromNullable(null));
-        assertThat(truncatedDetail.get("oa")).isEqualTo(Optional.of("a"));
-        assertThat(truncatedDetail.get("ox"))
-                .isEqualTo(Optional.of("x" + Strings.repeat("a", 9999) + suffix));
+                longString + suffix, "x" + Strings.repeat("a", 9999) + suffix);
         assertThat(((Map<?, ?>) truncatedDetail.get("nested")).get(longString + suffix))
                 .isEqualTo(longString + suffix);
     }

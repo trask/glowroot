@@ -18,7 +18,7 @@ package org.glowroot.xyzzy.test.harness.agent.spans;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.assertj.core.util.Lists;
+import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.xyzzy.engine.impl.NopTransactionService;

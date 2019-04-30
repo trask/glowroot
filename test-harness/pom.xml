@@ -43,6 +43,11 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>com.github.trask</groupId>
+      <artifactId>delegating-javaagent</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+    <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
     </dependency>

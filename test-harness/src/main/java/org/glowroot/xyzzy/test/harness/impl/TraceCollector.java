@@ -45,6 +45,8 @@ class TraceCollector {
     private final ExecutorService executor;
     private final ServerSocket serverSocket;
 
+    private volatile boolean closed;
+
     TraceCollector(int port) throws Exception {
         executor = Executors.newSingleThreadExecutor();
         serverSocket = new ServerSocket(port);
@@ -63,13 +65,16 @@ class TraceCollector {
                         out.writeObject("ok");
                     }
                 } catch (Throwable t) {
-                    logger.error(t.getMessage(), t);
+                    if (!closed) {
+                        logger.error(t.getMessage(), t);
+                    }
                 }
             }
         });
     }
 
     void close() throws IOException {
+        closed = true;
         serverSocket.close();
         executor.shutdown();
     }

@@ -20,7 +20,6 @@ import java.lang.instrument.Instrumentation;
 import java.util.List;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.slf4j.Logger;
 
 import org.glowroot.xyzzy.engine.config.InstrumentationDescriptor;
 import org.glowroot.xyzzy.engine.config.InstrumentationDescriptors;
@@ -36,31 +35,16 @@ public class MainEntryPoint {
 
     private MainEntryPoint() {}
 
-    public static void premain(Instrumentation instrumentation, File agentJarFile) {
+    public static void premain(Instrumentation instrumentation, File tmpDir) throws Exception {
         // DO NOT USE ANY GUAVA CLASSES before initLogging() because they trigger loading of jul
         // (and thus org.glowroot.xyzzy.engine.jul.Logger and thus glowroot's shaded slf4j)
-        Logger startupLogger;
-        try {
-            startupLogger = MainEntryPointUtil.initLogging("org.glowroot.zipkin", instrumentation);
-        } catch (Throwable t) {
-            // log error but don't re-throw which would prevent monitored app from starting
-            // also, don't use logger since it failed to initialize
-            System.err.println("Agent failed to start: " + t.getMessage());
-            t.printStackTrace();
-            return;
-        }
-        try {
-            int collectorPort = checkNotNull(Integer.getInteger("xyzzy.test.collectorPort"));
-            start(instrumentation, agentJarFile, new File(agentJarFile.getParentFile(), "tmp"),
-                    collectorPort);
-        } catch (Throwable t) {
-            // log error but don't re-throw which would prevent monitored app from starting
-            startupLogger.error("Agent failed to start: {}", t.getMessage(), t);
-        }
+        MainEntryPointUtil.initLogging("org.glowroot.xyzzy.test.harness", instrumentation);
+        int collectorPort = checkNotNull(Integer.getInteger("xyzzy.test.collectorPort"));
+        start(instrumentation, tmpDir, collectorPort);
     }
 
-    public static void start(Instrumentation instrumentation, @Nullable File agentJarFile,
-            File tmpDir, int collectorPort) throws Exception {
+    public static void start(@Nullable Instrumentation instrumentation, File tmpDir,
+            int collectorPort) throws Exception {
 
         AgentImpl agent = new AgentImpl();
 
@@ -70,40 +54,43 @@ public class MainEntryPoint {
 
         EngineModule engineModule = EngineModule.createWithSomeDefaults(instrumentation, tmpDir,
                 Global.getThreadContextThreadLocal(), new GlowrootServiceImpl(),
-                instrumentationDescriptors, configServiceFactory, agent, agentJarFile);
+                instrumentationDescriptors, configServiceFactory, agent, null);
 
-        IsolatedWeavingClassLoader isolatedWeavingClassLoader =
-                (IsolatedWeavingClassLoader) Thread.currentThread().getContextClassLoader();
-        checkNotNull(isolatedWeavingClassLoader);
-        isolatedWeavingClassLoader.setWeaver(engineModule.getWeaver());
+        if (instrumentation == null) {
+            // running in LocalContainer
+            IsolatedWeavingClassLoader isolatedWeavingClassLoader =
+                    (IsolatedWeavingClassLoader) Thread.currentThread().getContextClassLoader();
+            checkNotNull(isolatedWeavingClassLoader);
+            isolatedWeavingClassLoader.setWeaver(engineModule.getWeaver());
+        }
 
         Global.setTraceReporter(new TraceReporter(collectorPort));
     }
 
-    public static void resetInstrumentationConfig() {
+    public static void resetInstrumentationProperties() {
         configServiceFactory.resetConfig();
     }
 
     public static void setInstrumentationProperty(String instrumentationId, String propertyName,
-            boolean propertyValue) throws Exception {
+            boolean propertyValue) {
         configServiceFactory.setInstrumentationProperty(instrumentationId, propertyName,
                 propertyValue);
     }
 
     public static void setInstrumentationProperty(String instrumentationId, String propertyName,
-            @Nullable Double propertyValue) throws Exception {
+            @Nullable Double propertyValue) {
         configServiceFactory.setInstrumentationProperty(instrumentationId, propertyName,
                 propertyValue);
     }
 
     public static void setInstrumentationProperty(String instrumentationId, String propertyName,
-            String propertyValue) throws Exception {
+            String propertyValue) {
         configServiceFactory.setInstrumentationProperty(instrumentationId, propertyName,
                 propertyValue);
     }
 
     public static void setInstrumentationProperty(String instrumentationId, String propertyName,
-            List<String> propertyValue) throws Exception {
+            List<String> propertyValue) {
         configServiceFactory.setInstrumentationProperty(instrumentationId, propertyName,
                 propertyValue);
     }

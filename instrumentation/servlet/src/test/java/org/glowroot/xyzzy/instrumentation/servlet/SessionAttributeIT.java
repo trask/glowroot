@@ -58,7 +58,7 @@ public class SessionAttributeIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.resetInstrumentationConfig();
+        container.resetInstrumentationProperties();
     }
 
     @Test
@@ -287,9 +287,7 @@ public class SessionAttributeIT {
         // then
         assertThat(getSessionAttributes(incomingSpan)).isNull();
         assertThat(getUpdatedSessionAttributes(incomingSpan)).isNotNull();
-        assertThat(getUpdatedSessionAttributes(incomingSpan)).hasSize(1);
-        assertThat(getUpdatedSessionAttributes(incomingSpan).containsKey("one")).isTrue();
-        assertThat(getUpdatedSessionAttributes(incomingSpan).get("one")).isNull();
+        assertThat(getUpdatedSessionAttributes(incomingSpan)).isEmpty();
     }
 
     @Test
@@ -302,9 +300,7 @@ public class SessionAttributeIT {
         // then
         assertThat(getSessionAttributes(incomingSpan)).isNull();
         assertThat(getUpdatedSessionAttributes(incomingSpan)).isNotNull();
-        assertThat(getUpdatedSessionAttributes(incomingSpan)).hasSize(1);
-        assertThat(getUpdatedSessionAttributes(incomingSpan).containsKey("one.two")).isTrue();
-        assertThat(getUpdatedSessionAttributes(incomingSpan).get("one.two")).isNull();
+        assertThat(getUpdatedSessionAttributes(incomingSpan)).isEmpty();
     }
 
     @Test

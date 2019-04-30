@@ -93,10 +93,7 @@
 
   <profiles>
     <profile>
-      <id>auto-activated-java-8</id>
-      <activation>
-        <jdk>[1.8,)</jdk>
-      </activation>
+      <id>test-java8</id>
       <build>
         <plugins>
           <plugin>
@@ -132,40 +129,39 @@
       </build>
     </profile>
     <profile>
-      <id>test-java6</id>
-      <activation>
-        <property>
-          <name>glowroot.test.java6</name>
-        </property>
-      </activation>
+      <id>test-java7</id>
       <build>
         <plugins>
           <plugin>
             <artifactId>maven-compiler-plugin</artifactId>
-            <configuration>
-              <testExcludes>
-                <exclude>org/glowroot/agent/plugin/executor/ForkJoinPoolIT.java</exclude>
-                <exclude>org/glowroot/agent/plugin/executor/EjbAsyncResultIT.java</exclude>
-              </testExcludes>
-            </configuration>
+            <executions>
+              <execution>
+                <id>default-testCompile</id>
+                <configuration>
+                  <source>1.7</source>
+                  <target>1.7</target>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>add-test-source</id>
+                <goals>
+                  <goal>add-test-source</goal>
+                </goals>
+                <configuration>
+                  <sources>
+                    <source>src/test/java7</source>
+                  </sources>
+                </configuration>
+              </execution>
+            </executions>
           </plugin>
         </plugins>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <artifactId>maven-compiler-plugin</artifactId>
-              <executions>
-                <execution>
-                  <id>default-testCompile</id>
-                  <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
-                  </configuration>
-                </execution>
-              </executions>
-            </plugin>
-          </plugins>
-        </pluginManagement>
       </build>
     </profile>
   </profiles>

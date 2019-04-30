@@ -34,8 +34,8 @@ import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.LocalSpan;
-import org.glowroot.xyzzy.test.harness.TestSpans;
 import org.glowroot.xyzzy.test.harness.Span;
+import org.glowroot.xyzzy.test.harness.TestSpans;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -57,7 +57,7 @@ public class AsyncControllerIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.resetInstrumentationConfig();
+        container.resetInstrumentationProperties();
     }
 
     @Test
@@ -88,7 +88,6 @@ public class AsyncControllerIT {
         IncomingSpan incomingSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(incomingSpan.async()).isTrue();
         assertThat(incomingSpan.transactionName()).isEqualTo(contextPath + "/async");
 
         Iterator<Span> i = incomingSpan.childSpans().iterator();
@@ -116,7 +115,6 @@ public class AsyncControllerIT {
         IncomingSpan incomingSpan = container.execute(appUnderTestClass, "Web");
 
         // then
-        assertThat(incomingSpan.async()).isTrue();
         assertThat(incomingSpan.transactionName()).isEqualTo(contextPath + "/async2");
 
         Iterator<Span> i = incomingSpan.childSpans().iterator();

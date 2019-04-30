@@ -67,22 +67,22 @@ public class MutableConfigServiceFactory implements ConfigServiceFactory {
     }
 
     public void setInstrumentationProperty(String instrumentationId, String propertyName,
-            boolean propertyValue) throws Exception {
+            boolean propertyValue) {
         configServices.getUnchecked(instrumentationId).setProperty(propertyName, propertyValue);
     }
 
     public void setInstrumentationProperty(String instrumentationId, String propertyName,
-            @Nullable Double propertyValue) throws Exception {
+            @Nullable Double propertyValue) {
         configServices.getUnchecked(instrumentationId).setProperty(propertyName, propertyValue);
     }
 
     public void setInstrumentationProperty(String instrumentationId, String propertyName,
-            String propertyValue) throws Exception {
+            String propertyValue) {
         configServices.getUnchecked(instrumentationId).setProperty(propertyName, propertyValue);
     }
 
     public void setInstrumentationProperty(String instrumentationId, String propertyName,
-            List<String> propertyValue) throws Exception {
+            List<String> propertyValue) {
         configServices.getUnchecked(instrumentationId).setProperty(propertyName, propertyValue);
     }
 

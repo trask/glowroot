@@ -20,12 +20,14 @@ import java.io.ObjectOutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.List;
 import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
+import org.glowroot.xyzzy.test.harness.agent.MainEntryPoint;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -54,9 +56,17 @@ class JavaagentServer {
                             case PING:
                                 out.writeObject("ok");
                                 break;
+                            case SET_INSTRUMENTATION_PROPERTY:
+                                String instrumentationId = (String) in.readObject();
+                                String propertyName = (String) in.readObject();
+                                Object propertyValue = in.readObject();
+                                setInstrumentationProperty(instrumentationId, propertyName,
+                                        propertyValue);
+                                out.writeObject("ok");
+                                break;
                             case EXECUTE_APP:
+                                String appClassName = (String) in.readObject();
                                 try {
-                                    String appClassName = (String) in.readObject();
                                     executeApp(appClassName);
                                     out.writeObject("ok");
                                 } catch (Throwable t) {
@@ -64,12 +74,14 @@ class JavaagentServer {
                                     out.writeObject(t);
                                 }
                                 break;
-                            case RESET_CONFIG:
-                                // TODO
+                            case RESET_INSTRUMENTATION_PROPERTIES:
+                                MainEntryPoint.resetInstrumentationProperties();
+                                out.writeObject("ok");
                                 break;
                             case KILL:
                                 kill();
                                 out.writeObject("ok");
+                                break;
                             default:
                                 throw new IllegalStateException("Unexpected command: " + command);
                         }
@@ -79,6 +91,24 @@ class JavaagentServer {
                 }
             }
         });
+    }
+
+    private void setInstrumentationProperty(String instrumentationId, String propertyName,
+            Object propertyValue) {
+        if (propertyValue instanceof Boolean) {
+            MainEntryPoint.setInstrumentationProperty(instrumentationId, propertyName,
+                    (Boolean) propertyValue);
+        } else if (propertyValue instanceof Double || propertyValue == null) {
+            MainEntryPoint.setInstrumentationProperty(instrumentationId, propertyName,
+                    (Double) propertyValue);
+        } else if (propertyValue instanceof String) {
+            MainEntryPoint.setInstrumentationProperty(instrumentationId, propertyName,
+                    (String) propertyValue);
+        } else if (propertyValue instanceof List) {
+            @SuppressWarnings("unchecked")
+            List<String> list = (List<String>) propertyValue;
+            MainEntryPoint.setInstrumentationProperty(instrumentationId, propertyName, list);
+        }
     }
 
     private void executeApp(String appClassName)
@@ -107,6 +137,6 @@ class JavaagentServer {
     }
 
     enum Command {
-        PING, EXECUTE_APP, RESET_CONFIG, KILL
+        PING, SET_INSTRUMENTATION_PROPERTY, EXECUTE_APP, RESET_INSTRUMENTATION_PROPERTIES, KILL
     }
 }
