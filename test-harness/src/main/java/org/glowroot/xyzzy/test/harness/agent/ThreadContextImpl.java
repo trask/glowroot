@@ -34,6 +34,7 @@ import org.glowroot.xyzzy.instrumentation.api.TimerName;
 import org.glowroot.xyzzy.instrumentation.api.TraceEntry;
 import org.glowroot.xyzzy.test.harness.agent.spans.AsyncOutgoingSpanImpl;
 import org.glowroot.xyzzy.test.harness.agent.spans.AsyncQuerySpanImpl;
+import org.glowroot.xyzzy.test.harness.agent.spans.ErrorSpanImpl;
 import org.glowroot.xyzzy.test.harness.agent.spans.IncomingSpanImpl;
 import org.glowroot.xyzzy.test.harness.agent.spans.LocalSpanImpl;
 import org.glowroot.xyzzy.test.harness.agent.spans.OutgoingSpanImpl;
@@ -173,13 +174,20 @@ public class ThreadContextImpl implements ThreadContextPlus {
     public void setTransactionError(String message, Throwable t) {}
 
     @Override
-    public void addErrorEntry(Throwable t) {}
+    public void addErrorEntry(Throwable t) {
+        parentSpan.addChildSpan(new ErrorSpanImpl(null, t));
+    }
 
     @Override
-    public void addErrorEntry(String message) {}
+    public void addErrorEntry(String message) {
+        parentSpan.addChildSpan(new ErrorSpanImpl(message, null));
+    }
 
     @Override
-    public void addErrorEntry(String message, Throwable t) {}
+    public void addErrorEntry(String message, Throwable t) {
+        parentSpan.addChildSpan(new ErrorSpanImpl(message, null));
+
+    }
 
     @Override
     public void trackResourceAcquired(Object resource, boolean withLocationStackTrace) {}

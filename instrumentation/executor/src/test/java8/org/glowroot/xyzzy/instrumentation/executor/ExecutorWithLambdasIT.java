@@ -29,7 +29,7 @@ import org.junit.Test;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
-import org.glowroot.xyzzy.test.harness.LocalSpans;
+import org.glowroot.xyzzy.test.harness.TestSpans;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
@@ -91,7 +91,7 @@ public class ExecutorWithLambdasIT {
         List<Span> spans = incomingSpan.childSpans();
         assertThat(spans.size()).isBetween(1, 3);
         for (Span span : spans) {
-            assertSingleLocalSpanMessage(span).isEqualTo("test local span / CreateLocalSpan");
+            assertSingleLocalSpanMessage(span).isEqualTo("test local span");
         }
     }
 
@@ -122,7 +122,7 @@ public class ExecutorWithLambdasIT {
         }
 
         private void run() {
-            LocalSpans.createTestSpan(100);
+            TestSpans.createLocalSpan(100);
             latch.countDown();
         }
     }
@@ -167,7 +167,7 @@ public class ExecutorWithLambdasIT {
         }
 
         private void innerRun() {
-            LocalSpans.createTestSpan(100);
+            TestSpans.createLocalSpan(100);
             latch.countDown();
         }
     }

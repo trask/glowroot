@@ -16,7 +16,6 @@
 package org.glowroot.xyzzy.instrumentation.camel;
 
 import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.camel.CamelContext;
@@ -34,8 +33,8 @@ import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.LocalSpan;
-import org.glowroot.xyzzy.test.harness.LocalSpans;
 import org.glowroot.xyzzy.test.harness.Span;
+import org.glowroot.xyzzy.test.harness.TestSpans;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -65,18 +64,14 @@ public class CamelIT {
         IncomingSpan incomingSpan = container.execute(Route.class);
 
         // then
-        List<IncomingSpan.Timer> nestedTimers = incomingSpan.mainThreadRootTimer().childTimers();
-        assertThat(nestedTimers).hasSize(1);
-        assertThat(nestedTimers.get(0).name()).isEqualTo("test local span");
-
         Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
+        assertThat(localSpan.getMessage()).isEqualTo("test local span");
         assertThat(localSpan.childSpans()).isEmpty();
 
         localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
+        assertThat(localSpan.getMessage()).isEqualTo("test local span");
         assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
@@ -99,7 +94,7 @@ public class CamelIT {
                             .process(new Processor() {
                                 @Override
                                 public void process(Exchange exchange) throws Exception {
-                                    LocalSpans.createTestSpan();
+                                    TestSpans.createLocalSpan();
                                     String body = exchange.getIn().getBody(String.class);
                                     exchange.getIn().setBody(body + ".");
                                 }
@@ -107,7 +102,7 @@ public class CamelIT {
                             .process(new Processor() {
                                 @Override
                                 public void process(Exchange exchange) throws Exception {
-                                    LocalSpans.createTestSpan();
+                                    TestSpans.createLocalSpan();
                                     String body = exchange.getIn().getBody(String.class);
                                     exchange.getIn().setBody(body + ".");
                                 }

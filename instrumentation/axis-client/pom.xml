@@ -59,29 +59,41 @@
     <dependency>
       <groupId>org.apache.cxf</groupId>
       <artifactId>cxf-rt-bindings-soap</artifactId>
-      <!-- CXF 3.2.0+ requires Java 8+ -->
-      <version>3.1.15</version>
+      <!-- CXF 3.1.0+ requires Java 7+ -->
+      <version>3.0.15</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>asm</groupId>
+          <artifactId>asm</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.cxf</groupId>
       <artifactId>cxf-rt-frontend-jaxws</artifactId>
-      <!-- CXF 3.2.0+ requires Java 8+ -->
-      <version>3.1.15</version>
+      <!-- CXF 3.1.0+ requires Java 7+ -->
+      <version>3.0.15</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>asm</groupId>
+          <artifactId>asm</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.cxf</groupId>
       <artifactId>cxf-rt-transports-http</artifactId>
-      <!-- CXF 3.2.0+ requires Java 8+ -->
-      <version>3.1.15</version>
+      <!-- CXF 3.1.0+ requires Java 7+ -->
+      <version>3.0.15</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.cxf</groupId>
       <artifactId>cxf-rt-transports-http-jetty</artifactId>
-      <!-- CXF 3.2.0+ requires Java 8+ -->
-      <version>3.1.15</version>
+      <!-- CXF 3.1.0+ requires Java 7+ -->
+      <version>3.0.15</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -96,6 +108,13 @@
       <groupId>commons-discovery</groupId>
       <artifactId>commons-discovery</artifactId>
       <version>0.5</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm</artifactId>
+      <version>7.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

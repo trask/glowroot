@@ -35,7 +35,7 @@ import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.LocalSpan;
-import org.glowroot.xyzzy.test.harness.LocalSpans;
+import org.glowroot.xyzzy.test.harness.TestSpans;
 import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.util.ExecuteHttpBase;
@@ -98,7 +98,7 @@ public class OkHttp2xIT {
                 .matches("http client request: GET http://localhost:\\d+/hello1/");
 
         LocalSpan localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).matches("test local span / CreateLocalSpan");
+        assertThat(localSpan.getMessage()).matches("test local span");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -118,7 +118,7 @@ public class OkHttp2xIT {
                 .matches("http client request: POST http://localhost:\\d+/hello2");
 
         LocalSpan localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).matches("test local span / CreateLocalSpan");
+        assertThat(localSpan.getMessage()).matches("test local span");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -170,14 +170,14 @@ public class OkHttp2xIT {
             client.newCall(request).enqueue(new Callback() {
                 @Override
                 public void onResponse(Response response) throws IOException {
-                    LocalSpans.createTestSpan();
+                    TestSpans.createLocalSpan();
                     responseStatusCode.set(response.code());
                     response.body().close();
                     latch.countDown();
                 }
                 @Override
                 public void onFailure(Request request, IOException e) {
-                    LocalSpans.createTestSpan();
+                    TestSpans.createLocalSpan();
                     latch.countDown();
                 }
             });
@@ -206,14 +206,14 @@ public class OkHttp2xIT {
             client.newCall(request).enqueue(new Callback() {
                 @Override
                 public void onResponse(Response response) throws IOException {
-                    LocalSpans.createTestSpan();
+                    TestSpans.createLocalSpan();
                     responseStatusCode.set(response.code());
                     response.body().close();
                     latch.countDown();
                 }
                 @Override
                 public void onFailure(Request request, IOException e) {
-                    LocalSpans.createTestSpan();
+                    TestSpans.createLocalSpan();
                     latch.countDown();
                 }
             });

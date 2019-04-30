@@ -29,7 +29,7 @@ import org.junit.Test;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
-import org.glowroot.xyzzy.test.harness.LocalSpans;
+import org.glowroot.xyzzy.test.harness.TestSpans;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
@@ -76,7 +76,7 @@ public class LotsOfNestedAuxThreadContextsIT {
         assertThat(auxThreadRootTimer.childTimers().get(0).name())
                 .isEqualTo("test local span");
 
-        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span / CreateLocalSpan");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span");
     }
 
     public static class DoSubmitCallable implements AppUnderTest, TransactionMarker {
@@ -101,7 +101,7 @@ public class LotsOfNestedAuxThreadContextsIT {
 
         private void passOnToAnotherThread(final int depth) throws Exception {
             if (depth == 100000) {
-                LocalSpans.createTestSpan(100);
+                TestSpans.createLocalSpan(100);
                 latch.countDown();
                 return;
             }

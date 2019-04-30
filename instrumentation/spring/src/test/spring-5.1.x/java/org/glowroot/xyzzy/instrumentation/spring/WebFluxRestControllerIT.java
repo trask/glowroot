@@ -74,7 +74,7 @@ public class WebFluxRestControllerIT {
 
         entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(1);
-        assertThat(entry.getMessage()).isEqualTo("test local span / CreateLocalSpan");
+        assertThat(entry.getMessage()).isEqualTo("test local span");
 
         entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(1);
@@ -82,7 +82,7 @@ public class WebFluxRestControllerIT {
 
         entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(2);
-        assertThat(entry.getMessage()).isEqualTo("test local span / CreateLocalSpan");
+        assertThat(entry.getMessage()).isEqualTo("test local span");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -105,7 +105,7 @@ public class WebFluxRestControllerIT {
 
         entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(1);
-        assertThat(entry.getMessage()).isEqualTo("test local span / CreateLocalSpan");
+        assertThat(entry.getMessage()).isEqualTo("test local span");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -151,7 +151,6 @@ public class WebFluxRestControllerIT {
 
         @RequestMapping("webflux2")
         public Flux<Long> webflux2() {
-            System.out.println("WHATO");
             new Exception().printStackTrace();
             new CreateLocalSpan().traceEntryMarker();
             return Flux.interval(Duration.ofSeconds(1));

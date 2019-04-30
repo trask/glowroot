@@ -15,11 +15,11 @@
  */
 package org.glowroot.xyzzy.test.harness;
 
-public class LocalSpans {
+public class TestSpans {
 
-    public static void createTestSpan() {}
+    public static void createLocalSpan() {}
 
-    public static void createTestSpan(long sleepTimeMillis) {
+    public static void createLocalSpan(long sleepTimeMillis) {
         try {
             Thread.sleep(sleepTimeMillis);
         } catch (InterruptedException e) {
@@ -27,11 +27,11 @@ public class LocalSpans {
         }
     }
 
-    public static void createTestSpan(DoInLocalSpan runnable) throws Exception {
-        runnable.doInLocalSpan();
+    public static void createLocalSpan(DoInSpan runnable) throws Exception {
+        runnable.doInSpan();
     }
 
-    public interface DoInLocalSpan {
-        void doInLocalSpan() throws Exception;
+    public interface DoInSpan {
+        void doInSpan() throws Exception;
     }
 }

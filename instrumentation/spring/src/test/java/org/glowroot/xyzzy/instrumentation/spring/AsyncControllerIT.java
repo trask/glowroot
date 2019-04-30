@@ -34,7 +34,7 @@ import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.LocalSpan;
-import org.glowroot.xyzzy.test.harness.LocalSpans;
+import org.glowroot.xyzzy.test.harness.TestSpans;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
@@ -101,11 +101,11 @@ public class AsyncControllerIT {
         assertThat(nestedSpans).hasSize(1);
 
         LocalSpan nestedLocalSpan = (LocalSpan) nestedSpans.get(0);
-        assertThat(nestedLocalSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
+        assertThat(nestedLocalSpan.getMessage()).isEqualTo("test local span");
         assertThat(nestedLocalSpan.childSpans()).isEmpty();
 
         localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
+        assertThat(localSpan.getMessage()).isEqualTo("test local span");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -129,11 +129,11 @@ public class AsyncControllerIT {
         assertThat(nestedSpans).hasSize(1);
 
         LocalSpan nestedLocalSpan = (LocalSpan) nestedSpans.get(0);
-        assertThat(nestedLocalSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
+        assertThat(nestedLocalSpan.getMessage()).isEqualTo("test local span");
         assertThat(nestedLocalSpan.childSpans()).isEmpty();
 
         localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
+        assertThat(localSpan.getMessage()).isEqualTo("test local span");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -173,11 +173,11 @@ public class AsyncControllerIT {
 
         @RequestMapping("async")
         public @ResponseBody Callable<String> test() throws InterruptedException {
-            LocalSpans.createTestSpan();
+            TestSpans.createLocalSpan();
             return new Callable<String>() {
                 @Override
                 public String call() throws Exception {
-                    LocalSpans.createTestSpan();
+                    TestSpans.createLocalSpan();
                     return "async world";
                 }
             };
@@ -189,13 +189,13 @@ public class AsyncControllerIT {
 
         @RequestMapping("async2")
         public @ResponseBody DeferredResult<String> test() throws InterruptedException {
-            LocalSpans.createTestSpan();
+            TestSpans.createLocalSpan();
             final DeferredResult<String> result = new DeferredResult<String>();
             final ExecutorService executor = Executors.newCachedThreadPool();
             executor.execute(new Runnable() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan();
+                    TestSpans.createLocalSpan();
                     result.setResult("async2 world");
                     executor.shutdown();
                 }

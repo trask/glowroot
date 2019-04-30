@@ -28,7 +28,7 @@ import org.junit.Test;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
-import org.glowroot.xyzzy.test.harness.LocalSpans;
+import org.glowroot.xyzzy.test.harness.TestSpans;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
@@ -63,7 +63,7 @@ public class ScheduledExecutorServiceIT {
         IncomingSpan incomingSpan = container.execute(DoScheduledRunnable.class);
 
         // then
-        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span / CreateLocalSpan");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span");
     }
 
     @Test
@@ -72,7 +72,7 @@ public class ScheduledExecutorServiceIT {
         IncomingSpan incomingSpan = container.execute(DoScheduledCallable.class);
 
         // then
-        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span / CreateLocalSpan");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span");
     }
 
     private static ScheduledExecutorService createScheduledExecutorService() {
@@ -93,7 +93,7 @@ public class ScheduledExecutorServiceIT {
             executor.schedule(new Runnable() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                     latch.countDown();
                 }
             }, 100, MILLISECONDS);
@@ -117,7 +117,7 @@ public class ScheduledExecutorServiceIT {
             executor.schedule(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                     latch.countDown();
                     return null;
                 }

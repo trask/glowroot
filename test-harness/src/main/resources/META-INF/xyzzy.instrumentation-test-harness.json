@@ -13,12 +13,15 @@
       "timerName": "mock trace marker"
     },
     {
-      "className": "org.glowroot.xyzzy.test.harness.TraceEntryMarker",
-      "methodName": "traceEntryMarker",
-      "methodParameterTypes": [ ],
+      "className": "org.glowroot.xyzzy.test.harness.TestSpans",
+      "methodName": "createLocalSpan",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "methodModifiers": "static",
       "captureKind": "trace-entry",
       "timerName": "test local span",
-      "traceEntryMessageTemplate": "test local span / {{this.class.simpleName}}"
+      "traceEntryMessageTemplate": "test local span"
     }
   ]
 }

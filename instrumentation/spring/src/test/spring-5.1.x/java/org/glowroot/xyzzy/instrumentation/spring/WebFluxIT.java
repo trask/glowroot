@@ -71,7 +71,7 @@ public class WebFluxIT {
 
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).matches("test local span / CreateLocalSpan");
+        assertThat(entry.getMessage()).matches("test local span");
 
         assertThat(i.hasNext()).isFalse();
     }

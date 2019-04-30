@@ -2,7 +2,7 @@
   "name": "Axis Client",
   "id": "axis-client",
   "classes": [
-    "org.glowroot.xyzzy.instrumentation.httpclient.AxisClientInstrumentation"
+    "org.glowroot.xyzzy.instrumentation.axisclient.AxisClientInstrumentation"
   ],
   "collocate": true
 }

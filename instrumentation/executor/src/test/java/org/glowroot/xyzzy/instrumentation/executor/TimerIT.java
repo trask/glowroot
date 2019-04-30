@@ -27,7 +27,7 @@ import org.junit.Test;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
-import org.glowroot.xyzzy.test.harness.LocalSpans;
+import org.glowroot.xyzzy.test.harness.TestSpans;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
@@ -58,7 +58,7 @@ public class TimerIT {
         IncomingSpan incomingSpan = container.execute(DoScheduledTimerTask.class);
 
         // then
-        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span / CreateLocalSpan");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span");
     }
 
     public static class DoScheduledTimerTask implements AppUnderTest, TransactionMarker {
@@ -74,7 +74,7 @@ public class TimerIT {
             new Timer().schedule(new TimerTask() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan();
+                    TestSpans.createLocalSpan();
                     latch.countDown();
                 }
             }, 10);

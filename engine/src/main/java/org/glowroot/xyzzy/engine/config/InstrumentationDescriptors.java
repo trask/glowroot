@@ -65,6 +65,9 @@ public class InstrumentationDescriptors {
                     continue;
                 }
                 URL url = InstrumentationDescriptors.class.getResource("/META-INF/" + jsonFile);
+                if (url == null) {
+                    throw new IllegalStateException("No such resource: /META-INF/" + jsonFile);
+                }
                 String json = Resources.toString(url, ISO_8859_1);
                 InstrumentationDescriptor descriptor =
                         gson.fromJson(json, ImmutableInstrumentationDescriptor.class);

@@ -37,7 +37,7 @@ import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.LocalSpan;
-import org.glowroot.xyzzy.test.harness.LocalSpans;
+import org.glowroot.xyzzy.test.harness.TestSpans;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
@@ -121,11 +121,11 @@ public class AsyncServletIT {
         Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
+        assertThat(localSpan.getMessage()).isEqualTo("test local span");
         assertThat(localSpan.childSpans()).isEmpty();
 
         localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
+        assertThat(localSpan.getMessage()).isEqualTo("test local span");
         assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
@@ -156,11 +156,11 @@ public class AsyncServletIT {
         Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
+        assertThat(localSpan.getMessage()).isEqualTo("test local span");
         assertThat(localSpan.childSpans()).isEmpty();
 
         localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
+        assertThat(localSpan.getMessage()).isEqualTo("test local span");
         assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
@@ -194,15 +194,15 @@ public class AsyncServletIT {
         Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
+        assertThat(localSpan.getMessage()).isEqualTo("test local span");
         assertThat(localSpan.childSpans()).isEmpty();
 
         localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
+        assertThat(localSpan.getMessage()).isEqualTo("test local span");
         assertThat(localSpan.childSpans()).isEmpty();
 
         localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
+        assertThat(localSpan.getMessage()).isEqualTo("test local span");
         assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
@@ -315,7 +315,7 @@ public class AsyncServletIT {
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
             request.getSession().setAttribute("sync", "a");
-            LocalSpans.createTestSpan();
+            TestSpans.createLocalSpan();
             final AsyncContext asyncContext = request.startAsync();
             asyncContext.start(new Runnable() {
                 @Override
@@ -324,7 +324,7 @@ public class AsyncServletIT {
                         MILLISECONDS.sleep(200);
                         ((HttpServletRequest) asyncContext.getRequest()).getSession()
                                 .setAttribute("async", "b");
-                        LocalSpans.createTestSpan();
+                        TestSpans.createLocalSpan();
                         asyncContext.getResponse().getWriter().println("async response");
                         asyncContext.complete();
                     } catch (Exception e) {
@@ -349,7 +349,7 @@ public class AsyncServletIT {
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
             request.getSession().setAttribute("sync", "a");
-            LocalSpans.createTestSpan();
+            TestSpans.createLocalSpan();
             final AsyncContext asyncContext = request.startAsync(request, response);
             asyncContext.start(new Runnable() {
                 @Override
@@ -358,7 +358,7 @@ public class AsyncServletIT {
                         MILLISECONDS.sleep(200);
                         ((HttpServletRequest) asyncContext.getRequest()).getSession()
                                 .setAttribute("async", "b");
-                        LocalSpans.createTestSpan();
+                        TestSpans.createLocalSpan();
                         asyncContext.getResponse().getWriter().println("async response");
                         asyncContext.complete();
                     } catch (Exception e) {
@@ -383,7 +383,7 @@ public class AsyncServletIT {
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
             request.getSession().setAttribute("sync", "a");
-            LocalSpans.createTestSpan();
+            TestSpans.createLocalSpan();
             final AsyncContext asyncContext = request.startAsync();
             asyncContext.start(new Runnable() {
                 @Override
@@ -392,7 +392,7 @@ public class AsyncServletIT {
                         MILLISECONDS.sleep(200);
                         ((HttpServletRequest) asyncContext.getRequest()).getSession()
                                 .setAttribute("async", "b");
-                        LocalSpans.createTestSpan();
+                        TestSpans.createLocalSpan();
                         asyncContext.dispatch("/async-forward");
                     } catch (Exception e) {
                         throw new RuntimeException(e);
@@ -410,7 +410,7 @@ public class AsyncServletIT {
         protected void doGet(HttpServletRequest request, HttpServletResponse response)
                 throws IOException {
             request.getSession().setAttribute("async-dispatch", "c");
-            LocalSpans.createTestSpan();
+            TestSpans.createLocalSpan();
             response.getWriter().println("the response");
         }
     }

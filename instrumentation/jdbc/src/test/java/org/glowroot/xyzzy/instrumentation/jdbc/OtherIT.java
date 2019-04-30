@@ -32,8 +32,8 @@ import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
-import org.glowroot.xyzzy.test.harness.LocalSpans;
-import org.glowroot.xyzzy.test.harness.LocalSpans.DoInLocalSpan;
+import org.glowroot.xyzzy.test.harness.TestSpans;
+import org.glowroot.xyzzy.test.harness.TestSpans.DoInSpan;
 import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
@@ -344,9 +344,9 @@ public class OtherIT {
             statement = connection.createStatement();
             try {
                 statement.execute("select * from employee");
-                LocalSpans.createTestSpan(new DoInLocalSpan() {
+                TestSpans.createLocalSpan(new DoInSpan() {
                     @Override
-                    public void doInLocalSpan() throws Exception {
+                    public void doInSpan() throws Exception {
                         ResultSet rs = statement.getResultSet();
                         while (rs.next()) {
                             rs.getString(1);
@@ -379,9 +379,9 @@ public class OtherIT {
                 statement.execute("select * from employee");
                 rs = statement.getResultSet();
                 while (rs.next()) {
-                    LocalSpans.createTestSpan(new DoInLocalSpan() {
+                    TestSpans.createLocalSpan(new DoInSpan() {
                         @Override
-                        public void doInLocalSpan() throws Exception {
+                        public void doInSpan() throws Exception {
                             rs.getString(1);
                         }
                     });
@@ -437,9 +437,9 @@ public class OtherIT {
             statement = connection.createStatement();
             try {
                 statement.execute("select * from employee");
-                LocalSpans.createTestSpan(new DoInLocalSpan() {
+                TestSpans.createLocalSpan(new DoInSpan() {
                     @Override
-                    public void doInLocalSpan() throws Exception {
+                    public void doInSpan() throws Exception {
                         ResultSet rs = statement.getResultSet();
                         while (rs.next()) {
                             rs.getString("name");

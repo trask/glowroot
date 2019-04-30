@@ -37,8 +37,8 @@ import org.springframework.mock.web.MockHttpSession;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
-import org.glowroot.xyzzy.test.harness.LocalSpan;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
+import org.glowroot.xyzzy.test.harness.LocalSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -139,8 +139,7 @@ public class ServletAndFilterIT {
         IncomingSpan incomingSpan = container.execute(ServletThrowsException.class, "Web");
 
         // then
-        assertThat(incomingSpan.getDetails().get("Response code")).isEqualTo(200);
-        assertThat(incomingSpan.getError().message()).isNotEmpty();
+        assertThat(incomingSpan.getDetails().get("Response code")).isEqualTo(500);
         assertThat(incomingSpan.getError().exception()).isNotNull();
         assertThat(incomingSpan.childSpans()).isEmpty();
     }
@@ -151,8 +150,7 @@ public class ServletAndFilterIT {
         IncomingSpan incomingSpan = container.execute(FilterThrowsException.class, "Web");
 
         // then
-        assertThat(incomingSpan.getDetails().get("Response code")).isEqualTo(200);
-        assertThat(incomingSpan.getError().message()).isNotEmpty();
+        assertThat(incomingSpan.getDetails().get("Response code")).isEqualTo(500);
         assertThat(incomingSpan.getError().exception()).isNotNull();
         assertThat(incomingSpan.childSpans()).isEmpty();
     }

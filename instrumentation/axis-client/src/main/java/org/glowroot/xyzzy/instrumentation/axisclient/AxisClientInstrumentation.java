@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.xyzzy.instrumentation.httpclient;
+package org.glowroot.xyzzy.instrumentation.axisclient;
 
 import org.apache.axis.client.Call;
+
 import org.glowroot.xyzzy.instrumentation.api.Agent;
 import org.glowroot.xyzzy.instrumentation.api.MessageSupplier;
 import org.glowroot.xyzzy.instrumentation.api.ThreadContext;

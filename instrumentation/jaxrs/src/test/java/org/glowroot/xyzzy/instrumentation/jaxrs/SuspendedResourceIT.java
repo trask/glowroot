@@ -33,7 +33,7 @@ import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.LocalSpan;
-import org.glowroot.xyzzy.test.harness.LocalSpans;
+import org.glowroot.xyzzy.test.harness.TestSpans;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
@@ -89,7 +89,7 @@ public class SuspendedResourceIT {
         assertThat(localSpan.childSpans()).isEmpty();
 
         localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
+        assertThat(localSpan.getMessage()).isEqualTo("test local span");
         assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
@@ -126,7 +126,7 @@ public class SuspendedResourceIT {
                     } catch (InterruptedException e) {
                         // ignore
                     }
-                    LocalSpans.createTestSpan();
+                    TestSpans.createLocalSpan();
                     asyncResponse.resume("hido");
                     executor.shutdown();
                 }

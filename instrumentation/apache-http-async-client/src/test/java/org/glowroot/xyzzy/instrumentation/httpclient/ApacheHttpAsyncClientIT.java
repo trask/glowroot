@@ -35,7 +35,7 @@ import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.LocalSpan;
-import org.glowroot.xyzzy.test.harness.LocalSpans;
+import org.glowroot.xyzzy.test.harness.TestSpans;
 import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.util.ExecuteHttpBase;
@@ -74,7 +74,7 @@ public class ApacheHttpAsyncClientIT {
                 .matches("http client request: GET http://localhost:\\d+/hello1");
 
         LocalSpan localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).matches("test local span / CreateLocalSpan");
+        assertThat(localSpan.getMessage()).matches("test local span");
         assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
@@ -93,7 +93,7 @@ public class ApacheHttpAsyncClientIT {
                 .matches("http client request: GET http://localhost:\\d+/hello2");
 
         LocalSpan localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).matches("test local span / CreateLocalSpan");
+        assertThat(localSpan.getMessage()).matches("test local span");
         assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
@@ -112,7 +112,7 @@ public class ApacheHttpAsyncClientIT {
                 .matches("http client request: POST http://localhost:\\d+/hello3");
 
         LocalSpan localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).matches("test local span / CreateLocalSpan");
+        assertThat(localSpan.getMessage()).matches("test local span");
         assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
@@ -131,7 +131,7 @@ public class ApacheHttpAsyncClientIT {
                 .matches("http client request: POST http://localhost:\\d+/hello4");
 
         LocalSpan localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).matches("test local span / CreateLocalSpan");
+        assertThat(localSpan.getMessage()).matches("test local span");
         assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
@@ -222,7 +222,7 @@ public class ApacheHttpAsyncClientIT {
 
         @Override
         public void completed(HttpResponse response) {
-            LocalSpans.createTestSpan();
+            TestSpans.createLocalSpan();
             latch.countDown();
         }
 

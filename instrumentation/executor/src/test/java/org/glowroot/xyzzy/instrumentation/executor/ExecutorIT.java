@@ -36,7 +36,7 @@ import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.LocalSpan;
-import org.glowroot.xyzzy.test.harness.LocalSpans;
+import org.glowroot.xyzzy.test.harness.TestSpans;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
@@ -133,10 +133,10 @@ public class ExecutorIT {
         Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         LocalSpan localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
+        assertThat(localSpan.getMessage()).isEqualTo("test local span");
 
         localSpan = (LocalSpan) i.next();
-        assertThat(localSpan.getMessage()).isEqualTo("test local span / CreateLocalSpan");
+        assertThat(localSpan.getMessage()).isEqualTo("test local span");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -233,7 +233,7 @@ public class ExecutorIT {
             assertThat(spans).hasSize(3);
         }
         for (Span span : spans) {
-            assertSingleLocalSpanMessage(span).isEqualTo("test local span / CreateLocalSpan");
+            assertSingleLocalSpanMessage(span).isEqualTo("test local span");
         }
     }
 
@@ -255,21 +255,21 @@ public class ExecutorIT {
             executor.execute(new Runnable() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                     latch.countDown();
                 }
             });
             executor.execute(new Runnable() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                     latch.countDown();
                 }
             });
             executor.execute(new Runnable() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                     latch.countDown();
                 }
             });
@@ -293,7 +293,7 @@ public class ExecutorIT {
             executor.execute(new FutureTask<Void>(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                     latch.countDown();
                     return null;
                 }
@@ -301,7 +301,7 @@ public class ExecutorIT {
             executor.submit(new FutureTask<Void>(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                     latch.countDown();
                     return null;
                 }
@@ -309,7 +309,7 @@ public class ExecutorIT {
             executor.submit(new FutureTask<Void>(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                     latch.countDown();
                     return null;
                 }
@@ -333,21 +333,21 @@ public class ExecutorIT {
             Future<Void> future1 = executor.submit(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                     return null;
                 }
             });
             Future<Void> future2 = executor.submit(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                     return null;
                 }
             });
             Future<Void> future3 = executor.submit(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                     return null;
                 }
             });
@@ -456,11 +456,11 @@ public class ExecutorIT {
             Future<Void> future = executor.submit(new Callable<Void>() {
                 @Override
                 public Void call() throws Exception {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                     Future<Void> future = executor.submit(new Callable<Void>() {
                         @Override
                         public Void call() {
-                            LocalSpans.createTestSpan(100);
+                            TestSpans.createLocalSpan(100);
                             return null;
                         }
                     });
@@ -486,21 +486,21 @@ public class ExecutorIT {
             callables.add(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                     return null;
                 }
             });
             callables.add(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                     return null;
                 }
             });
             callables.add(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                     return null;
                 }
             });
@@ -524,21 +524,21 @@ public class ExecutorIT {
             callables.add(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                     return null;
                 }
             });
             callables.add(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                     return null;
                 }
             });
             callables.add(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                     return null;
                 }
             });
@@ -562,21 +562,21 @@ public class ExecutorIT {
             callables.add(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                     return null;
                 }
             });
             callables.add(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                     return null;
                 }
             });
             callables.add(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                     return null;
                 }
             });
@@ -598,21 +598,21 @@ public class ExecutorIT {
             callables.add(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                     return null;
                 }
             });
             callables.add(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                     return null;
                 }
             });
             callables.add(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                     return null;
                 }
             });
@@ -637,21 +637,21 @@ public class ExecutorIT {
                     executor.execute(new Runnable() {
                         @Override
                         public void run() {
-                            LocalSpans.createTestSpan(100);
+                            TestSpans.createLocalSpan(100);
                             latch.countDown();
                         }
                     });
                     executor.execute(new Runnable() {
                         @Override
                         public void run() {
-                            LocalSpans.createTestSpan(100);
+                            TestSpans.createLocalSpan(100);
                             latch.countDown();
                         }
                     });
                     executor.execute(new Runnable() {
                         @Override
                         public void run() {
-                            LocalSpans.createTestSpan(100);
+                            TestSpans.createLocalSpan(100);
                             latch.countDown();
                         }
                     });
@@ -688,7 +688,7 @@ public class ExecutorIT {
                     executor.submit(new Callable<Void>() {
                         @Override
                         public Void call() {
-                            LocalSpans.createTestSpan(100);
+                            TestSpans.createLocalSpan(100);
                             latch.countDown();
                             return null;
                         }
@@ -696,7 +696,7 @@ public class ExecutorIT {
                     executor.submit(new Callable<Void>() {
                         @Override
                         public Void call() {
-                            LocalSpans.createTestSpan(100);
+                            TestSpans.createLocalSpan(100);
                             latch.countDown();
                             return null;
                         }
@@ -704,7 +704,7 @@ public class ExecutorIT {
                     executor.submit(new Callable<Void>() {
                         @Override
                         public Void call() {
-                            LocalSpans.createTestSpan(100);
+                            TestSpans.createLocalSpan(100);
                             latch.countDown();
                             return null;
                         }
@@ -733,21 +733,21 @@ public class ExecutorIT {
             delegatingExecutor.execute(new Runnable() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                     latch.countDown();
                 }
             });
             delegatingExecutor.execute(new Runnable() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                     latch.countDown();
                 }
             });
             delegatingExecutor.execute(new Runnable() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                     latch.countDown();
                 }
             });
@@ -761,13 +761,13 @@ public class ExecutorIT {
 
         @Override
         public Void call() {
-            LocalSpans.createTestSpan(100);
+            TestSpans.createLocalSpan(100);
             return null;
         }
 
         @Override
         public void run() {
-            LocalSpans.createTestSpan(100);
+            TestSpans.createLocalSpan(100);
         }
     }
 

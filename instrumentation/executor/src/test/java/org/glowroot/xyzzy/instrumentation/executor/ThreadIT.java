@@ -25,7 +25,7 @@ import org.junit.Test;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
-import org.glowroot.xyzzy.test.harness.LocalSpans;
+import org.glowroot.xyzzy.test.harness.TestSpans;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
@@ -154,7 +154,7 @@ public class ThreadIT {
             assertThat(spans).hasSize(3);
         }
         for (Span span : spans) {
-            assertSingleLocalSpanMessage(span).isEqualTo("test local span / CreateLocalSpan");
+            assertSingleLocalSpanMessage(span).isEqualTo("test local span");
         }
     }
 
@@ -170,19 +170,19 @@ public class ThreadIT {
             Thread thread1 = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                 }
             });
             Thread thread2 = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                 }
             });
             Thread thread3 = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                 }
             });
             thread1.start();
@@ -206,19 +206,19 @@ public class ThreadIT {
             Thread thread1 = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                 }
             }, "one");
             Thread thread2 = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                 }
             }, "two");
             Thread thread3 = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                 }
             }, "three");
             thread1.start();
@@ -242,19 +242,19 @@ public class ThreadIT {
             Thread thread1 = new Thread(Thread.currentThread().getThreadGroup(), new Runnable() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                 }
             });
             Thread thread2 = new Thread(Thread.currentThread().getThreadGroup(), new Runnable() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                 }
             });
             Thread thread3 = new Thread(Thread.currentThread().getThreadGroup(), new Runnable() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                 }
             });
             thread1.start();
@@ -279,19 +279,19 @@ public class ThreadIT {
             Thread thread1 = new Thread(Thread.currentThread().getThreadGroup(), new Runnable() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                 }
             }, "one");
             Thread thread2 = new Thread(Thread.currentThread().getThreadGroup(), new Runnable() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                 }
             }, "two");
             Thread thread3 = new Thread(Thread.currentThread().getThreadGroup(), new Runnable() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                 }
             }, "three");
             thread1.start();
@@ -315,19 +315,19 @@ public class ThreadIT {
             Thread thread1 = new Thread() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                 }
             };
             Thread thread2 = new Thread() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                 }
             };
             Thread thread3 = new Thread() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                 }
             };
             thread1.start();
@@ -351,19 +351,19 @@ public class ThreadIT {
             Thread thread1 = new TraceEntryMarkerThread() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                 }
             };
             Thread thread2 = new TraceEntryMarkerThread() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                 }
             };
             Thread thread3 = new TraceEntryMarkerThread() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                 }
             };
             thread1.start();
@@ -388,19 +388,19 @@ public class ThreadIT {
             Thread thread1 = new TraceEntryMarkerThreadWithRunnable() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                 }
             };
             Thread thread2 = new TraceEntryMarkerThreadWithRunnable() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                 }
             };
             Thread thread3 = new TraceEntryMarkerThreadWithRunnable() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                 }
             };
             thread1.start();

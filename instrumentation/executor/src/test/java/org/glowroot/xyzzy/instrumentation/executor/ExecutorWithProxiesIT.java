@@ -30,7 +30,7 @@ import org.junit.Test;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
-import org.glowroot.xyzzy.test.harness.LocalSpans;
+import org.glowroot.xyzzy.test.harness.TestSpans;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
@@ -77,7 +77,7 @@ public class ExecutorWithProxiesIT {
         assertThat(incomingSpan.auxThreadRootTimer().childTimers().get(0).name())
                 .isEqualTo("test local span");
 
-        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span / CreateLocalSpan");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span");
     }
 
     private static ExecutorService createExecutorService() {
@@ -98,7 +98,7 @@ public class ExecutorWithProxiesIT {
             executor.execute(wrap(new Runnable() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                     latch.countDown();
                 }
             }));

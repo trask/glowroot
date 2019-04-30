@@ -16,7 +16,6 @@
 package org.glowroot.xyzzy.instrumentation.elasticsearch;
 
 import java.net.InetSocketAddress;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -32,9 +31,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
-import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
+import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
@@ -65,12 +64,9 @@ public class ElasticsearchAsyncIT {
         IncomingSpan incomingSpan = container.execute(ExecuteDocumentPut.class);
 
         // then
-        checkTimers(incomingSpan, 1);
-
         Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
-        assertThat(outgoingSpan.getMessage()).isEmpty();
         assertThat(outgoingSpan.getMessage()).isEqualTo("PUT testindex/testtype");
         assertThat(outgoingSpan.getPrefix()).isEqualTo("elasticsearch query: ");
         assertThat(outgoingSpan.getSuffix()).isEmpty();
@@ -84,12 +80,9 @@ public class ElasticsearchAsyncIT {
         IncomingSpan incomingSpan = container.execute(ExecuteDocumentGet.class);
 
         // then
-        checkTimers(incomingSpan, 1);
-
         Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
-        assertThat(outgoingSpan.getMessage()).isEmpty();
         assertThat(outgoingSpan.getMessage()).isEqualTo("GET testindex/testtype");
         assertThat(outgoingSpan.getPrefix()).isEqualTo("elasticsearch query: ");
         assertThat(outgoingSpan.getSuffix()).startsWith(" [");
@@ -103,13 +96,10 @@ public class ElasticsearchAsyncIT {
         IncomingSpan incomingSpan = container.execute(ConcurrentlyExecuteSameAsyncStatement.class);
 
         // then
-        checkTimers(incomingSpan, 100);
-
         Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         for (int j = 0; j < 100; j++) {
             OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
-            assertThat(outgoingSpan.getMessage()).isEmpty();
             assertThat(outgoingSpan.getMessage())
                     .isEqualTo("GET testindex/testtype");
             assertThat(outgoingSpan.getPrefix())
@@ -125,12 +115,9 @@ public class ElasticsearchAsyncIT {
         IncomingSpan incomingSpan = container.execute(ExecuteDocumentUpdate.class);
 
         // then
-        checkTimers(incomingSpan, 1);
-
         Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
-        assertThat(outgoingSpan.getMessage()).isEmpty();
         assertThat(outgoingSpan.getMessage()).isEqualTo("PUT testindex/testtype");
         assertThat(outgoingSpan.getPrefix()).isEqualTo("elasticsearch query: ");
         assertThat(outgoingSpan.getSuffix()).startsWith(" [");
@@ -144,12 +131,9 @@ public class ElasticsearchAsyncIT {
         IncomingSpan incomingSpan = container.execute(ExecuteDocumentDelete.class);
 
         // then
-        checkTimers(incomingSpan, 1);
-
         Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
-        assertThat(outgoingSpan.getMessage()).isEmpty();
         assertThat(outgoingSpan.getMessage())
                 .isEqualTo("DELETE testindex/testtype");
         assertThat(outgoingSpan.getPrefix()).isEqualTo("elasticsearch query: ");
@@ -164,12 +148,9 @@ public class ElasticsearchAsyncIT {
         IncomingSpan incomingSpan = container.execute(ExecuteDocumentSearchWithoutSource.class);
 
         // then
-        checkTimers(incomingSpan, 1);
-
         Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
-        assertThat(outgoingSpan.getMessage()).isEmpty();
         assertThat(outgoingSpan.getMessage())
                 .startsWith("SEARCH testindex/testtype {");
         assertThat(outgoingSpan.getPrefix()).isEqualTo("elasticsearch query: ");
@@ -185,12 +166,9 @@ public class ElasticsearchAsyncIT {
                 container.execute(ExecuteDocumentSearchWithoutIndexesWithoutSource.class);
 
         // then
-        checkTimers(incomingSpan, 1);
-
         Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
-        assertThat(outgoingSpan.getMessage()).isEmpty();
         assertThat(outgoingSpan.getMessage())
                 .startsWith("SEARCH _any/testtype {");
         assertThat(outgoingSpan.getPrefix()).isEqualTo("elasticsearch query: ");
@@ -207,12 +185,9 @@ public class ElasticsearchAsyncIT {
                 .execute(ExecuteDocumentSearchWithoutIndexesWithoutTypesWithoutSource.class);
 
         // then
-        checkTimers(incomingSpan, 1);
-
         Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
-        assertThat(outgoingSpan.getMessage()).isEmpty();
         assertThat(outgoingSpan.getMessage()).startsWith("SEARCH / {");
         assertThat(outgoingSpan.getPrefix()).isEqualTo("elasticsearch query: ");
         assertThat(outgoingSpan.getSuffix()).isEmpty();
@@ -228,8 +203,6 @@ public class ElasticsearchAsyncIT {
                 ExecuteDocumentSearchWithMultipleIndexesWithMultipleTypesWithoutSource.class);
 
         // then
-        checkTimers(incomingSpan, 1);
-
         Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
@@ -247,8 +220,6 @@ public class ElasticsearchAsyncIT {
         IncomingSpan incomingSpan = container.execute(ExecuteDocumentSearchWithSource.class);
 
         // then
-        checkTimers(incomingSpan, 1);
-
         Iterator<Span> i = incomingSpan.childSpans().iterator();
 
         OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
@@ -257,24 +228,6 @@ public class ElasticsearchAsyncIT {
         assertThat(outgoingSpan.getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
-    }
-
-    private static void checkTimers(IncomingSpan incomingSpan, int count) {
-        IncomingSpan.Timer rootTimer = incomingSpan.mainThreadRootTimer();
-        List<String> timerNames = Lists.newArrayList();
-        for (IncomingSpan.Timer timer : rootTimer.childTimers()) {
-            timerNames.add(timer.name());
-        }
-        Collections.sort(timerNames);
-        assertThat(timerNames).containsExactly("elasticsearch query");
-        for (IncomingSpan.Timer timer : rootTimer.childTimers()) {
-            assertThat(timer.childTimers()).isEmpty();
-        }
-        assertThat(incomingSpan.asyncTimers().size()).isEqualTo(1);
-        IncomingSpan.Timer asyncTimer = incomingSpan.asyncTimers().get(0);
-        assertThat(asyncTimer.childTimers()).isEmpty();
-        assertThat(asyncTimer.name()).isEqualTo("elasticsearch query");
-        assertThat(asyncTimer.count()).isEqualTo(count);
     }
 
     public static class ExecuteDocumentPut implements AppUnderTest, TransactionMarker {

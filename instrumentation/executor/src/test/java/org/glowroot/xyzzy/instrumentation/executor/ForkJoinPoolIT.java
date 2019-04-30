@@ -31,7 +31,7 @@ import org.junit.Test;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
-import org.glowroot.xyzzy.test.harness.LocalSpans;
+import org.glowroot.xyzzy.test.harness.TestSpans;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
@@ -67,7 +67,7 @@ public class ForkJoinPoolIT {
         IncomingSpan incomingSpan = container.execute(DoPoolSubmitCallable.class);
 
         // then
-        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span / CreateLocalSpan");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span");
     }
 
     @Test
@@ -76,7 +76,7 @@ public class ForkJoinPoolIT {
         IncomingSpan incomingSpan = container.execute(DoPoolSubmitRunnable.class);
 
         // then
-        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span / CreateLocalSpan");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span");
     }
 
     @Test
@@ -85,7 +85,7 @@ public class ForkJoinPoolIT {
         IncomingSpan incomingSpan = container.execute(DoPoolSubmitRunnableWithReturnValue.class);
 
         // then
-        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span / CreateLocalSpan");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span");
     }
 
     @Test
@@ -94,7 +94,7 @@ public class ForkJoinPoolIT {
         IncomingSpan incomingSpan = container.execute(DoPoolSubmitForkJoinTask.class);
 
         // then
-        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span / CreateLocalSpan");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span");
     }
 
     @Test
@@ -103,7 +103,7 @@ public class ForkJoinPoolIT {
         IncomingSpan incomingSpan = container.execute(DoPoolSubmitCallableAsForkJoinTask.class);
 
         // then
-        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span / CreateLocalSpan");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span");
     }
 
     @Test
@@ -112,7 +112,7 @@ public class ForkJoinPoolIT {
         IncomingSpan incomingSpan = container.execute(DoPoolSubmitRunnableAsForkJoinTask.class);
 
         // then
-        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span / CreateLocalSpan");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span");
     }
 
     @Test
@@ -122,7 +122,7 @@ public class ForkJoinPoolIT {
                 container.execute(DoPoolSubmitRunnableAsForkJoinTaskWithReturnValue.class);
 
         // then
-        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span / CreateLocalSpan");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span");
     }
 
     @Test
@@ -131,7 +131,7 @@ public class ForkJoinPoolIT {
         IncomingSpan incomingSpan = container.execute(DoPoolExecuteRunnable.class);
 
         // then
-        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span / CreateLocalSpan");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span");
     }
 
     @Test
@@ -140,7 +140,7 @@ public class ForkJoinPoolIT {
         IncomingSpan incomingSpan = container.execute(DoPoolExecuteForkJoinTask.class);
 
         // then
-        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span / CreateLocalSpan");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span");
     }
 
     @Test
@@ -149,7 +149,7 @@ public class ForkJoinPoolIT {
         IncomingSpan incomingSpan = container.execute(DoPoolInvokeForkJoinTask.class);
 
         // then
-        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span / CreateLocalSpan");
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("test local span");
     }
 
     @Test
@@ -161,7 +161,7 @@ public class ForkJoinPoolIT {
         List<Span> spans = incomingSpan.childSpans();
         assertThat(spans.size()).isEqualTo(3);
         for (Span span : spans) {
-            assertSingleLocalSpanMessage(span).isEqualTo("test local span / CreateLocalSpan");
+            assertSingleLocalSpanMessage(span).isEqualTo("test local span");
         }
     }
 
@@ -348,7 +348,7 @@ public class ForkJoinPoolIT {
     private static class SimpleCallable implements Callable<Void> {
         @Override
         public Void call() {
-            LocalSpans.createTestSpan();
+            TestSpans.createLocalSpan();
             return null;
         }
     }
@@ -359,7 +359,7 @@ public class ForkJoinPoolIT {
 
         @Override
         public void run() {
-            LocalSpans.createTestSpan();
+            TestSpans.createLocalSpan();
             latch.countDown();
         }
     }
@@ -379,7 +379,7 @@ public class ForkJoinPoolIT {
 
         @Override
         protected boolean exec() {
-            LocalSpans.createTestSpan();
+            TestSpans.createLocalSpan();
             latch.countDown();
             return true;
         }

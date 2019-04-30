@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.xyzzy.instrumentation.httpclient;
+package org.glowroot.xyzzy.instrumentation.axisclient;
 
 import java.net.ServerSocket;
 import java.net.URL;
@@ -92,11 +92,10 @@ public class AxisClientIT {
             Call call = (Call) service.createCall();
 
             call.setTargetEndpointAddress(new URL(endpoint));
-            call.setPortTypeName(
-                    new QName("http://httpclient.instrumentation.xyzzy.glowroot.org/",
-                            "HelloWorld"));
+            call.setPortTypeName(new QName("http://axisclient.instrumentation.xyzzy.glowroot.org/",
+                    "HelloWorld"));
             call.setOperationName(
-                    new QName("http://httpclient.instrumentation.xyzzy.glowroot.org/", "hello"));
+                    new QName("http://axisclient.instrumentation.xyzzy.glowroot.org/", "hello"));
 
             call.invoke(new Object[0]);
         }
@@ -116,8 +115,8 @@ public class AxisClientIT {
         String hello();
     }
 
-    @WebService(
-            endpointInterface = "org.glowroot.xyzzy.instrumentation.httpclient.AxisClientIT$HelloWorld")
+    @WebService(endpointInterface = "org.glowroot.xyzzy.instrumentation.axisclient.AxisClientIT"
+            + "$HelloWorld")
     public static class HelloWorldImpl implements HelloWorld {
         @Override
         public String hello() {

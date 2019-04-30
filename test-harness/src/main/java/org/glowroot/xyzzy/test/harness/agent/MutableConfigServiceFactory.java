@@ -18,7 +18,9 @@ package org.glowroot.xyzzy.test.harness.agent;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.base.Joiner;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -38,7 +40,19 @@ public class MutableConfigServiceFactory implements ConfigServiceFactory {
 
     private final Map<String, InstrumentationDescriptor> instrumentationDescriptors;
 
-    private final Map<String, MutableConfigService> configServices = Maps.newConcurrentMap();
+    private final LoadingCache<String, MutableConfigService> configServices =
+            CacheBuilder.newBuilder().build(new CacheLoader<String, MutableConfigService>() {
+                @Override
+                public MutableConfigService load(String instrumentationId) {
+                    InstrumentationDescriptor descriptor =
+                            instrumentationDescriptors.get(instrumentationId);
+                    if (descriptor == null) {
+                        throw new IllegalStateException(
+                                "Instrumentation id not found: " + instrumentationId);
+                    }
+                    return new MutableConfigService(descriptor.properties());
+                }
+            });
 
     public MutableConfigServiceFactory(List<InstrumentationDescriptor> descriptors) {
         instrumentationDescriptors = Maps.newHashMap();
@@ -49,84 +63,32 @@ public class MutableConfigServiceFactory implements ConfigServiceFactory {
 
     @Override
     public ConfigService create(String instrumentationId) {
-        InstrumentationDescriptor descriptor = instrumentationDescriptors.get(instrumentationId);
-        if (descriptor == null) {
-            throw unexpectedInstrumentationId(instrumentationId);
-        }
-        MutableConfigService configService = new MutableConfigService(descriptor.properties());
-        configServices.put(instrumentationId, configService);
-        return configService;
+        return configServices.getUnchecked(instrumentationId);
     }
 
     public void setInstrumentationProperty(String instrumentationId, String propertyName,
             boolean propertyValue) throws Exception {
-        MutableConfigService configService = configServices.get(instrumentationId);
-        if (configService == null) {
-            throw new IllegalStateException("Unexpected instrumentation id: " + instrumentationId);
-        }
-        BooleanPropertyImpl booleanProperty = configService.booleanProperties.get(propertyName);
-        if (booleanProperty == null) {
-            throw new IllegalStateException("Unexpected boolean property name: " + propertyName);
-        }
-        booleanProperty.value = propertyValue;
+        configServices.getUnchecked(instrumentationId).setProperty(propertyName, propertyValue);
     }
 
     public void setInstrumentationProperty(String instrumentationId, String propertyName,
             @Nullable Double propertyValue) throws Exception {
-        MutableConfigService configService = configServices.get(instrumentationId);
-        if (configService == null) {
-            throw new IllegalStateException("Unexpected instrumentation id: " + instrumentationId);
-        }
-        DoublePropertyImpl doubleProperty = configService.doubleProperties.get(propertyName);
-        if (doubleProperty == null) {
-            throw new IllegalStateException("Unexpected double property name: " + propertyName);
-        }
-        doubleProperty.value = propertyValue;
+        configServices.getUnchecked(instrumentationId).setProperty(propertyName, propertyValue);
     }
 
     public void setInstrumentationProperty(String instrumentationId, String propertyName,
             String propertyValue) throws Exception {
-        MutableConfigService configService = configServices.get(instrumentationId);
-        if (configService == null) {
-            throw new IllegalStateException("Unexpected instrumentation id: " + instrumentationId);
-        }
-        StringPropertyImpl stringProperty = configService.stringProperties.get(propertyName);
-        if (stringProperty == null) {
-            throw new IllegalStateException("Unexpected string property name: " + propertyName);
-        }
-        stringProperty.value = propertyValue;
+        configServices.getUnchecked(instrumentationId).setProperty(propertyName, propertyValue);
     }
 
     public void setInstrumentationProperty(String instrumentationId, String propertyName,
             List<String> propertyValue) throws Exception {
-        MutableConfigService configService = configServices.get(instrumentationId);
-        if (configService == null) {
-            throw new IllegalStateException("Unexpected instrumentation id: " + instrumentationId);
-        }
-        ListPropertyImpl listProperty = configService.listProperties.get(propertyName);
-        if (listProperty == null) {
-            throw new IllegalStateException("Unexpected list property name: " + propertyName);
-        }
-        listProperty.value = propertyValue;
+        configServices.getUnchecked(instrumentationId).setProperty(propertyName, propertyValue);
     }
 
     public void resetConfig() {
-        for (MutableConfigService configService : configServices.values()) {
+        for (MutableConfigService configService : configServices.asMap().values()) {
             configService.resetConfig();
-        }
-    }
-
-    private RuntimeException unexpectedInstrumentationId(String id) {
-        if (instrumentationDescriptors.isEmpty()) {
-            return new IllegalStateException("Unexpected instrumentation id: " + id
-                    + " (there is no available instrumentation)");
-        } else {
-            List<String> ids = Lists.newArrayList();
-            for (InstrumentationDescriptor descriptor : instrumentationDescriptors.values()) {
-                ids.add(descriptor.id());
-            }
-            return new IllegalStateException("Unexpected instrumentation id: " + id
-                    + " (available instrumentation ids are " + Joiner.on(", ").join(ids) + ")");
         }
     }
 
@@ -138,6 +100,8 @@ public class MutableConfigServiceFactory implements ConfigServiceFactory {
         private final Map<String, ListPropertyImpl> listProperties;
 
         private final List<PropertyDescriptor> propertyDescriptors;
+
+        private final List<ConfigListener> listeners = Lists.newArrayList();
 
         private MutableConfigService(List<PropertyDescriptor> propertyDescriptors) {
             Map<String, StringPropertyImpl> stringProperties = Maps.newHashMap();
@@ -224,10 +188,14 @@ public class MutableConfigServiceFactory implements ConfigServiceFactory {
                                 + propertyDescriptor.type());
                 }
             }
+            callConfigListeners();
         }
 
         @Override
-        public void registerConfigListener(ConfigListener listener) {}
+        public void registerConfigListener(ConfigListener listener) {
+            listeners.add(listener);
+            listener.onChange();
+        }
 
         @Override
         public StringProperty getStringProperty(String name) {
@@ -263,6 +231,49 @@ public class MutableConfigServiceFactory implements ConfigServiceFactory {
                 throw new IllegalStateException("No such list property: " + name);
             }
             return listProperty;
+        }
+
+        private void setProperty(String propertyName, boolean propertyValue) {
+            BooleanPropertyImpl booleanProperty = booleanProperties.get(propertyName);
+            if (booleanProperty == null) {
+                throw new IllegalStateException(
+                        "Unexpected boolean property name: " + propertyName);
+            }
+            booleanProperty.value = propertyValue;
+            callConfigListeners();
+        }
+
+        public void setProperty(String propertyName, @Nullable Double propertyValue) {
+            DoublePropertyImpl doubleProperty = doubleProperties.get(propertyName);
+            if (doubleProperty == null) {
+                throw new IllegalStateException("Unexpected double property name: " + propertyName);
+            }
+            doubleProperty.value = propertyValue;
+            callConfigListeners();
+        }
+
+        public void setProperty(String propertyName, String propertyValue) {
+            StringPropertyImpl stringProperty = stringProperties.get(propertyName);
+            if (stringProperty == null) {
+                throw new IllegalStateException("Unexpected string property name: " + propertyName);
+            }
+            stringProperty.value = propertyValue;
+            callConfigListeners();
+        }
+
+        public void setProperty(String propertyName, List<String> propertyValue) {
+            ListPropertyImpl listProperty = listProperties.get(propertyName);
+            if (listProperty == null) {
+                throw new IllegalStateException("Unexpected list property name: " + propertyName);
+            }
+            listProperty.value = propertyValue;
+            callConfigListeners();
+        }
+
+        private void callConfigListeners() {
+            for (ConfigListener listener : listeners) {
+                listener.onChange();
+            }
         }
 
         private static RuntimeException unexpectedValueType(String propertyName,

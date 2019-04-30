@@ -31,7 +31,7 @@ import org.junit.Test;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
-import org.glowroot.xyzzy.test.harness.LocalSpans;
+import org.glowroot.xyzzy.test.harness.TestSpans;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
@@ -83,7 +83,7 @@ public class ProblemExecutorIT {
         List<Span> spans = incomingSpan.childSpans();
         assertThat(spans).hasSize(3);
         for (Span span : spans) {
-            assertSingleLocalSpanMessage(span).isEqualTo("test local span / CreateLocalSpan");
+            assertSingleLocalSpanMessage(span).isEqualTo("test local span");
         }
     }
 
@@ -111,21 +111,21 @@ public class ProblemExecutorIT {
             executor.submit(new ProblemRunnable() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                     latch.countDown();
                 }
             });
             executor.submit(new ProblemRunnable() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                     latch.countDown();
                 }
             });
             executor.submit(new ProblemRunnable() {
                 @Override
                 public void run() {
-                    LocalSpans.createTestSpan(100);
+                    TestSpans.createLocalSpan(100);
                     latch.countDown();
                 }
             });
