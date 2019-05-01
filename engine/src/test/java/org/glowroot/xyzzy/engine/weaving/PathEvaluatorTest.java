@@ -19,11 +19,11 @@ import java.util.Collections;
 import java.util.List;
 
 import com.google.common.collect.Lists;
+import org.junit.Test;
 
 import org.glowroot.xyzzy.engine.weaving.MessageTemplateImpl.PartType;
 import org.glowroot.xyzzy.engine.weaving.MessageTemplateImpl.PathEvaluator;
 import org.glowroot.xyzzy.engine.weaving.MessageTemplateImpl.ValuePathPart;
-import org.junit.Test;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;

@@ -20,7 +20,7 @@ import java.lang.reflect.Method;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 import org.objectweb.asm.Type;
-import org.glowroot.xyzzy.engine.weaving.ImmutableShimType;
+
 import org.glowroot.xyzzy.instrumentation.api.weaving.Shim;
 
 @Value.Immutable

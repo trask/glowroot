@@ -19,7 +19,6 @@ import java.lang.instrument.ClassFileTransformer;
 import java.security.ProtectionDomain;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.glowroot.xyzzy.engine.bytecode.api.BytecodeSafe;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -28,6 +27,8 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.AdviceAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.glowroot.xyzzy.engine.bytecode.api.BytecodeSafe;
 
 import static org.objectweb.asm.Opcodes.ASM7;
 

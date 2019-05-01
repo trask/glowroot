@@ -18,7 +18,6 @@ package org.glowroot.xyzzy.instrumentation.spring;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.net.ServerSocket;
 import java.util.concurrent.ExecutionException;
 
 import com.ning.http.client.AsyncHttpClient;
@@ -30,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
+import org.glowroot.xyzzy.test.harness.util.Ports;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -50,7 +50,7 @@ abstract class InvokeSpringControllerInTomcat implements AppUnderTest {
 
     public void executeApp(String webapp, String contextPath, RunnableWithPort runnable)
             throws Exception {
-        int port = getAvailablePort();
+        int port = Ports.getAvailable();
         Tomcat tomcat = new Tomcat();
         tomcat.setBaseDir("target/tomcat");
         tomcat.setPort(port);
@@ -85,13 +85,6 @@ abstract class InvokeSpringControllerInTomcat implements AppUnderTest {
         if (statusCode != 200) {
             throw new IllegalStateException("Unexpected status code: " + statusCode);
         }
-    }
-
-    private static int getAvailablePort() throws Exception {
-        ServerSocket serverSocket = new ServerSocket(0);
-        int port = serverSocket.getLocalPort();
-        serverSocket.close();
-        return port;
     }
 
     // log stack traces for any currently running request threads in order to troubleshoot sporadic

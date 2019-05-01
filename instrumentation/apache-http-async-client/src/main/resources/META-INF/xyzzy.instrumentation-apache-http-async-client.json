@@ -2,7 +2,7 @@
   "name": "Apache HttpAsyncClient",
   "id": "apache-http-async-client",
   "classes": [
-    "org.glowroot.xyzzy.instrumentation.httpclient.ApacheHttpClientInstrumentation"
+    "org.glowroot.xyzzy.instrumentation.apachehttpasyncclient.ApacheHttpAsyncClientInstrumentation"
   ],
   "collocate": true
 }

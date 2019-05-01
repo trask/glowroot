@@ -19,8 +19,6 @@ import java.io.IOException;
 import java.util.List;
 
 import com.google.common.collect.Sets;
-
-import org.glowroot.xyzzy.engine.init.PreInitializeWeavingClasses;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

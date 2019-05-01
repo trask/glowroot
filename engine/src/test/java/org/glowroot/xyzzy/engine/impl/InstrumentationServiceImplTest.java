@@ -17,8 +17,9 @@ package org.glowroot.xyzzy.engine.impl;
 
 import java.util.Map;
 
-import org.glowroot.xyzzy.engine.impl.InstrumentationServiceImpl.Beans2;
 import org.junit.Test;
+
+import org.glowroot.xyzzy.engine.impl.InstrumentationServiceImpl.Beans2;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

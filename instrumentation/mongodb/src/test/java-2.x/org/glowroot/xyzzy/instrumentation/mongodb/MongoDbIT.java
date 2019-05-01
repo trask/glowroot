@@ -143,7 +143,7 @@ public class MongoDbIT {
 
         @Override
         @SuppressWarnings("deprecation")
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             GenericContainer<?> mongo = new GenericContainer<>("mongo:4.0.3");
             mongo.setExposedPorts(Arrays.asList(27017));
             mongo.start();

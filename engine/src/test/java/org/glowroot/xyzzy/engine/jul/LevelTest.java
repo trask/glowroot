@@ -19,8 +19,6 @@ import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.glowroot.xyzzy.engine.jul.Level;
-
 public class LevelTest {
 
     @Test

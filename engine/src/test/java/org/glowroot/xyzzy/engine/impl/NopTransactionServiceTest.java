@@ -20,8 +20,6 @@ import org.junit.Test;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.glowroot.xyzzy.engine.impl.NopTransactionService;
-
 public class NopTransactionServiceTest {
 
     @Test

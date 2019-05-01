@@ -54,7 +54,7 @@ public class EjbAsyncResultIT {
     public static class CallAsyncResultGet implements AppUnderTest, TransactionMarker {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
 

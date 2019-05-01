@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.servlet;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -302,7 +303,7 @@ public class ResponseHeaderIT {
 
     public static class SetStandardResponseHeadersOutsideServlet implements AppUnderTest {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             MockHttpServletResponse response = new PatchedMockHttpServletResponse();
             response.setContentLength(1);
             response.setContentType("text/plain");

@@ -17,9 +17,9 @@ package org.glowroot.xyzzy.engine.config;
 
 import java.util.List;
 
-import org.glowroot.xyzzy.engine.config.AdviceConfig;
-import org.glowroot.xyzzy.engine.config.AdviceConfig.CaptureKind;
 import org.junit.Test;
+
+import org.glowroot.xyzzy.engine.config.AdviceConfig.CaptureKind;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

@@ -16,6 +16,7 @@
 package org.glowroot.xyzzy.instrumentation.servlet;
 
 import java.io.IOException;
+import java.io.Serializable;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
@@ -33,7 +34,7 @@ import org.glowroot.xyzzy.test.harness.AppUnderTest;
 class TestServlet extends HttpServlet implements AppUnderTest {
 
     @Override
-    public void executeApp() throws Exception {
+    public void executeApp(Serializable... args) throws Exception {
         MockHttpServletRequest request = new MockCatalinaHttpServletRequest("GET", "/testservlet");
         MockHttpServletResponse response = new PatchedMockHttpServletResponse();
         before(request, response);

@@ -17,7 +17,7 @@ package org.glowroot.xyzzy.instrumentation.jsp;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.ServerSocket;
+import java.io.Serializable;
 import java.util.Iterator;
 
 import javax.servlet.ServletException;
@@ -38,11 +38,12 @@ import org.junit.Test;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
-import org.glowroot.xyzzy.test.harness.LocalSpan;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
+import org.glowroot.xyzzy.test.harness.LocalSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
+import org.glowroot.xyzzy.test.harness.util.Ports;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -100,7 +101,7 @@ public class JspRenderIT {
     public static class RenderJsp implements AppUnderTest, TransactionMarker {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
 
@@ -113,8 +114,8 @@ public class JspRenderIT {
     public static class RenderJspInTomcat implements AppUnderTest {
 
         @Override
-        public void executeApp() throws Exception {
-            int port = getAvailablePort();
+        public void executeApp(Serializable... args) throws Exception {
+            int port = Ports.getAvailable();
             Tomcat tomcat = new Tomcat();
             tomcat.setBaseDir("target/tomcat");
             tomcat.setPort(port);
@@ -139,13 +140,6 @@ public class JspRenderIT {
             }
             tomcat.stop();
             tomcat.destroy();
-        }
-
-        private static int getAvailablePort() throws Exception {
-            ServerSocket serverSocket = new ServerSocket(0);
-            int port = serverSocket.getLocalPort();
-            serverSocket.close();
-            return port;
         }
     }
 

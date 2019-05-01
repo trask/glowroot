@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.jdbc;
 
+import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -26,10 +27,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
-import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
+import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
@@ -78,7 +79,7 @@ public class ResultSetJava7MethodIT {
             implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createCommonsDbcpWrappedConnection();
             try {
                 transactionMarker();

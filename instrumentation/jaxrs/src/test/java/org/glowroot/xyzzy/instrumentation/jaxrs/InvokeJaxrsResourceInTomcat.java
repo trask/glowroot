@@ -16,7 +16,6 @@
 package org.glowroot.xyzzy.instrumentation.jaxrs;
 
 import java.io.File;
-import java.net.ServerSocket;
 
 import com.ning.http.client.AsyncHttpClient;
 import org.apache.catalina.Context;
@@ -24,11 +23,12 @@ import org.apache.catalina.loader.WebappLoader;
 import org.apache.catalina.startup.Tomcat;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
+import org.glowroot.xyzzy.test.harness.util.Ports;
 
 abstract class InvokeJaxrsResourceInTomcat implements AppUnderTest {
 
     public void executeApp(String webapp, String contextPath, String url) throws Exception {
-        int port = getAvailablePort();
+        int port = Ports.getAvailable();
         Tomcat tomcat = new Tomcat();
         tomcat.setBaseDir("target/tomcat");
         tomcat.setPort(port);
@@ -50,12 +50,5 @@ abstract class InvokeJaxrsResourceInTomcat implements AppUnderTest {
 
         tomcat.stop();
         tomcat.destroy();
-    }
-
-    private static int getAvailablePort() throws Exception {
-        ServerSocket serverSocket = new ServerSocket(0);
-        int port = serverSocket.getLocalPort();
-        serverSocket.close();
-        return port;
     }
 }

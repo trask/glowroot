@@ -19,7 +19,6 @@ import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.util.List;
@@ -34,6 +33,8 @@ import org.rauschig.jarchivelib.ArchiveFormat;
 import org.rauschig.jarchivelib.Archiver;
 import org.rauschig.jarchivelib.ArchiverFactory;
 import org.rauschig.jarchivelib.CompressionType;
+
+import org.glowroot.xyzzy.test.harness.util.ConsoleOutputPipe;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -207,31 +208,5 @@ class ElasticsearchWrapper {
             SECONDS.sleep(1);
         }
         client.close();
-    }
-
-    private static class ConsoleOutputPipe implements Runnable {
-
-        private final InputStream in;
-        private final OutputStream out;
-
-        private ConsoleOutputPipe(InputStream in, OutputStream out) {
-            this.in = in;
-            this.out = out;
-        }
-
-        @Override
-        public void run() {
-            byte[] buffer = new byte[100];
-            try {
-                while (true) {
-                    int n = in.read(buffer);
-                    if (n == -1) {
-                        break;
-                    }
-                    out.write(buffer, 0, n);
-                }
-            } catch (IOException e) {
-            }
-        }
     }
 }

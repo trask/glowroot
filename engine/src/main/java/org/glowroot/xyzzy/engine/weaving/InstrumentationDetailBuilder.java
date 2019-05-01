@@ -34,12 +34,8 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.glowroot.xyzzy.engine.config.InstrumentationDescriptor;
-import org.glowroot.xyzzy.engine.weaving.ImmutableInstrumentationDetail;
-import org.glowroot.xyzzy.engine.weaving.ImmutableMixinClass;
-import org.glowroot.xyzzy.engine.weaving.ImmutablePointcutClass;
-import org.glowroot.xyzzy.engine.weaving.ImmutablePointcutMethod;
-import org.glowroot.xyzzy.engine.weaving.ImmutableShimClass;
 import org.glowroot.xyzzy.engine.weaving.InstrumentationDetail.MixinClass;
 import org.glowroot.xyzzy.engine.weaving.InstrumentationDetail.PointcutClass;
 import org.glowroot.xyzzy.engine.weaving.InstrumentationDetail.PointcutMethod;

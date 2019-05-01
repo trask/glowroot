@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.logger;
 
+import java.io.Serializable;
 import java.util.Iterator;
 
 import org.apache.log4j.Level;
@@ -489,7 +490,7 @@ public class Log4j1xIT {
     public static class ShouldLog implements AppUnderTest, TransactionMarker {
         private static final Logger logger = Logger.getLogger(ShouldLog.class);
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -505,7 +506,7 @@ public class Log4j1xIT {
     public static class ShouldLogWithThrowable implements AppUnderTest, TransactionMarker {
         private static final Logger logger = Logger.getLogger(ShouldLogWithThrowable.class);
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -521,7 +522,7 @@ public class Log4j1xIT {
     public static class ShouldLogWithNullThrowable implements AppUnderTest, TransactionMarker {
         private static final Logger logger = Logger.getLogger(ShouldLogWithNullThrowable.class);
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -537,7 +538,7 @@ public class Log4j1xIT {
     public static class ShouldLogWithPriority implements AppUnderTest, TransactionMarker {
         private static final Logger logger = Logger.getLogger(ShouldLogWithPriority.class);
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -563,7 +564,7 @@ public class Log4j1xIT {
         private static final Logger logger =
                 Logger.getLogger(ShouldLogWithPriorityAndThrowable.class);
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -589,7 +590,7 @@ public class Log4j1xIT {
         private static final Logger logger =
                 Logger.getLogger(ShouldLogWithPriorityAndNullThrowable.class);
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -605,7 +606,7 @@ public class Log4j1xIT {
     public static class ShouldLocalizedLog implements AppUnderTest, TransactionMarker {
         private static final Logger logger = Logger.getLogger(ShouldLocalizedLog.class);
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -631,7 +632,7 @@ public class Log4j1xIT {
         private static final Logger logger =
                 Logger.getLogger(ShouldLocalizedLogWithNullThrowable.class);
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -649,7 +650,7 @@ public class Log4j1xIT {
         private static final Logger logger =
                 Logger.getLogger(ShouldLocalizedLogWithParameters.class);
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -681,7 +682,7 @@ public class Log4j1xIT {
         private static final Logger logger =
                 Logger.getLogger(ShouldLocalizedLogWithEmptyParameters.class);
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -713,7 +714,7 @@ public class Log4j1xIT {
         private static final Logger logger =
                 Logger.getLogger(ShouldLocalizedLogWithParametersAndNullThrowable.class);
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override

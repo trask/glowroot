@@ -15,6 +15,8 @@
  */
 package org.glowroot.testing;
 
+import static org.glowroot.testing.JavaVersion.JAVA6;
+import static org.glowroot.testing.JavaVersion.JAVA7;
 import static org.glowroot.testing.JavaVersion.JAVA8;
 
 public class MongoDB {
@@ -103,11 +105,13 @@ public class MongoDB {
     }
 
     private static void run(String version) throws Exception {
-        String profile = version.matches("[012]\\..*") || version.matches("3\\.[0-6]\\..*")
-                ? "mongodb-pre-3.7.x"
-                : "mongodb-3.7.x";
+        String[] profiles;
+        if (version.matches("[012]\\..*") || version.matches("3\\.[0-6]\\..*")) {
+            profiles = new String[] {"!mongodb-3.7.x,mongodb-pre-3.7.x"};
+        } else {
+            profiles = new String[0];
+        }
         Util.updateLibVersion(MODULE_PATH, "mongodb.driver.version", version);
-        // testcontainers requires Java 8+
-        Util.runTests(MODULE_PATH, profile, JAVA8);
+        Util.runTests(MODULE_PATH, profiles, JAVA8, JAVA7, JAVA6);
     }
 }

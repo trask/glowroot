@@ -15,6 +15,8 @@
  */
 package org.glowroot.xyzzy.instrumentation.jaxws;
 
+import java.io.Serializable;
+
 import javax.jws.WebMethod;
 import javax.jws.WebParam;
 import javax.jws.WebService;
@@ -223,7 +225,7 @@ public class WebServiceIT {
 
     public static class WithNormalServletMapping extends InvokeJaxwsWebServiceInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp1", "", "/hello");
         }
     }
@@ -231,14 +233,14 @@ public class WebServiceIT {
     public static class WithNormalServletMappingWithContextPath
             extends InvokeJaxwsWebServiceInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp1", "/zzz", "/hello");
         }
     }
 
     public static class WithNormalServletMappingHittingRoot extends InvokeJaxwsWebServiceInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp1", "", "/");
         }
     }
@@ -246,14 +248,14 @@ public class WebServiceIT {
     public static class WithNormalServletMappingHittingRootWithContextPath
             extends InvokeJaxwsWebServiceInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp1", "/zzz", "/");
         }
     }
 
     public static class WithNestedServletMapping extends InvokeJaxwsWebServiceInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp2", "", "/service/hello");
         }
     }
@@ -261,14 +263,14 @@ public class WebServiceIT {
     public static class WithNestedServletMappingWithContextPath
             extends InvokeJaxwsWebServiceInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp2", "/zzz", "/service/hello");
         }
     }
 
     public static class WithNestedServletMappingHittingRoot extends InvokeJaxwsWebServiceInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp2", "", "/service/");
         }
     }
@@ -276,14 +278,14 @@ public class WebServiceIT {
     public static class WithNestedServletMappingHittingRootWithContextPath
             extends InvokeJaxwsWebServiceInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp2", "/zzz", "/service/");
         }
     }
 
     public static class WithLessNormalServletMapping extends InvokeJaxwsWebServiceInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp3", "", "/hello");
         }
     }
@@ -291,7 +293,7 @@ public class WebServiceIT {
     public static class WithLessNormalServletMappingWithContextPath
             extends InvokeJaxwsWebServiceInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp3", "/zzz", "/hello");
         }
     }
@@ -299,7 +301,7 @@ public class WebServiceIT {
     public static class WithLessNormalServletMappingHittingRoot
             extends InvokeJaxwsWebServiceInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp3", "", "/");
         }
     }
@@ -307,7 +309,7 @@ public class WebServiceIT {
     public static class WithLessNormalServletMappingHittingRootWithContextPath
             extends InvokeJaxwsWebServiceInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp3", "/zzz", "/");
         }
     }

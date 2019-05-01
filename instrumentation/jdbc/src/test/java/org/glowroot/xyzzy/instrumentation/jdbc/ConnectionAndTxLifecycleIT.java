@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.jdbc;
 
+import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Iterator;
@@ -31,8 +32,8 @@ import org.junit.Test;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
-import org.glowroot.xyzzy.test.harness.LocalSpan;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
+import org.glowroot.xyzzy.test.harness.LocalSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
@@ -315,7 +316,7 @@ public class ConnectionAndTxLifecycleIT {
             implements AppUnderTest, TransactionMarker {
         private BasicDataSource dataSource;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             dataSource = new BasicDataSource();
             dataSource.setDriverClassName("org.hsqldb.jdbc.JDBCDriver");
             dataSource.setUrl("jdbc:hsqldb:mem:test");
@@ -334,7 +335,7 @@ public class ConnectionAndTxLifecycleIT {
             implements AppUnderTest, TransactionMarker {
         private BasicDataSource dataSource;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             dataSource = new BasicDataSource() {
                 @Override
                 public Connection getConnection() throws SQLException {
@@ -358,7 +359,7 @@ public class ConnectionAndTxLifecycleIT {
             implements AppUnderTest, TransactionMarker {
         private BasicDataSource dataSource;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             dataSource = new BasicDataSource() {
                 private boolean first = true;
                 @Override
@@ -396,7 +397,7 @@ public class ConnectionAndTxLifecycleIT {
     public static class ExecuteSetAutoCommit implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             try {
                 transactionMarker();
@@ -414,7 +415,7 @@ public class ConnectionAndTxLifecycleIT {
     public static class ExecuteSetAutoCommitThrowing implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = new DelegatingConnection(Connections.createConnection()) {
                 @Override
                 public void setAutoCommit(boolean autoCommit) throws SQLException {

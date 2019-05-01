@@ -19,9 +19,9 @@ import java.util.List;
 
 import org.assertj.core.api.AbstractCharSequenceAssert;
 
-import org.glowroot.xyzzy.test.harness.OutgoingSpan;
-import org.glowroot.xyzzy.test.harness.LocalSpan;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
+import org.glowroot.xyzzy.test.harness.LocalSpan;
+import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 
 import static org.assertj.core.api.Assertions.assertThat;

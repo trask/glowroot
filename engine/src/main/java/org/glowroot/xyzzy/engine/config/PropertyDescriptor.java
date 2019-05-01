@@ -20,11 +20,12 @@ import java.util.List;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.annotations.SerializedName;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.glowroot.xyzzy.engine.config.DefaultValue.PropertyType;
 import org.immutables.gson.Gson;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.glowroot.xyzzy.engine.config.DefaultValue.PropertyType;
 
 @Gson.TypeAdapters
 @Value.Immutable

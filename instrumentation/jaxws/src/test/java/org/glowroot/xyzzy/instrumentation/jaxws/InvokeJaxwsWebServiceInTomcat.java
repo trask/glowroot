@@ -17,7 +17,6 @@ package org.glowroot.xyzzy.instrumentation.jaxws;
 
 import java.io.File;
 import java.lang.reflect.Method;
-import java.net.ServerSocket;
 
 import javax.jws.WebParam;
 import javax.jws.WebService;
@@ -31,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
+import org.glowroot.xyzzy.test.harness.util.Ports;
 
 abstract class InvokeJaxwsWebServiceInTomcat implements AppUnderTest {
 
@@ -38,7 +38,7 @@ abstract class InvokeJaxwsWebServiceInTomcat implements AppUnderTest {
             LoggerFactory.getLogger(InvokeJaxwsWebServiceInTomcat.class);
 
     public void executeApp(String webapp, String contextPath, String url) throws Exception {
-        int port = getAvailablePort();
+        int port = Ports.getAvailable();
         Tomcat tomcat = new Tomcat();
         tomcat.setBaseDir("target/tomcat");
         tomcat.setPort(port);
@@ -88,13 +88,6 @@ abstract class InvokeJaxwsWebServiceInTomcat implements AppUnderTest {
                         sb);
             }
         }
-    }
-
-    private static int getAvailablePort() throws Exception {
-        ServerSocket serverSocket = new ServerSocket(0);
-        int port = serverSocket.getLocalPort();
-        serverSocket.close();
-        return port;
     }
 
     @WebService

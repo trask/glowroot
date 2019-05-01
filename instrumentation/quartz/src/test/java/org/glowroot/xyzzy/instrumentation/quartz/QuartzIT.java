@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.quartz;
 
+import java.io.Serializable;
 import java.util.Date;
 
 import org.junit.After;
@@ -96,7 +97,7 @@ public class QuartzIT {
 
     public static class ExecuteJob implements AppUnderTest {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             Scheduler scheduler = StdSchedulerFactory.getDefaultScheduler();
             scheduler.start();
             JobDetail job;

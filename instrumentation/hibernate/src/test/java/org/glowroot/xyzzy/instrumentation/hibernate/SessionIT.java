@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.hibernate;
 
+import java.io.Serializable;
 import java.util.List;
 
 import org.hibernate.Session;
@@ -232,7 +233,7 @@ public class SessionIT {
         Session session;
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             session = HibernateUtil.getSessionFactory().openSession();
             Transaction transaction = session.beginTransaction();
             initOutsideTransactionMarker();
@@ -246,6 +247,7 @@ public class SessionIT {
 
     public static class CriteriaQuery extends DoWithSession {
         @Override
+        @SuppressWarnings("deprecation")
         public void transactionMarker() {
             session.createCriteria(Employee.class).list();
         }
@@ -385,7 +387,7 @@ public class SessionIT {
         private Session session;
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             session = HibernateUtil.getSessionFactory().openSession();
             transactionMarker();
             session.close();
@@ -404,7 +406,7 @@ public class SessionIT {
         private Session session;
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             session = HibernateUtil.getSessionFactory().openSession();
             transactionMarker();
             session.close();

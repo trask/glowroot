@@ -18,7 +18,6 @@ package org.glowroot.xyzzy.engine.weaving;
 import java.io.File;
 import java.io.IOException;
 
-import org.glowroot.xyzzy.engine.weaving.ClassLoaders;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

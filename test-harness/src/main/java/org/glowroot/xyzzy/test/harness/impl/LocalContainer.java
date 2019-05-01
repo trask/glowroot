@@ -16,7 +16,7 @@
 package org.glowroot.xyzzy.test.harness.impl;
 
 import java.io.File;
-import java.net.ServerSocket;
+import java.io.Serializable;
 import java.util.List;
 
 import com.google.common.io.Files;
@@ -27,6 +27,7 @@ import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.agent.MainEntryPoint;
+import org.glowroot.xyzzy.test.harness.util.Ports;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -45,7 +46,7 @@ public class LocalContainer implements Container {
     }
 
     private LocalContainer() throws Exception {
-        int collectorPort = getAvailablePort();
+        int collectorPort = Ports.getAvailable();
         traceCollector = new TraceCollector(collectorPort);
         traceCollector.start();
         tmpDir = Files.createTempDir();
@@ -85,25 +86,27 @@ public class LocalContainer implements Container {
     }
 
     @Override
-    public IncomingSpan execute(Class<? extends AppUnderTest> appClass) throws Exception {
-        return executeInternal(appClass, null, null);
-    }
-
-    @Override
-    public IncomingSpan execute(Class<? extends AppUnderTest> appClass, String transactionType)
+    public IncomingSpan execute(Class<? extends AppUnderTest> appClass, Serializable... args)
             throws Exception {
-        return executeInternal(appClass, transactionType, null);
+        return executeInternal(appClass, null, null, args);
     }
 
     @Override
     public IncomingSpan execute(Class<? extends AppUnderTest> appClass, String transactionType,
-            String transactionName) throws Exception {
-        return executeInternal(appClass, transactionType, transactionName);
+            Serializable... args) throws Exception {
+        return executeInternal(appClass, transactionType, null, args);
     }
 
     @Override
-    public void executeNoExpectedTrace(Class<? extends AppUnderTest> appClass) throws Exception {
-        executeInternal(appClass);
+    public IncomingSpan execute(Class<? extends AppUnderTest> appClass, String transactionType,
+            String transactionName, Serializable... args) throws Exception {
+        return executeInternal(appClass, transactionType, transactionName, args);
+    }
+
+    @Override
+    public void executeNoExpectedTrace(Class<? extends AppUnderTest> appClass, Serializable... args)
+            throws Exception {
+        executeInternal(appClass, args);
         MILLISECONDS.sleep(10);
         if (traceCollector != null && traceCollector.hasIncomingSpan()) {
             throw new IllegalStateException("Trace was collected when none was expected");
@@ -121,9 +124,10 @@ public class LocalContainer implements Container {
     }
 
     public IncomingSpan executeInternal(Class<? extends AppUnderTest> appClass,
-            @Nullable String transactionType, @Nullable String transactionName) throws Exception {
+            @Nullable String transactionType, @Nullable String transactionName, Serializable[] args)
+            throws Exception {
         checkNotNull(traceCollector);
-        executeInternal(appClass);
+        executeInternal(appClass, args);
         IncomingSpan incomingSpan =
                 traceCollector.getCompletedIncomingSpan(transactionType, transactionName, 10,
                         SECONDS);
@@ -131,7 +135,8 @@ public class LocalContainer implements Container {
         return incomingSpan;
     }
 
-    private void executeInternal(Class<? extends AppUnderTest> appClass) throws Exception {
+    private void executeInternal(Class<? extends AppUnderTest> appClass, Serializable[] args)
+            throws Exception {
         IsolatedWeavingClassLoader isolatedWeavingClassLoader = this.isolatedWeavingClassLoader;
         checkNotNull(isolatedWeavingClassLoader);
         ClassLoader previousContextClassLoader = Thread.currentThread().getContextClassLoader();
@@ -139,17 +144,10 @@ public class LocalContainer implements Container {
         executingAppThread = Thread.currentThread();
         try {
             AppUnderTest app = isolatedWeavingClassLoader.newInstance(appClass, AppUnderTest.class);
-            app.executeApp();
+            app.executeApp(args);
         } finally {
             executingAppThread = null;
             Thread.currentThread().setContextClassLoader(previousContextClassLoader);
         }
-    }
-
-    static int getAvailablePort() throws Exception {
-        ServerSocket serverSocket = new ServerSocket(0);
-        int port = serverSocket.getLocalPort();
-        serverSocket.close();
-        return port;
     }
 }

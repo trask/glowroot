@@ -19,9 +19,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import org.glowroot.xyzzy.engine.bytecode.api.VoidReturn;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class VoidReturnTest {
 

@@ -15,6 +15,8 @@
  */
 package org.glowroot.xyzzy.instrumentation.redis;
 
+import java.io.Serializable;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -82,7 +84,7 @@ public class ConnectionIT {
         private Jedis jedis;
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             redisMockServer = new RedisMockServer();
             jedis = new Jedis("localhost", redisMockServer.getPort());
             transactionMarker();

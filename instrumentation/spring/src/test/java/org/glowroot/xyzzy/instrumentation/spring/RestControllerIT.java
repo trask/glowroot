@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.spring;
 
+import java.io.Serializable;
 import java.util.Iterator;
 import java.util.List;
 
@@ -28,8 +29,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
-import org.glowroot.xyzzy.test.harness.LocalSpan;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
+import org.glowroot.xyzzy.test.harness.LocalSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -114,14 +115,14 @@ public class RestControllerIT {
 
     public static class WithNormalServletMappingHittingRest extends InvokeSpringControllerInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp1", "", "/rest");
         }
     }
 
     public static class WithNormalServletMappingHittingAbc extends InvokeSpringControllerInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp1", "", "/abc");
         }
     }
@@ -129,7 +130,7 @@ public class RestControllerIT {
     public static class WithContextPathAndNormalServletMappingHittingRest
             extends InvokeSpringControllerInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp1", "/zzz", "/rest");
         }
     }
@@ -137,7 +138,7 @@ public class RestControllerIT {
     public static class WithContextPathAndNormalServletMappingHittingAbc
             extends InvokeSpringControllerInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp1", "/zzz", "/abc");
         }
     }

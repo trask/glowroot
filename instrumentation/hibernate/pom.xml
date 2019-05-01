@@ -17,10 +17,7 @@
 
   <properties>
     <!-- instrumented libraries -->
-    <!-- hibernate 5.2.0+ requires Java 8+, which would prevent any hibernate plugin tests from
-      being able to run when building with Java 7 -->
-    <hibernate.version>5.1.16.Final</hibernate.version>
-    <hibernate.annotations.version>3.5.6-Final</hibernate.annotations.version>
+    <hibernate.version>5.4.2.Final</hibernate.version>
   </properties>
 
   <dependencies>
@@ -66,6 +63,26 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <!-- Hibernate 5.1.17+ requires Java 8+ -->
+          <artifactId>maven-compiler-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>default-testCompile</id>
+              <configuration>
+                <source>1.8</source>
+                <target>1.8</target>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
 
   <profiles>
     <profile>
@@ -113,6 +130,9 @@
     </profile>
     <profile>
       <id>hibernate-3.x</id>
+      <properties>
+        <hibernate.annotations.version>3.5.6-Final</hibernate.annotations.version>
+      </properties>
       <dependencies>
         <dependency>
           <groupId>org.hibernate</groupId>

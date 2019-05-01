@@ -16,6 +16,7 @@
 package org.glowroot.xyzzy.instrumentation.javahttpserver;
 
 import java.io.IOException;
+import java.io.Serializable;
 
 import com.sun.net.httpserver.Filter;
 import com.sun.net.httpserver.HttpExchange;
@@ -26,7 +27,7 @@ import org.glowroot.xyzzy.test.harness.AppUnderTest;
 class TestFilter extends Filter implements AppUnderTest {
 
     @Override
-    public void executeApp() throws Exception {
+    public void executeApp(Serializable... args) throws Exception {
         MockHttpExchange exchange = new MockHttpExchange("GET", "/testfilter");
         doFilter(exchange, null);
     }

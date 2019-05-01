@@ -36,17 +36,14 @@ import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
 import com.google.common.primitives.Bytes;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.glowroot.xyzzy.engine.config.AdviceConfig;
-import org.glowroot.xyzzy.engine.weaving.ImmutableAnalyzedClass;
-import org.glowroot.xyzzy.engine.weaving.ImmutableAnalyzedClassAndLoader;
-import org.glowroot.xyzzy.engine.weaving.ImmutableAnalyzedMethod;
-import org.glowroot.xyzzy.engine.weaving.ImmutablePublicFinalMethod;
-import org.glowroot.xyzzy.engine.weaving.ClassLoaders.LazyDefinedClass;
 import org.immutables.value.Value;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.glowroot.xyzzy.engine.config.AdviceConfig;
+import org.glowroot.xyzzy.engine.weaving.ClassLoaders.LazyDefinedClass;
 
 import static com.google.common.base.Charsets.UTF_8;
 

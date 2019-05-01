@@ -17,8 +17,6 @@ package org.glowroot.xyzzy.engine.weaving;
 
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import org.glowroot.xyzzy.engine.weaving.SomeInstrumentation.BindPrimitiveBooleanTravelerBadAdvice;
 import org.glowroot.xyzzy.engine.weaving.SomeInstrumentation.BindPrimitiveTravelerBadAdvice;
 import org.glowroot.xyzzy.engine.weaving.SomeInstrumentation.MoreVeryBadAdvice;
@@ -26,6 +24,8 @@ import org.glowroot.xyzzy.engine.weaving.SomeInstrumentation.MoreVeryBadAdvice2;
 import org.glowroot.xyzzy.engine.weaving.SomeInstrumentation.VeryBadAdvice;
 import org.glowroot.xyzzy.engine.weaving.targets.BasicMisc;
 import org.glowroot.xyzzy.engine.weaving.targets.Misc;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class WeaverErrorHandlingTest {
 

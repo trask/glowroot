@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.kafka;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
@@ -95,7 +96,7 @@ public class KafkaIT {
         private Producer<Long, String> producer;
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             producer = createProducer();
             transactionMarker();
             producer.close();
@@ -124,7 +125,7 @@ public class KafkaIT {
         private Consumer<Long, String> consumer;
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             Producer<Long, String> producer = SendRecord.createProducer();
             ProducerRecord<Long, String> record =
                     new ProducerRecord<Long, String>("demo", "message");

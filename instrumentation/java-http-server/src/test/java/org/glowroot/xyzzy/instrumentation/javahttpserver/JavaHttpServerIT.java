@@ -16,6 +16,7 @@
 package org.glowroot.xyzzy.instrumentation.javahttpserver;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -241,7 +242,7 @@ public class JavaHttpServerIT {
     public static class HandlerThrowsException extends TestHandler {
         private final RuntimeException exception = new RuntimeException("Something happened");
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             try {
                 super.executeApp();
             } catch (RuntimeException e) {
@@ -260,7 +261,7 @@ public class JavaHttpServerIT {
     public static class FilterThrowsException extends TestFilter {
         private final RuntimeException exception = new RuntimeException("Something happened");
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             try {
                 super.executeApp();
             } catch (RuntimeException e) {

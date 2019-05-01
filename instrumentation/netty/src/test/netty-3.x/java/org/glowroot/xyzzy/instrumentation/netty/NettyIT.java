@@ -75,18 +75,11 @@ public class NettyIT {
         assertThat(trace.getHeader().getPartial()).isFalse();
     }
 
-    private static int getAvailablePort() throws Exception {
-        ServerSocket serverSocket = new ServerSocket(0);
-        int port = serverSocket.getLocalPort();
-        serverSocket.close();
-        return port;
-    }
-
     public static class ExecuteHttpGet implements AppUnderTest {
 
         @Override
-        public void executeApp() throws Exception {
-            int port = getAvailablePort();
+        public void executeApp(Serializable... args) throws Exception {
+            int port = Ports.getAvailable();
             HttpServer server = new HttpServer(port);
             CloseableHttpClient httpClient = HttpClients.createDefault();
             HttpGet httpGet = new HttpGet("http://localhost:" + port + "/abc?xyz=123");
@@ -101,8 +94,8 @@ public class NettyIT {
     public static class ExecuteHttpGetWithException implements AppUnderTest {
 
         @Override
-        public void executeApp() throws Exception {
-            int port = getAvailablePort();
+        public void executeApp(Serializable... args) throws Exception {
+            int port = Ports.getAvailable();
             HttpServer server = new HttpServer(port);
             CloseableHttpClient httpClient = HttpClientBuilder.create()
                     .disableAutomaticRetries()

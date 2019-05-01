@@ -17,8 +17,6 @@ package org.glowroot.xyzzy.instrumentation.servlet.bootsafe;
 
 import org.junit.Test;
 
-import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.Strings;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class StringsTest {

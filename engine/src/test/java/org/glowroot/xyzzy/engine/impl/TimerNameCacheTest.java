@@ -16,8 +16,7 @@
 package org.glowroot.xyzzy.engine.impl;
 
 import org.junit.Test;
-import org.glowroot.xyzzy.engine.impl.TimerNameCache;
-import org.glowroot.xyzzy.engine.impl.TimerNameImpl;
+
 import org.glowroot.xyzzy.instrumentation.api.TimerName;
 import org.glowroot.xyzzy.instrumentation.api.weaving.Pointcut;
 

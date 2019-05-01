@@ -168,7 +168,7 @@ public class ForkJoinPoolIT {
     public static class DoPoolSubmitCallable implements AppUnderTest, TransactionMarker {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
 
@@ -183,7 +183,7 @@ public class ForkJoinPoolIT {
     public static class DoPoolSubmitRunnable implements AppUnderTest, TransactionMarker {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
 
@@ -199,7 +199,7 @@ public class ForkJoinPoolIT {
             implements AppUnderTest, TransactionMarker {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
 
@@ -214,7 +214,7 @@ public class ForkJoinPoolIT {
     public static class DoPoolSubmitForkJoinTask implements AppUnderTest, TransactionMarker {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
 
@@ -230,7 +230,7 @@ public class ForkJoinPoolIT {
             implements AppUnderTest, TransactionMarker {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
 
@@ -246,7 +246,7 @@ public class ForkJoinPoolIT {
             implements AppUnderTest, TransactionMarker {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
 
@@ -262,7 +262,7 @@ public class ForkJoinPoolIT {
             implements AppUnderTest, TransactionMarker {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
 
@@ -277,7 +277,7 @@ public class ForkJoinPoolIT {
     public static class DoPoolExecuteRunnable implements AppUnderTest, TransactionMarker {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
 
@@ -295,7 +295,7 @@ public class ForkJoinPoolIT {
     public static class DoPoolExecuteForkJoinTask implements AppUnderTest, TransactionMarker {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
 
@@ -313,7 +313,7 @@ public class ForkJoinPoolIT {
     public static class DoPoolInvokeForkJoinTask implements AppUnderTest, TransactionMarker {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
 
@@ -328,7 +328,7 @@ public class ForkJoinPoolIT {
     public static class DoPoolInvokeAll implements AppUnderTest, TransactionMarker {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
 

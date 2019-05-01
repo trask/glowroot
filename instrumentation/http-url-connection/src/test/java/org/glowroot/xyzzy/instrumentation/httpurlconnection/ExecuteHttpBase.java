@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.httpurlconnection;
 
+import java.io.Serializable;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 
@@ -64,7 +65,7 @@ public abstract class ExecuteHttpBase implements AppUnderTest, TransactionMarker
     private int port;
 
     @Override
-    public void executeApp() throws Exception {
+    public void executeApp(Serializable... args) throws Exception {
         HttpServer httpServer = new HttpServer();
         if (getClass().getName().endsWith("HTTPS")) {
             httpServer.makeSecure(

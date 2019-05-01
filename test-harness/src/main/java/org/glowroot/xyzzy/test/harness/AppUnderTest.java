@@ -15,9 +15,9 @@
  */
 package org.glowroot.xyzzy.test.harness;
 
-// even though this is essentially the same as {@link Callable}, it seems worth having a separate
-// interface just for the self-documenting name
+import java.io.Serializable;
+
 public interface AppUnderTest {
 
-    void executeApp() throws Exception;
+    void executeApp(Serializable... args) throws Exception;
 }

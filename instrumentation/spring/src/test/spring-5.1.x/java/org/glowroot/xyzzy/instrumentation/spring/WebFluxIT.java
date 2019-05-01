@@ -76,17 +76,10 @@ public class WebFluxIT {
         assertThat(i.hasNext()).isFalse();
     }
 
-    private static int getAvailablePort() throws Exception {
-        ServerSocket serverSocket = new ServerSocket(0);
-        int port = serverSocket.getLocalPort();
-        serverSocket.close();
-        return port;
-    }
-
     public static class HittingWebFlux implements AppUnderTest {
         @Override
-        public void executeApp() throws Exception {
-            int port = getAvailablePort();
+        public void executeApp(Serializable... args) throws Exception {
+            int port = Ports.getAvailable();
             DisposableServer httpServer = HttpServer.create()
                     .host("localhost")
                     .port(port)

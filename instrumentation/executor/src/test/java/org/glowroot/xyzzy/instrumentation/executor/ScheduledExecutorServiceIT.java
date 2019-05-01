@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.executor;
 
+import java.io.Serializable;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -82,7 +83,7 @@ public class ScheduledExecutorServiceIT {
     public static class DoScheduledRunnable implements AppUnderTest, TransactionMarker {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
 
@@ -106,7 +107,7 @@ public class ScheduledExecutorServiceIT {
     public static class DoScheduledCallable implements AppUnderTest, TransactionMarker {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
 

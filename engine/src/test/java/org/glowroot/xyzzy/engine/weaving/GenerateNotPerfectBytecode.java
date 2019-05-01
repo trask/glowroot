@@ -19,6 +19,8 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
+import org.glowroot.xyzzy.engine.weaving.ClassLoaders.LazyDefinedClass;
+
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_SUPER;
@@ -32,8 +34,6 @@ import static org.objectweb.asm.Opcodes.POP;
 import static org.objectweb.asm.Opcodes.POP2;
 import static org.objectweb.asm.Opcodes.RETURN;
 import static org.objectweb.asm.Opcodes.V1_6;
-
-import org.glowroot.xyzzy.engine.weaving.ClassLoaders.LazyDefinedClass;
 
 public class GenerateNotPerfectBytecode {
 

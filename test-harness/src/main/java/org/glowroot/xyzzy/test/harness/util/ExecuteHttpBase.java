@@ -15,62 +15,18 @@
  */
 package org.glowroot.xyzzy.test.harness.util;
 
-import java.security.SecureRandom;
-import java.security.cert.X509Certificate;
-
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-
-import fi.iki.elonen.NanoHTTPD;
+import java.io.Serializable;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
-import org.glowroot.xyzzy.test.harness.util.HttpServer;
 
 public abstract class ExecuteHttpBase implements AppUnderTest, TransactionMarker {
-
-    static {
-        TrustManager[] trustAllCerts = new TrustManager[] {
-                new X509TrustManager() {
-                    @Override
-                    public X509Certificate[] getAcceptedIssuers() {
-                        return null;
-                    }
-                    @Override
-                    public void checkClientTrusted(X509Certificate[] certs, String authType) {}
-                    @Override
-                    public void checkServerTrusted(X509Certificate[] certs, String authType) {}
-                }};
-        SSLContext sc;
-        try {
-            sc = SSLContext.getInstance("TLS");
-            sc.init(null, trustAllCerts, new SecureRandom());
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
-        HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
-        HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
-            @Override
-            public boolean verify(String hostname, SSLSession sslSession) {
-                return hostname.equals("localhost");
-            }
-        });
-    }
 
     private int port;
 
     @Override
-    public void executeApp() throws Exception {
+    public void executeApp(Serializable... args) throws Exception {
         HttpServer httpServer = new HttpServer();
-        if (getClass().getName().endsWith("HTTPS")) {
-            httpServer.makeSecure(
-                    NanoHTTPD.makeSSLSocketFactory("/keystore.jks", "password".toCharArray()),
-                    null);
-        }
         httpServer.start();
         port = httpServer.getListeningPort();
         try {

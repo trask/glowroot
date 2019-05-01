@@ -18,7 +18,7 @@ package org.glowroot.xyzzy.engine.weaving;
 import com.google.common.reflect.Reflection;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
-import org.glowroot.xyzzy.engine.weaving.IsolatedWeavingClassLoader;
+
 import org.glowroot.xyzzy.engine.weaving.targets.Misc;
 
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;

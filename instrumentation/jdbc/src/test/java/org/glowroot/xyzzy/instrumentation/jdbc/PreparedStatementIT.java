@@ -18,6 +18,7 @@ package org.glowroot.xyzzy.instrumentation.jdbc;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.Reader;
+import java.io.Serializable;
 import java.io.StringReader;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -40,10 +41,10 @@ import org.junit.Test;
 
 import org.glowroot.xyzzy.instrumentation.jdbc.Connections.ConnectionType;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
-import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
+import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
@@ -152,7 +153,8 @@ public class PreparedStatementIT {
     @Test
     public void testPreparedStatementLargeParamSetFirst() throws Exception {
         // when
-        IncomingSpan incomingSpan = container.execute(ExecutePreparedStatementLargeParamSetFirst.class);
+        IncomingSpan incomingSpan =
+                container.execute(ExecutePreparedStatementLargeParamSetFirst.class);
 
         // then
         Iterator<Span> i = incomingSpan.childSpans().iterator();
@@ -350,7 +352,8 @@ public class PreparedStatementIT {
                 ImmutableList.of(".*"));
 
         // when
-        IncomingSpan incomingSpan = container.execute(ExecutePreparedStatementWithBinaryStream.class);
+        IncomingSpan incomingSpan =
+                container.execute(ExecutePreparedStatementWithBinaryStream.class);
 
         // then
         Iterator<Span> i = getTraceEntriesWithoutH2ExtraLobQueries(incomingSpan).iterator();
@@ -457,7 +460,7 @@ public class PreparedStatementIT {
             implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             try {
                 transactionMarker();
@@ -486,7 +489,7 @@ public class PreparedStatementIT {
             implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             try {
                 transactionMarker();
@@ -513,7 +516,7 @@ public class PreparedStatementIT {
     public static class ExecutePreparedStatementUpdate implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             try {
                 transactionMarker();
@@ -538,7 +541,7 @@ public class PreparedStatementIT {
             implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             try {
                 transactionMarker();
@@ -567,7 +570,7 @@ public class PreparedStatementIT {
             implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             try {
                 transactionMarker();
@@ -601,7 +604,7 @@ public class PreparedStatementIT {
     public static class PreparedStatementNullSql implements AppUnderTest, TransactionMarker {
         private Connection delegatingConnection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             Connection connection = Connections.createConnection();
             delegatingConnection = new DelegatingConnection(connection) {
                 @Override
@@ -625,7 +628,7 @@ public class PreparedStatementIT {
             implements AppUnderTest, TransactionMarker {
         private Connection delegatingConnection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             Connection connection = Connections.createConnection();
             delegatingConnection = new DelegatingConnection(connection) {
                 @Override
@@ -662,7 +665,7 @@ public class PreparedStatementIT {
             implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             try {
                 transactionMarker();
@@ -696,7 +699,7 @@ public class PreparedStatementIT {
             implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             try {
                 transactionMarker();
@@ -726,7 +729,7 @@ public class PreparedStatementIT {
         }
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             try {
                 transactionMarker();
@@ -766,7 +769,7 @@ public class PreparedStatementIT {
         }
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             try {
                 transactionMarker();
@@ -802,7 +805,7 @@ public class PreparedStatementIT {
             implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             try {
                 transactionMarker();
@@ -832,7 +835,7 @@ public class PreparedStatementIT {
             implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             try {
                 transactionMarker();
@@ -858,7 +861,7 @@ public class PreparedStatementIT {
             implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             try {
                 transactionMarker();
@@ -889,7 +892,7 @@ public class PreparedStatementIT {
             implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             try {
                 transactionMarker();

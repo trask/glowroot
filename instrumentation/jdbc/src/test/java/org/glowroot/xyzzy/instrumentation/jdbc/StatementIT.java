@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.jdbc;
 
+import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -29,10 +30,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
-import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
+import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
@@ -265,7 +266,7 @@ public class StatementIT {
             implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             try {
                 transactionMarker();
@@ -292,7 +293,7 @@ public class StatementIT {
             implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             try {
                 transactionMarker();
@@ -317,7 +318,7 @@ public class StatementIT {
     public static class ExecuteStatementUpdate implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             try {
                 transactionMarker();
@@ -339,7 +340,7 @@ public class StatementIT {
     public static class ExecuteNullStatement implements AppUnderTest, TransactionMarker {
         private Connection delegatingConnection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             Connection connection = Connections.createConnection();
             delegatingConnection = new DelegatingConnection(connection) {
                 @Override
@@ -373,7 +374,7 @@ public class StatementIT {
         private Connection connection;
         private Connection delegatingConnection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             delegatingConnection = new DelegatingConnection(connection) {
                 @Override
@@ -416,7 +417,7 @@ public class StatementIT {
     public static class ExecuteStatementAndUsePrevious implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             try {
                 transactionMarker();
@@ -445,7 +446,7 @@ public class StatementIT {
             implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             try {
                 transactionMarker();
@@ -477,7 +478,7 @@ public class StatementIT {
             implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             try {
                 transactionMarker();
@@ -509,7 +510,7 @@ public class StatementIT {
     public static class ExecuteStatementAndUseAbsolute implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             try {
                 transactionMarker();
@@ -534,7 +535,7 @@ public class StatementIT {
     public static class ExecuteStatementAndUseFirst implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             try {
                 transactionMarker();
@@ -559,7 +560,7 @@ public class StatementIT {
     public static class ExecuteStatementAndUseLast implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             try {
                 transactionMarker();
@@ -589,7 +590,7 @@ public class StatementIT {
         private ResultSet rs;
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             statement = connection.createStatement();
             try {

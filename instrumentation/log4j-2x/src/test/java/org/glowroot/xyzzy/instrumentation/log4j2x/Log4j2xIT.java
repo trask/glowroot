@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.log4j2x;
 
+import java.io.Serializable;
 import java.util.Iterator;
 
 import org.apache.logging.log4j.LogManager;
@@ -282,7 +283,7 @@ public class Log4j2xIT {
     public static class ShouldLog implements AppUnderTest, TransactionMarker {
         private static final Logger logger = LogManager.getLogger(ShouldLog.class);
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -297,7 +298,7 @@ public class Log4j2xIT {
     public static class ShouldLogWithThrowable implements AppUnderTest, TransactionMarker {
         private static final Logger logger = LogManager.getLogger(ShouldLogWithThrowable.class);
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -313,7 +314,7 @@ public class Log4j2xIT {
         private static final Logger logger =
                 LogManager.getLogger(ShouldLogWithNullThrowable.class);
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -329,7 +330,7 @@ public class Log4j2xIT {
         private static final Logger logger =
                 LogManager.getLogger(ShouldLogWithOneParameter.class);
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -346,7 +347,7 @@ public class Log4j2xIT {
         private static final Logger logger =
                 LogManager.getLogger(ShouldLogWithOneParameterAndThrowable.class);
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -362,7 +363,7 @@ public class Log4j2xIT {
         private static final Logger logger =
                 LogManager.getLogger(ShouldLogWithTwoParameters.class);
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -379,7 +380,7 @@ public class Log4j2xIT {
         private static final Logger logger =
                 LogManager.getLogger(ShouldLogWithMoreThanTwoParameters.class);
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -396,7 +397,7 @@ public class Log4j2xIT {
         private static final Logger logger =
                 LogManager.getLogger(ShouldLogWithParametersAndThrowable.class);
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override

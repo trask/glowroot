@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.jaxrs;
 
+import java.io.Serializable;
 import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -96,7 +97,7 @@ public class SuspendedResourceIT {
 
     public static class WithNormalServletMappingCallSuspended extends InvokeJaxrsResourceInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp1", "", "/suspended/1");
         }
     }
@@ -104,7 +105,7 @@ public class SuspendedResourceIT {
     public static class WithNormalServletMappingCallSuspendedWithContextPath
             extends InvokeJaxrsResourceInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp1", "/zzz", "/suspended/1");
         }
     }

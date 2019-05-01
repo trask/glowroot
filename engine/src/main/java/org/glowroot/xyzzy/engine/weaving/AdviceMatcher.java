@@ -27,7 +27,7 @@ import org.immutables.value.Value;
 import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.glowroot.xyzzy.engine.weaving.ImmutableAdviceMatcher;
+
 import org.glowroot.xyzzy.instrumentation.api.weaving.MethodModifier;
 
 @Value.Immutable

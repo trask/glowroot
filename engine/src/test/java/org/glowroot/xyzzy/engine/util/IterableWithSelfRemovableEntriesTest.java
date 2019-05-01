@@ -18,10 +18,9 @@ package org.glowroot.xyzzy.engine.util;
 import java.util.List;
 
 import com.google.common.collect.Lists;
-
-import org.glowroot.xyzzy.engine.util.IterableWithSelfRemovableEntries;
-import org.glowroot.xyzzy.engine.util.IterableWithSelfRemovableEntries.SelfRemovableEntry;
 import org.junit.Test;
+
+import org.glowroot.xyzzy.engine.util.IterableWithSelfRemovableEntries.SelfRemovableEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

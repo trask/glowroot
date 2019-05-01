@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.executor;
 
+import java.io.Serializable;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CountDownLatch;
@@ -64,7 +65,7 @@ public class TimerIT {
     public static class DoScheduledTimerTask implements AppUnderTest, TransactionMarker {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
 

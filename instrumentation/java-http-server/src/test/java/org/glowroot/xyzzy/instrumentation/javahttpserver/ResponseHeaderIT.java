@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.javahttpserver;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -250,7 +251,7 @@ public class ResponseHeaderIT {
 
     public static class SetStandardResponseHeadersOutsideHttpServer implements AppUnderTest {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             MockHttpExchange exchange = new MockHttpExchange();
             exchange.getResponseHeaders().set("Content-Length", "1");
             exchange.getResponseHeaders().set("Content-Type", "text/plain");

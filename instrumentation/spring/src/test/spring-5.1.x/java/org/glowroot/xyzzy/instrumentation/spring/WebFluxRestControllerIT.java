@@ -112,14 +112,14 @@ public class WebFluxRestControllerIT {
 
     public static class HittingWebFlux1 extends InvokeSpringControllerInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp1", "", "/webflux1");
         }
     }
 
     public static class HittingWebFlux2 extends InvokeSpringControllerInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             try {
                 executeApp("webapp1", "", "/webflux2");
             } catch (Exception e) {

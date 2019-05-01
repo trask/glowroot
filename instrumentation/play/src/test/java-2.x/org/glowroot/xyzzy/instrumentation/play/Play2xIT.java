@@ -234,7 +234,7 @@ public class Play2xIT {
     public static class GetIndex implements AppUnderTest {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             CloseableHttpClient httpClient = HttpClients.createDefault();
             HttpGet httpGet = new HttpGet("http://localhost:" + PlayWrapper.port + "/");
             int statusCode = httpClient.execute(httpGet).getStatusLine().getStatusCode();
@@ -247,7 +247,7 @@ public class Play2xIT {
     public static class GetAsset implements AppUnderTest {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             CloseableHttpClient httpClient = HttpClients.createDefault();
             HttpGet httpGet = new HttpGet(
                     "http://localhost:" + PlayWrapper.port + "/assets/scripts/empty.js");
@@ -261,7 +261,7 @@ public class Play2xIT {
     public static class GetAsync implements AppUnderTest {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             CloseableHttpClient httpClient = HttpClients.createDefault();
             HttpGet httpGet = new HttpGet("http://localhost:" + PlayWrapper.port + "/message");
             int statusCode = httpClient.execute(httpGet).getStatusLine().getStatusCode();
@@ -274,7 +274,7 @@ public class Play2xIT {
     public static class GetBad implements AppUnderTest {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             CloseableHttpClient httpClient = HttpClients.createDefault();
             HttpGet httpGet = new HttpGet("http://localhost:" + PlayWrapper.port + "/bad");
             int statusCode = httpClient.execute(httpGet).getStatusLine().getStatusCode();
@@ -287,7 +287,7 @@ public class Play2xIT {
     public static class GetStream implements AppUnderTest {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             CloseableHttpClient httpClient = HttpClients.createDefault();
             HttpGet httpGet = new HttpGet("http://localhost:" + PlayWrapper.port + "/stream");
             CloseableHttpResponse response = httpClient.execute(httpGet);
@@ -308,7 +308,7 @@ public class Play2xIT {
 
         static {
             try {
-                port = getAvailablePort();
+                port = Ports.getAvailable();
             } catch (Exception e) {
                 throw new IllegalStateException(e);
             }
@@ -372,13 +372,6 @@ public class Play2xIT {
             Constructor<TestServer> testServerConstructor =
                     TestServer.class.getConstructor(int.class, fakeApplicationClass);
             return testServerConstructor.newInstance(port, app);
-        }
-
-        private static int getAvailablePort() throws Exception {
-            ServerSocket serverSocket = new ServerSocket(0);
-            int port = serverSocket.getLocalPort();
-            serverSocket.close();
-            return port;
         }
     }
 }

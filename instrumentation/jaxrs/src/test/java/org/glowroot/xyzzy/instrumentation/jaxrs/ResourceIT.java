@@ -15,6 +15,8 @@
  */
 package org.glowroot.xyzzy.instrumentation.jaxrs;
 
+import java.io.Serializable;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -272,7 +274,7 @@ public class ResourceIT {
 
     public static class WithSimpleServletMapping extends InvokeJaxrsResourceInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp1", "", "/simple");
         }
     }
@@ -280,14 +282,14 @@ public class ResourceIT {
     public static class WithSimpleServletMappingWithContextPath
             extends InvokeJaxrsResourceInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp1", "/zzz", "/simple");
         }
     }
 
     public static class WithNormalServletMapping extends InvokeJaxrsResourceInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp1", "", "/hello/1");
         }
     }
@@ -295,14 +297,14 @@ public class ResourceIT {
     public static class WithNormalServletMappingWithContextPath
             extends InvokeJaxrsResourceInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp1", "/zzz", "/hello/1");
         }
     }
 
     public static class WithNormalServletMappingHittingRoot extends InvokeJaxrsResourceInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp1", "", "/");
         }
     }
@@ -310,14 +312,14 @@ public class ResourceIT {
     public static class WithNormalServletMappingHittingRootWithContextPath
             extends InvokeJaxrsResourceInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp1", "/zzz", "/");
         }
     }
 
     public static class WithNestedServletMapping extends InvokeJaxrsResourceInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp2", "", "/rest/hello/1");
         }
     }
@@ -325,14 +327,14 @@ public class ResourceIT {
     public static class WithNestedServletMappingWithContextPath
             extends InvokeJaxrsResourceInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp2", "/zzz", "/rest/hello/1");
         }
     }
 
     public static class WithNestedServletMappingHittingRoot extends InvokeJaxrsResourceInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp2", "", "/rest/");
         }
     }
@@ -340,14 +342,14 @@ public class ResourceIT {
     public static class WithNestedServletMappingHittingRootWithContextPath
             extends InvokeJaxrsResourceInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp2", "/zzz", "/rest/");
         }
     }
 
     public static class WithLessNormalServletMapping extends InvokeJaxrsResourceInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp3", "", "/hello/1");
         }
     }
@@ -355,7 +357,7 @@ public class ResourceIT {
     public static class WithLessNormalServletMappingWithContextPath
             extends InvokeJaxrsResourceInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp3", "/zzz", "/hello/1");
         }
     }
@@ -363,7 +365,7 @@ public class ResourceIT {
     public static class WithLessNormalServletMappingHittingRoot
             extends InvokeJaxrsResourceInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp3", "", "/");
         }
     }
@@ -371,21 +373,21 @@ public class ResourceIT {
     public static class WithLessNormalServletMappingHittingRootWithContextPath
             extends InvokeJaxrsResourceInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp3", "/zzz", "/");
         }
     }
 
     public static class WithInterfaceAnnotated extends InvokeJaxrsResourceInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp1", "", "/another/1");
         }
     }
 
     public static class WithSubResource extends InvokeJaxrsResourceInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp1", "", "/parent/child/grandchild/1");
         }
     }

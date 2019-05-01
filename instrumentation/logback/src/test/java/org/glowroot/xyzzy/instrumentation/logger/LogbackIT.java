@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.logger;
 
+import java.io.Serializable;
 import java.util.Iterator;
 
 import org.junit.After;
@@ -315,7 +316,7 @@ public class LogbackIT {
     public static class ShouldLog implements AppUnderTest, TransactionMarker {
         private static final Logger logger = LoggerFactory.getLogger(ShouldLog.class);
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -330,7 +331,7 @@ public class LogbackIT {
     public static class ShouldLogWithThrowable implements AppUnderTest, TransactionMarker {
         private static final Logger logger = LoggerFactory.getLogger(ShouldLogWithThrowable.class);
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -346,7 +347,7 @@ public class LogbackIT {
         private static final Logger logger =
                 LoggerFactory.getLogger(ShouldLogWithNullThrowable.class);
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -362,7 +363,7 @@ public class LogbackIT {
         private static final Logger logger =
                 LoggerFactory.getLogger(ShouldLogWithOneParameter.class);
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -379,7 +380,7 @@ public class LogbackIT {
         private static final Logger logger =
                 LoggerFactory.getLogger(ShouldLogWithOneParameterAndThrowable.class);
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -395,7 +396,7 @@ public class LogbackIT {
         private static final Logger logger =
                 LoggerFactory.getLogger(ShouldLogWithTwoParameters.class);
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -412,7 +413,7 @@ public class LogbackIT {
         private static final Logger logger =
                 LoggerFactory.getLogger(ShouldLogWithMoreThanTwoParameters.class);
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -429,7 +430,7 @@ public class LogbackIT {
         private static final Logger logger =
                 LoggerFactory.getLogger(ShouldLogWithParametersAndThrowable.class);
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override

@@ -47,15 +47,10 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.glowroot.xyzzy.engine.config.AdviceConfig;
-import org.glowroot.xyzzy.engine.config.ImmutableAdviceConfig;
 import org.glowroot.xyzzy.engine.config.AdviceConfig.CaptureKind;
-import org.glowroot.xyzzy.engine.weaving.ImmutableAnalyzedClass;
-import org.glowroot.xyzzy.engine.weaving.ImmutableAnalyzedMethod;
-import org.glowroot.xyzzy.engine.weaving.ImmutableAnalyzedMethodKey;
-import org.glowroot.xyzzy.engine.weaving.ImmutableMatchedMixinTypes;
-import org.glowroot.xyzzy.engine.weaving.ImmutableParseContext;
-import org.glowroot.xyzzy.engine.weaving.ImmutablePublicFinalMethod;
+import org.glowroot.xyzzy.engine.config.ImmutableAdviceConfig;
 import org.glowroot.xyzzy.engine.weaving.AnalyzedWorld.ParseContext;
 import org.glowroot.xyzzy.engine.weaving.ClassLoaders.LazyDefinedClass;
 import org.glowroot.xyzzy.engine.weaving.ThinClassVisitor.ThinClass;

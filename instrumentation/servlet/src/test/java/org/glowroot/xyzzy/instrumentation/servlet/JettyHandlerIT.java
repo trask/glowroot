@@ -17,6 +17,7 @@ package org.glowroot.xyzzy.instrumentation.servlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.Serializable;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -70,7 +71,7 @@ public class JettyHandlerIT {
     public static class ExecuteJettyHandler implements AppUnderTest {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             Server server = new Server(0);
             server.setHandler(new HelloHandler());
             server.start();

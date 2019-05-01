@@ -126,7 +126,7 @@ public class Play1xIT {
     public static class GetIndex implements AppUnderTest {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             CloseableHttpClient httpClient = HttpClients.createDefault();
             HttpGet httpGet = new HttpGet("http://localhost:" + PlayWrapper.port + "/");
             int statusCode = httpClient.execute(httpGet).getStatusLine().getStatusCode();
@@ -139,7 +139,7 @@ public class Play1xIT {
     public static class GetApplicationIndex implements AppUnderTest {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             CloseableHttpClient httpClient = HttpClients.createDefault();
             HttpGet httpGet =
                     new HttpGet("http://localhost:" + PlayWrapper.port + "/application/index");
@@ -153,7 +153,7 @@ public class Play1xIT {
     public static class GetApplicationCalculate implements AppUnderTest {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             CloseableHttpClient httpClient = HttpClients.createDefault();
             HttpGet httpGet =
                     new HttpGet("http://localhost:" + PlayWrapper.port + "/application/calculate");
@@ -170,7 +170,7 @@ public class Play1xIT {
 
         static {
             try {
-                port = getAvailablePort();
+                port = Ports.getAvailable();
             } catch (Exception e) {
                 throw new IllegalStateException(e);
             }
@@ -190,13 +190,6 @@ public class Play1xIT {
                 }
             }
             Play.start();
-        }
-
-        private static int getAvailablePort() throws Exception {
-            ServerSocket serverSocket = new ServerSocket(0);
-            int port = serverSocket.getLocalPort();
-            serverSocket.close();
-            return port;
         }
     }
 }

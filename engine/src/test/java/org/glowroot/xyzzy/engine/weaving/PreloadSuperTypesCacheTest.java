@@ -18,8 +18,6 @@ package org.glowroot.xyzzy.engine.weaving;
 import java.io.File;
 
 import com.google.common.io.Files;
-
-import org.glowroot.xyzzy.engine.weaving.PreloadSomeSuperTypesCache;
 import org.junit.Test;
 
 import static com.google.common.base.Charsets.UTF_8;

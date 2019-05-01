@@ -16,8 +16,9 @@
 package org.glowroot.xyzzy.engine.weaving;
 
 import org.apache.commons.lang.StringUtils;
-import org.glowroot.xyzzy.engine.weaving.WeavingJDK14BytecodeInstrumentation.BasicAdvice;
 import org.junit.Test;
+
+import org.glowroot.xyzzy.engine.weaving.WeavingJDK14BytecodeInstrumentation.BasicAdvice;
 
 public class WeavingJDK14BytecodeTest {
 

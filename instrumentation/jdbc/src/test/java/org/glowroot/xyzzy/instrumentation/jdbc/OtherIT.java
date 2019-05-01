@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.jdbc;
 
+import java.io.Serializable;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -32,10 +33,10 @@ import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
-import org.glowroot.xyzzy.test.harness.TestSpans;
-import org.glowroot.xyzzy.test.harness.TestSpans.DoInSpan;
 import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
+import org.glowroot.xyzzy.test.harness.TestSpans;
+import org.glowroot.xyzzy.test.harness.TestSpans.DoInSpan;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -274,7 +275,7 @@ public class OtherIT {
             implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             try {
                 transactionMarker();
@@ -301,7 +302,7 @@ public class OtherIT {
             implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             try {
                 transactionMarker();
@@ -331,7 +332,7 @@ public class OtherIT {
         private Connection connection;
         private Statement statement;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             try {
                 transactionMarker();
@@ -364,7 +365,7 @@ public class OtherIT {
         private Connection connection;
         private ResultSet rs;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             try {
                 transactionMarker();
@@ -396,7 +397,7 @@ public class OtherIT {
             implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             try {
                 transactionMarker();
@@ -424,7 +425,7 @@ public class OtherIT {
         private Connection connection;
         private Statement statement;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             try {
                 transactionMarker();
@@ -455,7 +456,7 @@ public class OtherIT {
     public static class ExecuteCallableStatement implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             try {
                 transactionMarker();
@@ -480,7 +481,7 @@ public class OtherIT {
     public static class AccessMetaData implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             connection.setAutoCommit(false);
             try {

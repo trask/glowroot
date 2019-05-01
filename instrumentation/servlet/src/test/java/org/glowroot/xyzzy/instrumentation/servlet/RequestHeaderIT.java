@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.servlet;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
@@ -182,7 +183,7 @@ public class RequestHeaderIT {
     @SuppressWarnings("serial")
     public static class GetBadRequestHeaders extends TestServlet {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             MockHttpServletRequest request = new BadMockHttpServletRequest("GET", "/testservlet");
             MockHttpServletResponse response = new PatchedMockHttpServletResponse();
             service((ServletRequest) request, (ServletResponse) response);
@@ -192,7 +193,7 @@ public class RequestHeaderIT {
     @SuppressWarnings("serial")
     public static class GetBadRequestHeaders2 extends TestServlet {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             MockHttpServletRequest request = new BadMockHttpServletRequest2("GET", "/testservlet");
             MockHttpServletResponse response = new PatchedMockHttpServletResponse();
             service((ServletRequest) request, (ServletResponse) response);

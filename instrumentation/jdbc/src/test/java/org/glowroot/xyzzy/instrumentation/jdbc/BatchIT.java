@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.jdbc;
 
+import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -32,10 +33,10 @@ import org.junit.Test;
 
 import org.glowroot.xyzzy.instrumentation.jdbc.Connections.ConnectionType;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
-import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
+import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
@@ -354,7 +355,7 @@ public class BatchIT {
     public static class ExecuteBatchPreparedStatement implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             connection.setAutoCommit(false);
             try {
@@ -392,7 +393,7 @@ public class BatchIT {
             implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             connection.setAutoCommit(false);
             try {
@@ -421,7 +422,7 @@ public class BatchIT {
             implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             connection.setAutoCommit(false);
             try {
@@ -455,7 +456,7 @@ public class BatchIT {
     public static class ExecuteBatchStatement implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             connection.setAutoCommit(false);
             try {
@@ -484,7 +485,7 @@ public class BatchIT {
     public static class BatchStatementNull implements AppUnderTest, TransactionMarker {
         private Connection delegatingConnection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             Connection connection = Connections.createConnection();
             delegatingConnection = new DelegatingConnection(connection) {
                 @Override
@@ -519,7 +520,7 @@ public class BatchIT {
             implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             connection.setAutoCommit(false);
             try {
@@ -543,7 +544,7 @@ public class BatchIT {
             implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             connection.setAutoCommit(false);
             try {
@@ -568,7 +569,7 @@ public class BatchIT {
             implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             connection.setAutoCommit(false);
             try {
@@ -595,7 +596,7 @@ public class BatchIT {
             implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             connection = Connections.createConnection();
             connection.setAutoCommit(false);
             try {

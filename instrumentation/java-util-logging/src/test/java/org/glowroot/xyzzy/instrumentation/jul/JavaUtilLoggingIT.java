@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.jul;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.logging.Level;
@@ -392,7 +393,7 @@ public class JavaUtilLoggingIT {
     public static class ShouldLog implements AppUnderTest, TransactionMarker {
         private static final Logger logger = Logger.getLogger(ShouldLog.class.getName());
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -411,7 +412,7 @@ public class JavaUtilLoggingIT {
         private static final Logger logger =
                 Logger.getLogger(ShouldLogWithThrowable.class.getName());
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -430,7 +431,7 @@ public class JavaUtilLoggingIT {
         private static final Logger logger =
                 Logger.getLogger(ShouldLogWithNullThrowable.class.getName());
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -449,7 +450,7 @@ public class JavaUtilLoggingIT {
         private static final Logger logger =
                 Logger.getLogger(ShouldLogWithPriority.class.getName());
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -473,7 +474,7 @@ public class JavaUtilLoggingIT {
         private static final Logger logger =
                 Logger.getLogger(ShouldLogWithPriorityAndThrowable.class.getName());
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -497,7 +498,7 @@ public class JavaUtilLoggingIT {
         private static final Logger logger =
                 Logger.getLogger(ShouldLogWithPriorityAndNullThrowable.class.getName());
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -517,7 +518,7 @@ public class JavaUtilLoggingIT {
                 Logger.getLogger(ShouldLogWithParameters.class.getName());
 
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
 
@@ -539,7 +540,7 @@ public class JavaUtilLoggingIT {
                 Logger.getLogger(ShouldLocalizedLogWithParameters.class.getName(), "julmsgs");
 
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
 
@@ -559,7 +560,7 @@ public class JavaUtilLoggingIT {
         private static final Logger logger =
                 Logger.getLogger(ShouldLogWithLogRecord.class.getName());
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override

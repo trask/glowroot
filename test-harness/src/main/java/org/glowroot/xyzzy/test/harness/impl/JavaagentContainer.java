@@ -18,7 +18,7 @@ package org.glowroot.xyzzy.test.harness.impl;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.net.ServerSocket;
@@ -44,6 +44,8 @@ import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.agent.Premain;
+import org.glowroot.xyzzy.test.harness.util.ConsoleOutputPipe;
+import org.glowroot.xyzzy.test.harness.util.Ports;
 import org.glowroot.xyzzy.test.harness.util.TempDirs;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -99,10 +101,10 @@ public class JavaagentContainer implements Container {
             }
         });
 
-        int collectorPort = LocalContainer.getAvailablePort();
+        int collectorPort = Ports.getAvailable();
         traceCollector = new TraceCollector(collectorPort);
         traceCollector.start();
-        int javaagentServerPort = LocalContainer.getAvailablePort();
+        int javaagentServerPort = Ports.getAvailable();
         tmpDir = TempDirs.createTempDir("glowroot-test-dir");
         List<String> command = buildCommand(heartbeatListenerSocket.getLocalPort(), collectorPort,
                 javaagentServerPort, tmpDir, extraJvmArgs);
@@ -170,25 +172,27 @@ public class JavaagentContainer implements Container {
     }
 
     @Override
-    public IncomingSpan execute(Class<? extends AppUnderTest> appClass) throws Exception {
-        return executeInternal(appClass, null, null);
-    }
-
-    @Override
-    public IncomingSpan execute(Class<? extends AppUnderTest> appClass, String transactionType)
+    public IncomingSpan execute(Class<? extends AppUnderTest> appClass, Serializable... args)
             throws Exception {
-        return executeInternal(appClass, transactionType, null);
+        return executeInternal(appClass, null, null, args);
     }
 
     @Override
     public IncomingSpan execute(Class<? extends AppUnderTest> appClass, String transactionType,
-            String transactionName) throws Exception {
-        return executeInternal(appClass, transactionType, transactionName);
+            Serializable... args) throws Exception {
+        return executeInternal(appClass, transactionType, null, args);
     }
 
     @Override
-    public void executeNoExpectedTrace(Class<? extends AppUnderTest> appClass) throws Exception {
-        executeInternal(appClass);
+    public IncomingSpan execute(Class<? extends AppUnderTest> appClass, String transactionType,
+            String transactionName, Serializable... args) throws Exception {
+        return executeInternal(appClass, transactionType, transactionName, args);
+    }
+
+    @Override
+    public void executeNoExpectedTrace(Class<? extends AppUnderTest> appClass, Serializable... args)
+            throws Exception {
+        executeInternal(appClass, args);
         // give a short time to see if trace gets collected
         MILLISECONDS.sleep(10);
         if (traceCollector != null && traceCollector.hasIncomingSpan()) {
@@ -222,9 +226,10 @@ public class JavaagentContainer implements Container {
     }
 
     private IncomingSpan executeInternal(Class<? extends AppUnderTest> appClass,
-            @Nullable String transactionType, @Nullable String transactionName) throws Exception {
+            @Nullable String transactionType, @Nullable String transactionName, Serializable[] args)
+            throws Exception {
         checkNotNull(traceCollector);
-        executeInternal(appClass);
+        executeInternal(appClass, args);
         // extra long wait time is needed for StackOverflowOOMIT on slow travis ci machines since it
         // can sometimes take a long time for that large trace to be serialized and transferred
         IncomingSpan incomingSpan =
@@ -234,8 +239,9 @@ public class JavaagentContainer implements Container {
         return incomingSpan;
     }
 
-    private void executeInternal(Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
-        javaagentClient.executeApp(appUnderTestClass.getName());
+    private void executeInternal(Class<? extends AppUnderTest> appUnderTestClass,
+            Serializable[] args) throws Exception {
+        javaagentClient.executeApp(appUnderTestClass.getName(), args);
     }
 
     private static List<String> buildCommand(int heartbeatPort, int collectorPort,
@@ -387,26 +393,6 @@ public class JavaagentContainer implements Container {
             try {
                 javaagentClient.kill();
             } catch (Exception e) {
-                logger.error(e.getMessage(), e);
-            }
-        }
-    }
-
-    private static class ConsoleOutputPipe implements Runnable {
-
-        private final InputStream in;
-        private final OutputStream out;
-
-        private ConsoleOutputPipe(InputStream in, OutputStream out) {
-            this.in = in;
-            this.out = out;
-        }
-
-        @Override
-        public void run() {
-            try {
-                ByteStreams.copy(in, out);
-            } catch (IOException e) {
                 logger.error(e.getMessage(), e);
             }
         }

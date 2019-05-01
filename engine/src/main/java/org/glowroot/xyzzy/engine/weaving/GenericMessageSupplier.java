@@ -16,6 +16,7 @@
 package org.glowroot.xyzzy.engine.weaving;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+
 import org.glowroot.xyzzy.engine.weaving.MessageTemplateImpl.ArgPathPart;
 import org.glowroot.xyzzy.engine.weaving.MessageTemplateImpl.ConstantPart;
 import org.glowroot.xyzzy.engine.weaving.MessageTemplateImpl.Part;

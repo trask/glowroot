@@ -18,7 +18,7 @@ package org.glowroot.xyzzy.engine.weaving;
 import com.google.common.collect.Ordering;
 import org.junit.Test;
 import org.objectweb.asm.Type;
-import org.glowroot.xyzzy.engine.weaving.Advice;
+
 import org.glowroot.xyzzy.instrumentation.api.weaving.Pointcut;
 
 import static org.assertj.core.api.Assertions.assertThat;

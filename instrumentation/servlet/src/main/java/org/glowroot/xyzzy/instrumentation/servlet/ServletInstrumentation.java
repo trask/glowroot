@@ -29,9 +29,9 @@ import org.glowroot.xyzzy.instrumentation.api.Agent;
 import org.glowroot.xyzzy.instrumentation.api.AuxThreadContext;
 import org.glowroot.xyzzy.instrumentation.api.OptionalThreadContext;
 import org.glowroot.xyzzy.instrumentation.api.ThreadContext;
+import org.glowroot.xyzzy.instrumentation.api.ThreadContext.Priority;
 import org.glowroot.xyzzy.instrumentation.api.TimerName;
 import org.glowroot.xyzzy.instrumentation.api.TraceEntry;
-import org.glowroot.xyzzy.instrumentation.api.ThreadContext.Priority;
 import org.glowroot.xyzzy.instrumentation.api.checker.Nullable;
 import org.glowroot.xyzzy.instrumentation.api.util.FastThreadLocal;
 import org.glowroot.xyzzy.instrumentation.api.weaving.BindClassMeta;
@@ -50,9 +50,9 @@ import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.RequestInvoker;
 import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.ResponseInvoker;
 import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.SendError;
 import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.ServletInstrumentationProperties;
+import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.ServletInstrumentationProperties.SessionAttributePath;
 import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.ServletMessageSupplier;
 import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.Strings;
-import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.ServletInstrumentationProperties.SessionAttributePath;
 
 // this instrumentation is careful not to rely on request or session objects being thread-safe
 public class ServletInstrumentation {

@@ -19,8 +19,6 @@ import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.glowroot.xyzzy.instrumentation.jaxrs.ResourceMethodMeta;
-
 public class ResourceMethodMetaTest {
 
     @Test

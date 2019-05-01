@@ -20,6 +20,8 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
+import org.glowroot.xyzzy.engine.weaving.ClassLoaders.LazyDefinedClass;
+
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_SUPER;
 import static org.objectweb.asm.Opcodes.ACONST_NULL;
@@ -31,8 +33,6 @@ import static org.objectweb.asm.Opcodes.IFEQ;
 import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
 import static org.objectweb.asm.Opcodes.RETURN;
 import static org.objectweb.asm.Opcodes.V1_7;
-
-import org.glowroot.xyzzy.engine.weaving.ClassLoaders.LazyDefinedClass;
 
 // this is valid bytecode, but cannot be generated from valid Java code
 public class GenerateMoreHackedConstructorBytecode {

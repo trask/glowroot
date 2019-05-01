@@ -15,7 +15,6 @@
  */
 package org.glowroot.xyzzy.instrumentation.api;
 
-import org.glowroot.xyzzy.instrumentation.api.Logger;
 import org.glowroot.xyzzy.instrumentation.api.checker.Nullable;
 import org.glowroot.xyzzy.instrumentation.api.internal.LoggerFactory;
 

@@ -18,6 +18,7 @@ package org.glowroot.xyzzy.engine.logging;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
+
 import org.glowroot.xyzzy.engine.logging.LoggerFactoryImpl.LoggerImpl;
 import org.glowroot.xyzzy.instrumentation.api.Logger;
 

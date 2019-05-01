@@ -114,14 +114,14 @@ public class WebSocketIT {
 
     public static class HittingWebSocket extends InvokeSpringControllerInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp1", "", new WebSocketTest("", "abc"));
         }
     }
 
     public static class WithContextPathHittingAbc extends InvokeSpringControllerInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp1", "/zzz", new WebSocketTest("/zzz", "abc"));
         }
     }
@@ -129,7 +129,7 @@ public class WebSocketIT {
     public static class HittingWebSocketWithPropertyController
             extends InvokeSpringControllerInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp1", "", new WebSocketTest("", "xyz"));
         }
     }
@@ -137,7 +137,7 @@ public class WebSocketIT {
     public static class WithContextPathHittingWebSocketWithPropertyController
             extends InvokeSpringControllerInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp1", "/zzz", new WebSocketTest("/zzz", "xyz"));
         }
     }

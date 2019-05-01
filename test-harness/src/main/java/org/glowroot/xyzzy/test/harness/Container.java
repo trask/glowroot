@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.test.harness;
 
+import java.io.Serializable;
 import java.util.List;
 
 public interface Container {
@@ -31,15 +32,17 @@ public interface Container {
     void setInstrumentationProperty(String instrumentationId, String propertyName,
             List<String> propertyValue) throws Exception;
 
-    IncomingSpan execute(Class<? extends AppUnderTest> appUnderTestClass) throws Exception;
-
-    IncomingSpan execute(Class<? extends AppUnderTest> appUnderTestClass, String transactionType)
+    IncomingSpan execute(Class<? extends AppUnderTest> appUnderTestClass, Serializable... args)
             throws Exception;
 
     IncomingSpan execute(Class<? extends AppUnderTest> appUnderTestClass, String transactionType,
-            String transactionName) throws Exception;
+            Serializable... args) throws Exception;
 
-    void executeNoExpectedTrace(Class<? extends AppUnderTest> appUnderTestClass) throws Exception;
+    IncomingSpan execute(Class<? extends AppUnderTest> appUnderTestClass, String transactionType,
+            String transactionName, Serializable... args) throws Exception;
+
+    void executeNoExpectedTrace(Class<? extends AppUnderTest> appUnderTestClass,
+            Serializable... args) throws Exception;
 
     void resetAfterEachTest() throws Exception;
 

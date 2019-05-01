@@ -21,11 +21,12 @@ import java.util.Map;
 import java.util.Set;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.glowroot.xyzzy.instrumentation.api.weaving.Mixin;
-import org.glowroot.xyzzy.instrumentation.api.weaving.Pointcut;
 import org.immutables.value.Value;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
+
+import org.glowroot.xyzzy.instrumentation.api.weaving.Mixin;
+import org.glowroot.xyzzy.instrumentation.api.weaving.Pointcut;
 
 @Value.Immutable
 interface InstrumentationDetail {

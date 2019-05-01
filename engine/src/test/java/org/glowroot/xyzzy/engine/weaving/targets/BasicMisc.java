@@ -19,6 +19,7 @@ import java.lang.annotation.Retention;
 import java.lang.reflect.Method;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+
 import org.glowroot.xyzzy.engine.weaving.SomeInstrumentation.SomeClass;
 import org.glowroot.xyzzy.engine.weaving.SomeInstrumentation.SomeMethod;
 

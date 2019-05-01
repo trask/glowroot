@@ -39,7 +39,6 @@ import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.glowroot.xyzzy.engine.util.ImmutableObjectNamePair;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Style;
 import org.slf4j.Logger;

@@ -18,6 +18,7 @@ package org.glowroot.xyzzy.test.harness.impl;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.net.Socket;
 
 import org.glowroot.xyzzy.test.harness.impl.JavaagentServer.Command;
@@ -48,9 +49,10 @@ class JavaagentClient {
         in.readObject();
     }
 
-    public void executeApp(String name) throws Exception {
+    public void executeApp(String name, Serializable[] args) throws Exception {
         out.writeObject(Command.EXECUTE_APP);
         out.writeObject(name);
+        out.writeObject(args);
         Object response = in.readObject();
         if (response instanceof Throwable) {
             throw new Exception((Throwable) response);

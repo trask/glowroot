@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.executor;
 
+import java.io.Serializable;
 import java.util.List;
 
 import org.junit.After;
@@ -25,8 +26,8 @@ import org.junit.Test;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
-import org.glowroot.xyzzy.test.harness.TestSpans;
 import org.glowroot.xyzzy.test.harness.Span;
+import org.glowroot.xyzzy.test.harness.TestSpans;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
@@ -161,7 +162,7 @@ public class ThreadIT {
     public static class DoExecuteThread implements AppUnderTest, TransactionMarker {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
 
@@ -197,7 +198,7 @@ public class ThreadIT {
     public static class DoExecuteThreadWithName implements AppUnderTest, TransactionMarker {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
 
@@ -233,7 +234,7 @@ public class ThreadIT {
     public static class DoExecuteThreadWithThreadGroup implements AppUnderTest, TransactionMarker {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
 
@@ -270,7 +271,7 @@ public class ThreadIT {
             implements AppUnderTest, TransactionMarker {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
 
@@ -306,7 +307,7 @@ public class ThreadIT {
     public static class DoExecuteThreadSubclassed implements AppUnderTest, TransactionMarker {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
 
@@ -342,7 +343,7 @@ public class ThreadIT {
     public static class DoExecuteThreadSubSubclassed implements AppUnderTest, TransactionMarker {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
 
@@ -379,7 +380,7 @@ public class ThreadIT {
             implements AppUnderTest, TransactionMarker {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
 

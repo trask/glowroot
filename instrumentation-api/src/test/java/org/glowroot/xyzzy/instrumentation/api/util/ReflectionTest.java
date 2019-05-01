@@ -18,14 +18,13 @@ package org.glowroot.xyzzy.instrumentation.api.util;
 import java.lang.reflect.Method;
 
 import com.google.common.base.Optional;
-
-import org.glowroot.xyzzy.instrumentation.api.internal.InstrumentationService;
-import org.glowroot.xyzzy.instrumentation.api.internal.InstrumentationServiceHolder;
-import org.glowroot.xyzzy.instrumentation.api.util.Reflection;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import org.glowroot.xyzzy.instrumentation.api.internal.InstrumentationService;
+import org.glowroot.xyzzy.instrumentation.api.internal.InstrumentationServiceHolder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;

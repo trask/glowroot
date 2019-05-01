@@ -18,8 +18,6 @@ package org.glowroot.xyzzy.engine.weaving;
 import java.util.List;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.glowroot.xyzzy.engine.weaving.ImmutableThinClass;
-import org.glowroot.xyzzy.engine.weaving.ImmutableThinMethod;
 import org.immutables.value.Value;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;

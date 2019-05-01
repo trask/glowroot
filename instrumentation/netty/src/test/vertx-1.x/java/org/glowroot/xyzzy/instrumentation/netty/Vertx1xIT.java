@@ -64,18 +64,11 @@ public class Vertx1xIT {
         assertThat(trace.getHeader().getHeadline()).isEqualTo("GET /abc?xyz=123");
     }
 
-    private static int getAvailablePort() throws Exception {
-        ServerSocket serverSocket = new ServerSocket(0);
-        int port = serverSocket.getLocalPort();
-        serverSocket.close();
-        return port;
-    }
-
     public static class ExecuteHttpGet implements AppUnderTest {
 
         @Override
-        public void executeApp() throws Exception {
-            int port = getAvailablePort();
+        public void executeApp(Serializable... args) throws Exception {
+            int port = Ports.getAvailable();
             HttpServer httpServer = new DefaultVertxFactory().createVertx().createHttpServer()
                     .requestHandler(new Handler<HttpServerRequest>() {
                         @Override

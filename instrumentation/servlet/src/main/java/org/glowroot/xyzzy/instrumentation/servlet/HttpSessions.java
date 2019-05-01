@@ -27,8 +27,8 @@ import org.glowroot.xyzzy.instrumentation.api.checker.Nullable;
 import org.glowroot.xyzzy.instrumentation.api.util.Beans;
 import org.glowroot.xyzzy.instrumentation.api.util.ImmutableMap;
 import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.ServletInstrumentationProperties;
-import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.Strings;
 import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.ServletInstrumentationProperties.SessionAttributePath;
+import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.Strings;
 
 public class HttpSessions {
 

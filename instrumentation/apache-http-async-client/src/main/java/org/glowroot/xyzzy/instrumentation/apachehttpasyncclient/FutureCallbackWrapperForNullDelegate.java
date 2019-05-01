@@ -16,6 +16,7 @@
 package org.glowroot.xyzzy.instrumentation.apachehttpasyncclient;
 
 import org.apache.http.concurrent.FutureCallback;
+
 import org.glowroot.xyzzy.instrumentation.api.AsyncTraceEntry;
 
 public class FutureCallbackWrapperForNullDelegate<T> implements FutureCallback<T> {

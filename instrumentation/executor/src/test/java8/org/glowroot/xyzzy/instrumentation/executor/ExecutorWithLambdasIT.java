@@ -101,7 +101,7 @@ public class ExecutorWithLambdasIT {
         private CountDownLatch latch;
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executor =
                     new ThreadPoolExecutor(1, 1, 60, MILLISECONDS, Queues.newLinkedBlockingQueue());
             // need to pre-create threads, otherwise lambda execution will be captured by the
@@ -134,7 +134,7 @@ public class ExecutorWithLambdasIT {
         private CountDownLatch latch;
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executor =
                     new ThreadPoolExecutor(1, 1, 60, MILLISECONDS, Queues.newLinkedBlockingQueue());
             // need to pre-create threads, otherwise lambda execution will be captured by the

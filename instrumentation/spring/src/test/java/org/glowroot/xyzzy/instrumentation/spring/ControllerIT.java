@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.spring;
 
+import java.io.Serializable;
 import java.util.Iterator;
 import java.util.List;
 
@@ -29,8 +30,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
-import org.glowroot.xyzzy.test.harness.LocalSpan;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
+import org.glowroot.xyzzy.test.harness.LocalSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -224,35 +225,35 @@ public class ControllerIT {
 
     public static class WithNormalServletMapping extends InvokeSpringControllerInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp1", "", "/hello/echo/5");
         }
     }
 
     public static class WithNormalServletMappingHittingRoot extends InvokeSpringControllerInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp1", "", "/");
         }
     }
 
     public static class WithNestedServletMapping extends InvokeSpringControllerInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp2", "", "/spring/hello/echo/5");
         }
     }
 
     public static class WithNestedServletMappingHittingRoot extends InvokeSpringControllerInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp2", "", "/spring/");
         }
     }
 
     public static class WithLessNormalServletMapping extends InvokeSpringControllerInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp3", "", "/hello/echo/5");
         }
     }
@@ -260,7 +261,7 @@ public class ControllerIT {
     public static class WithLessNormalServletMappingHittingRoot
             extends InvokeSpringControllerInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp3", "", "/");
         }
     }
@@ -268,7 +269,7 @@ public class ControllerIT {
     public static class WithContextPathAndNormalServletMapping
             extends InvokeSpringControllerInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp1", "/zzz", "/hello/echo/5");
         }
     }
@@ -276,7 +277,7 @@ public class ControllerIT {
     public static class WithContextPathAndNormalServletMappingHittingRoot
             extends InvokeSpringControllerInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp1", "/zzz", "/");
         }
     }
@@ -284,7 +285,7 @@ public class ControllerIT {
     public static class WithContextPathAndNestedServletMapping
             extends InvokeSpringControllerInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp2", "/zzz", "/spring/hello/echo/5");
         }
     }
@@ -292,7 +293,7 @@ public class ControllerIT {
     public static class WithContextPathAndNestedServletMappingHittingRoot
             extends InvokeSpringControllerInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp2", "/zzz", "/spring/");
         }
     }
@@ -300,7 +301,7 @@ public class ControllerIT {
     public static class WithContextPathAndLessNormalServletMapping
             extends InvokeSpringControllerInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp3", "/zzz", "/hello/echo/5");
         }
     }
@@ -308,7 +309,7 @@ public class ControllerIT {
     public static class WithContextPathAndLessNormalServletMappingHittingRoot
             extends InvokeSpringControllerInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp3", "/zzz", "/");
         }
     }

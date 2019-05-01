@@ -16,6 +16,7 @@
 package org.glowroot.xyzzy.instrumentation.servlet;
 
 import java.io.IOException;
+import java.io.Serializable;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -32,7 +33,7 @@ import org.glowroot.xyzzy.test.harness.AppUnderTest;
 class TestFilter implements Filter, AppUnderTest {
 
     @Override
-    public void executeApp() throws Exception {
+    public void executeApp(Serializable... args) throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/testfilter");
         MockHttpServletResponse response = new MockHttpServletResponse();
         doFilter(request, response, null);

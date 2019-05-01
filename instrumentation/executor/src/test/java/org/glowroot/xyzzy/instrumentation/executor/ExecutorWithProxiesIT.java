@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.executor;
 
+import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -87,7 +88,7 @@ public class ExecutorWithProxiesIT {
     public static class DoExecuteRunnableWithProxy implements AppUnderTest, TransactionMarker {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
 

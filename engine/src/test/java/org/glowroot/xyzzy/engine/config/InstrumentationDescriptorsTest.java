@@ -19,9 +19,6 @@ import java.io.IOException;
 import java.net.URL;
 
 import com.google.common.io.Resources;
-
-import org.glowroot.xyzzy.engine.config.InstrumentationDescriptor;
-import org.glowroot.xyzzy.engine.config.InstrumentationDescriptors;
 import org.junit.Test;
 
 import static com.google.common.base.Charsets.ISO_8859_1;

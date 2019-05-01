@@ -15,6 +15,8 @@
  */
 package org.glowroot.xyzzy.instrumentation.jms;
 
+import java.io.Serializable;
+
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
 import javax.jms.Message;
@@ -81,7 +83,7 @@ public class JmsIT {
 
     public static class ReceiveMessage implements AppUnderTest {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             ConnectionFactory connectionFactory =
                     new ActiveMQConnectionFactory("vm://localhost?broker.persistent=false");
             Connection connection = connectionFactory.createConnection();
@@ -103,7 +105,7 @@ public class JmsIT {
         private Connection connection;
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             ConnectionFactory connectionFactory =
                     new ActiveMQConnectionFactory("vm://localhost?broker.persistent=false");
             connection = connectionFactory.createConnection();

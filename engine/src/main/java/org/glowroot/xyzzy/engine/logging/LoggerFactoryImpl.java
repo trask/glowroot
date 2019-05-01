@@ -16,6 +16,7 @@
 package org.glowroot.xyzzy.engine.logging;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+
 import org.glowroot.xyzzy.instrumentation.api.Logger;
 import org.glowroot.xyzzy.instrumentation.api.internal.LoggerFactory;
 

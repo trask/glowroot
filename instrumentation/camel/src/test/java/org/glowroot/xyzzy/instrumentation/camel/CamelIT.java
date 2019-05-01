@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.camel;
 
+import java.io.Serializable;
 import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 
@@ -82,7 +83,7 @@ public class CamelIT {
         private static CountDownLatch latch;
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
 
             latch = new CountDownLatch(1);
 

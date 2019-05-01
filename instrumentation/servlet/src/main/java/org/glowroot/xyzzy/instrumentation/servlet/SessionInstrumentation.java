@@ -26,9 +26,9 @@ import org.glowroot.xyzzy.instrumentation.api.weaving.BindParameter;
 import org.glowroot.xyzzy.instrumentation.api.weaving.OnAfter;
 import org.glowroot.xyzzy.instrumentation.api.weaving.Pointcut;
 import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.ServletInstrumentationProperties;
+import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.ServletInstrumentationProperties.SessionAttributePath;
 import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.ServletMessageSupplier;
 import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.Strings;
-import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.ServletInstrumentationProperties.SessionAttributePath;
 
 public class SessionInstrumentation {
 

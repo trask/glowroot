@@ -22,8 +22,6 @@ import java.util.Map;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-
-import org.glowroot.xyzzy.engine.weaving.Beans;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

@@ -16,7 +16,7 @@
 package org.glowroot.xyzzy.instrumentation.struts1x;
 
 import java.io.File;
-import java.net.ServerSocket;
+import java.io.Serializable;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -38,6 +38,7 @@ import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
+import org.glowroot.xyzzy.test.harness.util.Ports;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.glowroot.xyzzy.test.harness.util.HarnessAssertions.assertSingleLocalSpanMessage;
@@ -84,8 +85,8 @@ public class Struts1xIT {
     public static class ExecuteActionInTomcat implements AppUnderTest {
 
         @Override
-        public void executeApp() throws Exception {
-            int port = getAvailablePort();
+        public void executeApp(Serializable... args) throws Exception {
+            int port = Ports.getAvailable();
             Tomcat tomcat = new Tomcat();
             tomcat.setBaseDir("target/tomcat");
             tomcat.setPort(port);
@@ -108,13 +109,6 @@ public class Struts1xIT {
 
             tomcat.stop();
             tomcat.destroy();
-        }
-
-        private static int getAvailablePort() throws Exception {
-            ServerSocket serverSocket = new ServerSocket(0);
-            int port = serverSocket.getLocalPort();
-            serverSocket.close();
-            return port;
         }
     }
 }

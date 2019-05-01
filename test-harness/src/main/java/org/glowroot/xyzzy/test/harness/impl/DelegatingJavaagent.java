@@ -24,9 +24,9 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 
-import org.glowroot.xyzzy.engine.weaving.ClassNames;
-
 import com.google.common.io.Resources;
+
+import org.glowroot.xyzzy.engine.weaving.ClassNames;
 
 class DelegatingJavaagent {
 

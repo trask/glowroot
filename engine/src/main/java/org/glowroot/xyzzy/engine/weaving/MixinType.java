@@ -17,10 +17,10 @@ package org.glowroot.xyzzy.engine.weaving;
 
 import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.glowroot.xyzzy.engine.weaving.ImmutableMixinType;
-import org.glowroot.xyzzy.engine.weaving.InstrumentationDetail.MixinClass;
 import org.immutables.value.Value;
 import org.objectweb.asm.Type;
+
+import org.glowroot.xyzzy.engine.weaving.InstrumentationDetail.MixinClass;
 
 @Value.Immutable
 abstract class MixinType {

@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.spring;
 
+import java.io.Serializable;
 import java.util.Iterator;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -136,14 +137,14 @@ public class AsyncRestControllerIT {
 
     public static class InvokeCallableAsyncController extends InvokeSpringControllerInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp1", "", "/rest-async");
         }
     }
 
     public static class InvokeDeferredResultAsyncController extends InvokeSpringControllerInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp1", "", "/rest-async2");
         }
     }
@@ -151,7 +152,7 @@ public class AsyncRestControllerIT {
     public static class InvokeCallableAsyncControllerWithContextPath
             extends InvokeSpringControllerInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp1", "/zzz", "/rest-async");
         }
     }
@@ -159,7 +160,7 @@ public class AsyncRestControllerIT {
     public static class InvokeDeferredResultAsyncControllerWithContextPath
             extends InvokeSpringControllerInTomcat {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             executeApp("webapp1", "/zzz", "/rest-async2");
         }
     }

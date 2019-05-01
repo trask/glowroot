@@ -16,7 +16,7 @@
 package org.glowroot.xyzzy.instrumentation.servlet;
 
 import java.io.File;
-import java.net.ServerSocket;
+import java.io.Serializable;
 
 import org.apache.catalina.Context;
 import org.apache.catalina.loader.WebappLoader;
@@ -24,6 +24,7 @@ import org.apache.catalina.startup.Tomcat;
 import org.apache.naming.resources.VirtualDirContext;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
+import org.glowroot.xyzzy.test.harness.util.Ports;
 
 abstract class InvokeServletInTomcat implements AppUnderTest {
 
@@ -34,8 +35,8 @@ abstract class InvokeServletInTomcat implements AppUnderTest {
     }
 
     @Override
-    public void executeApp() throws Exception {
-        int port = getAvailablePort();
+    public void executeApp(Serializable... args) throws Exception {
+        int port = Ports.getAvailable();
         Tomcat tomcat = new Tomcat();
         tomcat.setBaseDir("target/tomcat");
         tomcat.setPort(port);
@@ -60,11 +61,4 @@ abstract class InvokeServletInTomcat implements AppUnderTest {
     }
 
     protected abstract void doTest(int port) throws Exception;
-
-    private static int getAvailablePort() throws Exception {
-        ServerSocket serverSocket = new ServerSocket(0);
-        int port = serverSocket.getLocalPort();
-        serverSocket.close();
-        return port;
-    }
 }

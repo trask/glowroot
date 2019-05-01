@@ -38,10 +38,10 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.glowroot.xyzzy.engine.bytecode.api.Bytecode;
 import org.glowroot.xyzzy.engine.bytecode.api.ThreadContextPlus;
 import org.glowroot.xyzzy.engine.bytecode.api.ThreadContextThreadLocal;
-import org.glowroot.xyzzy.engine.weaving.ImmutableCatchHandler;
 import org.glowroot.xyzzy.engine.weaving.Advice.AdviceParameter;
 import org.glowroot.xyzzy.engine.weaving.Advice.ParameterKind;
 import org.glowroot.xyzzy.instrumentation.api.ParameterHolder;

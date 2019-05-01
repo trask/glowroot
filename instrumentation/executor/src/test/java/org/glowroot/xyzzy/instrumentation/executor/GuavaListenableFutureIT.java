@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.executor;
 
+import java.io.Serializable;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 
@@ -102,7 +103,7 @@ public class GuavaListenableFutureIT {
     public static class AddListenerBeforeComplete implements AppUnderTest, TransactionMarker {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
 
@@ -132,7 +133,7 @@ public class GuavaListenableFutureIT {
     public static class AddListenerAfterComplete implements AppUnderTest, TransactionMarker {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
 
@@ -163,7 +164,7 @@ public class GuavaListenableFutureIT {
             implements AppUnderTest, TransactionMarker {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
 
@@ -194,7 +195,7 @@ public class GuavaListenableFutureIT {
             implements AppUnderTest, TransactionMarker {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
 

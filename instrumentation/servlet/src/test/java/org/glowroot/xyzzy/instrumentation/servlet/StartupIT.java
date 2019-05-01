@@ -16,6 +16,7 @@
 package org.glowroot.xyzzy.instrumentation.servlet;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -43,8 +44,8 @@ import org.springframework.mock.web.MockServletConfig;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
-import org.glowroot.xyzzy.test.harness.LocalSpan;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
+import org.glowroot.xyzzy.test.harness.LocalSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
@@ -122,7 +123,7 @@ public class StartupIT {
     public static class TestServletContextListener
             implements AppUnderTest, TransactionMarker, ServletContextListener {
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -139,7 +140,7 @@ public class StartupIT {
     public static class TestServletInit extends HttpServlet
             implements AppUnderTest, TransactionMarker {
         @Override
-        public void executeApp() throws ServletException {
+        public void executeApp(Serializable... args) throws ServletException {
             transactionMarker();
         }
         @Override
@@ -156,7 +157,7 @@ public class StartupIT {
 
     public static class TestFilterInit implements AppUnderTest, TransactionMarker, Filter {
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override
@@ -175,7 +176,7 @@ public class StartupIT {
     public static class TestServletContainerInitializer
             implements AppUnderTest, TransactionMarker, ServletContainerInitializer {
         @Override
-        public void executeApp() {
+        public void executeApp(Serializable... args) {
             transactionMarker();
         }
         @Override

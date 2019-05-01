@@ -21,7 +21,7 @@ import com.google.common.annotations.VisibleForTesting;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Style;
-import org.glowroot.xyzzy.engine.impl.ImmutableTimerNameImpl;
+
 import org.glowroot.xyzzy.instrumentation.api.TimerName;
 
 @Value.Immutable

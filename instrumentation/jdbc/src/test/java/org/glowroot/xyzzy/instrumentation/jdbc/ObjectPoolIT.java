@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.jdbc;
 
+import java.io.Serializable;
 import java.sql.Connection;
 import java.util.Iterator;
 
@@ -28,8 +29,8 @@ import org.junit.Test;
 import org.glowroot.xyzzy.instrumentation.jdbc.Connections.ConnectionType;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
-import org.glowroot.xyzzy.test.harness.LocalSpan;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
+import org.glowroot.xyzzy.test.harness.LocalSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
@@ -321,7 +322,7 @@ public class ObjectPoolIT {
 
     public static class ReturnCommonsDbcpConnection implements AppUnderTest, TransactionMarker {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
         @Override
@@ -333,7 +334,7 @@ public class ObjectPoolIT {
 
     public static class LeakCommonsDbcpConnection implements AppUnderTest, TransactionMarker {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
         @Override
@@ -345,7 +346,7 @@ public class ObjectPoolIT {
 
     public static class ReturnCommonsDbcp2Connection implements AppUnderTest, TransactionMarker {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
         @Override
@@ -357,7 +358,7 @@ public class ObjectPoolIT {
 
     public static class LeakCommonsDbcp2Connection implements AppUnderTest, TransactionMarker {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
         @Override
@@ -369,7 +370,7 @@ public class ObjectPoolIT {
 
     public static class ReturnTomcatConnection implements AppUnderTest, TransactionMarker {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
         @Override
@@ -381,7 +382,7 @@ public class ObjectPoolIT {
 
     public static class LeakTomcatConnection implements AppUnderTest, TransactionMarker {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
         @Override
@@ -393,7 +394,7 @@ public class ObjectPoolIT {
 
     public static class ReturnTomcatAsyncConnection implements AppUnderTest, TransactionMarker {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
         @Override
@@ -406,7 +407,7 @@ public class ObjectPoolIT {
 
     public static class LeakTomcatAsyncConnection implements AppUnderTest, TransactionMarker {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
         @Override
@@ -419,7 +420,7 @@ public class ObjectPoolIT {
 
     public static class ReturnGlassfishConnection implements AppUnderTest, TransactionMarker {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
         @Override
@@ -433,7 +434,7 @@ public class ObjectPoolIT {
 
     public static class LeakGlassfishConnection implements AppUnderTest, TransactionMarker {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
         @Override
@@ -446,7 +447,7 @@ public class ObjectPoolIT {
 
     public static class ReturnHikariConnection implements AppUnderTest, TransactionMarker {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
         @Override
@@ -458,7 +459,7 @@ public class ObjectPoolIT {
 
     public static class LeakHikariConnection implements AppUnderTest, TransactionMarker {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
         @Override
@@ -470,7 +471,7 @@ public class ObjectPoolIT {
 
     public static class ReturnBitronixConnection implements AppUnderTest, TransactionMarker {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
         @Override
@@ -482,7 +483,7 @@ public class ObjectPoolIT {
 
     public static class LeakBitronixConnection implements AppUnderTest, TransactionMarker {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
         @Override
@@ -494,7 +495,7 @@ public class ObjectPoolIT {
 
     public static class LeakMultipleDbcpConnections implements AppUnderTest, TransactionMarker {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             transactionMarker();
         }
         @Override

@@ -15,8 +15,6 @@
  */
 package org.glowroot.xyzzy.instrumentation.jdbc;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import org.glowroot.xyzzy.instrumentation.api.Agent;
 import org.glowroot.xyzzy.instrumentation.api.Logger;
 import org.glowroot.xyzzy.instrumentation.api.Message;
@@ -38,6 +36,8 @@ import org.glowroot.xyzzy.instrumentation.api.weaving.OnReturn;
 import org.glowroot.xyzzy.instrumentation.api.weaving.OnThrow;
 import org.glowroot.xyzzy.instrumentation.api.weaving.Pointcut;
 import org.glowroot.xyzzy.instrumentation.api.weaving.Shim;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 // DataSource.getConnection() can be interesting in case the data source is improperly sized and is
 // slow while expanding

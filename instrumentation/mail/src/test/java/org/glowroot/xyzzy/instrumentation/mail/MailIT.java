@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.mail;
 
+import java.io.Serializable;
 import java.util.Iterator;
 
 import com.icegreen.greenmail.util.GreenMail;
@@ -80,7 +81,7 @@ public class MailIT {
 
     private abstract static class DoMail implements AppUnderTest, TransactionMarker {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             GreenMail greenMail = new GreenMail(); // uses test ports by default
             greenMail.start();
             try {

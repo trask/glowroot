@@ -20,10 +20,11 @@ import java.io.InputStream;
 import java.lang.instrument.Instrumentation;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.glowroot.xyzzy.engine.init.PreCheckLoadedClasses.PreCheckClassFileTransformer;
-import org.glowroot.xyzzy.engine.util.JavaVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.glowroot.xyzzy.engine.init.PreCheckLoadedClasses.PreCheckClassFileTransformer;
+import org.glowroot.xyzzy.engine.util.JavaVersion;
 
 public class MainEntryPointUtil {
 

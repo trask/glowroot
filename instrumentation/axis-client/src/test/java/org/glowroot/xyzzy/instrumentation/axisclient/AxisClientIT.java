@@ -15,7 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.axisclient;
 
-import java.net.ServerSocket;
+import java.io.Serializable;
 import java.net.URL;
 
 import javax.jws.WebMethod;
@@ -37,6 +37,7 @@ import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
+import org.glowroot.xyzzy.test.harness.util.Ports;
 
 import static org.glowroot.xyzzy.test.harness.util.HarnessAssertions.assertSingleOutgoingSpanMessage;
 
@@ -74,8 +75,8 @@ public class AxisClientIT {
         private int port;
 
         @Override
-        public void executeApp() throws Exception {
-            port = getAvailablePort();
+        public void executeApp(Serializable... args) throws Exception {
+            port = Ports.getAvailable();
             Endpoint.publish("http://localhost:" + port + "/cxf/helloWorld", new HelloWorldImpl());
             JaxWsProxyFactoryBean factory = new JaxWsProxyFactoryBean();
             factory.setServiceClass(HelloWorld.class);
@@ -98,13 +99,6 @@ public class AxisClientIT {
                     new QName("http://axisclient.instrumentation.xyzzy.glowroot.org/", "hello"));
 
             call.invoke(new Object[0]);
-        }
-
-        private int getAvailablePort() throws Exception {
-            ServerSocket serverSocket = new ServerSocket(0);
-            int port = serverSocket.getLocalPort();
-            serverSocket.close();
-            return port;
         }
     }
 

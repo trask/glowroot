@@ -28,10 +28,11 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.glowroot.xyzzy.engine.config.AdviceConfig;
-import org.glowroot.xyzzy.engine.config.ImmutableAdviceConfig;
 import org.glowroot.xyzzy.engine.config.AdviceConfig.AlreadyInTransactionBehavior;
 import org.glowroot.xyzzy.engine.config.AdviceConfig.CaptureKind;
+import org.glowroot.xyzzy.engine.config.ImmutableAdviceConfig;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.ASM7;

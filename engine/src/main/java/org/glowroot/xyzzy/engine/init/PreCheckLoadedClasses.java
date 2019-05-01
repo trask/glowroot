@@ -28,9 +28,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.glowroot.xyzzy.engine.weaving.ImportantClassNames;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.glowroot.xyzzy.engine.weaving.ImportantClassNames;
 
 // LIMIT DEPENDENCY USAGE IN THIS CLASS SO IT DOESN'T TRIGGER ANY CLASS LOADING ON ITS OWN
 public class PreCheckLoadedClasses {

@@ -15,7 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.mongodb;
 
-import java.util.Arrays;
+import java.io.Serializable;
 import java.util.Iterator;
 
 import com.google.common.collect.ImmutableList;
@@ -25,11 +25,11 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.testcontainers.containers.GenericContainer;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
@@ -38,32 +38,43 @@ import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
+import org.glowroot.xyzzy.test.harness.util.Docker;
+import org.glowroot.xyzzy.test.harness.util.Ports;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class MongoDbIT {
 
     private static Container container;
+    private static int mongoPort;
+    private static String dockerContainerName;
+    private static MongoClient mongoClient;
 
     @BeforeClass
     public static void setUp() throws Exception {
         container = Containers.create();
+        mongoPort = Ports.getAvailable();
+        dockerContainerName = Docker.start("mongo:4.0.3", mongoPort + ":27017");
+        mongoClient = MongoClients.create("mongodb://localhost:" + mongoPort);
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
+        Docker.stop(dockerContainerName);
         container.close();
     }
 
     @After
     public void afterEachTest() throws Exception {
         container.resetAfterEachTest();
+        MongoDatabase database = mongoClient.getDatabase("testdb");
+        database.getCollection("test").drop();
     }
 
     @Test
     public void shouldCaptureCount() throws Exception {
         // when
-        IncomingSpan incomingSpan = container.execute(ExecuteCount.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteCount.class, mongoPort);
 
         // then
         Iterator<Span> i = incomingSpan.childSpans().iterator();
@@ -79,7 +90,7 @@ public class MongoDbIT {
     @Test
     public void shouldCaptureDistinct() throws Exception {
         // when
-        IncomingSpan incomingSpan = container.execute(ExecuteDistinct.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteDistinct.class, mongoPort);
 
         // then
         Iterator<Span> i = incomingSpan.childSpans().iterator();
@@ -95,7 +106,7 @@ public class MongoDbIT {
     @Test
     public void shouldCaptureFindZeroRecords() throws Exception {
         // when
-        IncomingSpan incomingSpan = container.execute(ExecuteFindZeroRecords.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteFindZeroRecords.class, mongoPort);
 
         // then
         Iterator<Span> i = incomingSpan.childSpans().iterator();
@@ -111,7 +122,7 @@ public class MongoDbIT {
     @Test
     public void shouldCaptureFindOneRecord() throws Exception {
         // when
-        IncomingSpan incomingSpan = container.execute(ExecuteFindOneRecord.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteFindOneRecord.class, mongoPort);
 
         // then
         Iterator<Span> i = incomingSpan.childSpans().iterator();
@@ -127,7 +138,7 @@ public class MongoDbIT {
     @Test
     public void shouldCaptureAggregate() throws Exception {
         // when
-        IncomingSpan incomingSpan = container.execute(ExecuteAggregate.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteAggregate.class, mongoPort);
 
         // then
         Iterator<Span> i = incomingSpan.childSpans().iterator();
@@ -198,7 +209,7 @@ public class MongoDbIT {
         public void transactionMarker() {
             MongoDatabase database = mongoClient.getDatabase("testdb");
             MongoCollection<Document> collection = database.getCollection("test");
-            collection.aggregate(ImmutableList.of());
+            collection.aggregate(ImmutableList.<Bson>of());
         }
     }
 
@@ -218,18 +229,10 @@ public class MongoDbIT {
         protected MongoClient mongoClient;
 
         @Override
-        public void executeApp() throws Exception {
-            GenericContainer<?> mongo = new GenericContainer<>("mongo:4.0.3");
-            mongo.setExposedPorts(Arrays.asList(27017));
-            mongo.start();
-            try {
-                mongoClient = MongoClients.create("mongodb://" + mongo.getContainerIpAddress() + ":"
-                        + mongo.getMappedPort(27017));
-                beforeTransactionMarker();
-                transactionMarker();
-            } finally {
-                mongo.close();
-            }
+        public void executeApp(Serializable... args) throws Exception {
+            mongoClient = MongoClients.create("mongodb://localhost:" + args[0]);
+            beforeTransactionMarker();
+            transactionMarker();
         }
 
         protected void beforeTransactionMarker() {}

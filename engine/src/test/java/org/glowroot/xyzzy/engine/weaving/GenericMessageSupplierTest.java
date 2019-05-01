@@ -19,9 +19,7 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 
 import org.junit.Test;
-import org.glowroot.xyzzy.engine.weaving.GenericMessageSupplier;
-import org.glowroot.xyzzy.engine.weaving.MessageTemplateImpl;
-import org.glowroot.xyzzy.engine.weaving.MethodInfoImpl;
+
 import org.glowroot.xyzzy.instrumentation.api.Message;
 import org.glowroot.xyzzy.instrumentation.api.MethodInfo;
 import org.glowroot.xyzzy.instrumentation.api.internal.ReadableMessage;

@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.servlet;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -226,7 +227,7 @@ public class RequestParameterIT {
     @SuppressWarnings("serial")
     public static class GetBadParameterMap extends TestServlet {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             MockHttpServletRequest request = new BadMockHttpServletRequest("GET", "/testservlet");
             MockHttpServletResponse response = new PatchedMockHttpServletResponse();
             service((ServletRequest) request, (ServletResponse) response);
@@ -240,7 +241,7 @@ public class RequestParameterIT {
     @SuppressWarnings("serial")
     public static class GetExtraBadParameterMap extends TestServlet {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             MockHttpServletRequest request =
                     new ExtraBadMockHttpServletRequest("GET", "/testservlet");
             MockHttpServletResponse response = new PatchedMockHttpServletResponse();
@@ -255,7 +256,7 @@ public class RequestParameterIT {
     @SuppressWarnings("serial")
     public static class GetAnotherBadParameterMap extends TestServlet {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             MockHttpServletRequest request =
                     new AnotherBadMockHttpServletRequest("GET", "/testservlet");
             MockHttpServletResponse response = new PatchedMockHttpServletResponse();
@@ -282,7 +283,7 @@ public class RequestParameterIT {
 
     public static class GetParameterOutsideServlet implements AppUnderTest {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             MockHttpServletRequest request =
                     new MockCatalinaHttpServletRequest("GET", "/testservlet");
             request.setParameter("xYz", "aBc");

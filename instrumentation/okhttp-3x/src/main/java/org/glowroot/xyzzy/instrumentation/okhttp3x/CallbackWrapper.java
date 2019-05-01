@@ -17,13 +17,13 @@ package org.glowroot.xyzzy.instrumentation.okhttp3x;
 
 import java.io.IOException;
 
-import org.glowroot.xyzzy.instrumentation.api.AsyncTraceEntry;
-import org.glowroot.xyzzy.instrumentation.api.AuxThreadContext;
-import org.glowroot.xyzzy.instrumentation.api.TraceEntry;
-
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.Response;
+
+import org.glowroot.xyzzy.instrumentation.api.AsyncTraceEntry;
+import org.glowroot.xyzzy.instrumentation.api.AuxThreadContext;
+import org.glowroot.xyzzy.instrumentation.api.TraceEntry;
 
 public class CallbackWrapper implements Callback {
 

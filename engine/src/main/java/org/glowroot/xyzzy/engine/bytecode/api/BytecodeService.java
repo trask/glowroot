@@ -16,6 +16,7 @@
 package org.glowroot.xyzzy.engine.bytecode.api;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+
 import org.glowroot.xyzzy.instrumentation.api.MessageSupplier;
 import org.glowroot.xyzzy.instrumentation.api.MethodInfo;
 import org.glowroot.xyzzy.instrumentation.api.TraceEntry;

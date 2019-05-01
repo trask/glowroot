@@ -20,8 +20,6 @@ import org.objectweb.asm.Type;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.glowroot.xyzzy.engine.weaving.AnalyzedMethod;
-
 public class AnalyzedMethodTest {
 
     @Test

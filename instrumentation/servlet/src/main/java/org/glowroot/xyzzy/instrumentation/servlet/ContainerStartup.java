@@ -20,9 +20,9 @@ import java.lang.management.ManagementFactory;
 import org.glowroot.xyzzy.instrumentation.api.Logger;
 import org.glowroot.xyzzy.instrumentation.api.MessageSupplier;
 import org.glowroot.xyzzy.instrumentation.api.OptionalThreadContext;
+import org.glowroot.xyzzy.instrumentation.api.ThreadContext.Priority;
 import org.glowroot.xyzzy.instrumentation.api.TimerName;
 import org.glowroot.xyzzy.instrumentation.api.TraceEntry;
-import org.glowroot.xyzzy.instrumentation.api.ThreadContext.Priority;
 import org.glowroot.xyzzy.instrumentation.api.checker.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;

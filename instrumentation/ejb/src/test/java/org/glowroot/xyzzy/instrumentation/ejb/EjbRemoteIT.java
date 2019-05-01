@@ -15,6 +15,8 @@
  */
 package org.glowroot.xyzzy.instrumentation.ejb;
 
+import java.io.Serializable;
+
 import javax.ejb.Remote;
 import javax.ejb.Stateless;
 
@@ -182,91 +184,91 @@ public class EjbRemoteIT {
 
     public static class ExecuteARemoteBeanOne implements AppUnderTest {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             new ARemoteBean().one();
         }
     }
 
     public static class ExecuteARemoteBeanTwo implements AppUnderTest {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             new ARemoteBean().two(2);
         }
     }
 
     public static class ExecuteA2RemoteBeanOne implements AppUnderTest {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             new A2RemoteBean().one();
         }
     }
 
     public static class ExecuteA2RemoteBeanTwo implements AppUnderTest {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             new A2RemoteBean().two(2);
         }
     }
 
     public static class ExecuteA3RemoteBeanOne implements AppUnderTest {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             new A3RemoteBean().one();
         }
     }
 
     public static class ExecuteA3RemoteBeanTwo implements AppUnderTest {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             new A3RemoteBean().two(2);
         }
     }
 
     public static class ExecuteBRemoteBeanOne implements AppUnderTest {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             new BRemoteBean().one();
         }
     }
 
     public static class ExecuteBRemoteBeanTwo implements AppUnderTest {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             new BRemoteBean().two(2);
         }
     }
 
     public static class ExecuteB2RemoteBeanOne implements AppUnderTest {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             new B2RemoteBean().one();
         }
     }
 
     public static class ExecuteB2RemoteBeanTwo implements AppUnderTest {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             new B2RemoteBean().two(2);
         }
     }
 
     public static class ExecuteB3RemoteBeanOne implements AppUnderTest {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             new B3RemoteBean().one();
         }
     }
 
     public static class ExecuteB3RemoteBeanTwo implements AppUnderTest {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             new B3RemoteBean().two(2);
         }
     }
 
     public static class ExecuteCRemoteSessionBeanOne implements AppUnderTest {
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             new CRemoteSessionBean().one();
         }
     }

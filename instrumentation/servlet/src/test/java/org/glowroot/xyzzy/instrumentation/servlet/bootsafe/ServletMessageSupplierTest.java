@@ -21,8 +21,6 @@ import java.util.regex.Pattern;
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 
-import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.ServletMessageSupplier;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ServletMessageSupplierTest {

@@ -16,7 +16,7 @@
 package org.glowroot.xyzzy.instrumentation.jsf;
 
 import java.io.File;
-import java.net.ServerSocket;
+import java.io.Serializable;
 import java.util.Iterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -35,9 +35,10 @@ import org.junit.Test;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
-import org.glowroot.xyzzy.test.harness.LocalSpan;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
+import org.glowroot.xyzzy.test.harness.LocalSpan;
 import org.glowroot.xyzzy.test.harness.Span;
+import org.glowroot.xyzzy.test.harness.util.Ports;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -187,8 +188,8 @@ public class JsfRenderIT {
     public abstract static class RenderJsfInTomcat implements AppUnderTest {
 
         @Override
-        public void executeApp() throws Exception {
-            int port = getAvailablePort();
+        public void executeApp(Serializable... args) throws Exception {
+            int port = Ports.getAvailable();
             Tomcat tomcat = new Tomcat();
             tomcat.setBaseDir("target/tomcat");
             tomcat.setPort(port);
@@ -207,12 +208,5 @@ public class JsfRenderIT {
         }
 
         protected abstract void doTest(int port) throws Exception;
-
-        private static int getAvailablePort() throws Exception {
-            ServerSocket serverSocket = new ServerSocket(0);
-            int port = serverSocket.getLocalPort();
-            serverSocket.close();
-            return port;
-        }
     }
 }

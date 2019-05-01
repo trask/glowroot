@@ -26,8 +26,7 @@ import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
-import org.glowroot.xyzzy.engine.weaving.ImmutableAdvice;
-import org.glowroot.xyzzy.engine.weaving.ImmutableAdviceParameter;
+
 import org.glowroot.xyzzy.engine.weaving.Advice.AdviceParameter;
 import org.glowroot.xyzzy.engine.weaving.Advice.ParameterKind;
 import org.glowroot.xyzzy.engine.weaving.ClassLoaders.LazyDefinedClass;

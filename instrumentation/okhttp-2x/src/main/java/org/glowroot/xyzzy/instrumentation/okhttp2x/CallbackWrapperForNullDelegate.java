@@ -17,11 +17,11 @@ package org.glowroot.xyzzy.instrumentation.okhttp2x;
 
 import java.io.IOException;
 
-import org.glowroot.xyzzy.instrumentation.api.AsyncTraceEntry;
-
 import com.squareup.okhttp.Callback;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
+
+import org.glowroot.xyzzy.instrumentation.api.AsyncTraceEntry;
 
 public class CallbackWrapperForNullDelegate implements Callback {
 

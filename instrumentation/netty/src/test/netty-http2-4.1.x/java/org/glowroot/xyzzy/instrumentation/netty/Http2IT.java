@@ -66,18 +66,11 @@ public class Http2IT {
         assertThat(trace.getEntryList()).isEmpty();
     }
 
-    private static int getAvailablePort() throws Exception {
-        ServerSocket serverSocket = new ServerSocket(0);
-        int port = serverSocket.getLocalPort();
-        serverSocket.close();
-        return port;
-    }
-
     public static class ExecuteHttp2Get implements AppUnderTest {
 
         @Override
-        public void executeApp() throws Exception {
-            int port = getAvailablePort();
+        public void executeApp(Serializable... args) throws Exception {
+            int port = Ports.getAvailable();
             Http2Server server = new Http2Server(port, false);
             CloseableHttpAsyncClient httpClient = HttpAsyncClientBuilder.create()
                     .setVersionPolicy(HttpVersionPolicy.FORCE_HTTP_2)

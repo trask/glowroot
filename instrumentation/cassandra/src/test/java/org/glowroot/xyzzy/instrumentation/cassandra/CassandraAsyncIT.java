@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.cassandra;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -34,9 +35,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
-import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
+import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
@@ -211,7 +212,7 @@ public class CassandraAsyncIT {
         private Session session;
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             session = Sessions.createSession();
             transactionMarker();
             Sessions.closeSession(session);
@@ -233,7 +234,7 @@ public class CassandraAsyncIT {
         private Session session;
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             session = Sessions.createSession();
             transactionMarker();
             Sessions.closeSession(session);
@@ -260,7 +261,7 @@ public class CassandraAsyncIT {
         private Session session;
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             session = Sessions.createSession();
             transactionMarker();
             Sessions.closeSession(session);
@@ -281,7 +282,7 @@ public class CassandraAsyncIT {
         private Session session;
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             session = Sessions.createSession();
             transactionMarker();
             Sessions.closeSession(session);
@@ -302,7 +303,7 @@ public class CassandraAsyncIT {
         private Session session;
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             session = Sessions.createSession();
             transactionMarker();
             Sessions.closeSession(session);
@@ -323,7 +324,7 @@ public class CassandraAsyncIT {
         private Session session;
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             session = Sessions.createSession();
             transactionMarker();
             Sessions.closeSession(session);

@@ -17,7 +17,7 @@ package org.glowroot.xyzzy.test.harness.impl;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.lang.reflect.InvocationTargetException;
+import java.io.Serializable;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
@@ -66,8 +66,9 @@ class JavaagentServer {
                                 break;
                             case EXECUTE_APP:
                                 String appClassName = (String) in.readObject();
+                                Serializable[] args = (Serializable[]) in.readObject();
                                 try {
-                                    executeApp(appClassName);
+                                    executeApp(appClassName, args);
                                     out.writeObject("ok");
                                 } catch (Throwable t) {
                                     logger.error(t.getMessage(), t);
@@ -111,14 +112,10 @@ class JavaagentServer {
         }
     }
 
-    private void executeApp(String appClassName)
-            throws ClassNotFoundException, InstantiationException, IllegalAccessException,
-            InvocationTargetException, NoSuchMethodException, Exception {
-        Class<?> appClass =
-                Class.forName(appClassName, true,
-                        ClassLoader.getSystemClassLoader());
+    private void executeApp(String appClassName, Serializable[] args) throws Exception {
+        Class<?> appClass = Class.forName(appClassName, true, ClassLoader.getSystemClassLoader());
         AppUnderTest app = (AppUnderTest) appClass.getConstructor().newInstance();
-        app.executeApp();
+        app.executeApp(args);
     }
 
     private void kill() {

@@ -15,8 +15,9 @@
  */
 package org.glowroot.xyzzy.annotation.api.internal;
 
-import org.glowroot.xyzzy.annotation.api.Glowroot;
 import org.junit.Test;
+
+import org.glowroot.xyzzy.annotation.api.Glowroot;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 

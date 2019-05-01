@@ -15,6 +15,7 @@
  */
 package org.glowroot.xyzzy.instrumentation.elasticsearch;
 
+import java.io.Serializable;
 import java.net.InetSocketAddress;
 import java.util.Iterator;
 
@@ -231,7 +232,7 @@ public class ElasticsearchSyncIT {
         private TransportClient client;
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             client = Util.client(new InetSocketAddress("127.0.0.1", 9300));
             transactionMarker();
             client.close();
@@ -251,7 +252,7 @@ public class ElasticsearchSyncIT {
         private String documentId;
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             client = Util.client(new InetSocketAddress("127.0.0.1", 9300));
             IndexResponse response = client.prepareIndex("testindex", "testtype")
                     .setSource("abc", 11, "xyz", "some text")
@@ -274,7 +275,7 @@ public class ElasticsearchSyncIT {
         private String documentId;
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             client = Util.client(new InetSocketAddress("127.0.0.1", 9300));
             IndexResponse response = client.prepareIndex("testindex", "testtype")
                     .setSource("abc", 11, "xyz", "some text")
@@ -298,7 +299,7 @@ public class ElasticsearchSyncIT {
         private String documentId;
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             client = Util.client(new InetSocketAddress("127.0.0.1", 9300));
             IndexResponse response = client.prepareIndex("testindex", "testtype")
                     .setSource("abc", 11, "xyz", "some text")
@@ -321,7 +322,7 @@ public class ElasticsearchSyncIT {
         private TransportClient client;
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             client = Util.client(new InetSocketAddress("127.0.0.1", 9300));
             client.prepareIndex("testindex", "testtype")
                     .setSource("abc", 11, "xyz", "some text")
@@ -344,7 +345,7 @@ public class ElasticsearchSyncIT {
         private TransportClient client;
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             client = Util.client(new InetSocketAddress("127.0.0.1", 9300));
             client.prepareIndex("testindex", "testtype")
                     .setSource("abc", 11, "xyz", "some text")
@@ -367,7 +368,7 @@ public class ElasticsearchSyncIT {
         private TransportClient client;
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             client = Util.client(new InetSocketAddress("127.0.0.1", 9300));
             client.prepareIndex("testindex", "testtype")
                     .setSource("abc", 11, "xyz", "some text")
@@ -389,7 +390,7 @@ public class ElasticsearchSyncIT {
         private TransportClient client;
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             client = Util.client(new InetSocketAddress("127.0.0.1", 9300));
             client.prepareIndex("testindex", "testtype")
                     .setSource("abc", 11, "xyz", "some text")
@@ -411,7 +412,7 @@ public class ElasticsearchSyncIT {
         private TransportClient client;
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             client = Util.client(new InetSocketAddress("127.0.0.1", 9300));
             client.prepareIndex("testindex", "testtype")
                     .setSource("abc", 11, "xyz", "some text")
@@ -436,7 +437,7 @@ public class ElasticsearchSyncIT {
         private TransportClient client;
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             client = Util.client(new InetSocketAddress("127.0.0.1", 9300));
             client.prepareIndex("testindex", "testtype")
                     .setSource("abc", 11, "xyz", "some text")
@@ -460,7 +461,7 @@ public class ElasticsearchSyncIT {
         private TransportClient client;
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp(Serializable... args) throws Exception {
             client = Util.client(new InetSocketAddress("127.0.0.1", 9300));
             client.prepareIndex("testindex", "testtype")
                     .setSource("abc", 11, "xyz", "some text")
