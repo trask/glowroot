@@ -27,9 +27,9 @@ import org.glowroot.xyzzy.instrumentation.api.weaving.BindReceiver;
 import org.glowroot.xyzzy.instrumentation.api.weaving.IsEnabled;
 import org.glowroot.xyzzy.instrumentation.api.weaving.OnAfter;
 import org.glowroot.xyzzy.instrumentation.api.weaving.Pointcut;
-import org.glowroot.xyzzy.instrumentation.servlet._.ResponseInvoker;
-import org.glowroot.xyzzy.instrumentation.servlet._.ServletInstrumentationProperties;
-import org.glowroot.xyzzy.instrumentation.servlet._.ServletMessageSupplier;
+import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.ResponseInvoker;
+import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.ServletInstrumentationProperties;
+import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.ServletMessageSupplier;
 
 public class ResponseInstrumentation {
 

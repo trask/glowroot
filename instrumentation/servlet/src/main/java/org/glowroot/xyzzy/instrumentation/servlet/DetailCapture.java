@@ -29,10 +29,10 @@ import javax.servlet.http.HttpServletRequest;
 import org.glowroot.xyzzy.instrumentation.api.checker.Nullable;
 import org.glowroot.xyzzy.instrumentation.api.util.ImmutableList;
 import org.glowroot.xyzzy.instrumentation.api.util.ImmutableMap;
-import org.glowroot.xyzzy.instrumentation.servlet._.RequestHostAndPortDetail;
-import org.glowroot.xyzzy.instrumentation.servlet._.RequestInvoker;
-import org.glowroot.xyzzy.instrumentation.servlet._.ServletInstrumentationProperties;
-import org.glowroot.xyzzy.instrumentation.servlet._.Strings;
+import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.RequestHostAndPortDetail;
+import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.RequestInvoker;
+import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.ServletInstrumentationProperties;
+import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.Strings;
 
 // shallow copies are necessary because request may not be thread safe, which may affect ability
 // to see detail from active traces

@@ -16,7 +16,6 @@
 package org.glowroot.xyzzy.instrumentation.spring;
 
 import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -57,7 +56,7 @@ public class AsyncControllerIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.resetInstrumentationProperties();
+        container.resetAfterEachTest();
     }
 
     @Test
@@ -95,16 +94,15 @@ public class AsyncControllerIT {
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage()).isEqualTo("spring controller: org.glowroot.xyzzy"
                 + ".instrumentation.spring.AsyncControllerIT$CallableAsyncController.test()");
-
-        List<Span> nestedSpans = localSpan.childSpans();
-        assertThat(nestedSpans).hasSize(1);
-
-        LocalSpan nestedLocalSpan = (LocalSpan) nestedSpans.get(0);
-        assertThat(nestedLocalSpan.getMessage()).isEqualTo("test local span");
-        assertThat(nestedLocalSpan.childSpans()).isEmpty();
+        assertThat(localSpan.childSpans()).isEmpty();
 
         localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage()).isEqualTo("test local span");
+        assertThat(localSpan.childSpans()).isEmpty();
+
+        localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("test local span");
+        assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -122,16 +120,15 @@ public class AsyncControllerIT {
         LocalSpan localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage()).isEqualTo("spring controller: org.glowroot.xyzzy"
                 + ".instrumentation.spring.AsyncControllerIT$DeferredResultAsyncController.test()");
-
-        List<Span> nestedSpans = localSpan.childSpans();
-        assertThat(nestedSpans).hasSize(1);
-
-        LocalSpan nestedLocalSpan = (LocalSpan) nestedSpans.get(0);
-        assertThat(nestedLocalSpan.getMessage()).isEqualTo("test local span");
-        assertThat(nestedLocalSpan.childSpans()).isEmpty();
+        assertThat(localSpan.childSpans()).isEmpty();
 
         localSpan = (LocalSpan) i.next();
         assertThat(localSpan.getMessage()).isEqualTo("test local span");
+        assertThat(localSpan.childSpans()).isEmpty();
+
+        localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("test local span");
+        assertThat(localSpan.childSpans()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }

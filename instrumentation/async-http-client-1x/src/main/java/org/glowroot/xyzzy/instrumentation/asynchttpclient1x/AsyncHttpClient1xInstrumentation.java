@@ -40,8 +40,8 @@ import org.glowroot.xyzzy.instrumentation.api.weaving.OnBefore;
 import org.glowroot.xyzzy.instrumentation.api.weaving.OnReturn;
 import org.glowroot.xyzzy.instrumentation.api.weaving.OnThrow;
 import org.glowroot.xyzzy.instrumentation.api.weaving.Pointcut;
-import org.glowroot.xyzzy.instrumentation.asynchttpclient1x._.AsyncHttpClientRequestInvoker;
-import org.glowroot.xyzzy.instrumentation.asynchttpclient1x._.DirectExecutor;
+import org.glowroot.xyzzy.instrumentation.asynchttpclient1x.bootsafe.AsyncHttpClientRequestInvoker;
+import org.glowroot.xyzzy.instrumentation.asynchttpclient1x.bootsafe.DirectExecutor;
 
 public class AsyncHttpClient1xInstrumentation {
 

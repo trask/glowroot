@@ -32,6 +32,7 @@
     <module>hibernate</module>
     <module>http-url-connection</module>
     <module>java-http-server</module>
+    <module>java-util-logging</module>
     <module>jaxrs</module>
     <module>jaxws</module>
     <module>jdbc</module>
@@ -39,19 +40,22 @@
     <module>jsf</module>
     <module>jsp</module>
     <module>kafka</module>
-    <module>logger</module>
+    <module>log4j-1x</module>
+    <module>log4j-2x</module>
+    <module>logback</module>
     <module>mail</module>
     <module>mongodb</module>
     <module>netty</module>
-    <module>okhttp-1x</module>
     <module>okhttp-2x</module>
+    <module>okhttp-3x</module>
     <module>play</module>
     <module>quartz</module>
     <module>redis</module>
     <module>servlet</module>
     <module>spring</module>
-    <module>struts</module>
-    <module>wiremock-apache-http-client</module>
+    <module>struts-1x</module>
+    <module>struts-2x</module>
+    <module>wiremock-http-client</module>
   </modules>
 
   <build>

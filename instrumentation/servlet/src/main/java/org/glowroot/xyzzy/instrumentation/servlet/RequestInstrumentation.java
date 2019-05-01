@@ -25,8 +25,8 @@ import org.glowroot.xyzzy.instrumentation.api.weaving.BindClassMeta;
 import org.glowroot.xyzzy.instrumentation.api.weaving.BindReceiver;
 import org.glowroot.xyzzy.instrumentation.api.weaving.OnReturn;
 import org.glowroot.xyzzy.instrumentation.api.weaving.Pointcut;
-import org.glowroot.xyzzy.instrumentation.servlet._.RequestClassMeta;
-import org.glowroot.xyzzy.instrumentation.servlet._.ServletMessageSupplier;
+import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.RequestClassMeta;
+import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.ServletMessageSupplier;
 
 public class RequestInstrumentation {
 

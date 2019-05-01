@@ -99,8 +99,8 @@ public class LocalSpanImpl implements TraceEntry, ParentSpanImpl {
     }
 
     @Override
-    public @Nullable Object getMessageSupplier() {
-        return null;
+    public Object getMessageSupplier() {
+        return messageSupplier;
     }
 
     @Override

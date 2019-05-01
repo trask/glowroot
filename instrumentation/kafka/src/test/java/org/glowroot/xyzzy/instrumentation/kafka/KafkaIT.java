@@ -40,10 +40,12 @@ import org.junit.Test;
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
+import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.glowroot.xyzzy.test.harness.util.HarnessAssertions.assertSingleOutgoingSpanMessage;
 
 public class KafkaIT {
 
@@ -61,23 +63,31 @@ public class KafkaIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.resetInstrumentationProperties();
+        container.resetAfterEachTest();
     }
 
     @Test
     public void shouldSend() throws Exception {
+        // when
         IncomingSpan incomingSpan = container.execute(SendRecord.class);
-        List<IncomingSpan.Timer> nestedTimers = incomingSpan.mainThreadRootTimer().childTimers();
-        assertThat(nestedTimers).hasSize(1);
-        assertThat(nestedTimers.get(0).name()).isEqualTo("kafka send");
+
+        // then
+        assertSingleOutgoingSpanMessage(incomingSpan).isEqualTo("kafka send: demo");
     }
 
     @Test
     public void shouldPoll() throws Exception {
+        // when
         IncomingSpan incomingSpan = container.execute(PollRecord.class);
-        List<IncomingSpan.Timer> nestedTimers = incomingSpan.mainThreadRootTimer().childTimers();
-        assertThat(nestedTimers).hasSize(1);
-        assertThat(nestedTimers.get(0).name()).isEqualTo("kafka poll");
+
+        // then
+        List<Span> spans = incomingSpan.childSpans();
+
+        for (int i = 0; i < spans.size() - 1; i++) {
+            assertThat(spans.get(0).getMessage()).isEqualTo("kafka poll => 0");
+        }
+
+        assertThat(spans.get(spans.size() - 1).getMessage()).isEqualTo("kafka poll => 1");
     }
 
     public static class SendRecord implements AppUnderTest, TransactionMarker {

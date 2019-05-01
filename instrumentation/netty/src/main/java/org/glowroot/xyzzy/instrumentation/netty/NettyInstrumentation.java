@@ -38,7 +38,7 @@ import org.glowroot.xyzzy.instrumentation.api.weaving.OnReturn;
 import org.glowroot.xyzzy.instrumentation.api.weaving.OnThrow;
 import org.glowroot.xyzzy.instrumentation.api.weaving.Pointcut;
 import org.glowroot.xyzzy.instrumentation.api.weaving.Shim;
-import org.glowroot.xyzzy.instrumentation.netty._.Util;
+import org.glowroot.xyzzy.instrumentation.netty.bootsafe.Util;
 
 public class NettyInstrumentation {
 

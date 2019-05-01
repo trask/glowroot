@@ -1,0 +1,7 @@
+{
+  "name": "Struts 1.x",
+  "id": "struts-1x",
+  "classes": [
+    "org.glowroot.xyzzy.instrumentation.struts1x.Struts1xInstrumentation"
+  ]
+}

@@ -5,13 +5,11 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.glowroot.xyzzy</groupId>
-    <artifactId>xyzzy-parent</artifactId>
+    <groupId>org.glowroot.xyzzy.instrumentation</groupId>
+    <artifactId>instrumentation-parent</artifactId>
     <version>0.13.5-SNAPSHOT</version>
-    <relativePath>../..</relativePath>
   </parent>
 
-  <groupId>org.glowroot.xyzzy.instrumentation</groupId>
   <artifactId>instrumentation-redis</artifactId>
 
   <name>Instrumentation for Redis</name>
@@ -58,18 +56,22 @@
   </dependencies>
 
   <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>integration-test</goal>
-              <goal>verify</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <!-- Jedis 2.9.1+ requires Java 7+ -->
+          <artifactId>maven-compiler-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>default-testCompile</id>
+              <configuration>
+                <source>1.7</source>
+                <target>1.7</target>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
 </project>

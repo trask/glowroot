@@ -101,8 +101,8 @@ public class AsyncQuerySpanImpl implements AsyncQueryEntry, SpanImpl {
     }
 
     @Override
-    public @Nullable Object getMessageSupplier() {
-        return null;
+    public Object getMessageSupplier() {
+        return queryMessageSupplier;
     }
 
     @Override

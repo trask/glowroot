@@ -25,11 +25,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import org.glowroot.xyzzy.instrumentation.javahttpserver.JavaHttpServerInstrumentation.Headers;
-import org.glowroot.xyzzy.instrumentation.javahttpserver.JavaHttpServerInstrumentation.HttpExchange;
 import org.glowroot.xyzzy.instrumentation.api.checker.Nullable;
 import org.glowroot.xyzzy.instrumentation.api.util.ImmutableList;
 import org.glowroot.xyzzy.instrumentation.api.util.ImmutableMap;
+import org.glowroot.xyzzy.instrumentation.javahttpserver.JavaHttpServerInstrumentation.Headers;
+import org.glowroot.xyzzy.instrumentation.javahttpserver.JavaHttpServerInstrumentation.HttpExchange;
 
 class DetailCapture {
 
@@ -131,6 +131,8 @@ class DetailCapture {
             Map<String, Object> header) {
         if (values.isEmpty()) {
             header.put(name, "");
+        } else if (values.size() == 1) {
+            header.put(name, Strings.nullToEmpty(values.get(0)));
         } else {
             List<String> list = new ArrayList<String>();
             for (String value : values) {

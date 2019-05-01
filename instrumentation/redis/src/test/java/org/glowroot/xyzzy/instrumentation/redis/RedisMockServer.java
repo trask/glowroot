@@ -37,8 +37,9 @@ class RedisMockServer implements Runnable {
 
     private final ServerSocket server;
 
-    private int port;
-    private boolean stop;
+    private final int port;
+
+    private volatile boolean closing;
 
     RedisMockServer() throws IOException {
         server = new ServerSocket(0);
@@ -51,7 +52,9 @@ class RedisMockServer implements Runnable {
         try {
             runInternal();
         } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+            if (!closing) {
+                logger.error(e.getMessage(), e);
+            }
         }
     }
 
@@ -59,14 +62,18 @@ class RedisMockServer implements Runnable {
         return port;
     }
 
-    void close() throws InterruptedException {
-        stop = true;
+    void closing() {
+        closing = true;
+    }
+
+    void close() throws Exception {
         executor.shutdown();
+        server.close();
         executor.awaitTermination(10, SECONDS);
     }
 
     private void runInternal() throws IOException {
-        while (!stop) {
+        while (!closing) {
             Socket socket = server.accept();
             executor.execute(new CallResponseProxy(socket));
         }
@@ -85,7 +92,7 @@ class RedisMockServer implements Runnable {
             try {
                 runInternal();
             } catch (IOException e) {
-                if (!stop) {
+                if (!closing) {
                     logger.error(e.getMessage(), e);
                 }
             }

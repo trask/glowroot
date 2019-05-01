@@ -16,11 +16,8 @@
 package org.glowroot.xyzzy.instrumentation.mongodb;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 
-import com.google.common.collect.Lists;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
@@ -31,12 +28,13 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.testcontainers.containers.GenericContainer;
 
-import org.glowroot.agent.it.harness.AppUnderTest;
-import org.glowroot.agent.it.harness.Container;
-import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.xyzzy.test.harness.AppUnderTest;
+import org.glowroot.xyzzy.test.harness.Container;
+import org.glowroot.xyzzy.test.harness.Containers;
+import org.glowroot.xyzzy.test.harness.IncomingSpan;
+import org.glowroot.xyzzy.test.harness.OutgoingSpan;
+import org.glowroot.xyzzy.test.harness.Span;
+import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -56,125 +54,61 @@ public class MongoDbIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        container.resetAfterEachTest();
     }
 
     @Test
     public void shouldCaptureInsert() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteInsert.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteInsert.class);
 
         // then
-        checkTimers(trace);
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("insert testdb.test");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("mongodb query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
+        OutgoingSpan span = (OutgoingSpan) i.next();
+        assertThat(span.getMessage()).isEqualTo("insert testdb.test");
+        assertThat(span.getPrefix()).isEqualTo("mongodb query: ");
+        assertThat(span.getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
-
-        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
-
-        Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("MongoDB");
-        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
-                .isEqualTo("insert testdb.test");
-        assertThat(query.getExecutionCount()).isEqualTo(1);
-        assertThat(query.hasTotalRows()).isFalse();
-
-        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureCount() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteCount.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteCount.class);
 
         // then
-        checkTimers(trace);
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("count testdb.test");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("mongodb query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
+        OutgoingSpan span = (OutgoingSpan) i.next();
+        assertThat(span.getMessage()).isEqualTo("count testdb.test");
+        assertThat(span.getPrefix()).isEqualTo("mongodb query: ");
+        assertThat(span.getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
-
-        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
-
-        Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("MongoDB");
-        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
-                .isEqualTo("count testdb.test");
-        assertThat(query.getExecutionCount()).isEqualTo(1);
-        assertThat(query.hasTotalRows()).isFalse();
-
-        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureFind() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteFind.class);
+        IncomingSpan incomingSpan = container.execute(ExecuteFind.class);
 
         // then
-        checkTimers(trace);
+        Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEmpty();
-        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("find testdb.test");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("mongodb query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
+        OutgoingSpan span = (OutgoingSpan) i.next();
+        assertThat(span.getMessage()).isEqualTo("find testdb.test");
+        assertThat(span.getPrefix()).isEqualTo("mongodb query: ");
+        assertThat(span.getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
-
-        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
-
-        Aggregate.Query query = j.next();
-        assertThat(query.getType()).isEqualTo("MongoDB");
-        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
-                .isEqualTo("find testdb.test");
-        assertThat(query.getExecutionCount()).isEqualTo(1);
-        assertThat(query.hasTotalRows()).isFalse();
-
-        assertThat(j.hasNext()).isFalse();
-    }
-
-    private static void checkTimers(Trace trace) {
-        Trace.Timer rootTimer = trace.getHeader().getMainThreadRootTimer();
-        List<String> timerNames = Lists.newArrayList();
-        for (Trace.Timer timer : rootTimer.getChildTimerList()) {
-            timerNames.add(timer.getName());
-        }
-        Collections.sort(timerNames);
-        assertThat(timerNames).containsExactly("mongodb query");
-        for (Trace.Timer timer : rootTimer.getChildTimerList()) {
-            assertThat(timer.getChildTimerList()).isEmpty();
-        }
-        assertThat(trace.getHeader().getAsyncTimerCount()).isZero();
     }
 
     public static class ExecuteInsert extends DoMongoDB {
         @Override
         public void transactionMarker() {
+            @SuppressWarnings("deprecation")
             DB database = mongoClient.getDB("testdb");
             DBCollection collection = database.getCollection("test");
             BasicDBObject document = new BasicDBObject("test1", "test2")
@@ -186,6 +120,7 @@ public class MongoDbIT {
     public static class ExecuteCount extends DoMongoDB {
         @Override
         public void transactionMarker() {
+            @SuppressWarnings("deprecation")
             DB database = mongoClient.getDB("testdb");
             DBCollection collection = database.getCollection("test");
             collection.getCount();
@@ -195,6 +130,7 @@ public class MongoDbIT {
     public static class ExecuteFind extends DoMongoDB {
         @Override
         public void transactionMarker() {
+            @SuppressWarnings("deprecation")
             DB database = mongoClient.getDB("testdb");
             DBCollection collection = database.getCollection("test");
             collection.find();
@@ -206,6 +142,7 @@ public class MongoDbIT {
         protected Mongo mongoClient;
 
         @Override
+        @SuppressWarnings("deprecation")
         public void executeApp() throws Exception {
             GenericContainer<?> mongo = new GenericContainer<>("mongo:4.0.3");
             mongo.setExposedPorts(Arrays.asList(27017));

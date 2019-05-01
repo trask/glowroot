@@ -25,10 +25,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.xyzzy.test.harness.AppUnderTest;
-import org.glowroot.xyzzy.test.harness.OutgoingSpan;
 import org.glowroot.xyzzy.test.harness.Container;
 import org.glowroot.xyzzy.test.harness.Containers;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
+import org.glowroot.xyzzy.test.harness.LocalSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
@@ -50,7 +50,7 @@ public class MailIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.resetInstrumentationProperties();
+        container.resetAfterEachTest();
     }
 
     @Test
@@ -61,11 +61,11 @@ public class MailIT {
         // then
         Iterator<Span> i = incomingSpan.childSpans().iterator();
 
-        OutgoingSpan outgoingSpan = (OutgoingSpan) i.next();
-        assertThat(outgoingSpan.getMessage()).startsWith("mail connect smtp://");
+        LocalSpan localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).startsWith("mail connect smtp://");
 
-        outgoingSpan = (OutgoingSpan) i.next();
-        assertThat(outgoingSpan.getMessage()).isEqualTo("mail send message");
+        localSpan = (LocalSpan) i.next();
+        assertThat(localSpan.getMessage()).isEqualTo("mail send message");
 
         assertThat(i.hasNext()).isFalse();
     }

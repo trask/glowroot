@@ -189,6 +189,31 @@ public class IncomingSpanImpl implements TraceEntry, ParentSpanImpl {
         }
     }
 
+    public void setError(Throwable t) {
+        if (error == null) {
+            error = ImmutableError.builder()
+                    .exception(t)
+                    .build();
+        }
+    }
+
+    public void setError(String message) {
+        if (error == null) {
+            error = ImmutableError.builder()
+                    .message(message)
+                    .build();
+        }
+    }
+
+    public void setError(String message, Throwable t) {
+        if (error == null) {
+            error = ImmutableError.builder()
+                    .message(message)
+                    .exception(t)
+                    .build();
+        }
+    }
+
     public void addAuxThreadRootTimer(TimerImpl auxThreadRootTimer) {
         auxThreadRootTimers.add(auxThreadRootTimer);
     }

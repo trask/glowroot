@@ -5,13 +5,11 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.glowroot.xyzzy</groupId>
-    <artifactId>xyzzy-parent</artifactId>
+    <groupId>org.glowroot.xyzzy.instrumentation</groupId>
+    <artifactId>instrumentation-parent</artifactId>
     <version>0.13.5-SNAPSHOT</version>
-    <relativePath>../..</relativePath>
   </parent>
 
-  <groupId>org.glowroot.xyzzy.instrumentation</groupId>
   <artifactId>instrumentation-cassandra</artifactId>
 
   <name>Instrumentation for Apache Cassandra</name>
@@ -107,28 +105,22 @@
   </dependencies>
 
   <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <configuration>
-          <properties>
-            <property>
-              <!-- this is just a test performance optimization -->
-              <name>listener</name>
-              <value>org.glowroot.xyzzy.instrumentation.cassandra.SharedSetupRunListener</value>
-            </property>
-          </properties>
-        </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>integration-test</goal>
-              <goal>verify</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-failsafe-plugin</artifactId>
+          <configuration>
+            <properties>
+              <property>
+                <!-- this is just a test performance optimization -->
+                <name>listener</name>
+                <value>org.glowroot.xyzzy.instrumentation.cassandra.SharedSetupRunListener</value>
+              </property>
+            </properties>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
 
   <profiles>

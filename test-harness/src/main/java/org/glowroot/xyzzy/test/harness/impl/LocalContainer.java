@@ -111,7 +111,7 @@ public class LocalContainer implements Container {
     }
 
     @Override
-    public void resetInstrumentationProperties() throws Exception {
+    public void resetAfterEachTest() throws Exception {
         MainEntryPoint.resetInstrumentationProperties();
     }
 

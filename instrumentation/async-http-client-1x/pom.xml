@@ -5,13 +5,11 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.glowroot.xyzzy</groupId>
-    <artifactId>xyzzy-parent</artifactId>
+    <groupId>org.glowroot.xyzzy.instrumentation</groupId>
+    <artifactId>instrumentation-parent</artifactId>
     <version>0.13.5-SNAPSHOT</version>
-    <relativePath>../..</relativePath>
   </parent>
 
-  <groupId>org.glowroot.xyzzy.instrumentation</groupId>
   <artifactId>instrumentation-async-http-client-1x</artifactId>
 
   <name>Instrumentation for AsyncHttpClient 1.x</name>

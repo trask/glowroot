@@ -26,8 +26,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.xyzzy.test.harness.Container;
-import org.glowroot.xyzzy.test.harness.LocalSpan;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
+import org.glowroot.xyzzy.test.harness.LocalSpan;
 import org.glowroot.xyzzy.test.harness.Span;
 import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
@@ -54,7 +54,7 @@ public class JavaHttpServerIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.resetInstrumentationProperties();
+        container.resetAfterEachTest();
     }
 
     @Test
@@ -126,7 +126,7 @@ public class JavaHttpServerIT {
         IncomingSpan incomingSpan = container.execute(HandlerThrowsException.class, "Web");
 
         // then
-        assertThat(incomingSpan.getError().message()).isNotEmpty();
+        assertThat(incomingSpan.getError().message()).isNull();
         assertThat(incomingSpan.getError().exception()).isNotNull();
         assertThat(incomingSpan.childSpans()).isEmpty();
     }
@@ -137,7 +137,7 @@ public class JavaHttpServerIT {
         IncomingSpan incomingSpan = container.execute(FilterThrowsException.class, "Web");
 
         // then
-        assertThat(incomingSpan.getError().message()).isNotEmpty();
+        assertThat(incomingSpan.getError().message()).isNull();
         assertThat(incomingSpan.getError().exception()).isNotNull();
         assertThat(incomingSpan.childSpans()).isEmpty();
     }

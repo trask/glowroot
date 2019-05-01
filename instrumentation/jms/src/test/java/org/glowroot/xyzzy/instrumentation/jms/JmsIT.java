@@ -15,8 +15,6 @@
  */
 package org.glowroot.xyzzy.instrumentation.jms;
 
-import java.util.List;
-
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
 import javax.jms.Message;
@@ -40,6 +38,7 @@ import org.glowroot.xyzzy.test.harness.impl.JavaagentContainer;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.glowroot.xyzzy.test.harness.util.HarnessAssertions.assertSingleLocalSpanMessage;
 
 public class JmsIT {
 
@@ -57,7 +56,7 @@ public class JmsIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.resetInstrumentationProperties();
+        container.resetAfterEachTest();
     }
 
     @Test
@@ -71,10 +70,11 @@ public class JmsIT {
 
     @Test
     public void shouldSendMessage() throws Exception {
+        // when
         IncomingSpan incomingSpan = container.execute(SendMessage.class);
-        List<IncomingSpan.Timer> nestedTimers = incomingSpan.mainThreadRootTimer().childTimers();
-        assertThat(nestedTimers).hasSize(1);
-        assertThat(nestedTimers.get(0).name()).isEqualTo("jms send message");
+
+        // then
+        assertSingleLocalSpanMessage(incomingSpan).isEqualTo("jms send message: queue://a queue");
 
         // TODO implement client span for send
     }

@@ -45,14 +45,14 @@ import org.glowroot.xyzzy.instrumentation.api.weaving.OnBefore;
 import org.glowroot.xyzzy.instrumentation.api.weaving.OnReturn;
 import org.glowroot.xyzzy.instrumentation.api.weaving.OnThrow;
 import org.glowroot.xyzzy.instrumentation.api.weaving.Pointcut;
-import org.glowroot.xyzzy.instrumentation.servlet._.RequestHostAndPortDetail;
-import org.glowroot.xyzzy.instrumentation.servlet._.RequestInvoker;
-import org.glowroot.xyzzy.instrumentation.servlet._.ResponseInvoker;
-import org.glowroot.xyzzy.instrumentation.servlet._.SendError;
-import org.glowroot.xyzzy.instrumentation.servlet._.ServletInstrumentationProperties;
-import org.glowroot.xyzzy.instrumentation.servlet._.ServletMessageSupplier;
-import org.glowroot.xyzzy.instrumentation.servlet._.Strings;
-import org.glowroot.xyzzy.instrumentation.servlet._.ServletInstrumentationProperties.SessionAttributePath;
+import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.RequestHostAndPortDetail;
+import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.RequestInvoker;
+import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.ResponseInvoker;
+import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.SendError;
+import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.ServletInstrumentationProperties;
+import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.ServletMessageSupplier;
+import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.Strings;
+import org.glowroot.xyzzy.instrumentation.servlet.bootsafe.ServletInstrumentationProperties.SessionAttributePath;
 
 // this instrumentation is careful not to rely on request or session objects being thread-safe
 public class ServletInstrumentation {

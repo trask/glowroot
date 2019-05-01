@@ -5,13 +5,11 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.glowroot.xyzzy</groupId>
-    <artifactId>xyzzy-parent</artifactId>
+    <groupId>org.glowroot.xyzzy.instrumentation</groupId>
+    <artifactId>instrumentation-parent</artifactId>
     <version>0.13.5-SNAPSHOT</version>
-    <relativePath>../..</relativePath>
   </parent>
 
-  <groupId>org.glowroot.xyzzy.instrumentation</groupId>
   <artifactId>instrumentation-hibernate</artifactId>
 
   <name>Instrumentation for Hibernate</name>
@@ -69,22 +67,6 @@
     </dependency>
   </dependencies>
 
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>integration-test</goal>
-              <goal>verify</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
-
   <profiles>
     <profile>
       <id>not-test-java6</id>
@@ -117,32 +99,6 @@
           <scope>test</scope>
         </dependency>
       </dependencies>
-    </profile>
-    <profile>
-      <id>test-java6</id>
-      <activation>
-        <property>
-          <name>glowroot.test.java6</name>
-        </property>
-      </activation>
-      <build>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <artifactId>maven-compiler-plugin</artifactId>
-              <executions>
-                <execution>
-                  <id>default-testCompile</id>
-                  <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
-                  </configuration>
-                </execution>
-              </executions>
-            </plugin>
-          </plugins>
-        </pluginManagement>
-      </build>
     </profile>
     <profile>
       <id>hibernate-3.3.0.ga</id>

@@ -5,13 +5,11 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.glowroot.xyzzy</groupId>
-    <artifactId>xyzzy-parent</artifactId>
+    <groupId>org.glowroot.xyzzy.instrumentation</groupId>
+    <artifactId>instrumentation-parent</artifactId>
     <version>0.13.5-SNAPSHOT</version>
-    <relativePath>../..</relativePath>
   </parent>
 
-  <groupId>org.glowroot.xyzzy.instrumentation</groupId>
   <artifactId>instrumentation-mongodb</artifactId>
 
   <name>Instrumentation for MongoDB</name>
@@ -54,19 +52,6 @@
   </dependencies>
 
   <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>integration-test</goal>
-              <goal>verify</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
     <pluginManagement>
       <plugins>
         <plugin>
@@ -90,7 +75,7 @@
     <profile>
       <id>mongodb-3.7.x</id>
       <properties>
-        <mongodb.driver.version>3.8.2</mongodb.driver.version>
+        <mongodb.driver.version>3.7.0</mongodb.driver.version>
       </properties>
       <dependencies>
         <dependency>

@@ -95,8 +95,8 @@ public class OutgoingSpanImpl implements TraceEntry, SpanImpl {
     }
 
     @Override
-    public @Nullable Object getMessageSupplier() {
-        return null;
+    public Object getMessageSupplier() {
+        return messageSupplier;
     }
 
     @Override

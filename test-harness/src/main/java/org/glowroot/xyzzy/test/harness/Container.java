@@ -41,7 +41,7 @@ public interface Container {
 
     void executeNoExpectedTrace(Class<? extends AppUnderTest> appUnderTestClass) throws Exception;
 
-    void resetInstrumentationProperties() throws Exception;
+    void resetAfterEachTest() throws Exception;
 
     void close() throws Exception;
 }

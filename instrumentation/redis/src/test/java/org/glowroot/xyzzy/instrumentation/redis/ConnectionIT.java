@@ -27,7 +27,7 @@ import org.glowroot.xyzzy.test.harness.Containers;
 import org.glowroot.xyzzy.test.harness.IncomingSpan;
 import org.glowroot.xyzzy.test.harness.TransactionMarker;
 
-import static org.glowroot.xyzzy.test.harness.util.HarnessAssertions.assertSingleOutgoingSpanMessage;
+import static org.glowroot.xyzzy.test.harness.util.HarnessAssertions.assertSingleLocalSpanMessage;
 
 public class ConnectionIT {
 
@@ -45,7 +45,7 @@ public class ConnectionIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.resetInstrumentationProperties();
+        container.resetAfterEachTest();
     }
 
     @Test
@@ -54,7 +54,7 @@ public class ConnectionIT {
         IncomingSpan incomingSpan = container.execute(JedisSet.class);
 
         // then
-        assertSingleOutgoingSpanMessage(incomingSpan).matches("redis localhost:\\d+ SET");
+        assertSingleLocalSpanMessage(incomingSpan).matches("redis localhost:\\d+ SET");
     }
 
     @Test
@@ -63,7 +63,7 @@ public class ConnectionIT {
         IncomingSpan incomingSpan = container.execute(JedisGet.class);
 
         // then
-        assertSingleOutgoingSpanMessage(incomingSpan).matches("redis localhost:\\d+ GET");
+        assertSingleLocalSpanMessage(incomingSpan).matches("redis localhost:\\d+ GET");
     }
 
     @Test
@@ -72,7 +72,7 @@ public class ConnectionIT {
         IncomingSpan incomingSpan = container.execute(JedisPing.class);
 
         // then
-        assertSingleOutgoingSpanMessage(incomingSpan).matches("redis localhost:\\d+ PING");
+        assertSingleLocalSpanMessage(incomingSpan).matches("redis localhost:\\d+ PING");
     }
 
     private abstract static class JedisBase implements AppUnderTest, TransactionMarker {
@@ -86,6 +86,8 @@ public class ConnectionIT {
             redisMockServer = new RedisMockServer();
             jedis = new Jedis("localhost", redisMockServer.getPort());
             transactionMarker();
+            redisMockServer.closing();
+            jedis.close();
             redisMockServer.close();
         }
 

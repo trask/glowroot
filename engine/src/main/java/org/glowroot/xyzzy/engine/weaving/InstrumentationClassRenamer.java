@@ -23,12 +23,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
-import org.glowroot.xyzzy.engine.weaving.ImmutableAdvice;
-import org.glowroot.xyzzy.engine.weaving.ImmutableAdviceParameter;
-import org.glowroot.xyzzy.engine.weaving.ImmutableLazyDefinedClass;
-import org.glowroot.xyzzy.engine.weaving.Advice.AdviceParameter;
-import org.glowroot.xyzzy.engine.weaving.ClassLoaders.LazyDefinedClass;
-import org.glowroot.xyzzy.engine.weaving.InstrumentationDetail.PointcutClass;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -38,6 +32,10 @@ import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.commons.Remapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.glowroot.xyzzy.engine.weaving.Advice.AdviceParameter;
+import org.glowroot.xyzzy.engine.weaving.ClassLoaders.LazyDefinedClass;
+import org.glowroot.xyzzy.engine.weaving.InstrumentationDetail.PointcutClass;
 
 class InstrumentationClassRenamer {
 
@@ -61,7 +59,7 @@ class InstrumentationClassRenamer {
         } else {
             rootPackageName = internalName.substring(0, index);
         }
-        bootstrapSafePackageName = rootPackageName + "/_/";
+        bootstrapSafePackageName = rootPackageName + "/bootsafe/";
     }
 
     @Nullable

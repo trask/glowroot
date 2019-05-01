@@ -55,7 +55,7 @@ public class ResponseHeaderIT {
 
     @After
     public void afterEachTest() throws Exception {
-        container.resetInstrumentationProperties();
+        container.resetAfterEachTest();
     }
 
     @Test
@@ -82,7 +82,8 @@ public class ResponseHeaderIT {
                 ImmutableList.of("Content-Type", " Content-Length", " Content-Language"));
 
         // when
-        IncomingSpan incomingSpan = container.execute(SetStandardResponseHeadersUsingSetHeader.class, "Web");
+        IncomingSpan incomingSpan =
+                container.execute(SetStandardResponseHeadersUsingSetHeader.class, "Web");
 
         // then
         Map<String, Object> responseHeaders = getResponseHeaders(incomingSpan);
@@ -99,7 +100,8 @@ public class ResponseHeaderIT {
                 ImmutableList.of("Content-Type", " Content-Length", " Content-Language"));
 
         // when
-        IncomingSpan incomingSpan = container.execute(SetStandardResponseHeadersUsingAddHeader.class, "Web");
+        IncomingSpan incomingSpan =
+                container.execute(SetStandardResponseHeadersUsingAddHeader.class, "Web");
 
         // then
         Map<String, Object> responseHeaders = getResponseHeaders(incomingSpan);
@@ -116,7 +118,8 @@ public class ResponseHeaderIT {
                 ImmutableList.of("Content-Type", " Content-Length"));
 
         // when
-        IncomingSpan incomingSpan = container.execute(SetStandardResponseHeadersLowercase.class, "Web");
+        IncomingSpan incomingSpan =
+                container.execute(SetStandardResponseHeadersLowercase.class, "Web");
 
         // then
         Map<String, Object> responseHeaders = getResponseHeaders(incomingSpan);
@@ -153,7 +156,8 @@ public class ResponseHeaderIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResponseHeaders",
                 ImmutableList.<String>of());
         // when
-        IncomingSpan incomingSpan = container.execute(SetStandardResponseHeadersUsingSetHeader.class, "Web");
+        IncomingSpan incomingSpan =
+                container.execute(SetStandardResponseHeadersUsingSetHeader.class, "Web");
         // then
         assertThat(getResponseHeaders(incomingSpan)).isNull();
     }
@@ -164,7 +168,8 @@ public class ResponseHeaderIT {
         container.setInstrumentationProperty(INSTRUMENTATION_ID, "captureResponseHeaders",
                 ImmutableList.<String>of());
         // when
-        IncomingSpan incomingSpan = container.execute(SetStandardResponseHeadersUsingAddHeader.class, "Web");
+        IncomingSpan incomingSpan =
+                container.execute(SetStandardResponseHeadersUsingAddHeader.class, "Web");
         // then
         assertThat(getResponseHeaders(incomingSpan)).isNull();
     }

@@ -65,6 +65,5 @@ class JavaagentClient {
     public void kill() throws Exception {
         out.writeObject(Command.KILL);
         in.readObject();
-        socket.close();
     }
 }

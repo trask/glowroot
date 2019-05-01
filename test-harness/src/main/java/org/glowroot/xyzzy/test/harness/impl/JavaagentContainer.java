@@ -197,7 +197,7 @@ public class JavaagentContainer implements Container {
     }
 
     @Override
-    public void resetInstrumentationProperties() throws Exception {
+    public void resetAfterEachTest() throws Exception {
         javaagentClient.resetInstrumentationProperties();
     }
 
@@ -293,6 +293,8 @@ public class JavaagentContainer implements Container {
                     || name.matches("javax.servlet-api-.*\\.jar")
                     || name.matches("slf4j-api-.*\\.jar")
                     || name.matches("value-.*\\.jar")
+                    // this is needed for now to support reusable ExecuteHttpBase
+                    || name.matches("nanohttpd-.*\\.jar")
                     || name.matches("error_prone_annotations-.*\\.jar")
                     || name.matches("jsr305-.*\\.jar")) {
                 // these are glowroot-agent-core-unshaded transitive dependencies

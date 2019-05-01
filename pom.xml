@@ -35,42 +35,7 @@
     <module>instrumentation-api</module>
     <module>engine</module>
     <module>test-harness</module>
-    <module>instrumentation/apache-http-async-client</module>
-    <module>instrumentation/apache-http-client-3x</module>
-    <module>instrumentation/apache-http-client-4x</module>
-    <module>instrumentation/asynchttpclient-1x</module>
-    <module>instrumentation/asynchttpclient-2x</module>
-    <module>instrumentation/axis-client</module>
-    <module>instrumentation/camel</module>
-    <module>instrumentation/cassandra</module>
-    <module>instrumentation/ejb</module>
-    <module>instrumentation/elasticsearch</module>
-    <module>instrumentation/executor</module>
-    <module>instrumentation/grails</module>
-    <module>instrumentation/hibernate</module>
-    <module>instrumentation/http-client</module>
-    <module>instrumentation/http-url-connection</module>
-    <module>instrumentation/java-http-server</module>
-    <module>instrumentation/jaxrs</module>
-    <module>instrumentation/jaxws</module>
-    <module>instrumentation/jdbc</module>
-    <module>instrumentation/jms</module>
-    <module>instrumentation/jsf</module>
-    <module>instrumentation/jsp</module>
-    <module>instrumentation/kafka</module>
-    <module>instrumentation/logger</module>
-    <module>instrumentation/mail</module>
-    <module>instrumentation/mongodb</module>
-    <module>instrumentation/netty</module>
-    <module>instrumentation/okhttp-1x</module>
-    <module>instrumentation/okhttp-2x</module>
-    <module>instrumentation/play</module>
-    <module>instrumentation/quartz</module>
-    <module>instrumentation/redis</module>
-    <module>instrumentation/servlet</module>
-    <module>instrumentation/spring</module>
-    <module>instrumentation/struts</module>
-    <module>instrumentation/wiremock-apache-http-client</module>
+    <module>instrumentation</module>
     <module>build/multi-lib-tests</module>
   </modules>
 

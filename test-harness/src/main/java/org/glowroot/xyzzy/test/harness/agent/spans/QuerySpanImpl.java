@@ -98,8 +98,8 @@ public class QuerySpanImpl implements QueryEntry, SpanImpl {
     }
 
     @Override
-    public @Nullable Object getMessageSupplier() {
-        return null;
+    public Object getMessageSupplier() {
+        return queryMessageSupplier;
     }
 
     @Override

@@ -37,7 +37,7 @@ import org.glowroot.xyzzy.instrumentation.api.weaving.OnBefore;
 import org.glowroot.xyzzy.instrumentation.api.weaving.OnReturn;
 import org.glowroot.xyzzy.instrumentation.api.weaving.OnThrow;
 import org.glowroot.xyzzy.instrumentation.api.weaving.Pointcut;
-import org.glowroot.xyzzy.instrumentation.okhttp2x._.CallInvoker;
+import org.glowroot.xyzzy.instrumentation.okhttp2x.bootsafe.CallInvoker;
 
 public class OkHttpInstrumentation {
 

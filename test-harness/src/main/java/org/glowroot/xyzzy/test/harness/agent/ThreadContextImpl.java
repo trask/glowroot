@@ -183,13 +183,19 @@ public class ThreadContextImpl implements ThreadContextPlus {
     public void setTransactionSlowThreshold(long threshold, TimeUnit unit, int priority) {}
 
     @Override
-    public void setTransactionError(Throwable t) {}
+    public void setTransactionError(Throwable t) {
+        incomingSpan.setError(t);
+    }
 
     @Override
-    public void setTransactionError(String message) {}
+    public void setTransactionError(String message) {
+        incomingSpan.setError(message);
+    }
 
     @Override
-    public void setTransactionError(String message, Throwable t) {}
+    public void setTransactionError(String message, Throwable t) {
+        incomingSpan.setError(message, t);
+    }
 
     @Override
     public void addErrorEntry(Throwable t) {
